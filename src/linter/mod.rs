@@ -1,5 +1,5 @@
 use glob::{glob, PatternError, Paths};
-use crate::parse::lexer::lexer::Lexer;
+use crate::parse::lexer::{error::LexerDiagnostic, lexer::Lexer};
 use std::fs::File;
 use std::error::Error;
 use std::io::Read;
@@ -26,6 +26,10 @@ impl Linter {
     self.load_glob_files()?;
     for file in &self.file_ids {
       for token in Lexer::new(self.files.get(*file).unwrap().source(), *file) {
+        if token.is_err() {
+          self.throw_diagnostic(&token.err().unwrap());
+          continue;
+        }
         println!("{}", token.unwrap());
       }
     }
@@ -46,13 +50,17 @@ impl Linter {
     Ok(())
   }
 
-  pub fn throw_diagnostic(&self, diagnostic: &Diagnostic<usize>) {
+  pub fn throw_diagnostic(&self, diagnostic: &LexerDiagnostic) {
     use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
+    use codespan_reporting::term::DisplayStyle;
     use codespan_reporting::term;
 
     let writer = StandardStream::stderr(ColorChoice::Always);
-    let config = codespan_reporting::term::Config::default();
+    let mut config = term::Config::default();
+    if diagnostic.simple {
+      config.display_style = DisplayStyle::Short;
+    }
 
-    term::emit(&mut writer.lock(), &config, &self.files, diagnostic);
+    term::emit(&mut writer.lock(), &config, &self.files, &diagnostic.diagnostic);
   }
 }

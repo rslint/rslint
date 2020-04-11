@@ -2,7 +2,6 @@ pub mod parse;
 pub mod linter;
 pub mod macros;
 
-use clap::App;
 use clap::load_yaml;
 use crate::linter::Linter;
 

@@ -35,12 +35,12 @@ macro_rules! keyword_trie {
         $($tail)*
     }
   };
-  ( $lexer:expr, $target:expr, $start:expr, {$($arms:tt)*}, $p:expr => ($expected_token:ident, $expected_str:expr), $($tail:tt)*) => {
+  ( $lexer:expr, $target:expr, $start:expr, {$($arms:tt)*}, $p:expr => $expected_token:ident, $($tail:tt)*) => {
     keyword_trie!{
          $lexer, $target, $start,
         {
             $($arms)*
-            Some($p) => $lexer.resolve_keyword(TokenType::$expected_token, $start, $expected_str),
+            Some($p) => $lexer.resolve_keyword(TokenType::$expected_token, $start, &stringify!($expected_token).to_ascii_lowercase()),
         },
         $($tail)*
     }

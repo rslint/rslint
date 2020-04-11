@@ -1,60 +1,52 @@
-use once_cell::sync::Lazy;
-use std::collections::HashMap;
 use std::hash::Hash;
-use std::stringify;
-use crate::parse::span::Span;
-use codespan_reporting::diagnostic::Diagnostic;
-use codespan_reporting::diagnostic::Label;
+use std::ops::Range;
+use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
 
 #[derive(Eq, PartialEq, Hash, Debug)]
 pub enum LexerErrors {
   UnterminatedString,
-  UnexpectedToken
+  UnexpectedToken,
+  TemplateLiteralInEs5,
+  UnterminatedMultilineComment,
 }
 
 #[derive(Debug)]
 pub struct LexerDiagnostic {
-  pub diagnostic: Diagnostic<usize>
+  pub diagnostic: Diagnostic<usize>,
+  pub simple: bool,
+  pub error_type: LexerErrors,
+  pub file_id: usize
 }
-
-macro_rules! error_map {
-  ($map:expr, $($identifier:ident => $error:expr),* $(,)?) => {
-    $($map.insert(LexerErrors::$identifier, $error);)*
-  };
-}
-
-static LEXER_ERROR_MAP: Lazy<HashMap<LexerErrors, &'static str>> = Lazy::new(|| {
-    let mut map = HashMap::new();
-    error_map!(map,
-      UnexpectedToken => "Unexpected token",
-      UnterminatedString => "Unterminated string literal",
-    );
-    map
-  }
-);
 
 impl LexerDiagnostic {
+  pub fn new(file_id: usize, r#type: LexerErrors, simple: bool, message: &str) -> Self {
+    Self {
+      diagnostic: Diagnostic::error()
+        .with_code("LexerDiagnostic")
+        .with_message(message),
+      simple,
+      error_type: r#type,
+      file_id
+    }
+  }
 
-  fn new(file_id: usize,
-    error: LexerErrors,
-    primary_labels: Option<Vec<(Span, &str)>>, 
-    secondary_labels: Option<Vec<(Span, &str)>>
-  ) -> Diagnostic<usize> {
+  pub fn severity(mut self, severity: Severity) -> Self {
+    self.diagnostic.severity = severity;
+    self
+  }
 
-    Diagnostic::error()
-      .with_code(stringify!(error))
-      .with_message(*LEXER_ERROR_MAP.get(&error).unwrap())
-      .with_labels(primary_labels.unwrap_or(vec![])
-        .iter().map(|label| Label::primary(file_id, label.0.range())
-          .with_message(label.1)
-        )
-        .collect::<Vec<Label<usize>>>()
-      )
-      .with_labels(secondary_labels.unwrap_or(vec![])
-        .iter().map(|label| Label::secondary(file_id, label.0.range())
-          .with_message(label.1)
-        )
-        .collect::<Vec<Label<usize>>>()
-      )
+  pub fn primary(mut self, range: Range<usize>, message: &str) -> Self {
+    self.diagnostic.labels.append(&mut vec![Label::primary(self.file_id, range).with_message(message)]);
+    self
+  }
+
+  pub fn secondary(mut self, range: Range<usize>, message: &str) -> Self {
+    self.diagnostic.labels.append(&mut vec![Label::secondary(self.file_id, range).with_message(message)]);
+    self
+  }
+
+  pub fn note(mut self, message: &str) -> Self {
+    self.diagnostic.notes.append(&mut vec![message.to_string()]);
+    self
   }
 }

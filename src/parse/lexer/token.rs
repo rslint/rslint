@@ -1,7 +1,9 @@
 use crate::parse::span::Span;
 use std::fmt;
+use std::collections::HashMap;
+use once_cell::sync::Lazy;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Token {
   pub token_type: TokenType,
   pub lexeme: Span,
@@ -16,6 +18,10 @@ impl Token {
       line
     }
   }
+
+  pub fn is_whitespace(&self) -> bool {
+    self.token_type == TokenType::Whitespace || self.token_type == TokenType::Linebreak
+  }
 }
 
 impl fmt::Display for Token {
@@ -29,7 +35,7 @@ impl fmt::Display for Token {
   }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenType {
   Accessor,
   AddAssign, // +=
@@ -80,6 +86,7 @@ pub enum TokenType {
   ExponentAssign, // **= -- es7
   Export,
   Extends,
+  False,
   Finally,
   For,
   Function,
@@ -92,22 +99,20 @@ pub enum TokenType {
   In,
   Increment, // ++
   Inequality, // !=
+  InlineComment,
   Instanceof,
   Interface,
   Lesser, // <
   LesserEquals, // <=
   Linebreak,
   LiteralBinary,
-  LiteralFalse,
-  LiteralNull,
   LiteralNumber,
   LiteralRegEx,
   LiteralString,
-  LiteralTrue,
-  LiteralUndefined,
   LogicalAnd, // &&
   LogicalNot, // !
   LogicalOr, // ||
+  MultilineComment,
   Multiplication, // *
   MultiplyAssign, // *=
   New,
@@ -134,6 +139,7 @@ pub enum TokenType {
   TemplateOpen, // ${
   This,
   Throw,
+  True,
   Try,
   Typeof,
   UnsignedBitshiftRight, // >>>
@@ -141,5 +147,7 @@ pub enum TokenType {
   While,
   Whitespace,
   With,
+  Null,
+  Undefined,
   Yield,
 }

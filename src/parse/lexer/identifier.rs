@@ -13,7 +13,7 @@ static ES5_RESERVED_TOKENS: [TokenType; 2] = [
 
 impl<'a> Lexer<'a> {
 
-  /* 
+  /*
   * Resolve a sequence which can either be an identifier or a keyword
   * Matching uses a short circuited trie to be as fast as possible
   * The characters have to exactly match sequentially or it will be resolved as an identifier
@@ -22,90 +22,89 @@ impl<'a> Lexer<'a> {
     let start = self.cur;
     if !ident_start.is_ascii_lowercase() { return self.resolve_identifier(start); }
     keyword_trie!(self, ident_start, start, {
-      'a' => {
-        'w' => {
-          'a' => (Await, "await"),
-        },
-      },
       'b' => {
-        'r' => (Break, "break"),
+        'r' => Break,
       },
       'c' => {
         'a' => {
-          's' => (Case, "case"),
-          't' => (Catch, "catch"),
+          's' => Case,
+          't' => Catch,
         },
-        'l' => (Class, "class"),
-        'o' => (Continue, "continue"),
+        'l' => Class,
+        'o' => {
+            'n' => {
+                't' => Continue,
+            },
+        },
       },
       'd' => {
         'e' => {
-          'b' => (Debugger, "debugger"),
-          'f' => (Default, "default"),
-          'l' => (Delete, "delete"),
+          'b' => Debugger,
+          'f' => Default,
+          'l' => Delete,
         },
-        'o' => (Do, "do"),
+        'o' => Do,
       },
       'e' => {
-        'l' => (Else, "else"),
-        'n' => (Enum, "enum"),
+        'l' => Else,
+        'n' => Enum,
         'x' => {
-          'p' => (Export, "export"),
-          't' => (Extends, "extends"),
+          'p' => Export,
+          't' => Extends,
         },
       },
       'f' => {
-        'a' => (LiteralFalse, "false"),
-        'i' => (Finally, "finally"),
-        'o' => (For, "for"),
-        'u' => (Function, "function"),
+        'a' => False,
+        'i' => Finally,
+        'o' => For,
+        'u' => Function,
       },
       'i' => {
-        'f' => (If, "if"),
+        'f' => If,
         'm' => {
           'p' => {
-            'l' => (Implements, "implements"),
-            'o' => (Import, "import"),
+            'l' => Implements,
+            'o' => Import,
           },
         },
-        'n' => (In, "in"),
+        'n' => In,
         'n' => {
-          's' => (Instanceof, "instanceof"),
-          't' => (Interface, "interface"),
+          's' => Instanceof,
+          't' => Interface,
         },
       },
       'n' => {
-        'e' => (New, "new"),
-        'u' => (LiteralNull, "null"),
+        'e' => New,
+        'u' => Null,
       },
       'p' => {
-        'a' => (Package, "package"),
+        'a' => Package,
         'r' => {
-          'i' => (Private, "private"),
-          'o' => (Protected, "protected"),
+          'i' => Private,
+          'o' => Protected,
         },
-        'u' => (Public, "public"),
+        'u' => Public,
       },
-      'r' => (Return, "return"),
+      'r' => Return,
       's' => {
-        't' => (Static, "static"),
-        'u' => (Super, "super"),
-        'w' => (Switch, "switch"),
+        't' => Static,
+        'u' => Super,
+        'w' => Switch,
       },
       't' => {
         'h' => {
-          'i' => (This, "this"),
-          'r' => (Throw, "throw"),
+          'i' => This,
+          'r' => Throw,
         },
-        'r' => (Try, "try"),
-        'y' => (Typeof, "typeof"),
+        'r' => Try,
+        'y' => Typeof,
       },
-      'v' => (Void, "void"),
+      'v' => Void,
       'w' => {
-        'h' => (While, "while"),
-        'i' => (With, "with"),
+        'h' => While,
+        'i' => With,
       },
-      'y' => (Yield, "yield"),
+      'y' => Yield,
       }
     )
   }
@@ -148,45 +147,17 @@ mod test {
     token::TokenType::*,
   };
 
-
-  macro_rules! compare_tokens {
-    ($tokens:expr, $source:expr, $expected:expr) => {
-      {
-        assert_eq!($tokens.len(), $expected.len());
-        for (idx, token) in $tokens.iter().enumerate() {
-          assert_eq!(token.token_type, $expected[idx].0);
-          assert_eq!(token.lexeme.content($source), $expected[idx].1);
-        }
-      }
+  macro_rules! tok {
+    ($type:ident) => {
+      (TokenType::$type, stringify!($type).to_ascii_lowercase())
     };
   }
 
   // #[test]
-  // fn a_keywords() {
-  //   let source = String::from("await \n\nbreak aaa do await \n a \n\nawait");
-  //   let lexer = Lexer::new(&source);
-  //   let tokens: Vec<Token> = lexer.map(|x| x.unwrap()).collect();
-  //   for i in tokens.iter() {
-  //     println!("Token: {}", i);
-  //   }
-  // }
+  // fn identifiers() {
+  //   let source = String::from("
 
-  // #[test]
-  // fn b_keywords() {
-  //   let source = "break boolean bonk\n byte ";
-  //   let lexer = Lexer::new(source);
-  //   let tokens: Vec<Token> = lexer.map(|x| x.unwrap()).collect();
-  //   compare_tokens!(tokens, source, vec![
-  //     (Break, "break"),
-  //     (Whitespace, " "),
-  //     (Boolean, "boolean"),
-  //     (Whitespace, " "),
-  //     (Identifier, "bonk"),
-  //     (Linebreak, "\n"),
-  //     (Whitespace, " "),
-  //     (Byte, "byte"),
-  //     (Whitespace, " "),
-  //     (EndOfProgram, "")
-  //   ])
+  //   ")
+  //   let lexer = Lexer::new()
   // }
 }

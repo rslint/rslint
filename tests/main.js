@@ -1,3 +1,1 @@
-const str await break
-
-throw
+const ==== = "yes";
