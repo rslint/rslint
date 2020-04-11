@@ -230,8 +230,8 @@ impl<'a> Lexer<'a> {
         None => {
           if multiline {
             return Err(LexerDiagnostic::new(self.file_id, LexerErrors::UnterminatedMultilineComment, false, "Unterminated multiline comment")
-              .secondary(start..start + 1, "Multiline comment starts here")
-              .primary(self.cur..self.cur + 1, "File ends here")
+              .secondary(start..start + 2, "Multiline comment starts here")
+              .primary(self.cur..self.cur, "File ends here")
             );
           } else {
             return Ok(self.token(start, TokenType::InlineComment));
