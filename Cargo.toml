@@ -1,7 +1,7 @@
 [package]
 name = "rslint"
 version = "0.1.0"
-authors = ["RDambrosio016 <cavalier.archer@gmail.com>"]
+authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
 edition = "2018"
 
 [lib]
