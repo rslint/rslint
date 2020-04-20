@@ -1,7 +1,9 @@
 use crate::parse::span::Span;
 use std::fmt;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use once_cell::sync::Lazy;
+use std::iter::FromIterator;
+use ansi_term::Color::Red;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Token {
@@ -22,6 +24,16 @@ impl Token {
   pub fn is_whitespace(&self) -> bool {
     self.token_type == TokenType::Whitespace || self.token_type == TokenType::Linebreak
   }
+
+  pub fn format_with_span_source(&self, source: &str) -> String {
+    format!("Type: {:?} | line: {} | span: {} ({} - {})",
+      self.token_type,
+      self.line,
+      Red.paint(self.lexeme.content(source)),
+      self.lexeme.start,
+      self.lexeme.end
+    )
+  }
 }
 
 impl fmt::Display for Token {
@@ -35,27 +47,12 @@ impl fmt::Display for Token {
   }
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum TokenType {
-  Accessor,
-  AddAssign, // +=
-  Addition, // +
-  Arrow, // =>
-  Assign, // =
+  AssignOp(AssignToken),
   Await,
-  BitwiseAnd, // &
-  BitwiseAndAssign, // &=
-  BitwiseLeftAssign, // <<=
-  BitwiseLeftShift, // <<
+  BinOp(BinToken),
   BitwiseNot, // ~
-  BitwiseNotAssign, // ~=
-  BitwiseOr, // |
-  BitwiseOrAssign, // |=
-  BitwiseRightAssign, // >>=
-  BitwiseRightShift, // >>
-  BitwiseUnsignedRightAssign, // >>>=
-  BitwiseXor, // ^
-  BitwiseXorAssign, // ^=
   BraceClose,
   BraceOpen,
   BracketClose,
@@ -67,72 +64,53 @@ pub enum TokenType {
   Colon,
   Comma,
   Conditional,
+  Const,
   Continue,
   Debugger,
-  DeclarationConst,
-  DeclarationLet,
-  DeclarationVar,
   Decrement,
   Default,
   Delete,
-  DivideAssign, // /=
-  Division,
   Do,
   Else,
   EndOfProgram,
   Enum,
-  Equality,
-  Exponent, // ** -- es7
-  ExponentAssign, // **= -- es7
   Export,
   Extends,
   False,
   Finally,
   For,
   Function,
-  Greater, // >
-  GreaterEquals, //>=
   Identifier,
   If,
   Implements,
   Import,
   In,
   Increment, // ++
-  Inequality, // !=
   InlineComment,
   Instanceof,
   Interface,
-  Lesser, // <
-  LesserEquals, // <=
+  Let,
   Linebreak,
   LiteralBinary,
   LiteralNumber,
   LiteralRegEx,
   LiteralString,
-  LogicalAnd, // &&
   LogicalNot, // !
-  LogicalOr, // ||
   MultilineComment,
-  Multiplication, // *
-  MultiplyAssign, // *=
   New,
+  Of,
   Package,
   ParenClose,
   ParenOpen,
+  Period,
   Private,
   Protected,
   Public,
-  Remainder, // %
-  RemainderAssign, // %=
   Return,
   Semicolon,
   Spread, // ... -- es6
   Static,
-  StrictEquality, // ===
-  StrictInequality, // !==
   StrictMode, // "use strict" or 'use strict'
-  SubtractAssign, // -=
-  Subtraction, // -
   Super,
   Switch,
   TemplateClosed, // }
@@ -142,7 +120,7 @@ pub enum TokenType {
   True,
   Try,
   Typeof,
-  UnsignedBitshiftRight, // >>>
+  Var,
   Void,
   While,
   Whitespace,
@@ -150,4 +128,145 @@ pub enum TokenType {
   Null,
   Undefined,
   Yield,
+  QuestionMark,
+}
+
+/// Binary operation tokens such as <, >, and ~
+/// Does not include assign ops
+#[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
+pub enum BinToken {
+  Assign,
+  Equality,
+  Inequality,
+  StrictEquality,
+  StrictInequality,
+  LessThan,
+  LessThanOrEqual,
+  GreaterThan,
+  GreaterThanOrEqual,
+  LeftBitshift,
+  RightBitshift,
+  UnsignedRightBitshift,
+  Exponent,
+  Add,
+  Subtract,
+  Multiply,
+  Divide,
+  Modulo,
+  BitwiseOr,
+  BitwiseXor,
+  BitwiseAnd,
+  LogicalOr,
+  LogicalAnd,
+}
+
+#[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
+pub enum AssignToken {
+  AddAssign,
+  SubtractAssign,
+  MultiplyAssign,
+  ExponentAssign,
+  ModuloAssign,
+  LeftBitshiftAssign,
+  RightBitshiftAssign,
+  UnsignedRightBitshiftAssign,
+  BitwiseAndAssign,
+  BitwiseOrAssign,
+  BitwiseXorAssign,
+  DivideAssign
+}
+
+pub static KEYWORDS: Lazy<HashSet<TokenType>> = Lazy::new(|| {
+  use TokenType::*;
+  HashSet::from_iter(vec![
+    Await,
+    Break,
+    Case,
+    Catch,
+    Class,
+    Const,
+    Continue,
+    Debugger,
+    Default,
+    Delete,
+    Do,
+    Else,
+    Enum,
+    Export,
+    Extends,
+    Finally,
+    For,
+    Function,
+    If,
+    Implements,
+    Import,
+    In,
+    Instanceof,
+    Interface,
+    Let,
+    New,
+    Private,
+    Protected,
+    Public,
+    Return,
+    Static,
+    Super,
+    Switch,
+    This,
+    Throw,
+    Try,
+    Typeof,
+    Var,
+    Void,
+    While,
+    With,
+    Yield
+  ])
+});
+
+pub static BEFORE_EXPR: Lazy<HashSet<TokenType>> = Lazy::new(|| {
+  use TokenType::*;
+  HashSet::from_iter(vec![
+    Spread,
+    LogicalNot,
+    ParenOpen,
+    BracketOpen,
+    BraceOpen,
+    Semicolon,
+    Comma,
+    Colon,
+    TemplateOpen,
+    QuestionMark,
+    Increment,
+    Decrement,
+    BitwiseNot,
+    Await,
+    Case,
+    Default,
+    Do,
+    Else,
+    Return,
+    Throw,
+    New,
+    Extends,
+    Yield,
+    In,
+    Typeof,
+    Void,
+    Delete
+  ])
+});
+
+impl TokenType {
+  pub fn is_keyword(&self) -> bool {
+    KEYWORDS.contains(self)
+  }
+
+  pub fn is_before_expr(&self) -> bool {
+    match self {
+      TokenType::BinOp(_) | TokenType::AssignOp(_) => true,
+      _ if BEFORE_EXPR.contains(self) => true,
+      _ => false
+    }
+  }
 }

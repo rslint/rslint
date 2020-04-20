@@ -1,11 +1,8 @@
-pub mod parse;
-pub mod linter;
-pub mod macros;
-
 use clap::load_yaml;
-use crate::linter::Linter;
+use rslint::linter::Linter;
+use rslint::linter::file_walker::FileWalker;
 
 fn main() {
-  let yaml = load_yaml!("../cli.yml");
-  Linter::new(String::from("tests/main.js")).unwrap().run();
+  env_logger::init();
+  Linter::new(String::from("tests")).run();
 }

@@ -5,12 +5,6 @@ use super::{
 };
 use crate::keyword_trie;
 
-//unique es5 tokens, only reserved in strict mode
-static ES5_RESERVED_TOKENS: [TokenType; 2] = [
-  TokenType::DeclarationLet,
-  TokenType::Await
-];
-
 impl<'a> Lexer<'a> {
 
   /*
@@ -21,6 +15,12 @@ impl<'a> Lexer<'a> {
   pub fn resolve_ident_or_keyword(&mut self, ident_start: char) -> Token {
     let start = self.cur;
     if !ident_start.is_ascii_lowercase() { return self.resolve_identifier(start); }
+    
+    match self.peek() {
+      Some(c) if !c.is_identifier_part() => return self.token(start, TokenType::Identifier),
+      _ => {}
+    }
+
     keyword_trie!(self, ident_start, start, {
       'b' => {
         'r' => Break,
@@ -33,7 +33,8 @@ impl<'a> Lexer<'a> {
         'l' => Class,
         'o' => {
             'n' => {
-                't' => Continue,
+              's' => Const,
+              't' => Continue,
             },
         },
       },
@@ -73,10 +74,12 @@ impl<'a> Lexer<'a> {
           't' => Interface,
         },
       },
+      'l' => Let,
       'n' => {
         'e' => New,
         'u' => Null,
       },
+      'o' => Of,
       'p' => {
         'a' => Package,
         'r' => {
@@ -99,7 +102,10 @@ impl<'a> Lexer<'a> {
         'r' => Try,
         'y' => Typeof,
       },
-      'v' => Void,
+      'v' => {
+        'a' => Var,
+        'o' => Void,
+      },
       'w' => {
         'h' => While,
         'i' => With,

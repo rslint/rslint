@@ -18,4 +18,8 @@ impl Span {
   pub fn range(&self) -> Range<usize> {
     self.start..self.end
   }
+
+  pub fn size(&self) -> usize {
+    self.end - self.start
+  }
 }

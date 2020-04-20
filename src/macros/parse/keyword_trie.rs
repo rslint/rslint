@@ -40,7 +40,9 @@ macro_rules! keyword_trie {
          $lexer, $target, $start,
         {
             $($arms)*
-            Some($p) => $lexer.resolve_keyword(TokenType::$expected_token, $start, &stringify!($expected_token).to_ascii_lowercase()),
+            Some($p) => {
+              $lexer.resolve_keyword(TokenType::$expected_token, $start, &stringify!($expected_token).to_ascii_lowercase())
+            },
         },
         $($tail)*
     }

@@ -1,66 +1,71 @@
-use glob::{glob, PatternError, Paths};
-use crate::parse::lexer::{error::LexerDiagnostic, lexer::Lexer};
-use std::fs::File;
+pub mod file_walker;
+pub mod diagnostic;
+
+use crate::parse::lexer::lexer::Lexer;
 use std::error::Error;
-use std::io::Read;
-use codespan_reporting::files::SimpleFiles;
-use codespan_reporting::diagnostic::Diagnostic;
+use crate::linter::file_walker::FileWalker;
+use crate::linter::diagnostic::LinterDiagnostic;
 
 pub struct Linter {
-  target: Paths,
-  files: SimpleFiles<String, String>,
-  file_ids: Vec<usize>
+  walker: FileWalker,
 }
 
 impl Linter {
-  pub fn new(target: String) -> Result<Self, PatternError> {
-    let pattern = glob(&target)?;
-    Ok(Self {
-      target: pattern,
-      files: SimpleFiles::new(),
-      file_ids: vec![]
-    })
+  pub fn new(target: String) -> Self {
+    Self {
+      walker: FileWalker::new(target),
+    }
   }
 
   pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
-    self.load_glob_files()?;
-    for file in &self.file_ids {
-      for token in Lexer::new(self.files.get(*file).unwrap().source(), *file) {
-        if token.is_err() {
-          self.throw_diagnostic(&token.err().unwrap());
-          continue;
-        }
-        println!("{}", token.unwrap());
-      }
+    self.walker.load()?;
+    for file in &self.walker.files {
+      let lexer = Lexer::new(file.1.source(), file.0); 
     }
     Ok(())
   }
 
-  fn load_glob_files(&mut self) -> Result<(), Box<dyn Error>> {
-    for i in &mut self.target {
-      if i.is_err() {
-        continue;
-      }
-      let path = i.unwrap();
-      let mut file = File::open(&path)?;
-      let mut src = String::new();
-      file.read_to_string(&mut src)?;
-      self.file_ids.push(self.files.add(path.to_string_lossy().as_ref().to_owned(), src));
-    }
-    Ok(())
-  }
-
-  pub fn throw_diagnostic(&self, diagnostic: &LexerDiagnostic) {
+  pub fn throw_diagnostic(&self, diagnostic: &LinterDiagnostic) {
     use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
+    use codespan_reporting::diagnostic::Severity;
     use codespan_reporting::term::DisplayStyle;
     use codespan_reporting::term;
 
-    let writer = StandardStream::stderr(ColorChoice::Always);
+    let writer = if diagnostic.diagnostic.severity == Severity::Error {
+      StandardStream::stderr(ColorChoice::Always)
+    } else {
+      StandardStream::stdout(ColorChoice::Always)
+    };
+
     let mut config = term::Config::default();
     if diagnostic.simple {
       config.display_style = DisplayStyle::Short;
     }
 
-    term::emit(&mut writer.lock(), &config, &self.files, &diagnostic.diagnostic);
+    term::emit(&mut writer.lock(), &config, &self.walker, &diagnostic.diagnostic);
+  }
+
+  fn lexer_debug(&self, lexer: Lexer) {
+    println!("\n Lexer debug for: {} ------------------- \n", lexer.file_id);
+    use ansi_term::Style;
+    use ansi_term::Color::*;
+
+    let mut cur_ln = 1;
+    for token in lexer {
+      if token.is_err() {
+        self.throw_diagnostic(&token.err().unwrap());
+        continue;
+      }
+      let tok = token.unwrap();
+      if tok.line > cur_ln {
+        println!();
+        cur_ln += 1;
+      }
+      if tok.token_type == crate::parse::lexer::token::TokenType::Whitespace {
+        print!("{}", Style::new().on(White).paint(" ".repeat(tok.lexeme.size())));
+        continue;
+      }
+      print!(" {}", Style::new().on(Cyan).fg(Black).paint(format!("{:?}", tok.token_type)).to_string());
+    }
   }
 }
