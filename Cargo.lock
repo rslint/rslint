@@ -459,8 +459,21 @@ dependencies = [
  "log",
  "once_cell",
  "rayon",
+ "rslint-parse",
  "unicode-xid",
  "walkdir",
+]
+
+[[package]]
+name = "rslint-parse"
+version = "0.1.0"
+dependencies = [
+ "ansi_term 0.12.1",
+ "codespan-reporting",
+ "log",
+ "once_cell",
+ "rayon",
+ "unicode-xid",
 ]
 
 [[package]]

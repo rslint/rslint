@@ -1,3 +1,1 @@
-let a = function() {
-  return /aaa/
-}
+let a = function();
