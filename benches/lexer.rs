@@ -1,10 +1,9 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use std::io::Read;
 use rslint::linter::Linter;
-use std::fs::File;
 
 fn lex_js() {
-  Linter::new(String::from("benches/files/es5.js")).run();
+  Linter::new(String::from("benches/files/es5.js")).run()
+    .expect("Failed to run linter");
 }
 
 fn bench(c: &mut Criterion) {

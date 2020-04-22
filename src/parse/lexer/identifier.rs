@@ -19,7 +19,7 @@ impl<'a> Lexer<'a> {
     match self.peek() {
       Some(c) if !c.is_identifier_part() => return self.token(start, TokenType::Identifier),
       _ => {}
-    }
+    };
 
     keyword_trie!(self, ident_start, start, {
       'b' => {
@@ -68,7 +68,7 @@ impl<'a> Lexer<'a> {
             'o' => Import,
           },
         },
-        'n' => In,
+        'n' ; => In,
         'n' => {
           's' => Instanceof,
           't' => Interface,
@@ -125,8 +125,8 @@ impl<'a> Lexer<'a> {
       }
     }
 
-    match self.source_iter.peek() {
-      Some(c) if !c.1.is_identifier_part() => self.token(start, expected),
+    match self.peek() {
+      Some(c) if !c.is_identifier_part() => self.token(start, expected),
       Some(_) => self.resolve_identifier(start),
       None => self.token(start, expected)
     }
@@ -135,35 +135,12 @@ impl<'a> Lexer<'a> {
   // Resolves a sequence determined to be an identifier into an identifier token
   fn resolve_identifier(&mut self, start: usize) -> Token {
     loop {
-      match self.source_iter.peek() {
-        Some(c) if c.1.is_identifier_part() => { self.advance(); },
-        Some(c) if !c.1.is_identifier_part() => return self.token(start, TokenType::Identifier),
+      match self.peek() {
+        Some(c) if c.is_identifier_part() => { self.advance(); },
+        Some(c) if !c.is_identifier_part() => return self.token(start, TokenType::Identifier),
         Some(_) => return self.token(start, TokenType::Identifier),
         None => return self.token(start, TokenType::Identifier)
       }
     }
   }
-}
-
-#[cfg(test)]
-mod test {
-  use crate::parse::lexer::{
-    lexer::Lexer,
-    token::*,
-    token::TokenType::*,
-  };
-
-  macro_rules! tok {
-    ($type:ident) => {
-      (TokenType::$type, stringify!($type).to_ascii_lowercase())
-    };
-  }
-
-  // #[test]
-  // fn identifiers() {
-  //   let source = String::from("
-
-  //   ")
-  //   let lexer = Lexer::new()
-  // }
 }

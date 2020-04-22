@@ -17,7 +17,7 @@ pub struct Lexer<'a> {
   pub start: usize,
   pub cur: usize,
   pub line: usize,
-  pub done: bool
+  pub done: bool,
 }
 
 impl<'a> Lexer<'a> {
@@ -42,6 +42,23 @@ impl<'a> Lexer<'a> {
     })
   }
 
+  pub fn advance_while<F>(&mut self, func: F) 
+    where F: FnOnce(char) -> bool + Copy
+  {
+    loop {
+      match self.peek() {
+        Some(c) if !func(c) => break,
+        None => break,
+        Some(c) if func(c) => drop(self.advance()),
+        _ => break, //Should be unreachable
+      }
+    }
+  }
+
+  pub fn next_idx(&mut self) -> usize {
+    self.source_iter.peek().map(|x| x.0).unwrap_or(self.cur)
+  }
+
   pub fn peek(&mut self) -> Option<char> {
     self.source_iter.peek().map(|x| x.1)
   }
@@ -58,17 +75,22 @@ impl<'a> Lexer<'a> {
     Token::new(token, start, self.cur + 1, self.line)
   }
 
-  pub fn scan_token(&mut self) -> Option<Result<Token, LinterDiagnostic<'a>>> {
+  /// The lexer may yield a token and a diagnostic, this is to allow the parser to recover from some errors
+  /// `(Some, None)` is a successful scan
+  /// `(Some, Some)` is an error the lexer could recover from
+  /// `(None, Some)` is an error the lexer could not recover from
+  /// `(None, None)` means the lexer is done
+  pub fn scan_token(&mut self) -> (Option<Token>, Option<LinterDiagnostic<'a>>) {
     //TODO tidy this up
-    if self.done { return None; }
+    if self.done { return (None, None); }
     if self.source_len == 0 || self.peek().is_none() {
       self.done = true;
-      return Some(Ok(self.end()));
+      return (Some(self.end()), None);
     }
     let scanned = match self.advance() {
       Some(scanned) => scanned,
       None => {
-        return Some(Ok(self.end()));
+        return (Some(self.end()), None);
       }
     };
     match scanned {
@@ -85,13 +107,13 @@ impl<'a> Lexer<'a> {
           ']' => TokenType::BracketClose,
           _ => unreachable!()
         };
-        Some(Ok(self.token(self.cur, r#type)))
+        (Some(self.token(self.cur, r#type)), None)
       },
 
       '.' => {
         match self.peek() {
-          Some(c) if c.is_ascii_digit() => Some(self.read_decimal(self.cur)),
-          _ => Some(Ok(self.token(self.cur, TokenType::Period)))
+          Some(c) if c.is_ascii_digit() => self.read_decimal(self.cur),
+          _ => (Some(self.token(self.cur, TokenType::Period)), None)
         }
       },
 
@@ -100,12 +122,12 @@ impl<'a> Lexer<'a> {
           self.advance();
           if self.peek() == Some('=') {
             self.advance();
-            Some(Ok(self.token(self.cur - 2, TokenType::BinOp(BinToken::StrictInequality))))
+            (Some(self.token(self.cur - 2, TokenType::BinOp(BinToken::StrictInequality))), None)
           } else {
-            Some(Ok(self.token(self.cur - 1, TokenType::BinOp(BinToken::Inequality))))
+            (Some(self.token(self.cur - 1, TokenType::BinOp(BinToken::Inequality))), None)
           }
         } else {
-          Some(Ok(self.token(self.cur, TokenType::LogicalNot)))
+          (Some(self.token(self.cur, TokenType::LogicalNot)), None)
         }
       },
 
@@ -113,13 +135,13 @@ impl<'a> Lexer<'a> {
         match self.peek() {
           Some(c) if c == '+' => {
             self.advance();
-            Some(Ok(self.token(self.cur - 1, TokenType::Increment)))
+            (Some(self.token(self.cur - 1, TokenType::Increment)), None)
           },
           Some(c) if c == '=' => {
             self.advance();
-            Some(Ok(self.token(self.cur - 1, TokenType::AssignOp(AssignToken::AddAssign))))
+            (Some(self.token(self.cur - 1, TokenType::AssignOp(AssignToken::AddAssign))), None)
           },
-          _ => Some(Ok(self.token(self.cur, TokenType::BinOp(BinToken::Add))))
+          _ => (Some(self.token(self.cur, TokenType::BinOp(BinToken::Add))), None)
         }
       },
 
@@ -127,13 +149,13 @@ impl<'a> Lexer<'a> {
         match self.peek() {
           Some(c) if c == '-' => {
             self.advance();
-            Some(Ok(self.token(self.cur - 1, TokenType::Decrement)))
+            (Some(self.token(self.cur - 1, TokenType::Decrement)), None)
           },
           Some(c) if c == '=' => {
             self.advance();
-            Some(Ok(self.token(self.cur - 1, TokenType::AssignOp(AssignToken::SubtractAssign))))
+            (Some(self.token(self.cur - 1, TokenType::AssignOp(AssignToken::SubtractAssign))), None)
           },
-          _ => Some(Ok(self.token(self.cur, TokenType::BinOp(BinToken::Subtract))))
+          _ => (Some(self.token(self.cur, TokenType::BinOp(BinToken::Subtract))), None)
         }
       },
 
@@ -148,12 +170,12 @@ impl<'a> Lexer<'a> {
             match self.peek() {
               Some(c) if c == '=' => {
                 self.advance();
-                Some(Ok(self.token(start, TokenType::BinOp(BinToken::StrictEquality))))
+                (Some(self.token(start, TokenType::BinOp(BinToken::StrictEquality))), None)
               },
-              _ => Some(Ok(self.token(start, TokenType::BinOp(BinToken::Equality)))),
+              _ => (Some(self.token(start, TokenType::BinOp(BinToken::Equality))), None),
             }
           },
-          _ => Some(Ok(self.token(start, TokenType::BinOp(BinToken::Assign)))),
+          _ => (Some(self.token(start, TokenType::BinOp(BinToken::Assign))), None),
         }
       },
 
@@ -161,40 +183,42 @@ impl<'a> Lexer<'a> {
         match self.peek() {
           Some(c) if c == '|' => {
             self.advance();
-            Some(Ok(self.token(self.cur - 1, TokenType::BinOp(BinToken::LogicalOr))))
+            (Some(self.token(self.cur - 1, TokenType::BinOp(BinToken::LogicalOr))), None)
           },
-          _ => Some(Ok(self.token(self.cur, TokenType::BinOp(BinToken::BitwiseOr))))
+          _ => (Some(self.token(self.cur, TokenType::BinOp(BinToken::BitwiseOr))), None)
         }
       },
 
-      '>' | '<' => Some(Ok(self.read_lt_gt(scanned == '<'))),
+      '>' | '<' => (Some(self.read_lt_gt(scanned == '<')), None),
 
-      scanned if scanned == '\\' || scanned.is_identifier_start() => Some(Ok(self.resolve_ident_or_keyword(scanned))),
+      scanned if scanned == '\\' || scanned.is_identifier_start() => (Some(self.resolve_ident_or_keyword(scanned)), None),
 
       '1'..='9' => {
-        Some(self.read_number())
+        self.read_number()
       },
+
+      '0' => self.read_hex_literal(),
 
       '/' => {
         match self.peek() {
-          Some(c) if c == '/' || c == '*' => Some(self.read_comment(c)),
-          Some(_) if self.state.expr_allowed => Some(self.read_regex()),
+          Some(c) if c == '/' || c == '*' => self.read_comment(c),
+          Some(_) if self.state.expr_allowed => self.read_regex(),
           Some(c) if c == '=' => {
             self.advance();
-            Some(Ok(self.token(self.cur - 1, TokenType::AssignOp(AssignToken::DivideAssign))))
+            (Some(self.token(self.cur - 1, TokenType::AssignOp(AssignToken::DivideAssign))), None)
           },
-          _ => Some(Ok(self.token(self.cur, TokenType::BinOp(BinToken::Divide))))
+          _ => (Some(self.token(self.cur, TokenType::BinOp(BinToken::Divide))), None)
         }
       },
 
-      '\'' | '"' => Some(self.read_str_literal(scanned)),
+      '\'' | '"' => self.read_str_literal(scanned),
 
       '`' => {
         if true {
-          Some(Err(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(TemplateLiteralInEs5), false, "Invalid template literal")
-            .primary(self.cur..self.cur+1, "Invalid")
+          (None, Some(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(TemplateLiteralInEs5), false, "Invalid template literal")
+            .primary(self.cur..self.next_idx(), "Invalid")
             .note("Help: Template literals are allowed in ES6+ but the file is being processed as ES5")
-        ))
+          ))
         } else {
           unimplemented!() //TODO template literals
         }
@@ -209,16 +233,16 @@ impl<'a> Lexer<'a> {
               let token = self.token(start, TokenType::Linebreak);
               self.advance();
               self.line += 1;
-              return Some(Ok(token));
+              return (Some(token), None);
             }
             _ => {
-              let token = Some(Ok(self.token(start, TokenType::Linebreak)));
+              let token = (Some(self.token(start, TokenType::Linebreak)), None);
               self.line += 1;
               return token;
             }
           }
         }
-        let token = Some(Ok(self.token(start, TokenType::Linebreak)));
+        let token = (Some(self.token(start, TokenType::Linebreak)), None);
         self.line += 1;
         token
       },
@@ -228,12 +252,12 @@ impl<'a> Lexer<'a> {
         loop {
           match self.peek() {
             Some(c) if c.is_js_whitespace() => { self.advance(); },
-            _ => return Some(Ok(self.token(start, TokenType::Whitespace)))
+            _ => return (Some(self.token(start, TokenType::Whitespace)), None)
           }
         }
       },
 
-      _ => Some(Err(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnexpectedToken), false, "Unexpected token").primary(self.cur..self.cur+1, "unexpected")))
+      _ => (None, Some(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnexpectedToken), false, "Unexpected token").primary(self.cur..self.next_idx(), "unexpected")))
     }
   }
 
@@ -242,7 +266,7 @@ impl<'a> Lexer<'a> {
   }
 
   //Reads an inline comment or multiline comment, expects the current pos to be the slash
-  fn read_comment(&mut self, next_char: char) -> Result<Token, LinterDiagnostic<'a>> {
+  fn read_comment(&mut self, next_char: char) -> (Option<Token>, Option<LinterDiagnostic<'a>>) {
     let multiline = next_char == '*';
     let start = self.cur;
 
@@ -252,24 +276,24 @@ impl<'a> Lexer<'a> {
           self.advance();
           if self.peek() == Some('/') {
             self.advance();
-            return Ok(self.token(start, TokenType::MultilineComment))
+            return (Some(self.token(start, TokenType::MultilineComment)), None)
           }
         },
 
         Some(c) if c.is_line_break() && !multiline => {
-          return Ok(self.token(start, TokenType::InlineComment))
+          return (Some(self.token(start, TokenType::InlineComment)), None)
         },
 
         Some(_) => { self.advance(); },
 
         None => {
           if multiline {
-            return Err(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedMultilineComment), false, "Unterminated multiline comment")
+            return (None, Some(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedMultilineComment), false, "Unterminated multiline comment")
               .secondary(start..start + 2, "Multiline comment starts here")
               .primary(self.cur..self.cur, "File ends here")
-            );
+            ));
           } else {
-            return Ok(self.token(start, TokenType::InlineComment));
+            return (Some(self.token(start, TokenType::InlineComment)), None);
           }
         }
       }
@@ -277,29 +301,29 @@ impl<'a> Lexer<'a> {
   }
 
   // Reads a string literal of single or double quotes
-  fn read_str_literal(&mut self, quote: char) -> Result<Token, LinterDiagnostic<'a>> {
+  fn read_str_literal(&mut self, quote: char) -> (Option<Token>, Option<LinterDiagnostic<'a>>) {
     let start = self.cur;
     loop {
       match self.peek() {
         Some(c) if c == quote => {
           self.advance();
-          return Ok(self.token(start, TokenType::LiteralString));
+          return (Some(self.token(start, TokenType::LiteralString)), None);
         },
         Some(c) if c.is_line_break() => {
           //long lines render ugly in codespan errors, so if the line is too long we render it as short
           let short = self.cur - start > 50;
-          return Err(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedString), short, "Unterminated string literal")
+          return (None, Some(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedString), short, "Unterminated string literal")
             .secondary(start..start+1, "Literal starts here")
-            .primary(self.cur..self.cur+1, "Line ends here")
-          );
+            .primary(self.cur..self.next_idx(), "Line ends here")
+          ));
         }
         Some(_) => { self.advance(); },
         None => {
           let short = self.cur - start > 50;
-          return Err(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedString), short, "Unterminated string literal")
+          return (None, Some(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedString), short, "Unterminated string literal")
             .secondary(start..start+1, "Literal starts here")
-            .primary(self.cur..self.cur+1, "File ends here")
-          );
+            .primary(self.cur..self.next_idx(), "File ends here")
+          ));
         }
       }
     }
@@ -366,7 +390,7 @@ impl<'a> Lexer<'a> {
   }
 
   /// Reads a regex literal, expects the current char to be the slash
-  fn read_regex(&mut self) -> Result<Token, LinterDiagnostic<'a>> {
+  fn read_regex(&mut self) -> (Option<Token>, Option<LinterDiagnostic<'a>>) {
     let start = self.cur;
     let mut in_class = false;
     let mut escaped = false;
@@ -378,20 +402,20 @@ impl<'a> Lexer<'a> {
         continue;
       }
       match self.peek() {
-        Some(c) if c.is_line_break() => return Err(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedRegex), false, "Unterminated regex literal")
+        Some(c) if c.is_line_break() => return (None, Some(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedRegex), false, "Unterminated regex literal")
           .secondary(start..start + 1, "Regex starts here")
-          .primary(self.cur..self.cur + 1, "Line ends here")
-        ),
+          .primary(self.cur..self.next_idx(), "Line ends here")
+        )),
         Some(c) if c == '/' && !in_class => break,
         Some(c) if c == '[' => in_class = true,
         Some(c) if c == ']' && in_class => in_class = false,
         Some(c) if c == '\\' => escaped = true,
 
         None => {
-          return Err(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedRegex), false, "Unterminated regex literal")
+          return (None, Some(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(UnterminatedRegex), false, "Unterminated regex literal")
             .secondary(start..start + 1, "Regex starts here")
-            .primary(self.cur..self.cur + 1, "File ends here")
-          )
+            .primary(self.cur..self.next_idx(), "File ends here")
+          ))
         }
 
         _ => {}
@@ -409,57 +433,60 @@ impl<'a> Lexer<'a> {
         Some(_) | None => break
       }
     }
-    self.validate_regex_flags(flags)?;
-    Ok(self.token(start, TokenType::LiteralRegEx))
+    self.validate_regex_flags(flags);
+    (Some(self.token(start, TokenType::LiteralRegEx)), None)
   }
 
-  fn validate_regex_flags(&self, flags: String) -> Result<(), LinterDiagnostic<'a>> {
+  fn validate_regex_flags(&mut self, flags: String) -> Option<LinterDiagnostic<'a>> {
     let (mut global, mut ignore_case, mut multiline) = (false, false, false);
 
     // TODO: This error can be autofixed, but a fixer needs to be implemented first
-    let flag_err = |flag: char| {
+    let mut flag_err = || {
       LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(InvalidRegexFlags), false, "Invalid regex literal flags")
-        .primary(self.cur..self.cur + 1, &format!("The `{}` flag may not appear multiple times", flag))
+        .primary(self.cur..self.next_idx(), "")
     };
 
     for (idx, i) in flags.char_indices() {
       match i {
         'g' => {
           if global {
-            return Err(flag_err('g'))
+            return Some(flag_err())
           } else {
             global = true;
           }
         },
         'i' => {
           if ignore_case {
-            return Err(flag_err('i'))
+            return Some(flag_err())
           } else {
             ignore_case = true;
           }
         },
         'm' => {
           if multiline {
-            return Err(flag_err('m'))
+            return Some(flag_err())
           } else {
             multiline = true;
           }
         },
         c => {
-          // TODO: rework this cursed range
-          return Err(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(InvalidRegexFlags), false, "Invalid regex flag")
+          return Some(LinterDiagnostic::new(self.file_id, LinterDiagnosticType::Lexer(InvalidRegexFlags), false, "Invalid regex flag")
             .primary(self.cur - (flags.chars().count() - idx) + 1..self.cur - (flags.chars().count() - idx) + 1, &format!("{} is not a valid regex flag", c))
           )
         }
       }
     }
-    Ok(())
+    None
   }
 }
 
 impl<'a> Iterator for Lexer<'a> {
-  type Item = Result<Token, LinterDiagnostic<'a>>;
+  type Item = (Option<Token>, Option<LinterDiagnostic<'a>>);
   fn next(&mut self) -> Option<Self::Item> {
-    self.scan_token()
+    let res = self.scan_token();
+    if res == (None, None) {
+      return None;
+    }
+    Some(res)
   }
 }

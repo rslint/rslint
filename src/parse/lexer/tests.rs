@@ -5,7 +5,7 @@ mod test {
 
   macro_rules! tokens {
     ($src:expr) => {
-      lexer::Lexer::new(&String::from($src), "").map(|x| x.unwrap()).collect::<Vec<token::Token>>();
+      lexer::Lexer::new(&String::from($src), "").map(|x| x.0.unwrap()).collect::<Vec<token::Token>>();
     };
   }
   
@@ -130,6 +130,7 @@ mod test {
   }
 
   #[should_panic]
+  #[allow(unused_must_use)]
   #[test]
   fn multiline_unterminated_comment() {
     tokens!("/* this
@@ -141,24 +142,6 @@ mod test {
   fn dot_start_decimal_literal() {
     let tokens = tokens!(".642 .643e5 .6433e+6 .653e-77 .6E-6");
     expect_tokens!(tokens, vec![LiteralNumber, LiteralNumber, LiteralNumber, LiteralNumber, LiteralNumber, EndOfProgram], true);
-  }
-
-  #[should_panic]
-  #[test]
-  fn ident_start_after_number() {
-    tokens!(".631a");
-  }
-
-  #[should_panic]
-  #[test]
-  fn exponent_without_digits() {
-    tokens!(".6e");
-  }
-
-  #[should_panic]
-  #[test]
-  fn nested_exponents() {
-    tokens!(".5e6e7");
   }
 
   #[test]

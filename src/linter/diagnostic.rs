@@ -1,6 +1,7 @@
-use codespan_reporting::diagnostic::{Diagnostic, Label, Severity, LabelStyle};
+use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
 use std::ops::Range;
 use crate::parse::lexer::error::LexerDiagnosticType;
+use super::file_walker::FileWalker;
 
 #[derive(Debug)]
 pub struct LinterDiagnostic<'a> {
@@ -8,6 +9,12 @@ pub struct LinterDiagnostic<'a> {
   pub simple: bool,
   pub error_type: LinterDiagnosticType,
   pub file_id: &'a str,
+}
+
+impl<'a> PartialEq for LinterDiagnostic<'a> {
+  fn eq(&self, other: &Self) -> bool {
+    self.error_type == other.error_type
+  }
 }
 
 impl<'a> LinterDiagnostic<'a> {
@@ -20,6 +27,26 @@ impl<'a> LinterDiagnostic<'a> {
       error_type: r#type,
       file_id
     }
+  }
+
+  pub fn throw(&self, walker: &FileWalker) {
+    use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
+    use codespan_reporting::term::DisplayStyle;
+    use codespan_reporting::term;
+
+    let writer = if self.diagnostic.severity == Severity::Error {
+      StandardStream::stderr(ColorChoice::Always)
+    } else {
+      StandardStream::stdout(ColorChoice::Always)
+    };
+
+    let mut config = term::Config::default();
+    if self.simple {
+      config.display_style = DisplayStyle::Short;
+    }
+
+    term::emit(&mut writer.lock(), &config, walker, &self.diagnostic)
+      .expect("Failed to throw diagnostic");
   }
 
   pub fn severity(mut self, severity: Severity) -> Self {
@@ -43,7 +70,7 @@ impl<'a> LinterDiagnostic<'a> {
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum LinterDiagnosticType {
   Lexer(LexerDiagnosticType)
 }

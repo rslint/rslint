@@ -47,4 +47,18 @@ macro_rules! keyword_trie {
         $($tail)*
     }
   };
+  // This is required for identifiers which are a start of another identifier.
+  // Example: In and Instanceof
+  ($lexer:expr, $target:expr, $start:expr, {$($arms:tt)*}, $p:expr ; => $expected_token:ident, $($tail:tt)*) => {
+    keyword_trie!{
+      $lexer, $target, $start,
+     {
+         $($arms)*
+         Some($p) if $lexer.peek().is_none() || $lexer.peek().filter(|x| !x.is_identifier_part()).is_some() => {
+           $lexer.resolve_keyword(TokenType::$expected_token, $start, &stringify!($expected_token).to_ascii_lowercase())
+         },
+     },
+     $($tail)*
+ }
+  };
 }

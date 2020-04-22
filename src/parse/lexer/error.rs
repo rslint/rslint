@@ -13,4 +13,8 @@ pub enum LexerDiagnosticType {
   PeriodInFloat,
   UnterminatedRegex,
   InvalidRegexFlags,
+  InvalidCharAfterZero,
+  InvalidOctalLiteral,
+  InvalidHexCharacter,
+  MissingHexDigit,
 }
