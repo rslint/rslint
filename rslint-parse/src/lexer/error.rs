@@ -2,6 +2,7 @@ use std::hash::Hash;
 
 #[derive(Eq, PartialEq, Hash, Debug)]
 pub enum LexerDiagnosticType {
+  // Errors
   UnterminatedString,
   UnexpectedToken,
   TemplateLiteralInEs5,
@@ -17,4 +18,8 @@ pub enum LexerDiagnosticType {
   InvalidOctalLiteral,
   InvalidHexCharacter,
   MissingHexDigit,
+
+  // Notes
+  RedundantZeroesAfterNumber,
+  RedundantExponent,
 }

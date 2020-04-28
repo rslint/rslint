@@ -5,6 +5,7 @@ use std::error::Error;
 use crate::linter::file_walker::FileWalker;
 use rayon::prelude::*;
 use rayon::iter::ParallelIterator;
+use std::io;
 
 pub struct Linter {
   walker: FileWalker,
@@ -17,11 +18,34 @@ impl Linter {
     }
   }
 
+  pub fn repl() {
+    loop {
+      let mut source = String::new();
+
+      io::stdin().read_line(&mut source)
+        .expect("Failed to read line");
+      
+      let linter = Self {
+        walker: FileWalker::with_files(vec![(String::from("REPL.js"), source)])
+      };
+
+      let lexer = Lexer::new(linter.walker.get_existing_source("REPL.js").unwrap(), "REPL.js");
+      linter.lexer_debug(lexer);
+
+      print!("\n > ");
+    }
+  }
+
+  pub fn with_source(source: String, filename: String) -> Self {
+    Self {
+      walker: FileWalker::with_files(vec![(filename, source)])
+    }
+  }
+
   pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
     self.walker.load()?;
     self.walker.files.par_iter().for_each(|file| {
-      let lexer = Lexer::new(file.1.source(), file.0);
-      self.lexer_debug(lexer);
+      Lexer::new(file.1.source(), file.0);
     });
     Ok(())
   }

@@ -13,6 +13,7 @@ pub struct LexerState {
   /// if the previous token and the next have a Linebreak token in between them
   pub had_linebreak: bool,
   pub context: TokenContext,
+  pub last_tok: bool,
 }
 
 impl LexerState {
@@ -22,6 +23,7 @@ impl LexerState {
       prev: None,
       had_linebreak: false,
       context: TokenContext(vec![Context::BraceStmt]),
+      last_tok: false,
     }
   }
 

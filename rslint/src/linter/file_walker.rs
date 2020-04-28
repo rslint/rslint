@@ -24,6 +24,17 @@ impl FileWalker {
     }
   }
 
+  pub fn with_files(files: Vec<(String, String)>) -> Self {
+    let mut res = Self {
+      glob: String::new(),
+      files: HashMap::new(),
+    };
+    for file in files {
+      res.add(file.0, file.1);
+    }
+    res
+  }
+
   pub fn load(&mut self) -> Result<(), Box<dyn Error>> {
     let paths = glob(&self.glob)?;
     for i in paths {
@@ -58,6 +69,10 @@ impl FileWalker {
     let mut buf: Vec<u8> = vec![];
     file.read_to_end(&mut buf)?;
     Ok(String::from_utf8_lossy(&buf).to_string())
+  }
+
+  pub fn get_existing_source(&self, key: &str) -> Option<&String> {
+    self.files.get(key).map(|file| file.source())
   }
 
   pub fn add(&mut self, name: String, source: String) -> usize {

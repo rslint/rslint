@@ -17,12 +17,34 @@ impl<'a> PartialEq for ParserDiagnostic<'a> {
 }
 
 impl<'a> ParserDiagnostic<'a> {
-  pub fn new(file_id: &'a str, r#type: ParserDiagnosticType, simple: bool, message: &str) -> Self {
+  pub fn new(file_id: &'a str, r#type: ParserDiagnosticType, message: &str) -> Self {
     Self {
       diagnostic: Diagnostic::error()
         .with_code("ParseError")
         .with_message(message),
-      simple,
+      simple: false,
+      error_type: r#type,
+      file_id
+    }
+  }
+
+  pub fn warning(file_id: &'a str, r#type: ParserDiagnosticType, message: &str) -> Self {
+    Self {
+      diagnostic: Diagnostic::warning()
+        .with_code("ParserWarning")
+        .with_message(message),
+      simple: false,
+      error_type: r#type,
+      file_id
+    }
+  }
+
+  pub fn note(file_id: &'a str, r#type: ParserDiagnosticType, message: &str) -> Self {
+    Self {
+      diagnostic: Diagnostic::note()
+        .with_code("ParserNote")
+        .with_message(message),
+      simple: false,
       error_type: r#type,
       file_id
     }
@@ -34,16 +56,22 @@ impl<'a> ParserDiagnostic<'a> {
   }
 
   pub fn primary(mut self, range: Range<usize>, message: &str) -> Self {
+    if range.len() > 200 {
+      self.simple = true;
+    }
     self.diagnostic.labels.append(&mut vec![Label::primary(self.file_id, range).with_message(message)]);
     self
   }
 
   pub fn secondary(mut self, range: Range<usize>, message: &str) -> Self {
+    if range.len() > 200 {
+      self.simple = true;
+    }
     self.diagnostic.labels.append(&mut vec![Label::secondary(self.file_id, range).with_message(message)]);
     self
   }
 
-  pub fn note(mut self, message: &str) -> Self {
+  pub fn help(mut self, message: &str) -> Self {
     self.diagnostic.notes.append(&mut vec![message.to_string()]);
     self
   }

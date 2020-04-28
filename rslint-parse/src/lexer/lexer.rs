@@ -3,10 +3,14 @@ use super::{
   util::CharExt,
   state::LexerState,
   error::LexerDiagnosticType::*,
+  lookup::LexerLookupTable
 };
 use crate::diagnostic::*;
 use std::str::CharIndices;
 use std::iter::Peekable;
+use once_cell::sync::Lazy;
+
+pub type LexResult<'a> = (Option<Token>, Option<ParserDiagnostic<'a>>);
 
 pub struct Lexer<'a> {
   pub file_id: &'a str, 
@@ -14,49 +18,350 @@ pub struct Lexer<'a> {
   pub source_iter: Peekable<CharIndices<'a>>,
   pub source_len: usize,
   pub state: LexerState,
-  pub start: usize,
   pub cur: usize,
+  pub cur_char: char,
   pub line: usize,
-  pub done: bool,
 }
+
+macro_rules! range_lookup {
+  ($l:expr, $range:expr, $fn:expr) => {
+    for i in $range {
+      $l.add_byte_entry(i, $fn);
+    }
+  };
+}
+
+macro_rules! tok {
+  ($lexer:expr, $type:expr) => {
+    (Some($lexer.token($lexer.cur, $type)), None)
+  };
+  ($lexer:expr, $type:expr, $start:expr) => {
+    (Some($lexer.token($start, $type)), None)
+  }
+}
+
+macro_rules! lookup {
+  ($l:expr, $c:expr, $tok:ident) => {
+    $l.add_char_entry($c, |lexer, _| {
+      let start = lexer.cur;
+      lexer.advance();
+      (Some(lexer.token(start, TokenType::$tok)), None)
+    });
+  };
+}
+
+macro_rules! lookup_fn {
+  ($l:expr, $c:expr, $fn:expr) => {
+    $l.add_char_entry($c, $fn);
+  };
+}
+
+/// A lookup table for matching ascii charactes to functions to handle their tokens
+/// Each function is stored as a usize pointer then transmuted when called
+/// Unicode characters are handled after the lookup table
+pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
+  use super::token::TokenType::*;
+
+  let mut l = LexerLookupTable::new();
+  lookup!(l, '(', ParenOpen);
+  lookup!(l, ')', ParenClose);
+  lookup!(l, '{', BraceOpen);
+  lookup!(l, '}', BraceClose);
+  lookup!(l, '[', BracketOpen);
+  lookup!(l, ']', BracketClose);
+  lookup!(l, ',', Comma);
+  lookup!(l, ';', Semicolon);
+  lookup!(l, ':', Colon);
+  lookup!(l, '?', QuestionMark);
+  lookup!(l, '~', BitwiseNot);
+  lookup_fn!(l, '\n', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    lexer.advance();
+    let tok = tok!(lexer, Linebreak, start);
+    lexer.line += 1;
+    tok
+  });
+  lookup_fn!(l, '\r', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    if lexer.advance() == Some('\n') {
+      lexer.advance();
+    }
+    // Linebreak's line should be on the line it ends, not on the next time
+    let tok = tok!(lexer, Linebreak, start);
+    lexer.line += 1;
+    tok
+  });
+  lookup!(l, '\u{0009}', Whitespace);
+  lookup!(l, '\u{000B}', Whitespace);
+  lookup!(l, '\u{000C}', Whitespace);
+  lookup!(l, '\u{0020}', Whitespace);
+  lookup!(l, '\u{00A0}', Whitespace);
+  // A - Z - can only be identifier
+  range_lookup!(l, 65..=90, |lexer: &mut Lexer, _: char| {
+    (Some(lexer.resolve_identifier(lexer.cur)), None)
+  });
+  // a - z - could be keyword
+  range_lookup!(l, 97..=122, |lexer: &mut Lexer, c: char| {
+    (Some(lexer.resolve_ident_or_keyword(c)), None)
+  });
+
+  lookup_fn!(l, '!', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    if lexer.advance() == Some('=') {
+      if lexer.advance() == Some('=') {
+        lexer.advance();
+        let tok = BinOp(BinToken::StrictInequality);
+        tok!(lexer, tok, start)
+      } else {
+        let tok = BinOp(BinToken::Inequality);
+        tok!(lexer, tok, start)
+      }
+    } else {
+      tok!(lexer, LogicalNot, start)
+    }
+  });
+
+  lookup_fn!(l, '=', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    if lexer.advance() == Some('=') {
+      if lexer.advance() == Some('=') {
+        lexer.advance();
+        let tok = BinOp(BinToken::StrictEquality);
+        tok!(lexer, tok, start)
+      } else {
+        let tok = BinOp(BinToken::Equality);
+        tok!(lexer, tok, start)
+      }
+    } else {
+      tok!(lexer, BinOp(BinToken::Assign), start)
+    }
+  });
+
+  lookup_fn!(l, '-', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    match lexer.advance() {
+      Some('-') => {
+        lexer.advance();
+        tok!(lexer, Decrement, start)
+      },
+      Some('=') => {
+        lexer.advance();
+        let tok = AssignOp(AssignToken::SubtractAssign);
+        tok!(lexer, tok, start)
+      },
+      _ => {
+        let tok = BinOp(BinToken::Subtract);
+        tok!(lexer, tok, start)
+      }
+    }
+  });
+
+  lookup_fn!(l, '+', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    match lexer.advance() {
+      Some('+') => {
+        lexer.advance();
+        tok!(lexer, Increment, start)
+      },
+      Some('=') => {
+        lexer.advance();
+        let tok = AssignOp(AssignToken::AddAssign);
+        tok!(lexer, tok, start)
+      },
+      _ => {
+        let tok = BinOp(BinToken::Add);
+        tok!(lexer, tok, start)
+      }
+    }
+  });
+
+  lookup_fn!(l, '*', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    match lexer.advance() {
+      Some('=') => {
+        lexer.advance();
+        let tok = AssignOp(AssignToken::MultiplyAssign);
+        tok!(lexer, tok, start)
+      },
+      _ => {
+        let tok = BinOp(BinToken::Multiply);
+        tok!(lexer, tok, start)
+      }
+    }
+  });
+
+  lookup_fn!(l, '/', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    match lexer.advance() {
+      Some('/') => {
+        lexer.advance_while(|x| !x.is_line_break());
+        return tok!(lexer, InlineComment, start);
+      },
+      Some('*') => {
+        loop {
+          match lexer.advance() {
+            Some('*') if lexer.advance() == Some('/') => {
+              lexer.advance();
+              return tok!(lexer, MultilineComment, start);
+            },
+            Some(c) if c.is_line_break() => {
+              if c == '\r' && lexer.advance() == Some('\n') {
+                lexer.advance();
+              }
+              lexer.line += 1;
+            },
+            None => {
+              return (None, Some(ParserDiagnostic::new(lexer.file_id, ParserDiagnosticType::Lexer(UnterminatedMultilineComment), "Unterminated multiline comment")
+                .secondary(start..start + 2, "Multiline comment starts here")
+                .primary(lexer.cur..lexer.cur, "File ends here")
+              ));
+            },
+            _ => {}
+          }
+        }
+      }
+      _ if lexer.state.expr_allowed => lexer.read_regex(),
+
+      _ => {
+        let tok = BinOp(BinToken::Divide);
+        return tok!(lexer, tok, start);
+      }
+    }
+  });
+
+  lookup_fn!(l, '<', |lexer: &mut Lexer, _: char| (Some(lexer.read_lt_gt(true)), None));
+  lookup_fn!(l, '>', |lexer: &mut Lexer, _: char| (Some(lexer.read_lt_gt(false)), None));
+
+  lookup_fn!(l, '\'', |lexer: &mut Lexer, _: char| lexer.read_str_literal('\''));
+  lookup_fn!(l, '"', |lexer: &mut Lexer, _: char| lexer.read_str_literal('"'));
+
+  lookup_fn!(l, '|', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    match lexer.advance() {
+      Some('|') => {
+        lexer.advance();
+        let tok = BinOp(BinToken::LogicalOr);
+        tok!(lexer, tok, start)
+      },
+      Some('=') => {
+        lexer.advance();
+        let tok = AssignOp(AssignToken::BitwiseOrAssign);
+        tok!(lexer, tok, start)
+      },
+      _ => {
+        let tok = BinOp(BinToken::BitwiseOr);
+        tok!(lexer, tok, start)
+      }
+    }
+  });
+
+  lookup_fn!(l, '&', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    match lexer.advance() {
+      Some('&') => {
+        lexer.advance();
+        let tok = BinOp(BinToken::LogicalAnd);
+        tok!(lexer, tok, start)
+      },
+      Some('=') => {
+        lexer.advance();
+        let tok = AssignOp(AssignToken::BitwiseAndAssign);
+        tok!(lexer, tok, start)
+      },
+      _ => {
+        let tok = BinOp(BinToken::BitwiseAnd);
+        tok!(lexer, tok, start)
+      }
+    }
+  });
+
+  lookup_fn!(l, '%', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    match lexer.advance() {
+      Some('=') => {
+        lexer.advance();
+        let tok = AssignOp(AssignToken::ModuloAssign);
+        tok!(lexer, tok, start)
+      },
+      _ => {
+        let tok = BinOp(BinToken::Modulo);
+        tok!(lexer, tok, start)
+      }
+    }
+  });
+
+  lookup_fn!(l, '^', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    match lexer.advance() {
+      Some('=') => {
+        lexer.advance();
+        let tok = AssignOp(AssignToken::BitwiseXorAssign);
+        tok!(lexer, tok, start)
+      },
+      _ => {
+        let tok = BinOp(BinToken::BitwiseXor);
+        tok!(lexer, tok, start)
+      }
+    }
+  });
+
+  // 0 - 9
+  range_lookup!(l, 48..=57, |lexer: &mut Lexer, c: char| lexer.read_number(false, c == '0'));
+
+  lookup_fn!(l, '.', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    match lexer.advance() {
+      Some(c) if c.is_ascii_digit() => lexer.read_number(true, false),
+      _ => tok!(lexer, Period, start)
+    }
+  });
+  l
+});
 
 impl<'a> Lexer<'a> {
   pub fn new(source: &'a str, file_id: &'a str) -> Self {
-    Self {
+    let iter = source.char_indices().peekable();
+    let mut lex = Self {
       file_id,
       source,
-      source_iter: source.char_indices().peekable(),
+      source_iter: iter,
       source_len: source.len(),
       state: LexerState::new(),
-      start: 0,
       cur: 0,
+      cur_char: ' ',
       line: 1,
-      done: false
-    }
+    };
+    lex.cur_char = lex.source_iter.next().map(|c| c.1).unwrap_or(' ');
+    lex
   }
 
   pub fn advance(&mut self) -> Option<char> {
-    self.source_iter.next().map(|(i, c)| {
+    let res = self.source_iter.next().map(|(i, c)| {
       self.cur = i;
+      self.cur_char = c;
       c
-    })
+    });
+    if res.is_none() {
+      self.state.last_tok = true;
+    }
+    res
   }
 
   pub fn advance_while<F>(&mut self, func: F) 
     where F: FnOnce(char) -> bool + Copy
   {
     loop {
-      match self.peek() {
+      match self.advance() {
         Some(c) if !func(c) => break,
         None => break,
-        Some(c) if func(c) => drop(self.advance()),
+        Some(c) if func(c) => {},
         _ => break, //Should be unreachable
       }
     }
   }
 
   pub fn next_idx(&mut self) -> usize {
-    self.source_iter.peek().map(|x| x.0).unwrap_or(self.cur)
+    self.source_iter.peek().map(|x| x.0).unwrap_or(self.cur + 1)
   }
 
   pub fn peek(&mut self) -> Option<char> {
@@ -72,7 +377,8 @@ impl<'a> Lexer<'a> {
         self.state.update(Some(token));
       }
     }
-    Token::new(token, start, self.cur + 1, self.line)
+    let end = if self.state.last_tok { self.cur + 1 } else { self.cur };
+    Token::new(token, start, end, self.line)
   }
 
   /// The lexer may yield a token and a diagnostic, this is to allow the parser to recover from some errors
@@ -80,247 +386,62 @@ impl<'a> Lexer<'a> {
   /// `(Some, Some)` is an error the lexer could recover from
   /// `(None, Some)` is an error the lexer could not recover from
   /// `(None, None)` means the lexer is done
-  pub fn scan_token(&mut self) -> (Option<Token>, Option<ParserDiagnostic<'a>>) {
-    //TODO tidy this up
-    if self.done { return (None, None); }
-    if self.source_len == 0 || self.peek().is_none() {
-      self.done = true;
-      return (Some(self.end()), None);
+  pub fn scan_token(&mut self) -> LexResult<'a> {
+    if self.state.last_tok || self.source_len == 0 {
+      return (None, None);
     }
-    let scanned = match self.advance() {
-      Some(scanned) => scanned,
-      None => {
-        return (Some(self.end()), None);
+    let c = self.cur_char;
+    if (c as u16) < 255 {
+      let func = LEXER_LOOKUP.lookup(c);
+      let res = func(self, c);
+      if res == (None, None) {
+        return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), &format!("Unexpected token `{}`", self.cur_char))
+          .primary(self.cur..self.next_idx(), "Invalid")));
       }
-    };
-    match scanned {
-
-      '(' | ')' | ';' | ',' | '[' | ']' | '{' | '}' => {
-        let r#type = match scanned {
-          '(' => TokenType::ParenOpen,
-          ')' => TokenType::ParenClose,
-          '{' => TokenType::BraceOpen,
-          ';' => TokenType::Semicolon,
-          ',' => TokenType::Comma,
-          '}' => TokenType::BraceClose,
-          '[' => TokenType::BracketOpen,
-          ']' => TokenType::BracketClose,
-          _ => unreachable!()
-        };
-        (Some(self.token(self.cur, r#type)), None)
-      },
-
-      '.' => {
-        match self.peek() {
-          Some(c) if c.is_ascii_digit() => self.read_decimal(self.cur),
-          _ => (Some(self.token(self.cur, TokenType::Period)), None)
-        }
-      },
-
-      '!' => {
-        if self.peek() == Some('=') {
+      res
+    } else {
+      let start = self.cur;
+      match self.cur_char {
+        c if c.is_js_whitespace() => {
           self.advance();
-          if self.peek() == Some('=') {
-            self.advance();
-            (Some(self.token(self.cur - 2, TokenType::BinOp(BinToken::StrictInequality))), None)
-          } else {
-            (Some(self.token(self.cur - 1, TokenType::BinOp(BinToken::Inequality))), None)
-          }
-        } else {
-          (Some(self.token(self.cur, TokenType::LogicalNot)), None)
-        }
-      },
-
-      '+' => {
-        match self.peek() {
-          Some(c) if c == '+' => {
-            self.advance();
-            (Some(self.token(self.cur - 1, TokenType::Increment)), None)
-          },
-          Some(c) if c == '=' => {
-            self.advance();
-            (Some(self.token(self.cur - 1, TokenType::AssignOp(AssignToken::AddAssign))), None)
-          },
-          _ => (Some(self.token(self.cur, TokenType::BinOp(BinToken::Add))), None)
-        }
-      },
-
-      '-' => {
-        match self.peek() {
-          Some(c) if c == '-' => {
-            self.advance();
-            (Some(self.token(self.cur - 1, TokenType::Decrement)), None)
-          },
-          Some(c) if c == '=' => {
-            self.advance();
-            (Some(self.token(self.cur - 1, TokenType::AssignOp(AssignToken::SubtractAssign))), None)
-          },
-          _ => (Some(self.token(self.cur, TokenType::BinOp(BinToken::Subtract))), None)
-        }
-      },
-
-      '=' => {
-        let start = self.cur;
-        // = or ==
-        match self.peek() {
-          Some(c) if c == '=' => {
-            self.advance();
-
-            // == or ===
-            match self.peek() {
-              Some(c) if c == '=' => {
-                self.advance();
-                (Some(self.token(start, TokenType::BinOp(BinToken::StrictEquality))), None)
-              },
-              _ => (Some(self.token(start, TokenType::BinOp(BinToken::Equality))), None),
-            }
-          },
-          _ => (Some(self.token(start, TokenType::BinOp(BinToken::Assign))), None),
-        }
-      },
-
-      '|' => {
-        match self.peek() {
-          Some(c) if c == '|' => {
-            self.advance();
-            (Some(self.token(self.cur - 1, TokenType::BinOp(BinToken::LogicalOr))), None)
-          },
-          _ => (Some(self.token(self.cur, TokenType::BinOp(BinToken::BitwiseOr))), None)
-        }
-      },
-
-      '>' | '<' => (Some(self.read_lt_gt(scanned == '<')), None),
-
-      scanned if scanned == '\\' || scanned.is_identifier_start() => (Some(self.resolve_ident_or_keyword(scanned)), None),
-
-      '1'..='9' => {
-        self.read_number()
-      },
-
-      '0' => self.read_hex_literal(),
-
-      '/' => {
-        match self.peek() {
-          Some(c) if c == '/' || c == '*' => self.read_comment(c),
-          Some(_) if self.state.expr_allowed => self.read_regex(),
-          Some(c) if c == '=' => {
-            self.advance();
-            (Some(self.token(self.cur - 1, TokenType::AssignOp(AssignToken::DivideAssign))), None)
-          },
-          _ => (Some(self.token(self.cur, TokenType::BinOp(BinToken::Divide))), None)
-        }
-      },
-
-      '\'' | '"' => self.read_str_literal(scanned),
-
-      '`' => {
-        if true {
-          (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(TemplateLiteralInEs5), false, "Invalid template literal")
-            .primary(self.cur..self.next_idx(), "Invalid")
-            .note("Help: Template literals are allowed in ES6+ but the file is being processed as ES5")
-          ))
-        } else {
-          unimplemented!() //TODO template literals
-        }
-      },
-
-      scanned if scanned.is_line_break() => {
-        let start = self.cur;
-        // CRLF linebreaks
-        if scanned == '\r' {
-          match self.peek() {
-            Some(c) if c == '\n' => {
-              let token = self.token(start, TokenType::Linebreak);
-              self.advance();
-              self.line += 1;
-              return (Some(token), None);
-            }
-            _ => {
-              let token = (Some(self.token(start, TokenType::Linebreak)), None);
-              self.line += 1;
-              return token;
-            }
-          }
-        }
-        let token = (Some(self.token(start, TokenType::Linebreak)), None);
-        self.line += 1;
-        token
-      },
-
-      scanned if scanned.is_js_whitespace() => {
-        let start = self.cur;
-        loop {
-          match self.peek() {
-            Some(c) if c.is_js_whitespace() => { self.advance(); },
-            _ => return (Some(self.token(start, TokenType::Whitespace)), None)
-          }
-        }
-      },
-
-      _ => (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), false, "Unexpected token").primary(self.cur..self.next_idx(), "unexpected")))
-    }
-  }
-
-  pub fn end(&self) -> Token {
-    Token::new(TokenType::EndOfProgram, self.source_len, self.source_len, self.line)
-  }
-
-  //Reads an inline comment or multiline comment, expects the current pos to be the slash
-  fn read_comment(&mut self, next_char: char) -> (Option<Token>, Option<ParserDiagnostic<'a>>) {
-    let multiline = next_char == '*';
-    let start = self.cur;
-
-    loop {
-      match self.peek() {
-        Some(c) if c == '*' && multiline => {
-          self.advance();
-          if self.peek() == Some('/') {
-            self.advance();
-            return (Some(self.token(start, TokenType::MultilineComment)), None)
-          }
+          tok!(self, TokenType::Whitespace, start)
         },
 
-        Some(c) if c.is_line_break() && !multiline => {
-          return (Some(self.token(start, TokenType::InlineComment)), None)
-        },
+        c if c.is_line_break() => {
+          self.advance();
+          self.line += 1;
+          tok!(self, TokenType::Linebreak, start)
+        }
 
-        Some(_) => { self.advance(); },
+        // Keywords are only ascii lowercase, handled by the lookup table, therefore it must be an identifier
+        c if c.is_identifier_start() => (Some(self.resolve_identifier(start)), None),
 
-        None => {
-          if multiline {
-            return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedMultilineComment), false, "Unterminated multiline comment")
-              .secondary(start..start + 2, "Multiline comment starts here")
-              .primary(self.cur..self.cur, "File ends here")
-            ));
-          } else {
-            return (Some(self.token(start, TokenType::InlineComment)), None);
-          }
+        _ => {
+          (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), &format!("Unexpected token `{}`", self.cur_char))
+            .primary(self.cur..self.next_idx(), "Invalid")))
         }
       }
     }
   }
 
-  // Reads a string literal of single or double quotes
-  fn read_str_literal(&mut self, quote: char) -> (Option<Token>, Option<ParserDiagnostic<'a>>) {
+  fn read_str_literal(&mut self, quote: char) -> LexResult<'a> {
     let start = self.cur;
     loop {
-      match self.peek() {
+      match self.advance() {
         Some(c) if c == quote => {
           self.advance();
           return (Some(self.token(start, TokenType::LiteralString)), None);
         },
         Some(c) if c.is_line_break() => {
           //long lines render ugly in codespan errors, so if the line is too long we render it as short
-          let short = self.cur - start > 50;
-          return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedString), short, "Unterminated string literal")
+          return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedString), "Unterminated string literal")
             .secondary(start..start+1, "Literal starts here")
             .primary(self.cur..self.next_idx(), "Line ends here")
           ));
         }
-        Some(_) => { self.advance(); },
+        Some(_) => {},
         None => {
-          let short = self.cur - start > 50;
-          return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedString), short, "Unterminated string literal")
+          return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedString), "Unterminated string literal")
             .secondary(start..start+1, "Literal starts here")
             .primary(self.cur..self.next_idx(), "File ends here")
           ));
@@ -334,7 +455,7 @@ impl<'a> Lexer<'a> {
     let target = if less_than { '<' } else { '>' };
     let start = self.cur;
 
-    match self.peek() {
+    match self.advance() {
       // >= or <=
       Some(c) if c == '=' => {
         self.advance();
@@ -346,13 +467,11 @@ impl<'a> Lexer<'a> {
       },
       // >>* or <<*
       Some(c) if c == target => {
-        self.advance();
-        match self.peek() {
+        match self.advance() {
           // >>>
           Some(c) if c == target && !less_than => {
-            self.advance();
             // >>>=
-            if self.peek() == Some('=') {
+            if self.advance() == Some('=') {
               self.advance();
               self.token(start, TokenType::AssignOp(AssignToken::UnsignedRightBitshiftAssign))
             } else {
@@ -389,9 +508,8 @@ impl<'a> Lexer<'a> {
     }
   }
 
-  /// Reads a regex literal, expects the current char to be the slash
-  fn read_regex(&mut self) -> (Option<Token>, Option<ParserDiagnostic<'a>>) {
-    let start = self.cur;
+  fn read_regex(&mut self) -> LexResult<'a> {
+    let start = self.cur - 1;
     let mut in_class = false;
     let mut escaped = false;
 
@@ -401,8 +519,8 @@ impl<'a> Lexer<'a> {
         escaped = false;
         continue;
       }
-      match self.peek() {
-        Some(c) if c.is_line_break() => return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedRegex), false, "Unterminated regex literal")
+      match self.advance() {
+        Some(c) if c.is_line_break() => return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedRegex), "Unterminated regex literal")
           .secondary(start..start + 1, "Regex starts here")
           .primary(self.cur..self.next_idx(), "Line ends here")
         )),
@@ -412,7 +530,7 @@ impl<'a> Lexer<'a> {
         Some(c) if c == '\\' => escaped = true,
 
         None => {
-          return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedRegex), false, "Unterminated regex literal")
+          return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedRegex), "Unterminated regex literal")
             .secondary(start..start + 1, "Regex starts here")
             .primary(self.cur..self.next_idx(), "File ends here")
           ))
@@ -420,60 +538,55 @@ impl<'a> Lexer<'a> {
 
         _ => {}
       }
-      self.advance();
     }
 
-    self.advance();
     // /a/gi
     //   ^^regex flags
-    let mut flags = String::new();
-    loop {
-      match self.peek() {
-        Some(c) if c.is_identifier_part() => flags += &self.advance().unwrap().to_string(),
-        Some(_) | None => break
-      }
-    }
-    self.validate_regex_flags(flags);
-    (Some(self.token(start, TokenType::LiteralRegEx)), None)
+    let err = self.validate_regex_flags();
+    let tok = if err.is_none() { TokenType::LiteralRegEx } else { TokenType::InvalidToken };
+    (Some(self.token(start, tok)), err)
   }
 
-  fn validate_regex_flags(&mut self, flags: String) -> Option<ParserDiagnostic<'a>> {
+  fn validate_regex_flags(&mut self) -> Option<ParserDiagnostic<'a>> {
     let (mut global, mut ignore_case, mut multiline) = (false, false, false);
 
-    // TODO: This error can be autofixed, but a fixer needs to be implemented first
-    let mut flag_err = || {
-      ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(InvalidRegexFlags), false, "Invalid regex literal flags")
-        .primary(self.cur..self.next_idx(), "")
+    let flag_err = |lexer: &mut Lexer<'a>| {
+      ParserDiagnostic::new(lexer.file_id, ParserDiagnosticType::Lexer(InvalidRegexFlags), "Invalid regex literal flags")
+        .primary(lexer.cur..lexer.next_idx(), "")
     };
 
-    for (idx, i) in flags.char_indices() {
-      match i {
-        'g' => {
+    loop {
+      match self.advance() {
+        Some('g') => {
           if global {
-            return Some(flag_err())
+            return Some(flag_err(self))
           } else {
             global = true;
           }
         },
-        'i' => {
+        Some('i') => {
           if ignore_case {
-            return Some(flag_err())
+            return Some(flag_err(self))
           } else {
             ignore_case = true;
           }
         },
-        'm' => {
+        Some('m') => {
           if multiline {
-            return Some(flag_err())
+            return Some(flag_err(self))
           } else {
             multiline = true;
           }
         },
-        c => {
-          return Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(InvalidRegexFlags), false, "Invalid regex flag")
-            .primary(self.cur - (flags.chars().count() - idx) + 1..self.cur - (flags.chars().count() - idx) + 1, &format!("{} is not a valid regex flag", c))
+        Some(c) if c.is_identifier_part() => {
+          return Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(InvalidRegexFlags), "Invalid regex flag")
+            .primary(self.cur..self.next_idx(), &format!("`{}` is not a valid regex flag", c))
           )
-        }
+        },
+        None => break,
+        Some(c) if !c.is_identifier_part() => break,
+
+        _ => unreachable!(),
       }
     }
     None
@@ -481,7 +594,7 @@ impl<'a> Lexer<'a> {
 }
 
 impl<'a> Iterator for Lexer<'a> {
-  type Item = (Option<Token>, Option<ParserDiagnostic<'a>>);
+  type Item = LexResult<'a>;
   fn next(&mut self) -> Option<Self::Item> {
     let res = self.scan_token();
     if res == (None, None) {

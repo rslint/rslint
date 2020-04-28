@@ -2,6 +2,7 @@
 mod test {
   use crate::lexer::*;
   use crate::lexer::token::{TokenType::*, BinToken::*, AssignToken::*};
+  use crate::lexer::token::TokenType;
 
   macro_rules! tokens {
     ($src:expr) => {
@@ -28,20 +29,20 @@ mod test {
   #[test]
   fn newlines() {
     let tokens = tokens!("\n\r\r\n\u{2028}\u{2029}");
-    println!("tokens: {:?}", tokens);
-    expect_tokens!(tokens, [vec![Linebreak; 5], vec![EndOfProgram]].concat());
+    expect_tokens!(tokens, vec![Linebreak; 5]);
   }
 
   #[test]
   fn empty_program() {
     let tokens = tokens!("");
-    expect_tokens!(tokens, vec![EndOfProgram]);
+    let vec: Vec<TokenType> = vec![];
+    expect_tokens!(tokens, vec);
   }
 
   #[test]
   fn whitespace() {
     let tokens = tokens!("\u{0009}\u{000b}\u{000c}\u{0020}\u{00a0}\u{feff}");
-    expect_tokens!(tokens, vec![Whitespace, EndOfProgram]);
+    expect_tokens!(tokens, vec![Whitespace; 6]);
   }
 
   #[should_panic]
@@ -54,51 +55,51 @@ mod test {
   #[test]
   fn single_len_tokens() {
     let tokens = tokens!("( ) { } [ ] ; ,");
-    expect_tokens!(tokens, vec![ParenOpen, ParenClose, BraceOpen, BraceClose, BracketOpen, BracketClose, Semicolon, Comma, EndOfProgram], true);
+    expect_tokens!(tokens, vec![ParenOpen, ParenClose, BraceOpen, BraceClose, BracketOpen, BracketClose, Semicolon, Comma], true);
   }
 
   #[test]
   fn connected_single_len_tokens() {
     let tokens = tokens!("{{}}");
     println!("tokens: {:?}", tokens);
-    expect_tokens!(tokens, vec![BraceOpen, BraceOpen, BraceClose, BraceClose, EndOfProgram]);
+    expect_tokens!(tokens, vec![BraceOpen, BraceOpen, BraceClose, BraceClose]);
   }
 
   #[test]
   fn assignment() {
     let tokens = tokens!("=");
-    expect_tokens!(tokens, vec![BinOp(Assign), EndOfProgram]);
+    expect_tokens!(tokens, vec![BinOp(Assign)]);
   }
 
   #[test]
   fn equality() {
     let tokens = tokens!("== === ====");
-    expect_tokens!(tokens, vec![BinOp(Equality), BinOp(StrictEquality), BinOp(StrictEquality), BinOp(Assign), EndOfProgram], true);
+    expect_tokens!(tokens, vec![BinOp(Equality), BinOp(StrictEquality), BinOp(StrictEquality), BinOp(Assign)], true);
   }
 
   #[test]
   fn multiple_whitespace() {
     let tokens = tokens!(" a   ");
-    expect_tokens!(tokens, vec![Whitespace, Identifier, Whitespace, EndOfProgram]);
+    expect_tokens!(tokens, vec![Whitespace, Identifier, Whitespace, Whitespace, Whitespace]);
   }
 
   #[test]
   fn plus_sign() {
     let tokens = tokens!("+ ++ += +++");
-    expect_tokens!(tokens, vec![BinOp(Add), Increment, AssignOp(AddAssign), Increment, BinOp(Add), EndOfProgram], true);
+    expect_tokens!(tokens, vec![BinOp(Add), Increment, AssignOp(AddAssign), Increment, BinOp(Add)], true);
   }
 
   #[test]
   fn minus_sign() {
     let tokens = tokens!("- -- -= ---");
-    expect_tokens!(tokens, vec![BinOp(Subtract), Decrement, AssignOp(SubtractAssign), Decrement, BinOp(Subtract), EndOfProgram], true);
+    expect_tokens!(tokens, vec![BinOp(Subtract), Decrement, AssignOp(SubtractAssign), Decrement, BinOp(Subtract)], true);
   }
 
   #[test]
   fn less_than_sign() {
     let tokens = tokens!("< << <<= <= <<<<==<<=");
     expect_tokens!(tokens, vec![
-      BinOp(LessThan), BinOp(LeftBitshift), AssignOp(LeftBitshiftAssign), BinOp(LessThanOrEqual), BinOp(LeftBitshift), AssignOp(LeftBitshiftAssign), BinOp(Assign), AssignOp(LeftBitshiftAssign), EndOfProgram
+      BinOp(LessThan), BinOp(LeftBitshift), AssignOp(LeftBitshiftAssign), BinOp(LessThanOrEqual), BinOp(LeftBitshift), AssignOp(LeftBitshiftAssign), BinOp(Assign), AssignOp(LeftBitshiftAssign)
     ], true);
   }
 
@@ -110,14 +111,14 @@ mod test {
     }
     expect_tokens!(tokens, vec![
       BinOp(GreaterThan), BinOp(RightBitshift), BinOp(UnsignedRightBitshift), AssignOp(RightBitshiftAssign), AssignOp(UnsignedRightBitshiftAssign), BinOp(UnsignedRightBitshift),
-      BinOp(GreaterThanOrEqual), BinOp(Assign), AssignOp(RightBitshiftAssign), EndOfProgram
+      BinOp(GreaterThanOrEqual), BinOp(Assign), AssignOp(RightBitshiftAssign)
     ], true);
   }
 
   #[test]
   fn inline_comment() {
     let tokens = tokens!("// this is an inline comment");
-    expect_tokens!(tokens, vec![InlineComment, EndOfProgram]);
+    expect_tokens!(tokens, vec![InlineComment]);
   }
 
   #[test]
@@ -126,7 +127,7 @@ mod test {
       is a multiline comment
       */");
     println!("toks: {:?}", tokens);
-    expect_tokens!(tokens, vec![MultilineComment, EndOfProgram]);
+    expect_tokens!(tokens, vec![MultilineComment]);
   }
 
   #[should_panic]
@@ -141,19 +142,19 @@ mod test {
   #[test]
   fn dot_start_decimal_literal() {
     let tokens = tokens!(".642 .643e5 .6433e+6 .653e-77 .6E-6");
-    expect_tokens!(tokens, vec![LiteralNumber, LiteralNumber, LiteralNumber, LiteralNumber, LiteralNumber, EndOfProgram], true);
+    expect_tokens!(tokens, vec![LiteralNumber, LiteralNumber, LiteralNumber, LiteralNumber, LiteralNumber], true);
   }
 
   #[test]
   fn brace_stmt_regex() {
     let tokens = tokens!("/a[gg]/gim");
-    expect_tokens!(tokens, vec![LiteralRegEx, EndOfProgram], true);
+    expect_tokens!(tokens, vec![LiteralRegEx], true);
   }
 
   #[test]
   fn division() {
     let tokens = tokens!("let a = 6 / 3;");
-    expect_tokens!(tokens, vec![Let, Identifier, BinOp(Assign), LiteralNumber, BinOp(Divide), LiteralNumber, Semicolon, EndOfProgram], true);
+    expect_tokens!(tokens, vec![Let, Identifier, BinOp(Assign), LiteralNumber, BinOp(Divide), LiteralNumber, Semicolon], true);
   }
 
   #[test]
@@ -163,6 +164,6 @@ mod test {
         return /aaa/g
       }
     ");
-    expect_tokens!(tokens, vec![Function, Identifier, ParenOpen, ParenClose, BraceOpen, Return, LiteralRegEx, BraceClose, EndOfProgram], true);
+    expect_tokens!(tokens, vec![Function, Identifier, ParenOpen, ParenClose, BraceOpen, Return, LiteralRegEx, BraceClose], true);
   }
 }

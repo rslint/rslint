@@ -72,7 +72,6 @@ pub enum TokenType {
   Delete,
   Do,
   Else,
-  EndOfProgram,
   Enum,
   Export,
   Extends,

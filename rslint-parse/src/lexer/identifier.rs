@@ -17,7 +17,14 @@ impl<'a> Lexer<'a> {
     if !ident_start.is_ascii_lowercase() { return self.resolve_identifier(start); }
     
     match self.peek() {
-      Some(c) if !c.is_identifier_part() => return self.token(start, TokenType::Identifier),
+      Some(c) if !c.is_identifier_part() => {
+        self.advance();
+        return self.token(start, TokenType::Identifier)
+      },
+      None => {
+        self.advance();
+        return self.token(start, TokenType::Identifier)
+      }
       _ => {}
     };
 
@@ -115,17 +122,17 @@ impl<'a> Lexer<'a> {
     )
   }
 
-  fn resolve_keyword(&mut self, expected: TokenType, start: usize, rest: &str) -> Token {
+  pub fn resolve_keyword(&mut self, expected: TokenType, start: usize, rest: &str) -> Token {
     for i in rest[self.cur - start + 1..].chars() {
-      match self.source_iter.peek() {
-        Some(c) if c.1 == i => { self.advance(); },
-        Some(c) if c.1 != i && c.1.is_identifier_part() => return self.resolve_identifier(start),
+      match self.advance() {
+        Some(c) if c == i => {},
+        Some(c) if c != i && c.is_identifier_part() => return self.resolve_identifier(start),
         Some(_) => return self.token(start, TokenType::Identifier),
         None => return self.resolve_identifier(start)
       }
     }
 
-    match self.peek() {
+    match self.advance() {
       Some(c) if !c.is_identifier_part() => self.token(start, expected),
       Some(_) => self.resolve_identifier(start),
       None => self.token(start, expected)
@@ -133,10 +140,10 @@ impl<'a> Lexer<'a> {
   }
 
   // Resolves a sequence determined to be an identifier into an identifier token
-  fn resolve_identifier(&mut self, start: usize) -> Token {
+  pub fn resolve_identifier(&mut self, start: usize) -> Token {
     loop {
-      match self.peek() {
-        Some(c) if c.is_identifier_part() => { self.advance(); },
+      match self.advance() {
+        Some(c) if c.is_identifier_part() => {},
         Some(c) if !c.is_identifier_part() => return self.token(start, TokenType::Identifier),
         Some(_) => return self.token(start, TokenType::Identifier),
         None => return self.token(start, TokenType::Identifier)
@@ -144,3 +151,4 @@ impl<'a> Lexer<'a> {
     }
   }
 }
+
