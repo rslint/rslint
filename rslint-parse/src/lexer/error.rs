@@ -8,7 +8,6 @@ pub enum LexerDiagnosticType {
   TemplateLiteralInEs5,
   UnterminatedMultilineComment,
   IdentifierStartAfterNumber,
-  MultipleExponentsInNumber,
   IncompleteExponent,
   DecimalExponent,
   PeriodInFloat,

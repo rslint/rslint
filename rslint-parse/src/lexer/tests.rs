@@ -6,7 +6,7 @@ mod test {
 
   macro_rules! tokens {
     ($src:expr) => {
-      lexer::Lexer::new(&String::from($src), "").map(|x| x.0.unwrap()).collect::<Vec<token::Token>>();
+      lexer::Lexer::new(&String::from($src), "").map(|x| { if x.1.is_some() { panic!() }; x.0.unwrap() }).collect::<Vec<token::Token>>();
     };
   }
   
@@ -165,5 +165,12 @@ mod test {
       }
     ");
     expect_tokens!(tokens, vec![Function, Identifier, ParenOpen, ParenClose, BraceOpen, Return, LiteralRegEx, BraceClose], true);
+  }
+
+  #[should_panic]
+  #[allow(unused_must_use)]
+  #[test]
+  fn regex_invalid_flags() {
+    tokens!("/ga[gg]/gh");
   }
 }

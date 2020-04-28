@@ -18,9 +18,25 @@ impl<'a> Lexer<'a> {
     } else {
       if zero_start {
         match self.advance() {
+          Some(c) if c.to_ascii_lowercase() == 'e' => {
+            let exp_start = self.cur;
+            let mut res = self.read_exponent(start);
+            if res.1.is_none() {
+              res.1 = Some(ParserDiagnostic::note(self.file_id, ParserDiagnosticType::Lexer(RedundantExponent), "Redundant exponent after zero literal")
+                .primary(exp_start..self.cur, "Redundant, will evaluate to `0`"));
+            }
+            return res;
+          },
+
           Some(c) if c == '.' => {
             return self.read_num_with_possible_expnt(start, false, true);
           },
+
+          Some(c) if c.is_identifier_start() => return self.recover_from_ident(start),
+
+          // Literal 0
+          Some(c) if !c.is_identifier_start() => return (Some(self.token(start, TokenType::LiteralNumber)), None),
+          None => return (Some(self.token(start, TokenType::LiteralNumber)), None),
 
           _ => unimplemented!()
         }
@@ -31,19 +47,31 @@ impl<'a> Lexer<'a> {
   }
 
   fn read_num_with_possible_expnt(&mut self, start: usize, mut dot_possible: bool, mut zero: bool) -> LexResult<'a> {
-    let mut trailing_zeroes: Option<usize> = None;
-
-    // Warn about redundant zeroes such as 50.000
-    //                                        ^^^
+    let mut trailing_zeroes: Option<usize> = if zero { Some(self.cur) } else { None };
+    // Add a note about redundant zeroes such as 50.000
+    //                                              ^^^
     loop {
       match self.advance() {
+        Some(c) if c.to_ascii_lowercase() == 'e' => {
+          let exponent_start = self.cur;
+          let mut res = self.read_exponent(start);
+          if res.1.is_none() && trailing_zeroes.is_some() {
+            res.1 = Some(ParserDiagnostic::note(self.file_id, ParserDiagnosticType::Lexer(RedundantExponent), "Redundant exponent after zero literal")
+              .primary(exponent_start..self.cur, "Redundant, will evaluate to `0`"));
+          }
+          return res;
+        },
+
         Some('.') if dot_possible => {
           dot_possible = false;
         },
+
         Some(c) if c.is_ascii_digit() => {
           zero = false;
           if c == '0' && trailing_zeroes.is_none() {
             trailing_zeroes = Some(self.cur);
+          } else if c != '0' { 
+            trailing_zeroes = None;
           }
         },
         _ => break
@@ -63,7 +91,7 @@ impl<'a> Lexer<'a> {
         let mut res = self.read_exponent(start);
         if res.1.is_none() { res.1 = err };
         // Warn about redundant exponents like 0.e+5 / 0.e-5
-        if res.1.is_none() && zero {
+        if res.1.is_none() && zero && trailing_zeroes.is_some() {
           res.1 = Some(ParserDiagnostic::note(self.file_id, ParserDiagnosticType::Lexer(RedundantExponent), "Redundant exponent after zero literal")
             .primary(err_start..self.cur, "Redundant, will evaluate to `0`"));
         }
@@ -168,40 +196,69 @@ mod test {
   fn num_one_len() {
     num_literal!("1");
   }
+
   #[test]
   fn num_mul_len() {
     num_literal!("271894");
   }
+
   #[test]
   fn num_with_empty_exponent() {
     invalid_num_literal!("6e", IncompleteExponent);
   }
+
   #[test]
   fn num_exponent_plus_sign_empty() {
     invalid_num_literal!("6e+", IncompleteExponent);
   }
+
   #[test]
   fn num_exponent_negative_sign_empty() {
     invalid_num_literal!("6e-", IncompleteExponent);
   }
+
   #[test]
   fn num_exponent_valid() {
     num_literal!("6e55");
   }
+
   #[test]
   fn num_exponent_valid_plus_sign() {
     num_literal!("6e+77");
   }
+
   #[test]
   fn num_exponent_valid_negative_sign() {
     num_literal!("6e-77");
   }
+
   #[test]
   fn num_exponent_ident_after_start() {
     invalid_num_literal!("6ea", IncompleteExponent);
   }
+
   #[test]
   fn num_multiple_exponents() {
     invalid_num_literal!("6e65e7", IdentifierStartAfterNumber);
+  }
+
+  #[test]
+  fn num_literal_zero() {
+    num_literal!("0");
+  }
+
+  #[test]
+  fn num_ident_after_literal_zero() {
+    invalid_num_literal!("0a", IdentifierStartAfterNumber);
+  }
+
+  #[test]
+  fn num_literal_zero_exponent() {
+    num_literal!("0e6");
+  }
+
+  #[test]
+  fn num_literal_zero_decimal_exponent() {
+    num_literal!("0.e+6");
   }
 }
