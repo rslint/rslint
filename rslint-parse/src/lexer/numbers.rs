@@ -18,6 +18,11 @@ impl<'a> Lexer<'a> {
     } else {
       if zero_start {
         match self.advance() {
+          // TODO: maybe clean this up
+          Some(c) if c.to_ascii_lowercase() == 'x' && self.peek().filter(|x| x.is_ascii_hexdigit()).is_some() => {
+            return self.read_hex_literal(start);
+          },
+
           Some(c) if c.to_ascii_lowercase() == 'e' => {
             let exp_start = self.cur;
             let mut res = self.read_exponent(start);
@@ -64,6 +69,7 @@ impl<'a> Lexer<'a> {
 
         Some('.') if dot_possible => {
           dot_possible = false;
+          trailing_zeroes = None;
         },
 
         Some(c) if c.is_ascii_digit() => {
@@ -123,6 +129,7 @@ impl<'a> Lexer<'a> {
     return (Some(self.token(start, TokenType::InvalidToken)), Some(err));
   }
 
+  // TODO: Add a note about useless exponents such as 3.3e00
   fn read_exponent(&mut self, start: usize) -> LexResult<'a> {
     match self.peek() {
       Some(next) if next == '+' || next == '-' => {
@@ -163,6 +170,45 @@ impl<'a> Lexer<'a> {
       _ => {
         return (Some(self.token(start, TokenType::LiteralNumber)), None);
       }
+    }
+  }
+
+  fn read_hex_literal(&mut self, start: usize) -> LexResult<'a> {
+    let (mut leading_zeroes, mut has_non_zero, mut zeroes_end): (Option<usize>, bool, Option<usize>) = (None, false, None);
+
+    // Add a note about redundant leading zeroes: 0x0003
+    //                                             ^^^
+    // TODO: This should probably be made a rule later on
+    loop {
+      match self.advance() {
+        Some('0') if !has_non_zero && leading_zeroes.is_none() => {
+          leading_zeroes = Some(self.cur);
+        },
+
+        Some(c) if c.is_ascii_hexdigit() => {
+          if zeroes_end.is_none() && c != '0' {
+            zeroes_end = Some(self.cur);
+          }
+          has_non_zero = true;
+        },
+
+        _ => break
+      }
+    }
+
+    let note = if leading_zeroes.is_some() {
+      Some(ParserDiagnostic::note(self.file_id, ParserDiagnosticType::Lexer(RedundantHexZeroes), "Redundant leading zeroes inside hex literal")
+        .primary(leading_zeroes.unwrap()..zeroes_end.unwrap_or(self.cur), "Will be ignored"))
+    } else { None };
+
+    if self.state.last_tok { return (Some(self.token(start, TokenType::LiteralNumber)), note) };
+
+    match self.cur_char {
+      c if !c.is_identifier_start() => (Some(self.token(start, TokenType::LiteralNumber)), note),
+
+      c if c.is_identifier_start() => self.recover_from_ident(start),
+
+      _ => unreachable!(),
     }
   }
 }
@@ -260,5 +306,46 @@ mod test {
   #[test]
   fn num_literal_zero_decimal_exponent() {
     num_literal!("0.e+6");
+  }
+
+  #[test]
+  fn num_hex_literal() {
+    num_literal!("0x33ABCDEFabcdef");
+  }
+
+  #[test]
+  fn num_hex_literal_identifier() {
+    invalid_num_literal!("0x0333nnjk", IdentifierStartAfterNumber);
+  }
+
+  #[test]
+  fn num_hex_literal_all_zeroes() {
+    num_literal!("0x00000");
+  }
+
+  #[test]
+  fn num_hex_literal_no_digits() {
+    invalid_num_literal!("0x", IdentifierStartAfterNumber);
+  }
+
+  #[test]
+  fn num_decimal_redundant_zeroes() {
+    let note = Lexer::new("0.500", "").next().unwrap().1.unwrap();
+    assert_eq!(note.error_type, ParserDiagnosticType::Lexer(RedundantZeroesAfterNumber));
+    assert_eq!(note.diagnostic.labels[0].range, 3..4);
+  }
+
+  #[test]
+  fn num_exponent_redundant_zeroes() {
+    let note = Lexer::new("0.00e+6", "").next().unwrap().1.unwrap();
+    assert_eq!(note.error_type, ParserDiagnosticType::Lexer(RedundantExponent));
+    assert_eq!(note.diagnostic.labels[0].range, 4..6);
+  }
+
+  #[test]
+  fn num_hex_literal_redundant_zeroes() {
+    let note = Lexer::new("0x00300", "").next().unwrap().1.unwrap();
+    assert_eq!(note.error_type, ParserDiagnosticType::Lexer(RedundantHexZeroes));
+    assert_eq!(note.diagnostic.labels[0].range, 2..4);
   }
 }

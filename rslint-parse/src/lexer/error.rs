@@ -21,4 +21,5 @@ pub enum LexerDiagnosticType {
   // Notes
   RedundantZeroesAfterNumber,
   RedundantExponent,
+  RedundantHexZeroes,
 }
