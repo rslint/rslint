@@ -46,7 +46,6 @@ impl fmt::Display for Token {
   }
 }
 
-#[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum TokenType {
   AssignOp(AssignToken),
