@@ -1,4 +1,4 @@
-use unicode_xid::UnicodeXID;
+use crate::unicode::{is_xid_start, is_xid_continue};
 use std::char;
 
 pub trait CharExt: Copy {
@@ -10,17 +10,19 @@ pub trait CharExt: Copy {
 
 impl CharExt for char {
   fn is_identifier_start(&self) -> bool {
+    (*self).is_ascii_alphabetic() ||
     *self == '$' ||
     *self == '\u{200c}' ||
     *self == '\u{200d}' ||
-    UnicodeXID::is_xid_start(*self)
+    is_xid_start(*self)
   }
 
   fn is_identifier_part(&self) -> bool {
+    (*self).is_ascii_alphanumeric() ||
     *self == '$' ||
     *self == '\u{200c}' ||
     *self == '\u{200d}' ||
-    UnicodeXID::is_xid_continue(*self)
+    is_xid_continue(*self)
   }
 
   fn is_line_break(&self) -> bool {

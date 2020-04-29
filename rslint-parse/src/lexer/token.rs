@@ -1,9 +1,8 @@
 use crate::span::Span;
 use std::fmt;
-use std::collections::HashSet;
 use once_cell::sync::Lazy;
-use std::iter::FromIterator;
 use ansi_term::Color::Red;
+use fnv::FnvHashSet;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Token {
@@ -47,6 +46,7 @@ impl fmt::Display for Token {
   }
 }
 
+#[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum TokenType {
   AssignOp(AssignToken),
@@ -128,12 +128,12 @@ pub enum TokenType {
   Undefined,
   Yield,
   QuestionMark,
-
   InvalidToken
 }
 
 /// Binary operation tokens such as <, >, and ~
 /// Does not include assign ops
+#[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum BinToken {
   Assign,
@@ -161,6 +161,7 @@ pub enum BinToken {
   LogicalAnd,
 }
 
+#[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum AssignToken {
   AddAssign,
@@ -177,9 +178,10 @@ pub enum AssignToken {
   DivideAssign
 }
 
-pub static KEYWORDS: Lazy<HashSet<TokenType>> = Lazy::new(|| {
+pub static KEYWORDS: Lazy<FnvHashSet<TokenType>> = Lazy::new(|| {
   use TokenType::*;
-  HashSet::from_iter(vec![
+  let mut set: FnvHashSet<TokenType> = FnvHashSet::with_capacity_and_hasher(41, std::default::Default::default());
+  set.extend(vec![
     Await,
     Break,
     Case,
@@ -222,12 +224,14 @@ pub static KEYWORDS: Lazy<HashSet<TokenType>> = Lazy::new(|| {
     While,
     With,
     Yield
-  ])
+  ]);
+  set
 });
 
-pub static BEFORE_EXPR: Lazy<HashSet<TokenType>> = Lazy::new(|| {
+pub static BEFORE_EXPR: Lazy<FnvHashSet<TokenType>> = Lazy::new(|| {
   use TokenType::*;
-  HashSet::from_iter(vec![
+  let mut set: FnvHashSet<TokenType> = FnvHashSet::with_capacity_and_hasher(26, std::default::Default::default());
+  set.extend(vec![
     Spread,
     LogicalNot,
     ParenOpen,
@@ -255,7 +259,8 @@ pub static BEFORE_EXPR: Lazy<HashSet<TokenType>> = Lazy::new(|| {
     Typeof,
     Void,
     Delete
-  ])
+  ]);
+  set
 });
 
 impl TokenType {

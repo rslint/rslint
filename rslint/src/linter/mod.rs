@@ -45,7 +45,7 @@ impl Linter {
   pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
     self.walker.load()?;
     self.walker.files.par_iter().for_each(|file| {
-      Lexer::new(file.1.source(), file.0);
+      Lexer::new(file.1.source(), file.0).for_each(drop);
     });
     Ok(())
   }

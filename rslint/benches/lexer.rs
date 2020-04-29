@@ -1,12 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use rslint::linter::Linter;
+use rslint_parse::lexer::lexer::Lexer;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
 fn lex_js(source: String) {
-  Linter::with_source(source, "bench".to_string()).run()
-    .expect("Failed to run linter");
+  Lexer::new(&source, "bench").for_each(drop);
 }
 
 fn bench(c: &mut Criterion) {
