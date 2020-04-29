@@ -1,7 +1,6 @@
 use super::token::TokenType;
 use once_cell::sync::Lazy;
-use std::collections::HashSet;
-use std::iter::FromIterator;
+use fnv::FnvHashSet;
 use log::trace;
 
 /// A structure for keeping track of context for template and regex literals
@@ -147,14 +146,16 @@ impl Context {
   }
 }
 
-static EXPR_CTXTS: Lazy<HashSet<Context>> = Lazy::new(|| {
-  HashSet::from_iter(vec![
+static EXPR_CTXTS: Lazy<FnvHashSet<Context>> = Lazy::new(|| {
+  let mut set: FnvHashSet<Context> = FnvHashSet::with_capacity_and_hasher(5, Default::default());
+  set.extend(vec![
     Context::BraceExpr,
     Context::TplInternal,
     Context::ParenExpr,
     Context::Template,
     Context::FnExpr
-  ])
+  ]);
+  set
 });
 
 #[derive(Debug)]
