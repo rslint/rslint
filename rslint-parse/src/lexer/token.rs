@@ -130,7 +130,7 @@ pub enum TokenType {
   InvalidToken
 }
 
-/// Binary operation tokens such as <, >, and ~
+/// Binary operation tokens such as <, and >
 /// Does not include assign ops
 #[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
