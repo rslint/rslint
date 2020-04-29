@@ -97,11 +97,11 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
   lookup!(l, '\u{0020}', Whitespace);
   lookup!(l, '\u{00A0}', Whitespace);
   // A - Z - can only be identifier
-  range_lookup!(l, 65..=90, |lexer: &mut Lexer, _: char| {
+  range_lookup!(l, 65..91, |lexer: &mut Lexer, _: char| {
     (Some(lexer.resolve_identifier(lexer.cur)), None)
   });
   // a - z - could be keyword
-  range_lookup!(l, 97..=122, |lexer: &mut Lexer, c: char| {
+  range_lookup!(l, 97..123, |lexer: &mut Lexer, c: char| {
     (Some(lexer.resolve_ident_or_keyword(c)), None)
   });
 
@@ -306,7 +306,7 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
   });
 
   // 0 - 9
-  range_lookup!(l, 48..=57, |lexer: &mut Lexer, c: char| lexer.read_number(false, c == '0'));
+  range_lookup!(l, 48..58, |lexer: &mut Lexer, c: char| lexer.read_number(false, c == '0'));
 
   lookup_fn!(l, '.', |lexer: &mut Lexer, _: char| {
     let start = lexer.cur;
