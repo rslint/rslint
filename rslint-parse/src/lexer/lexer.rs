@@ -305,6 +305,40 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
     }
   });
 
+  lookup_fn!(l, '\\', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    if lexer.advance() != Some('u') {
+      let err = ParserDiagnostic::new(lexer.file_id, ParserDiagnosticType::Lexer(InvalidUnicodeEscapeSequence), "Invalid token after backslash, expected `u`")
+        .primary(start..lexer.next_idx(), "Expected a unicode escape sequence");
+      
+      // Recover by parsing the identifier eitherways
+      lexer.resolve_identifier(start);
+      (Some(lexer.token(start, InvalidToken)), Some(err))
+    } else {
+      let read_unicode = lexer.read_unicode_escape();
+      if read_unicode.is_err() {
+        let err = read_unicode.err().unwrap();
+        
+        // Resolve identifier advances no matter what, if the unicode sequence is incomplete we cannot advance as that will skip the next token
+        if err.error_type != ParserDiagnosticType::Lexer(IncompleteUnicodeEscapeSequence) { lexer.resolve_identifier(start); }
+        (Some(lexer.token(start, InvalidToken)), Some(err))
+      } else {
+        let c = read_unicode.unwrap();
+        let err = if !c.is_identifier_start() {
+          Some(ParserDiagnostic::new(lexer.file_id, ParserDiagnosticType::Lexer(InvalidUnicodeIdentStart), "Unicode escape sequence resolves to an invalid identifier start")
+            .primary(start..lexer.next_idx(), &format!("Evaluates to `{}`, which is not a valid start to an identifier", c)))
+        } else {
+          None
+        };
+
+        let tok = if err.is_none() { Identifier } else { InvalidToken };
+        lexer.resolve_identifier(start);
+
+        (Some(lexer.token(start, tok)), err)
+      }
+    }
+  });
+
   // 0 - 9
   range_lookup!(l, 48..58, |lexer: &mut Lexer, c: char| lexer.read_number(false, c == '0'));
 
@@ -422,6 +456,41 @@ impl<'a> Lexer<'a> {
         }
       }
     }
+  }
+
+  /// Reads a unicode escape sequence such as \u200b
+  /// Expects the current char to be the u after the backslash
+  fn read_unicode_escape(&mut self) -> Result<char, ParserDiagnostic<'a>> {
+    let start = self.cur - 1;
+    let mut digits = String::with_capacity(4);
+
+    for _ in 0..4 {
+      match self.advance() {
+        Some(c) if c.is_ascii_hexdigit() => digits.push(c), 
+
+        Some(c) if !c.is_identifier_part() => {
+          let diagnostic = ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(IncompleteUnicodeEscapeSequence), "Incomplete unicode escape sequence")
+            .primary(start..self.cur, "Expected 4 hex digits");
+          return Err(diagnostic);
+        },
+
+        Some(c) if !c.is_ascii_hexdigit() => {
+          let diagnostic = ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(InvalidUnicodeEscapeSequence), "Invalid character in unicode escape sequence")
+            .primary(self.cur..self.next_idx(), "Invalid hex digit");
+          return Err(diagnostic);
+        },
+
+        None => {
+          let diagnostic = ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(IncompleteUnicodeEscapeSequence), "Incomplete unicode escape sequence")
+            .primary(start..self.next_idx(), "Expected 4 hex digits");
+          return Err(diagnostic);
+        },
+
+        _ => unreachable!(),
+      }
+    }
+    let codepoint = u32::from_str_radix(&digits, 16).unwrap();
+    Ok(std::char::from_u32(codepoint).unwrap())
   }
 
   fn read_str_literal(&mut self, quote: char) -> LexResult<'a> {

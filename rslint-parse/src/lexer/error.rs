@@ -17,6 +17,9 @@ pub enum LexerDiagnosticType {
   InvalidOctalLiteral,
   InvalidHexCharacter,
   MissingHexDigit,
+  InvalidUnicodeEscapeSequence,
+  InvalidUnicodeIdentStart,
+  IncompleteUnicodeEscapeSequence,
 
   // Notes
   RedundantZeroesAfterNumber,
