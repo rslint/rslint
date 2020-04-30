@@ -173,4 +173,44 @@ mod test {
   fn regex_invalid_flags() {
     tokens!("/ga[gg]/gh");
   }
+
+  #[test]
+  fn unicode_escape_seq_identifer_start() {
+    let tokens = tokens!("\\u0042reak");
+    expect_tokens!(tokens, vec![Identifier]);
+  }
+
+  #[test]
+  fn unicode_escape_seq_identifer_start_standalone() {
+    let tokens = tokens!("\\u0042");
+    expect_tokens!(tokens, vec![Identifier]);
+  }
+
+  #[should_panic]
+  #[allow(unused_must_use)]
+  #[test]
+  fn unicode_escape_seq_identifer_start_invalid() {
+    tokens!("\\u2003reak");
+  }
+
+  #[should_panic]
+  #[allow(unused_must_use)]
+  #[test]
+  fn unicode_escape_seq_identifer_start_missing_digits() {
+    tokens!("\\u20");
+  }
+
+  #[should_panic]
+  #[allow(unused_must_use)]
+  #[test]
+  fn unicode_escape_seq_identifer_start_invalid_digit() {
+    tokens!("\\u200k");
+  }
+
+  #[should_panic]
+  #[allow(unused_must_use)]
+  #[test]
+  fn invalid_backslash_escape() {
+    tokens!("\\a");
+  }
 }
