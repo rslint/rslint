@@ -106,6 +106,7 @@ pub enum TokenType {
   Public,
   Return,
   Semicolon,
+  Shebang,
   Spread, // ... -- es6
   Static,
   StrictMode, // "use strict" or 'use strict'

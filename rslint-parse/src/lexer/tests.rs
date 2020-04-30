@@ -263,4 +263,28 @@ mod test {
      ' a", "").skip(2).next().unwrap().0.unwrap();
     assert_eq!(tok.line, 5);
   }
+
+  #[test]
+  fn shebang() {
+    let tokens = tokens!("#!/bin/sh");
+    expect_tokens!(tokens, vec![Shebang]);
+  }
+
+  #[should_panic]
+  #[test]
+  fn shebang_not_first_char() {
+    tokens!(" #!/bin/sh");
+  }
+
+  #[should_panic]
+  #[test]
+  fn shebang_no_exclamation_sign() {
+    tokens!("#/bin/sh");
+  }
+
+  #[should_panic]
+  #[test]
+  fn unexpected_number_sign() {
+    tokens!("var #");
+  }
 }

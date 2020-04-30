@@ -339,6 +339,24 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
     }
   });
 
+  lookup_fn!(l, '#', |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    let next = lexer.advance();
+
+    // Valid shebangs have to be the first character
+    if lexer.cur == 1 && next == Some('!') {
+      lexer.advance_while(|x| !x.is_line_break());
+      tok!(lexer, Shebang, start)
+    } else {
+      let mut err = ParserDiagnostic::new(lexer.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), "Unexpected token `#`")
+        .primary(start..lexer.cur, "Unexpected");
+      if next == Some('!') {
+        err = err.help("Help: Shebang sequences must start at the first character in the file.");
+      }
+      (None, Some(err))
+    }
+  });
+
   // 0 - 9
   range_lookup!(l, 48..58, |lexer: &mut Lexer, c: char| lexer.read_number(false, c == '0'));
 
