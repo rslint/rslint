@@ -20,6 +20,8 @@ pub enum LexerDiagnosticType {
   InvalidUnicodeEscapeSequence,
   InvalidUnicodeIdentStart,
   IncompleteUnicodeEscapeSequence,
+  InvalidHexEscapeSequence,
+  IncompleteHexEscapeSequence,
 
   // Notes
   RedundantZeroesAfterNumber,

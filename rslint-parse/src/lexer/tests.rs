@@ -1,12 +1,13 @@
+#[allow(unused_must_use)]
 #[cfg(test)]
 mod test {
-  use crate::lexer::*;
+  use crate::lexer::lexer::Lexer;
   use crate::lexer::token::{TokenType::*, BinToken::*, AssignToken::*};
-  use crate::lexer::token::TokenType;
+  use crate::lexer::token::{TokenType, Token};
 
   macro_rules! tokens {
     ($src:expr) => {
-      lexer::Lexer::new(&String::from($src), "").map(|x| { if x.1.is_some() { panic!() }; x.0.unwrap() }).collect::<Vec<token::Token>>();
+      Lexer::new(&String::from($src), "").map(|x| { if x.1.is_some() { panic!() }; x.0.unwrap() }).collect::<Vec<Token>>();
     };
   }
   
@@ -19,7 +20,7 @@ mod test {
       };
     };
     ($tokens:expr, $expected:expr, $no_whitespace:expr) => {
-      assert_eq!($tokens.iter().filter(|x| !x.is_whitespace()).collect::<Vec<&token::Token>>().len(), $expected.len());
+      assert_eq!($tokens.iter().filter(|x| !x.is_whitespace()).collect::<Vec<&Token>>().len(), $expected.len());
       for (idx, token) in $tokens.iter().filter(|x| !x.is_whitespace()).enumerate() {
         assert_eq!(token.token_type, $expected[idx]);
       }
@@ -131,7 +132,6 @@ mod test {
   }
 
   #[should_panic]
-  #[allow(unused_must_use)]
   #[test]
   fn multiline_unterminated_comment() {
     tokens!("/* this
@@ -168,7 +168,6 @@ mod test {
   }
 
   #[should_panic]
-  #[allow(unused_must_use)]
   #[test]
   fn regex_invalid_flags() {
     tokens!("/ga[gg]/gh");
@@ -187,30 +186,81 @@ mod test {
   }
 
   #[should_panic]
-  #[allow(unused_must_use)]
   #[test]
   fn unicode_escape_seq_identifer_start_invalid() {
     tokens!("\\u2003reak");
   }
 
   #[should_panic]
-  #[allow(unused_must_use)]
   #[test]
   fn unicode_escape_seq_identifer_start_missing_digits() {
     tokens!("\\u20");
   }
 
   #[should_panic]
-  #[allow(unused_must_use)]
   #[test]
   fn unicode_escape_seq_identifer_start_invalid_digit() {
     tokens!("\\u200k");
   }
 
   #[should_panic]
-  #[allow(unused_must_use)]
   #[test]
   fn invalid_backslash_escape() {
     tokens!("\\a");
+  }
+
+  #[test]
+  fn str_hex_escape() {
+    let tokens = tokens!("'\\x46'");
+    expect_tokens!(tokens, vec![LiteralString]);
+  }
+
+  #[test]
+  fn str_unicode_escape() {
+    let tokens = tokens!("'\\u200b \\uFFFF'");
+    expect_tokens!(tokens, vec![LiteralString]);
+  }
+
+  #[test]
+  fn str_linebreak_escape() {
+    let tokens = tokens!("'  \
+      rslint best \
+      linter \
+    '");
+    expect_tokens!(tokens, vec![LiteralString]);
+  }
+
+  #[should_panic]
+  #[test]
+  fn str_hex_escape_invalid() {
+    tokens!("'\\x4g'");
+  }
+
+  #[should_panic]
+  #[test]
+  fn str_hex_escape_incomplete() {
+    tokens!("'\\x6'");
+  }
+
+  #[should_panic]
+  #[test]
+  fn str_unicode_escape_invalid() {
+    tokens!("'\\u20g0'");
+  }
+
+  #[should_panic]
+  #[test]
+  fn str_unicode_escape_incomplete() {
+    tokens!("'\\u273'");
+  }
+
+  #[test]
+  fn str_linebreak_escape_lines() {
+    let tok = Lexer::new("'   \\\n
+      rslint best \\\r\n
+      linter \\\u{2028}
+      ever \\\u{2029}
+     ' a", "").skip(2).next().unwrap().0.unwrap();
+    assert_eq!(tok.line, 5);
   }
 }

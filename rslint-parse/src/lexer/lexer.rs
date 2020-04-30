@@ -458,6 +458,58 @@ impl<'a> Lexer<'a> {
     }
   }
 
+  fn validate_escape_sequence(&mut self, escaped: char) -> Result<(), ParserDiagnostic<'a>> {
+    match escaped {
+      'u' => drop(self.read_unicode_escape()?),
+      'x' => drop(self.read_hex_escape()?),
+      // u+2028 and u+2029 behave the same as \n so we dont need a separate function
+      '\n' | '\u{2028}' | '\u{2029}' => drop(LEXER_LOOKUP.lookup('\n')(self, ' ')),
+      '\r' => drop(LEXER_LOOKUP.lookup('\r')(self, ' ')),
+      c if c.is_line_break() => {
+        self.line += 1;
+        self.advance();
+      }
+      _ => drop(self.advance())
+    }
+    Ok(())
+  }
+
+  /// Reads a hex escape sequence such as \x47
+  /// Expects the current char to be the x after the backslash
+  // TODO: possibly refactor this and read_unicode_escape into one method
+  fn read_hex_escape(&mut self) -> Result<char, ParserDiagnostic<'a>> {
+    let start = self.cur - 1;
+    let mut digits = String::with_capacity(2);
+
+    for _ in 0..2 {
+      match self.advance() {
+        Some(c) if c.is_ascii_hexdigit() => digits.push(c), 
+
+        Some(c) if !c.is_identifier_part() => {
+          let diagnostic = ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(IncompleteHexEscapeSequence), "Incomplete unicode escape sequence")
+            .primary(start..self.cur, "Expected 2 hex digits");
+          return Err(diagnostic);
+        },
+
+        Some(c) if !c.is_ascii_hexdigit() => {
+          let diagnostic = ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(InvalidHexEscapeSequence), "Invalid character in unicode escape sequence")
+            .primary(self.cur..self.next_idx(), "Invalid hex digit");
+          return Err(diagnostic);
+        },
+
+        None => {
+          let diagnostic = ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(IncompleteHexEscapeSequence), "Incomplete unicode escape sequence")
+            .primary(start..self.next_idx(), "Expected 2 hex digits");
+          return Err(diagnostic);
+        },
+
+        _ => unreachable!(),
+      }
+    }
+    let codepoint = u32::from_str_radix(&digits, 16).unwrap();
+    Ok(std::char::from_u32(codepoint).unwrap())
+  }
+
   /// Reads a unicode escape sequence such as \u200b
   /// Expects the current char to be the u after the backslash
   fn read_unicode_escape(&mut self) -> Result<char, ParserDiagnostic<'a>> {
@@ -495,14 +547,26 @@ impl<'a> Lexer<'a> {
 
   fn read_str_literal(&mut self, quote: char) -> LexResult<'a> {
     let start = self.cur;
+    let mut err: Option<ParserDiagnostic<'a>> = None;
+    let start_line = self.line;
+
     loop {
       match self.advance() {
+        Some('\\') if self.peek().is_some() => {
+          let next = self.advance().unwrap();
+          let res = self.validate_escape_sequence(next);
+          if res.is_err() { err = Some(res.err().unwrap()); }
+        },
+
         Some(c) if c == quote => {
           self.advance();
-          return (Some(self.token(start, TokenType::LiteralString)), None);
+          // This is to prevent the token's line being the last escaped line
+          // This way the token's line is the line the literal starts on
+          let mut tok = self.token(start, TokenType::LiteralString);
+          tok.line = start_line;
+          return (Some(tok), err);
         },
         Some(c) if c.is_line_break() => {
-          //long lines render ugly in codespan errors, so if the line is too long we render it as short
           return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnterminatedString), "Unterminated string literal")
             .secondary(start..start+1, "Literal starts here")
             .primary(self.cur..self.next_idx(), "Line ends here")
