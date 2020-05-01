@@ -56,6 +56,14 @@ macro_rules! lookup_fn {
   };
 }
 
+macro_rules! lookup_mul {
+  ($l:expr, ($($entry:expr, $(,)?)*), $fn:expr) => {
+    $(
+      $l.add_char_entry($entry, $fn);
+    )*
+  }
+}
+
 /// A lookup table for matching ascii charactes to functions to handle their tokens
 /// Each function is stored as a usize pointer then transmuted when called
 /// Unicode characters are handled after the lookup table
@@ -367,6 +375,8 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
       _ => tok!(lexer, Period, start)
     }
   });
+
+  lookup_mul!(l, ('_', '$',), |lexer: &mut Lexer, _: char| (Some(lexer.resolve_identifier(lexer.cur)), None));
   l
 });
 
@@ -433,6 +443,33 @@ impl<'a> Lexer<'a> {
     Token::new(token, start, end, self.line)
   }
 
+  fn scan_non_lookup_token(&mut self) -> LexResult<'a> {
+    let start = self.cur;
+    println!("cur: {}, id: {}", self.cur_char, self.cur_char.is_identifier_start());
+    match self.cur_char {
+      c if c.is_js_whitespace() => {
+        self.advance();
+        tok!(self, TokenType::Whitespace, start)
+      },
+
+      c if c.is_line_break() => {
+        self.advance();
+        self.line += 1;
+        tok!(self, TokenType::Linebreak, start)
+      }
+
+      // Keywords are only ascii lowercase, handled by the lookup table, therefore it must be an identifier
+      c if c.is_identifier_start() => {
+        (Some(self.resolve_identifier(start)), None)
+      },
+
+      _ => {
+        (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), &format!("Unexpected token `{}`", self.cur_char))
+          .primary(self.cur..self.next_idx(), "Invalid")))
+      }
+    }
+  }
+
   /// The lexer may yield a token and a diagnostic, this is to allow the parser to recover from some errors
   /// `(Some, None)` is a successful scan
   /// `(Some, Some)` is an error the lexer could recover from
@@ -447,32 +484,11 @@ impl<'a> Lexer<'a> {
       let func = LEXER_LOOKUP.lookup(c);
       let res = func(self, c);
       if res == (None, None) {
-        return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), &format!("Unexpected token `{}`", self.cur_char))
-          .primary(self.cur..self.next_idx(), "Invalid")));
+        return self.scan_non_lookup_token();
       }
       res
     } else {
-      let start = self.cur;
-      match self.cur_char {
-        c if c.is_js_whitespace() => {
-          self.advance();
-          tok!(self, TokenType::Whitespace, start)
-        },
-
-        c if c.is_line_break() => {
-          self.advance();
-          self.line += 1;
-          tok!(self, TokenType::Linebreak, start)
-        }
-
-        // Keywords are only ascii lowercase, handled by the lookup table, therefore it must be an identifier
-        c if c.is_identifier_start() => (Some(self.resolve_identifier(start)), None),
-
-        _ => {
-          (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), &format!("Unexpected token `{}`", self.cur_char))
-            .primary(self.cur..self.next_idx(), "Invalid")))
-        }
-      }
+      self.scan_non_lookup_token()
     }
   }
 

@@ -164,12 +164,14 @@ pub struct TokenContext(Vec<Context>);
 impl TokenContext {
   pub fn is_brace_block(&self, prev: Option<TokenType>, had_line_break: bool, expr_allowed: bool) -> bool {
     if prev == Some(TokenType::Colon) {
+      println!("cur: {:#?}, ctx: {:#?}", self.cur(), self);
       match self.cur() {
         Some(Context::BraceStmt) => return true,
         // { a: {} }
         //   ^  ^
         Some(Context::BraceExpr) => return false,
-        _ => unreachable!(),
+        
+        _ => {},
       }
     }
 
