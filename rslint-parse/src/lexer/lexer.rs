@@ -410,7 +410,7 @@ impl<'a> Lexer<'a> {
   }
 
   pub fn advance_while<F>(&mut self, func: F) 
-    where F: FnOnce(char) -> bool + Copy
+    where F: Fn(char) -> bool
   {
     loop {
       match self.advance() {
