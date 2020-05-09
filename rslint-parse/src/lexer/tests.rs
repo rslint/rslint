@@ -43,7 +43,7 @@ mod test {
   #[test]
   fn whitespace() {
     let tokens = tokens!("\u{0009}\u{000b}\u{000c}\u{0020}\u{00a0}\u{feff}");
-    expect_tokens!(tokens, vec![Whitespace; 6]);
+    expect_tokens!(tokens, vec![Whitespace]);
   }
 
   #[should_panic]
@@ -81,7 +81,13 @@ mod test {
   #[test]
   fn multiple_whitespace() {
     let tokens = tokens!(" a   ");
-    expect_tokens!(tokens, vec![Whitespace, Identifier, Whitespace, Whitespace, Whitespace]);
+    expect_tokens!(tokens, vec![Whitespace, Identifier, Whitespace]);
+  }
+
+  #[test]
+  fn multiple_unicode_whitespace() {
+    let tokens = tokens!("\u{FEFF}\u{FEFF} \u{FEFF} this");
+    expect_tokens!(tokens, vec![Whitespace, This]);
   }
 
   #[test]

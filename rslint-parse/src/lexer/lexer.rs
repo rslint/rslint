@@ -99,11 +99,13 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
     lexer.line += 1;
     tok
   });
-  lookup!(l, '\u{0009}', Whitespace);
-  lookup!(l, '\u{000B}', Whitespace);
-  lookup!(l, '\u{000C}', Whitespace);
-  lookup!(l, '\u{0020}', Whitespace);
-  lookup!(l, '\u{00A0}', Whitespace);
+
+  lookup_mul!(l, ('\u{0009}', '\u{000B}', '\u{000C}', '\u{0020}', '\u{00A0}',), |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    lexer.advance_while(|x| x.is_js_whitespace());
+    tok!(lexer, Whitespace, start)
+  });
+
   // A - Z - can only be identifier
   range_lookup!(l, 65..91, |lexer: &mut Lexer, _: char| {
     (Some(lexer.resolve_identifier(lexer.cur)), None)
@@ -439,16 +441,16 @@ impl<'a> Lexer<'a> {
         self.state.update(Some(token));
       }
     }
+
     let end = if self.state.last_tok { self.cur + 1 } else { self.cur };
     Token::new(token, start, end, self.line)
   }
 
   fn scan_non_lookup_token(&mut self) -> LexResult<'a> {
     let start = self.cur;
-    println!("cur: {}, id: {}", self.cur_char, self.cur_char.is_identifier_start());
     match self.cur_char {
       c if c.is_js_whitespace() => {
-        self.advance();
+        self.advance_while(|x| x.is_js_whitespace());
         tok!(self, TokenType::Whitespace, start)
       },
 
