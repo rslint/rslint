@@ -4,7 +4,7 @@ use once_cell::sync::Lazy;
 use ansi_term::Color::Red;
 use fnv::FnvHashSet;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
   pub token_type: TokenType,
   pub lexeme: Span,

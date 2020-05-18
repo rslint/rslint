@@ -106,7 +106,10 @@ impl<'a> Lexer<'a> {
           'i' => This,
           'r' => Throw,
         },
-        'r' => Try,
+        'r' => {
+          'u' => True,
+          'y' => Try,
+        },
         'y' => Typeof,
       },
       'v' => {
