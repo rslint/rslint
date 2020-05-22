@@ -16,6 +16,7 @@ pub enum Expr {
     Update(UpdateExpr),
     Unary(UnaryExpr),
     Binary(BinaryExpr),
+    Conditional(ConditionalExpr),
 }
 
 impl Expr {
@@ -37,8 +38,26 @@ impl Expr {
             Expr::Update(data) => &data.span,
             Expr::Unary(data) => &data.span,
             Expr::Binary(data) => &data.span,
+            Expr::Conditional(data) => &data.span,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ConditionalExpr {
+    pub span: Span,
+    pub condition: Box<Expr>,
+    pub if_false: Box<Expr>,
+    pub if_true: Box<Expr>,
+    pub whitespace: ConditionalWhitespace,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ConditionalWhitespace {
+    pub before_qmark: Span,
+    pub after_qmark: Span,
+    pub before_colon: Span,
+    pub after_colon: Span,
 }
 
 #[derive(Debug, Clone, PartialEq)]

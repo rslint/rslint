@@ -9,4 +9,5 @@ pub enum ParseDiagnosticType {
     InvalidRecovery,
     LinebreakInsidePostfixUpdate,
     InvalidTargetExpression,
+    ConditionalWithoutColon,
 }

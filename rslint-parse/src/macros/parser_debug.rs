@@ -18,7 +18,7 @@ macro_rules! expr {
     ($src:expr) => {
         Parser::with_source($src, "tests", true)
             .unwrap()
-            .parse_binary_expr(None)
+            .parse_conditional_expr(None)
             .unwrap()
     };
 }

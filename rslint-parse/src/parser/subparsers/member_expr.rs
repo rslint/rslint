@@ -25,7 +25,6 @@ impl<'a> Parser<'a> {
 
             let expr = self.parse_member_or_new_expr(None, new_expr)?;
             // We need the end span of the expr, the current span could be whitespace
-            // TODO: think of a better way of doing this
             let expr_span = expr.span();
             return Ok(Expr::New(NewExpr {
                 span: Span::new(start, expr_span.end),

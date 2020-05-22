@@ -27,6 +27,8 @@ impl Expr {
             Expr::Unary(_) => false,
 
             Expr::Binary(_) => false,
+
+            Expr::Conditional(_) => false,
         }
     }
 }
