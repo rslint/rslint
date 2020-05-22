@@ -1,8 +1,6 @@
 use crate::span::Span;
 use std::fmt;
-use once_cell::sync::Lazy;
 use ansi_term::Color::Red;
-use fnv::FnvHashSet;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
@@ -20,6 +18,7 @@ impl Token {
     }
   }
 
+  #[inline]
   pub fn is_whitespace(&self) -> bool {
     self.token_type == TokenType::Whitespace || self.token_type == TokenType::Linebreak
   }
@@ -178,96 +177,89 @@ pub enum AssignToken {
   DivideAssign
 }
 
-pub static KEYWORDS: Lazy<FnvHashSet<TokenType>> = Lazy::new(|| {
-  use TokenType::*;
-  let mut set: FnvHashSet<TokenType> = FnvHashSet::with_capacity_and_hasher(41, std::default::Default::default());
-  set.extend(vec![
-    Await,
-    Break,
-    Case,
-    Catch,
-    Class,
-    Const,
-    Continue,
-    Debugger,
-    Default,
-    Delete,
-    Do,
-    Else,
-    Enum,
-    Export,
-    Extends,
-    Finally,
-    For,
-    Function,
-    If,
-    Implements,
-    Import,
-    In,
-    Instanceof,
-    Interface,
-    Let,
-    New,
-    Private,
-    Protected,
-    Public,
-    Return,
-    Static,
-    Super,
-    Switch,
-    This,
-    Throw,
-    Try,
-    Typeof,
-    Var,
-    Void,
-    While,
-    With,
-    Yield
-  ]);
-  set
-});
+pub static KEYWORDS: [TokenType; 42] = [
+  Await,
+  Break,
+  Case,
+  Catch,
+  Class,
+  Const,
+  Continue,
+  Debugger,
+  Default,
+  Delete,
+  Do,
+  Else,
+  Enum,
+  Export,
+  Extends,
+  Finally,
+  For,
+  Function,
+  If,
+  Implements,
+  Import,
+  In,
+  Instanceof,
+  Interface,
+  Let,
+  New,
+  Private,
+  Protected,
+  Public,
+  Return,
+  Static,
+  Super,
+  Switch,
+  This,
+  Throw,
+  Try,
+  Typeof,
+  Var,
+  Void,
+  While,
+  With,
+  Yield
+];
 
-pub static BEFORE_EXPR: Lazy<FnvHashSet<TokenType>> = Lazy::new(|| {
-  use TokenType::*;
-  let mut set: FnvHashSet<TokenType> = FnvHashSet::with_capacity_and_hasher(26, std::default::Default::default());
-  set.extend(vec![
-    Spread,
-    LogicalNot,
-    ParenOpen,
-    BracketOpen,
-    BraceOpen,
-    Semicolon,
-    Comma,
-    Colon,
-    TemplateOpen,
-    QuestionMark,
-    Increment,
-    Decrement,
-    BitwiseNot,
-    Await,
-    Case,
-    Default,
-    Do,
-    Else,
-    Return,
-    Throw,
-    New,
-    Extends,
-    Yield,
-    In,
-    Typeof,
-    Void,
-    Delete
-  ]);
-  set
-});
+use TokenType::*;
+pub static BEFORE_EXPR: [TokenType; 27] = [
+  Spread,
+  LogicalNot,
+  ParenOpen,
+  BracketOpen,
+  BraceOpen,
+  Semicolon,
+  Comma,
+  Colon,
+  TemplateOpen,
+  QuestionMark,
+  Increment,
+  Decrement,
+  BitwiseNot,
+  Await,
+  Case,
+  Default,
+  Do,
+  Else,
+  Return,
+  Throw,
+  New,
+  Extends,
+  Yield,
+  In,
+  Typeof,
+  Void,
+  Delete
+];
 
 impl TokenType {
+  #[inline]
   pub fn is_keyword(&self) -> bool {
     KEYWORDS.contains(self)
   }
 
+  #[inline]
   pub fn is_before_expr(&self) -> bool {
     match self {
       TokenType::BinOp(_) | TokenType::AssignOp(_) => true,
