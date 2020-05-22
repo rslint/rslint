@@ -69,13 +69,13 @@ mod test {
   #[test]
   fn assignment() {
     let tokens = tokens!("=");
-    expect_tokens!(tokens, vec![AssignOp(Assign)]);
+    expect_tokens!(tokens, vec![BinOp(Assign)]);
   }
 
   #[test]
   fn equality() {
     let tokens = tokens!("== === ====");
-    expect_tokens!(tokens, vec![BinOp(Equality), BinOp(StrictEquality), BinOp(StrictEquality), AssignOp(Assign)], true);
+    expect_tokens!(tokens, vec![BinOp(Equality), BinOp(StrictEquality), BinOp(StrictEquality), BinOp(Assign)], true);
   }
 
   #[test]
@@ -106,7 +106,7 @@ mod test {
   fn less_than_sign() {
     let tokens = tokens!("< << <<= <= <<<<==<<=");
     expect_tokens!(tokens, vec![
-      BinOp(LessThan), BinOp(LeftBitshift), AssignOp(LeftBitshiftAssign), BinOp(LessThanOrEqual), BinOp(LeftBitshift), AssignOp(LeftBitshiftAssign), AssignOp(Assign), AssignOp(LeftBitshiftAssign)
+      BinOp(LessThan), BinOp(LeftBitshift), AssignOp(LeftBitshiftAssign), BinOp(LessThanOrEqual), BinOp(LeftBitshift), AssignOp(LeftBitshiftAssign), BinOp(Assign), AssignOp(LeftBitshiftAssign)
     ], true);
   }
 
@@ -118,7 +118,7 @@ mod test {
     }
     expect_tokens!(tokens, vec![
       BinOp(GreaterThan), BinOp(RightBitshift), BinOp(UnsignedRightBitshift), AssignOp(RightBitshiftAssign), AssignOp(UnsignedRightBitshiftAssign), BinOp(UnsignedRightBitshift),
-      BinOp(GreaterThanOrEqual), AssignOp(Assign), AssignOp(RightBitshiftAssign)
+      BinOp(GreaterThanOrEqual), BinOp(Assign), AssignOp(RightBitshiftAssign)
     ], true);
   }
 
@@ -160,7 +160,7 @@ mod test {
   #[test]
   fn division() {
     let tokens = tokens!("let a = 6 / 3;");
-    expect_tokens!(tokens, vec![Let, Identifier, AssignOp(Assign), LiteralNumber, BinOp(Divide), LiteralNumber, Semicolon], true);
+    expect_tokens!(tokens, vec![Let, Identifier, BinOp(Assign), LiteralNumber, BinOp(Divide), LiteralNumber, Semicolon], true);
   }
 
   #[test]

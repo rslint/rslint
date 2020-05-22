@@ -143,7 +143,7 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
         tok!(lexer, tok, start)
       }
     } else {
-      tok!(lexer, AssignOp(AssignToken::Assign), start)
+      tok!(lexer, BinOp(BinToken::Assign), start)
     }
   });
 
