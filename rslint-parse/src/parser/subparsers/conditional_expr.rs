@@ -8,11 +8,11 @@ use crate::span::Span;
 impl<'a> Parser<'a> {
     /// Parses a conditional (ternary) expression.  
     /// If the colon is missing, for recovery the parser assumes the colon directly touches the alternate expression  
-    ///```
-    ///              v Colon assumed to be here, colon has no trailing whitespace
+    /// ```js
+    ///           // v Colon assumed to be here, colon has no trailing whitespace
     /// expr ? cond  alt
-    ///            ^^ conditional still consumes valid trailing whitespace  
-    ///```
+    ///         // ^^ conditional still consumes valid trailing whitespace  
+    /// ```
     pub fn parse_conditional_expr(
         &mut self,
         leading_whitespace: Option<Span>,

@@ -36,7 +36,6 @@ impl<'a> Parser<'a> {
             }));
         } else {
             let target = self.parse_primary_expr(Some(leading_ws))?;
-            let start = target.span().start;
             self.parse_suffixes(target, start)
         }
     }
@@ -164,5 +163,27 @@ mod tests {
         let res = Parser::with_source("new new foo", "tests", true)
             .unwrap()
             .parse_member_or_new_expr(None, false);
+        assert_eq!(res,
+        Ok(Expr::New(NewExpr {
+            span: Span::new(0, 11),
+            target: Box::new(Expr::New(NewExpr {
+                span: Span::new(4, 11),
+                target: Box::new(Expr::Identifier(LiteralExpr {
+                    span: Span::new(8, 11),
+                    whitespace: ExprWhitespace {
+                        before: Span::new(8, 8),
+                        after: Span::new(11, 11)
+                    }
+                })),
+                whitespace: NewExprWhitespace {
+                    before_new: Span::new(4, 4),
+                    after_new: Span::new(7, 8)
+                }
+            })),
+            whitespace: NewExprWhitespace {
+                before_new: Span::new(0, 0),
+                after_new: Span::new(3, 4)
+            }
+        })))
     }
 }
