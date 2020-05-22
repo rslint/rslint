@@ -32,7 +32,7 @@ impl<'a> Parser<'a> {
             let after_qmark = self.whitespace(false)?;
 
             // TODO: should be assignexpr
-            let if_true = self.parse_binary_expr(None)?;
+            let if_true = self.parse_conditional_expr(None)?;
 
             let before_colon = self.whitespace(true)?;
             let after_colon;
@@ -57,7 +57,7 @@ impl<'a> Parser<'a> {
                 after_colon = self.whitespace(false)?;
             }
 
-            let if_false = self.parse_binary_expr(None)?;
+            let if_false = self.parse_conditional_expr(None)?;
 
             let span = Span::new(condition.span().start, if_false.span().end);
 
@@ -83,7 +83,6 @@ impl<'a> Parser<'a> {
 mod tests {
     use crate::expr;
     use crate::parser::cst::expr::*;
-    use crate::parser::Parser;
     use crate::span;
     use crate::span::Span;
 

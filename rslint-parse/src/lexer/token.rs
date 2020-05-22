@@ -61,7 +61,6 @@ pub enum TokenType {
   Class,
   Colon,
   Comma,
-  Conditional,
   Const,
   Continue,
   Debugger,

@@ -71,7 +71,7 @@ impl<'a> Parser<'a> {
             Some((Some(_), None)) => {
                 let tok = res.unwrap().0.unwrap();
                 if skip_linebreak && tok.token_type == TokenType::Linebreak {
-                    while self.cur_tok.token_type == TokenType::Linebreak {
+                    while self.cur_tok.token_type == TokenType::Linebreak && !self.lexer_done {
                         self.advance_lexer(false)?;
                     }
                     return Ok(Some(self.cur_tok.to_owned()));

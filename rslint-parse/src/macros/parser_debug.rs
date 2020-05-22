@@ -15,12 +15,13 @@ macro_rules! span {
 
 #[macro_export]
 macro_rules! expr {
-    ($src:expr) => {
+    ($src:expr) => {{
+        use crate::parser::Parser;
         Parser::with_source($src, "tests", true)
             .unwrap()
             .parse_conditional_expr(None)
             .unwrap()
-    };
+    }};
 }
 
 #[macro_export]
