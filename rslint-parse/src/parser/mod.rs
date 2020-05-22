@@ -1,0 +1,231 @@
+pub mod cst;
+pub mod error;
+pub mod subparsers;
+pub mod util;
+
+use crate::diagnostic::ParserDiagnostic;
+use crate::diagnostic::ParserDiagnosticType;
+use crate::lexer::lexer::Lexer;
+use crate::lexer::token::*;
+use crate::parser::cst::*;
+use crate::parser::error::ParseDiagnosticType;
+use crate::span::Span;
+use crate::util::multipeek::{multipeek, MultiPeek};
+
+pub struct Parser<'a> {
+    pub lexer: MultiPeek<Lexer<'a>>,
+    pub cur_tok: Token,
+
+    /// Errors reported by the parser or the lexer which have been recovered from.
+    pub errors: Vec<ParserDiagnostic<'a>>,
+    pub source: &'a str,
+    pub file_id: &'a str,
+
+    /// Whether the parser should attempt secondary recovery by throwing out
+    /// tokens until a valid one is found
+    /// This recovery is dangerous and can yield secondary confusing errors
+    pub discard_recovery: bool,
+    pub lexer_done: bool,
+    pub cst: CST,
+}
+
+impl<'a> Parser<'a> {
+    /// Makes a parser directly from source code, calling the lexer automatically.
+    /// Will return None if the source is empty.
+    pub fn with_source(source: &'a str, file_id: &'a str, discard_recovery: bool) -> Option<Self> {
+        let mut lexer = multipeek(Lexer::new(source, file_id));
+        let next = lexer.next();
+        if next.is_none() {
+            return None;
+        }
+        Some(Self {
+            lexer,
+            cur_tok: next.unwrap().0.unwrap(),
+            errors: vec![],
+            source,
+            file_id,
+            discard_recovery,
+            lexer_done: false,
+            cst: CST::new(),
+        })
+    }
+
+    /// Advances the parser's lexer and returns the optional token  
+    ///  
+    /// # Errors  
+    /// Returns an Err if the lexer returns an unrecoverable error  
+    pub fn advance_lexer(
+        &mut self,
+        skip_linebreak: bool,
+    ) -> Result<Option<Token>, ParserDiagnostic<'a>> {
+        let res = self.lexer.next();
+        match res {
+            // Unrecoverable lexer error
+            r @ Some((None, Some(_))) => Err(r.unwrap().1.unwrap()),
+            // Lexer is finished
+            None => {
+                self.lexer_done = true;
+                Ok(None)
+            }
+            // Successful scan
+            Some((Some(_), None)) => {
+                let tok = res.unwrap().0.unwrap();
+                if skip_linebreak && tok.token_type == TokenType::Linebreak {
+                    while self.cur_tok.token_type == TokenType::Linebreak {
+                        self.advance_lexer(false)?;
+                    }
+                    return Ok(Some(self.cur_tok.to_owned()));
+                }
+                self.cur_tok = tok.to_owned();
+                Ok(Some(tok))
+            }
+            // Lexer could recover from error
+            // This can never be a linebreak currently so we dont have to account for linebreak skipping
+            Some((Some(_), Some(_))) => {
+                let tuple = res.unwrap();
+                self.errors.push(tuple.1.unwrap());
+                let tok = tuple.0.unwrap();
+                self.cur_tok = tok.to_owned();
+                Ok(Some(tok))
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    /// Peek the next token without advancing the lexer
+    ///  
+    /// # Errors  
+    /// Returns an Err if the lexer returns an unrecoverable error  
+    pub fn peek_lexer(&mut self) -> Result<Option<&Token>, ParserDiagnostic<'a>> {
+        let res = self.lexer.peek();
+        match res {
+            // Unrecoverable lexer error
+            Some((None, Some(_))) => Err(res.unwrap().1.to_owned().unwrap()),
+            // Lexer is finished
+            None => Ok(None),
+            // Successful scan
+            Some((Some(_), None)) => Ok(Some(&res.unwrap().0.as_ref().unwrap())),
+            // Lexer could recover from error
+            Some((Some(_), Some(_))) => {
+                let tuple = res.unwrap();
+                Ok(Some(tuple.0.as_ref().unwrap()))
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    /// Peek the lexer while a token matches a function and return the token that does not match or None if the lexer is finished
+    pub fn peek_while<F>(&mut self, func: F) -> Result<Option<Token>, ParserDiagnostic<'a>>
+    where
+        F: Fn(&Token) -> bool,
+    {
+        loop {
+            match self.peek_lexer()? {
+                Some(t) if func(&t) => {}
+
+                t => return Ok(t.map(|t| t.to_owned())),
+            }
+        }
+    }
+
+    /// Advance the lexer while a token matches a function
+    pub fn advance_while<F>(
+        &mut self,
+        skip_linebreak: bool,
+        func: F,
+    ) -> Result<(), ParserDiagnostic<'a>>
+    where
+        F: Fn(&Token) -> bool,
+    {
+        loop {
+            match self.advance_lexer(skip_linebreak)? {
+                Some(t) if !func(&t) => break,
+                Some(t) if func(&t) => {}
+                _ => break,
+            }
+        }
+        Ok(())
+    }
+
+    /// Throw out tokens until a valid one is found, alternatively throw an error with an optional message if `Self::discard_recovery` is `false`
+    /// # Errors  
+    /// Returns an Err if `Self::discard_recovery` is `false`  
+    pub fn discard_recover<F>(
+        &mut self,
+        message: Option<&'a str>,
+        func: F,
+    ) -> Result<(), ParserDiagnostic<'a>>
+    where
+        F: Fn(&TokenType) -> bool,
+    {
+        if !self.discard_recovery {
+            Err(self
+                .error(
+                    ParseDiagnosticType::UnexpectedToken,
+                    message.unwrap_or("Unexpected token found"),
+                )
+                .primary(
+                    self.cur_tok.lexeme.range().to_owned(),
+                    "Unexpected in the current context",
+                ))
+        } else {
+            let origin_span = self.cur_tok.lexeme.to_owned();
+            self.advance_while(true, |x| func(&x.token_type))?;
+            if self.lexer_done {
+                let err = self.error(ParseDiagnosticType::InvalidRecovery, "Tried to recover from an error, but reached end of file")
+          .secondary(origin_span, "Tried to recover from an invalid token here")
+          .primary(self.cur_tok.lexeme.end..self.cur_tok.lexeme.end, "Reached end of file here")
+          .help("Recovery was attempted because the parser is configured to try and discard tokens to recover from unexpected tokens");
+                return Err(err);
+            }
+            Ok(())
+        }
+    }
+
+    /// Get the span of the current token if it is a whitespace or return a span with length zero
+    /// With the start and end set to the current token's start position  
+    pub fn whitespace(&mut self, leading: bool) -> Result<Span, ParserDiagnostic<'a>> {
+        if self.cur_tok.token_type == TokenType::Whitespace
+            || self.cur_tok.token_type == TokenType::Linebreak
+        {
+            // If its trailing whitespace, it will not include linebreaks in it
+            if !leading && self.cur_tok.token_type == TokenType::Linebreak {
+                return Ok(Span::new(
+                    self.cur_tok.lexeme.start,
+                    self.cur_tok.lexeme.start,
+                ));
+            }
+
+            let start = self.cur_tok.lexeme.start;
+            self.advance_while(leading, |tok: &Token| {
+                tok.token_type == TokenType::Whitespace
+            })?;
+
+            let end = if self.lexer_done {
+                self.cur_tok.lexeme.end
+            } else {
+                self.cur_tok.lexeme.start
+            };
+            Ok(Span::new(start, end))
+        } else {
+            if self.lexer_done {
+                Ok(Span::new(self.cur_tok.lexeme.end, self.cur_tok.lexeme.end))
+            } else {
+                Ok(Span::new(
+                    self.cur_tok.lexeme.start,
+                    self.cur_tok.lexeme.start,
+                ))
+            }
+        }
+    }
+
+    /// Get the source code of the current token
+    pub fn get_cur_token_source(&mut self) -> &str {
+        self.cur_tok.lexeme.content(self.source)
+    }
+
+    pub fn error(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic<'a> {
+        let message = &msg.to_owned();
+        ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Parser(kind), message)
+    }
+}

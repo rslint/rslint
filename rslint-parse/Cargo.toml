@@ -11,6 +11,8 @@ log = "0.4.8"
 rayon = "1.3.0"
 ansi_term = "0.12"
 fnv = "1"
+slab = "0.4.2"
+snmalloc-rs = "0.2.9"
 
 [dev-dependencies]
 criterion = "0.3"

@@ -1,6 +1,7 @@
+use crate::lexer::error::LexerDiagnosticType;
+use crate::parser::error::ParseDiagnosticType;
 use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
 use std::ops::Range;
-use crate::lexer::error::LexerDiagnosticType;
 
 #[derive(Debug)]
 pub struct ParserDiagnostic<'a> {
@@ -77,8 +78,8 @@ impl<'a> ParserDiagnostic<'a> {
   }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ParserDiagnosticType {
-  Lexer(LexerDiagnosticType)
+    Lexer(LexerDiagnosticType),
+    Parser(ParseDiagnosticType),
 }
-

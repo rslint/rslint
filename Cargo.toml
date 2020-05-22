@@ -5,5 +5,5 @@ members = [
 ]
 
 [profile]
-release = { lto = true }
-bench = { lto = true }
+release = { lto = true, codegen-units = 1 }
+bench = { lto = true, codegen-units = 1}
