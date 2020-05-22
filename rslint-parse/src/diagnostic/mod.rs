@@ -3,7 +3,7 @@ use crate::parser::error::ParseDiagnosticType;
 use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
 use std::ops::Range;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParserDiagnostic<'a> {
   pub diagnostic: Diagnostic<&'a str>,
   pub simple: bool,
@@ -56,7 +56,8 @@ impl<'a> ParserDiagnostic<'a> {
     self
   }
 
-  pub fn primary(mut self, range: Range<usize>, message: &str) -> Self {
+  pub fn primary(mut self, range: impl Into<Range<usize>>, message: &str) -> Self {
+    let range = range.into();
     if range.len() > 200 {
       self.simple = true;
     }
@@ -64,7 +65,8 @@ impl<'a> ParserDiagnostic<'a> {
     self
   }
 
-  pub fn secondary(mut self, range: Range<usize>, message: &str) -> Self {
+  pub fn secondary(mut self, range: impl Into<Range<usize>>, message: &str) -> Self {
+    let range = range.into();
     if range.len() > 200 {
       self.simple = true;
     }

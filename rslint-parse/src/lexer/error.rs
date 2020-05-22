@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-#[derive(Eq, PartialEq, Hash, Debug)]
+#[derive(Eq, PartialEq, Hash, Debug, Clone)]
 pub enum LexerDiagnosticType {
   // Errors
   UnterminatedString,

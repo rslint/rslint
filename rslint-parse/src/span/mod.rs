@@ -16,14 +16,15 @@ impl Span {
     &source[(self.start)..(self.end)]
   }
 
-<<<<<<< Updated upstream
+  #[inline]
   pub fn range(&self) -> Range<usize> {
     self.start..self.end
   }
-=======
-    #[inline]
-    pub fn range(&self) -> Range<usize> {
-        self.start..self.end
+
+  #[inline]
+  pub fn size(&self) -> usize {
+    self.end - self.start
+  }
 }
 
 impl Add for Span {
@@ -39,7 +40,6 @@ impl Into<Range<usize>> for Span {
         self.range()
     }
 }
->>>>>>> Stashed changes
 
 #[cfg(test)]
 mod tests {

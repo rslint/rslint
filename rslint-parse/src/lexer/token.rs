@@ -135,7 +135,6 @@ pub enum TokenType {
 #[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum BinToken {
-  Assign,
   Equality,
   Inequality,
   StrictEquality,
@@ -163,6 +162,7 @@ pub enum BinToken {
 #[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum AssignToken {
+  Assign,
   AddAssign,
   SubtractAssign,
   MultiplyAssign,
