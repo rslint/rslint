@@ -25,8 +25,6 @@ impl<'a> Parser<'a> {
                 let object = self.parse_unary_expr(None)?;
                 let end = object.span().end;
 
-                // We will recover from this by just ignoring the update expression
-                // TODO: See if this should maybe still be parsed instead of thrown out
                 if !object.is_valid_assign_target() {
                     let err = self
                         .error(
@@ -123,7 +121,6 @@ impl<'a> Parser<'a> {
         self.advance_lexer(false)?;
         let after_op = self.whitespace(false)?;
 
-        // Recover by ignoring the postfix operation
         if !object.is_valid_assign_target() {
             let err = self
                 .error(
@@ -136,7 +133,6 @@ impl<'a> Parser<'a> {
                     "Not a valid expression for the operator",
                 );
             self.errors.push(err);
-            return Ok(object);
         }
 
         Ok(Expr::Update(UpdateExpr {
