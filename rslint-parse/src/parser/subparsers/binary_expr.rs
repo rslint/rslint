@@ -78,7 +78,6 @@ mod tests {
     use crate::expr;
     use crate::lexer::token::*;
     use crate::parser::cst::expr::*;
-    use crate::parser::Parser;
     use crate::span;
     use crate::span::Span;
 

@@ -1,6 +1,4 @@
 use super::token::TokenType;
-use once_cell::sync::Lazy;
-use fnv::FnvHashSet;
 use log::trace;
 
 /// A structure for keeping track of context for template and regex literals
