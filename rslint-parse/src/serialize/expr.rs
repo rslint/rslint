@@ -1,10 +1,9 @@
 use crate::lexer::token::*;
 use crate::parser::cst::expr::Expr;
-use once_cell::sync::Lazy;
 use std::string::ToString;
 
 impl Expr {
-  fn to_string(&self, source: &str) -> String {
+  pub fn to_string(&self, source: &str) -> String {
     match self {
         Expr::This(data)
         | Expr::Number(data)

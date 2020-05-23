@@ -20,3 +20,7 @@ criterion = "0.3"
 [[bench]]
 name = "lexer"
 harness = false
+
+[[bench]]
+name = "serialization"
+harness = false
