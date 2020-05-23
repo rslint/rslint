@@ -256,11 +256,20 @@ mod tests {
         let res = parser.parse_unary_expr(None).unwrap();
         assert_eq!(
             res,
-            Expr::True(LiteralExpr {
-                span: Span::new(0, 4),
-                whitespace: ExprWhitespace {
-                    before: Span::new(0, 0),
-                    after: Span::new(4, 4),
+            Expr::Update(UpdateExpr {
+                span: Span::new(0, 6),
+                object: Box::new(Expr::True(LiteralExpr {
+                    span: Span::new(0, 4),
+                    whitespace: ExprWhitespace {
+                        before: Span::new(0, 0),
+                        after: Span::new(4, 4),
+                    }
+                })),
+                prefix: false,
+                op: TokenType::Increment,
+                whitespace: OperatorWhitespace {
+                    before_op: Span::new(4, 4),
+                    after_op: Span::new(6, 6),
                 }
             })
         );
