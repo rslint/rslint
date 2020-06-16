@@ -24,3 +24,7 @@ harness = false
 [[bench]]
 name = "serialization"
 harness = false
+
+[[bench]]
+name = "parser"
+harness = false
