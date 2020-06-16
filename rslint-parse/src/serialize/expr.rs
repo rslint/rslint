@@ -196,6 +196,7 @@ impl Expr {
 
 impl Token {
     /// Serializes a token into its source code
+    #[allow(dead_code)]
     fn to_string(&self, source: &str) -> String {
         let kind = self.token_type;
         match kind {

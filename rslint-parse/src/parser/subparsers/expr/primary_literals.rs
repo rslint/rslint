@@ -203,7 +203,11 @@ impl<'a> Parser<'a> {
                     }
                     // Recover from `{a: b c: d}`, the comma's whitespace will be the end of the property value
                     Some(t) if t != TokenType::BraceClose => {
-                        let err = self.error(ExpectedComma, "Expected a comma between object properties, but found none")
+                        let err = self
+                            .error(
+                                ExpectedComma,
+                                "Expected a comma between object properties, but found none",
+                            )
                             .primary(prop_span, "A comma is required following this property");
 
                         self.errors.push(err);
@@ -268,7 +272,10 @@ impl<'a> Parser<'a> {
                             MissingColonAfterKey,
                             "Missing a colon between an object key and its value",
                         )
-                        .primary(key.span().to_owned(), "A colon is required following this key");
+                        .primary(
+                            key.span().to_owned(),
+                            "A colon is required following this key",
+                        );
 
                     self.errors.push(err);
 
@@ -317,7 +324,10 @@ impl<'a> Parser<'a> {
                             MissingColonAfterKey,
                             "Missing a colon between an object key and its value",
                         )
-                        .primary(key.span().to_owned(), "A colon is required following this key");
+                        .primary(
+                            key.span().to_owned(),
+                            "A colon is required following this key",
+                        );
 
                     return Err(err);
                 }
@@ -343,45 +353,45 @@ mod tests {
                 props: vec![
                     ObjProp {
                         span: span!("{a: 5, b: 7,}", "a: 5"),
-                       key: Box::new(Expr::Identifier(LiteralExpr {
+                        key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a: 5, b: 7,}", "a"),
                             whitespace: ExprWhitespace {
                                 before: Span::new(1, 1),
                                 after: Span::new(2, 2),
                             }
-                       })),
-                       value: Box::new(Expr::Number(LiteralExpr {
-                           span: span!("{a: 5, b: 7,}", "5"),
-                           whitespace: ExprWhitespace {
-                               before: Span::new(4, 4),
-                               after: Span::new(5, 5),
-                           }
-                       })),
-                       whitespace: OperatorWhitespace {
-                           before_op: Span::new(2, 2),
-                           after_op: Span::new(3, 4),
-                       }
+                        })),
+                        value: Box::new(Expr::Number(LiteralExpr {
+                            span: span!("{a: 5, b: 7,}", "5"),
+                            whitespace: ExprWhitespace {
+                                before: Span::new(4, 4),
+                                after: Span::new(5, 5),
+                            }
+                        })),
+                        whitespace: OperatorWhitespace {
+                            before_op: Span::new(2, 2),
+                            after_op: Span::new(3, 4),
+                        }
                     },
                     ObjProp {
                         span: span!("{a: 5, b: 7,}", "b: 7"),
-                       key: Box::new(Expr::Identifier(LiteralExpr {
+                        key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a: 5, b: 7,}", "b"),
                             whitespace: ExprWhitespace {
                                 before: Span::new(7, 7),
                                 after: Span::new(8, 8),
                             }
-                       })),
-                       value: Box::new(Expr::Number(LiteralExpr {
-                           span: span!("{a: 5, b: 7,}", "7"),
-                           whitespace: ExprWhitespace {
-                               before: Span::new(10, 10),
-                               after: Span::new(11, 11),
-                           }
-                       })),
-                       whitespace: OperatorWhitespace {
-                           before_op: Span::new(8, 8),
-                           after_op: Span::new(9, 10),
-                       }
+                        })),
+                        value: Box::new(Expr::Number(LiteralExpr {
+                            span: span!("{a: 5, b: 7,}", "7"),
+                            whitespace: ExprWhitespace {
+                                before: Span::new(10, 10),
+                                after: Span::new(11, 11),
+                            }
+                        })),
+                        whitespace: OperatorWhitespace {
+                            before_op: Span::new(8, 8),
+                            after_op: Span::new(9, 10),
+                        }
                     }
                 ],
                 comma_whitespaces: vec![
@@ -415,45 +425,45 @@ mod tests {
                 props: vec![
                     ObjProp {
                         span: span!("{a  5  b: 7,}", "a  5"),
-                       key: Box::new(Expr::Identifier(LiteralExpr {
+                        key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a  5  b: 7,}", "a"),
                             whitespace: ExprWhitespace {
                                 before: Span::new(1, 1),
                                 after: Span::new(2, 4),
                             }
-                       })),
-                       value: Box::new(Expr::Number(LiteralExpr {
-                           span: span!("{a  5  b: 7,}", "5"),
-                           whitespace: ExprWhitespace {
-                               before: Span::new(4, 4),
-                               after: Span::new(5, 7),
-                           }
-                       })),
-                       whitespace: OperatorWhitespace {
-                           before_op: Span::new(2, 2),
-                           after_op: Span::new(2, 2),
-                       }
+                        })),
+                        value: Box::new(Expr::Number(LiteralExpr {
+                            span: span!("{a  5  b: 7,}", "5"),
+                            whitespace: ExprWhitespace {
+                                before: Span::new(4, 4),
+                                after: Span::new(5, 7),
+                            }
+                        })),
+                        whitespace: OperatorWhitespace {
+                            before_op: Span::new(2, 2),
+                            after_op: Span::new(2, 2),
+                        }
                     },
                     ObjProp {
                         span: span!("{a  5  b: 7,}", "b: 7"),
-                       key: Box::new(Expr::Identifier(LiteralExpr {
+                        key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a  5  b: 7,}", "b"),
                             whitespace: ExprWhitespace {
                                 before: Span::new(7, 7),
                                 after: Span::new(8, 8),
                             }
-                       })),
-                       value: Box::new(Expr::Number(LiteralExpr {
-                           span: span!("{a  5  b: 7,}", "7"),
-                           whitespace: ExprWhitespace {
-                               before: Span::new(10, 10),
-                               after: Span::new(11, 11),
-                           }
-                       })),
-                       whitespace: OperatorWhitespace {
-                           before_op: Span::new(8, 8),
-                           after_op: Span::new(9, 10),
-                       }
+                        })),
+                        value: Box::new(Expr::Number(LiteralExpr {
+                            span: span!("{a  5  b: 7,}", "7"),
+                            whitespace: ExprWhitespace {
+                                before: Span::new(10, 10),
+                                after: Span::new(11, 11),
+                            }
+                        })),
+                        whitespace: OperatorWhitespace {
+                            before_op: Span::new(8, 8),
+                            after_op: Span::new(9, 10),
+                        }
                     }
                 ],
                 comma_whitespaces: vec![

@@ -2,7 +2,6 @@ use crate::diagnostic::ParserDiagnostic;
 use crate::lexer::token::TokenType;
 use crate::parser::cst::expr::*;
 use crate::parser::Parser;
-use crate::span::Span;
 use crate::parser::error::ParseDiagnosticType::CommaWithoutRightExpression;
 
 impl<'a> Parser<'a> {
