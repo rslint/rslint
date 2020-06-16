@@ -98,7 +98,7 @@ impl<'a> Parser<'a> {
                 self.advance_lexer(false)?;
                 let after_op = self.whitespace(false)?;
 
-                let property = self.parse_expr()?;
+                let property = self.parse_expr(None)?;
 
                 let before_closing_bracket = self.whitespace(true)?;
 
@@ -588,7 +588,7 @@ mod tests {
     #[test]
     fn bracket_suffix_error_recovery() {
         let mut parser = Parser::with_source("foo[bar;[]", "tests", true).unwrap();
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse_expr(None).unwrap();
 
         assert_eq!(
             expr,

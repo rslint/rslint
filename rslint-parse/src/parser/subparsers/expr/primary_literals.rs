@@ -549,7 +549,7 @@ mod tests {
     #[test]
     fn array_literal_invalid_token_error_recovery() {
         let mut parser = Parser::with_source("[; 2,]", "tests", true).unwrap();
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse_expr(None).unwrap();
 
         assert_eq!(
             expr,

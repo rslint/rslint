@@ -3,17 +3,31 @@ use crate::lexer::token::TokenType;
 use crate::parser::cst::expr::*;
 use crate::parser::Parser;
 use crate::parser::error::ParseDiagnosticType::CommaWithoutRightExpression;
+use crate::span::Span;
 
 impl<'a> Parser<'a> {
     /// Parses a single expression or a comma separated list of expressions such as `foo, bar`
     // TODO: recover from multiple erroneous commas too, a cheap way to do this may be to advance until a linebreak or other token
-    pub fn parse_expr(&mut self) -> Result<Expr, ParserDiagnostic<'a>> {
+    pub fn parse_expr(&mut self, leading: Option<Span>) -> Result<Expr, ParserDiagnostic<'a>> {
+        let leading_whitespace = if leading.is_none() {
+            self.whitespace(true)?
+        } else {
+            leading.unwrap()
+        };
+
+        let mut first = true;
         let mut peeked;
         let mut exprs: Vec<Expr> = vec![];
         let mut whitespaces: Vec<OperatorWhitespace> = vec![];
 
         loop {
-            let expr = self.parse_assign_expr(None)?;
+            let expr = if first {
+                first = false;
+                self.parse_assign_expr(Some(leading_whitespace.to_owned()))?
+            } else {
+                self.parse_assign_expr(None)?
+            };
+
             exprs.push(expr);
 
             if self.cur_tok.token_type == TokenType::Comma {
@@ -170,7 +184,7 @@ mod tests {
     #[test]
     fn invalid_comma_recovery() {
         let mut parser = Parser::with_source("foo,", "tests", false).unwrap();
-        let expr = parser.parse_expr().unwrap();
+        let expr = parser.parse_expr(None).unwrap();
         
         assert_eq!(expr,
         Expr::Identifier(LiteralExpr {

@@ -4,7 +4,7 @@ use rslint_parse::parser::Parser;
 pub fn literal_serialization(b: &mut Criterion) {
     let expr = Parser::with_source("foobar", "benches", true)
         .unwrap()
-        .parse_expr()
+        .parse_expr(None)
         .unwrap();
 
     b.bench_function("serialize_literal_expr",
@@ -17,7 +17,7 @@ pub fn literal_serialization(b: &mut Criterion) {
 pub fn sequence_serialization(b: &mut Criterion) {
     let expr = Parser::with_source("1, 2, 3, new foo, bar", "benches", true)
         .unwrap()
-        .parse_expr()
+        .parse_expr(None)
         .unwrap();
     
     b.bench_function("serialize sequence expr",

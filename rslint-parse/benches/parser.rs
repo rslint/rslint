@@ -6,7 +6,7 @@ pub fn expr_serialization(b: &mut Criterion) {
 
     b.bench_function("parse expressions",
         |b| b.iter(|| {
-            Parser::with_source(src, "bench", true).unwrap().parse_expr().unwrap();
+            Parser::with_source(src, "bench", true).unwrap().parse_expr(None).unwrap();
         })
     );
 }

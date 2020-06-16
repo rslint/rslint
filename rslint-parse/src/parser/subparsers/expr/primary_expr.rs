@@ -52,7 +52,7 @@ impl<'a> Parser<'a> {
             self.advance_lexer(false)?;
             let open_paren_trailing = self.whitespace(false)?;
 
-            let grouped = self.parse_expr()?;
+            let grouped = self.parse_expr(None)?;
 
             let before_close_paren = self.whitespace(true)?;
 
