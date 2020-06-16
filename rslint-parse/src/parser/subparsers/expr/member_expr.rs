@@ -3,6 +3,7 @@ use crate::lexer::token::TokenType;
 use crate::parser::cst::expr::*;
 use crate::parser::Parser;
 use crate::span::Span;
+use crate::peek_or;
 
 impl<'a> Parser<'a> {
     pub fn parse_member_or_new_expr(
@@ -24,11 +25,31 @@ impl<'a> Parser<'a> {
             // TODO: handle `new.target` for ES6
 
             let expr = self.parse_member_or_new_expr(None, new_expr)?;
-            // We need the end span of the expr, the current span could be whitespace
             let expr_span = expr.span();
+            
+            if !new_expr || peek_or!(self, [TokenType::ParenOpen]) == Some(TokenType::ParenOpen) {
+                let mut args = None;
+                if peek_or!(self, [TokenType::ParenOpen]) == Some(TokenType::ParenOpen) {
+                    args = Some(self.parse_args(None)?);
+                }
+
+                let new_expr = Expr::New(NewExpr {
+                    span: self.span(start, expr_span.end),
+                    target: Box::new(expr),
+                    args,
+                    whitespace: NewExprWhitespace {
+                        after_new,
+                        before_new: leading_ws,
+                    },
+                });
+
+                return self.parse_suffixes(new_expr, true);
+            }
+
             return Ok(Expr::New(NewExpr {
-                span: Span::new(start, expr_span.end),
+                span: self.span(start, expr_span.end),
                 target: Box::new(expr),
+                args: None,
                 whitespace: NewExprWhitespace {
                     after_new,
                     before_new: leading_ws,
@@ -36,7 +57,7 @@ impl<'a> Parser<'a> {
             }));
         } else {
             let target = self.parse_primary_expr(Some(leading_ws))?;
-            self.parse_suffixes(target, start)
+            self.parse_suffixes(target, true)
         }
     }
 }
@@ -109,6 +130,7 @@ mod tests {
                         after_dot: Span::new(11, 12),
                     }
                 })),
+                args: None,
                 whitespace: NewExprWhitespace {
                     before_new: Span::new(0, 1),
                     after_new: Span::new(4, 5),
@@ -133,6 +155,7 @@ mod tests {
                         after: Span::new(7, 7)
                     }
                 })),
+                args: None,
                 whitespace: NewExprWhitespace {
                     before_new: Span::new(0, 0),
                     after_new: Span::new(3, 4),
@@ -175,11 +198,13 @@ mod tests {
                         after: Span::new(11, 11)
                     }
                 })),
+                args: None,
                 whitespace: NewExprWhitespace {
                     before_new: Span::new(4, 4),
                     after_new: Span::new(7, 8)
                 }
             })),
+            args: None,
             whitespace: NewExprWhitespace {
                 before_new: Span::new(0, 0),
                 after_new: Span::new(3, 4)

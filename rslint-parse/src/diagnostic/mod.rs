@@ -1,3 +1,6 @@
+//! Diagnostics (errors, warnings, notes, suggestions, etc) emitted by the RSLint-parse lexer and parser.  
+//! Based on codespan_reporting diagnostics
+
 use crate::lexer::error::LexerDiagnosticType;
 use crate::parser::error::ParseDiagnosticType;
 use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};

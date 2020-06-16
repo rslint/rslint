@@ -252,6 +252,38 @@ pub static BEFORE_EXPR: [TokenType; 27] = [
   Delete
 ];
 
+pub static STARTS_EXPR: [TokenType; 29] = [
+  BitwiseNot,
+  BraceOpen,
+  BracketOpen,
+  Await,
+  Increment,
+  Decrement,
+  LiteralBinary,
+  LiteralString,
+  LiteralNumber,
+  LiteralRegEx,
+  True,
+  False,
+  BinOp(BinToken::Add),
+  BinOp(BinToken::Subtract),
+  Identifier,
+  Function,
+  Throw,
+  New,
+  This,
+  Super,
+  Class,
+  Extends,
+  Import,
+  Yield,
+  In,
+  Instanceof,
+  Typeof,
+  Void,
+  Delete,
+];
+
 impl TokenType {
   #[inline]
   pub fn is_keyword(&self) -> bool {
@@ -265,5 +297,15 @@ impl TokenType {
       _ if BEFORE_EXPR.contains(self) => true,
       _ => false
     }
+  }
+
+  #[inline]
+  pub fn is_whitespace(&self) -> bool {
+    self == &TokenType::Whitespace || self == &TokenType::Linebreak
+  }
+
+  #[inline]
+  pub fn starts_expr(&self) -> bool {
+    STARTS_EXPR.contains(self)
   }
 }

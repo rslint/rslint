@@ -43,7 +43,7 @@ impl<'a> Parser<'a> {
                 }
 
                 return Ok(Expr::Update(UpdateExpr {
-                    span: Span::new(start, end),
+                    span: self.span(start, end),
                     prefix: true,
                     object: Box::new(object),
                     op: t,
@@ -68,7 +68,7 @@ impl<'a> Parser<'a> {
                 let end = object.span().end;
                 // TODO: Handle strict mode delete
                 return Ok(Expr::Unary(UnaryExpr {
-                    span: Span::new(start, end),
+                    span: self.span(start, end),
                     object: Box::new(object),
                     op: t,
                     whitespace: OperatorWhitespace {
@@ -81,7 +81,7 @@ impl<'a> Parser<'a> {
             _ => {}
         }
 
-        let object = self.parse_member_or_new_expr(Some(leading_whitespace), true)?;
+        let object = self.parse_lhs_expr(Some(leading_whitespace))?;
         let start = object.span().start;
         let mut had_linebreak = self.cur_tok.token_type == TokenType::Linebreak;
 
@@ -136,7 +136,7 @@ impl<'a> Parser<'a> {
         }
 
         Ok(Expr::Update(UpdateExpr {
-            span: Span::new(start, end),
+            span: self.span(start, end),
             prefix: false,
             object: Box::new(object),
             op,
@@ -150,9 +150,11 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::expr;
     use crate::lexer::token::TokenType;
     use crate::parser::cst::expr::*;
     use crate::parser::Parser;
+    use crate::span;
     use crate::span::Span;
 
     #[test]
@@ -320,6 +322,67 @@ mod tests {
                 whitespace: OperatorWhitespace {
                     before_op: Span::new(0, 0),
                     after_op: Span::new(6, 7)
+                }
+            })
+        )
+    }
+
+    #[test]
+    fn grouping() {
+        assert_eq!(
+            expr!("(/aa/g) "),
+            Expr::Grouping(GroupingExpr {
+                span: span!("(/aa/g) ", "(/aa/g)"),
+                expr: Box::new(Expr::Regex(LiteralExpr {
+                    span: span!("(/aa/g) ", "/aa/g"),
+                    whitespace: ExprWhitespace {
+                        before: Span::new(1, 1),
+                        after: Span::new(6, 6),
+                    }
+                })),
+                opening_paren_whitespace: OperatorWhitespace {
+                    before_op: Span::new(0, 0),
+                    after_op: Span::new(1, 1),
+                },
+                closing_paren_whitespace: OperatorWhitespace {
+                    before_op: Span::new(6, 6),
+                    after_op: Span::new(7, 8),
+                }
+            })
+        )
+    }
+
+    #[test]
+    fn nested_grouping() {
+        assert_eq!(
+            expr!("((foo))"),
+            Expr::Grouping(GroupingExpr {
+                span: span!("((foo))", "((foo))"),
+                expr: Box::new(Expr::Grouping(GroupingExpr {
+                    span: span!("((foo))", "(foo)"),
+                    expr: Box::new(Expr::Identifier(LiteralExpr {
+                        span: span!("((foo))", "foo"),
+                        whitespace: ExprWhitespace {
+                            before: Span::new(2, 2),
+                            after: Span::new(5, 5),
+                        },
+                    })),
+                    opening_paren_whitespace: OperatorWhitespace {
+                        before_op: Span::new(1, 1),
+                        after_op: Span::new(2, 2),
+                    },
+                    closing_paren_whitespace: OperatorWhitespace {
+                        before_op: Span::new(5, 5),
+                        after_op: Span::new(6, 6),
+                    },
+                })),
+                opening_paren_whitespace: OperatorWhitespace {
+                    before_op: Span::new(0, 0),
+                    after_op: Span::new(1, 1),
+                },
+                closing_paren_whitespace: OperatorWhitespace {
+                    before_op: Span::new(6, 6),
+                    after_op: Span::new(7, 7),
                 }
             })
         )

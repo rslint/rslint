@@ -31,8 +31,7 @@ impl<'a> Parser<'a> {
             self.advance_lexer(false)?;
             let after_qmark = self.whitespace(false)?;
 
-            // TODO: should be assignexpr
-            let if_true = self.parse_conditional_expr(None)?;
+            let if_true = self.parse_assign_expr(None)?;
 
             let before_colon = self.whitespace(true)?;
             let after_colon;
@@ -51,15 +50,15 @@ impl<'a> Parser<'a> {
                     .secondary(qmark_span, "Conditional expression begins here");
 
                 self.errors.push(err);
-                after_colon = Span::new(before_colon.end, before_colon.end);
+                after_colon = self.span(before_colon.end, before_colon.end);
             } else {
                 self.advance_lexer(false)?;
                 after_colon = self.whitespace(false)?;
             }
 
-            let if_false = self.parse_conditional_expr(None)?;
+            let if_false = self.parse_assign_expr(None)?;
 
-            let span = Span::new(condition.span().start, if_false.span().end);
+            let span = self.span(condition.span().start, if_false.span().end);
 
             Ok(Expr::Conditional(ConditionalExpr {
                 span,

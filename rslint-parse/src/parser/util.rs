@@ -20,15 +20,19 @@ impl Expr {
 
             Expr::Member(_) => true,
 
-            Expr::New(_) => false,
+            Expr::New(_)
+            | Expr::Update(_)
+            | Expr::Unary(_)
+            | Expr::Binary(_)
+            | Expr::Conditional(_)
+            | Expr::Assign(_)
+            | Expr::Sequence(_)
+            | Expr::Call(_)
+            | Expr::Bracket(_)
+            | Expr::Array(_) 
+            | Expr::Object(_) => false,
 
-            Expr::Update(_) => false,
-
-            Expr::Unary(_) => false,
-
-            Expr::Binary(_) => false,
-
-            Expr::Conditional(_) => false,
+            Expr::Grouping(GroupingExpr { ref expr, .. }) => expr.is_valid_assign_target(),
         }
     }
 }

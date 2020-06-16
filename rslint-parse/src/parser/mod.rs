@@ -1,3 +1,5 @@
+//! A fast, lossless, ECMAScript parser used by RSLint.
+
 pub mod cst;
 pub mod error;
 pub mod subparsers;
@@ -27,17 +29,20 @@ pub struct Parser<'a> {
     pub discard_recovery: bool,
     pub lexer_done: bool,
     pub cst: CST,
+    /// The optional start for spans, this is for parsing chunks of code in larger files  
+    /// Will be `0` if no offset is specified
+    pub offset: usize,
 }
 
 impl<'a> Parser<'a> {
     /// Makes a parser directly from source code, calling the lexer automatically.
     /// Will return None if the source is empty.
     pub fn with_source(source: &'a str, file_id: &'a str, discard_recovery: bool) -> Option<Self> {
-        let mut lexer = multipeek(Lexer::new(source, file_id));
-        let next = lexer.next();
-        if next.is_none() {
+        if source.len() == 0 {
             return None;
         }
+        let mut lexer = multipeek(Lexer::new(source, file_id));
+        let next = lexer.next();
         Some(Self {
             lexer,
             cur_tok: next.unwrap().0.unwrap(),
@@ -47,8 +52,20 @@ impl<'a> Parser<'a> {
             discard_recovery,
             lexer_done: false,
             cst: CST::new(),
+            offset: 0,
         })
     }
+
+    /// Create a parser from source code, with an offset added for each span in the CST, useful for parsing subchunks of code in larger files.  
+    /// # Returns  
+    /// Will return `None` if any of the following are true:  
+    /// - The source is an empty string  
+    /// - The offset is greater or equal to the source length
+    // pub fn with_source_and_offset(source: &'a str, file_id: &'a str, discard_recovery: bool, offset: usize) -> Option<Self> {
+    //     if source.len() == 0 || offset >= source.len() {
+    //         return None;
+    //     }
+    // }
 
     /// Advances the parser's lexer and returns the optional token  
     ///  
@@ -162,7 +179,7 @@ impl<'a> Parser<'a> {
             Err(self
                 .error(
                     ParseDiagnosticType::UnexpectedToken,
-                    message.unwrap_or("Unexpected token found"),
+                    message.unwrap_or(&format!("Unexpected token `{}`", self.cur_tok.lexeme.content(self.source))),
                 )
                 .primary(
                     self.cur_tok.lexeme.range().to_owned(),
@@ -172,11 +189,15 @@ impl<'a> Parser<'a> {
             let origin_span = self.cur_tok.lexeme.to_owned();
             self.advance_while(true, |x| func(&x.token_type))?;
             if self.lexer_done {
-                let err = self.error(ParseDiagnosticType::InvalidRecovery, "Tried to recover from an error, but reached end of file")
-          .secondary(origin_span, "Tried to recover from an invalid token here")
-          .primary(self.cur_tok.lexeme.end..self.cur_tok.lexeme.end, "Reached end of file here")
-          .help("Recovery was attempted because the parser is configured to try and discard tokens to recover from unexpected tokens");
-                return Err(err);
+                return Err(self
+                    .error(
+                        ParseDiagnosticType::UnexpectedToken,
+                        message.unwrap_or(&format!("Unexpected token `{}`", self.cur_tok.lexeme.content(self.source))),
+                    )
+                    .primary(
+                        origin_span,
+                        "Unexpected in the current context",
+                    ));
             }
             Ok(())
         }
@@ -219,13 +240,12 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Get the source code of the current token
-    pub fn get_cur_token_source(&mut self) -> &str {
-        self.cur_tok.lexeme.content(self.source)
-    }
-
     pub fn error(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic<'a> {
         let message = &msg.to_owned();
         ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Parser(kind), message)
+    }
+
+    pub fn span(&self, start: usize, end: usize) -> Span {
+        Span::new(start, end)
     }
 }

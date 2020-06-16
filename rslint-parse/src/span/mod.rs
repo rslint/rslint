@@ -1,3 +1,5 @@
+//! A structure representing a range of text inside of a string.  
+
 use std::ops::{Add, Range};
 
 /// A Struct representing a span of code inside of source code.

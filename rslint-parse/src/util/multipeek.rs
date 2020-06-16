@@ -55,3 +55,17 @@ impl<I: Iterator> Iterator for MultiPeek<I> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::util::multipeek::*;
+
+    #[test]
+    fn multipeek_iter() {
+        let mut iter = multipeek("oh hi mark".chars());
+        assert_eq!(iter.peek().unwrap(), &'o');
+        assert_eq!(iter.peek().unwrap(), &'h');
+        iter.reset();
+        assert_eq!(iter.peek().unwrap(), &'o');
+    }
+}

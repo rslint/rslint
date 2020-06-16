@@ -72,3 +72,6 @@ Assignment expressions take a left hand side expression for the target, therefor
 For the purposes of error recovery, the parser still correctly parses this as an assignment expression.
 The checking for an assignment token is done by peeking, therefore there are no side effects to trying to parse as assignment.
 
+# Comma Expressions
+
+A Production such as `let a = foo,` is invalid if the production after the comma 

@@ -3,6 +3,7 @@ use crate::lexer::token::TokenType;
 use crate::parser::cst::expr::*;
 use crate::parser::Parser;
 use crate::span::Span;
+use crate::peek_or;
 
 impl<'a> Parser<'a> {
     pub fn parse_binary_expr(
@@ -23,25 +24,14 @@ impl<'a> Parser<'a> {
         left: Expr,
         min_precedence: u8,
     ) -> Result<Expr, ParserDiagnostic<'a>> {
-        if !self.cur_tok.token_type.is_binop() {
-            let peeked = self
-                .peek_while(|t| {
-                    [TokenType::Whitespace, TokenType::Linebreak].contains(&t.token_type)
-                })?
-                .map(|t| t.token_type);
-            self.lexer.reset();
+        let peeked = peek_or!(self);
 
-            match peeked {
-                Some(TokenType::In) | Some(TokenType::Instanceof) | Some(TokenType::BinOp(_)) => {}
-                _ => return Ok(left),
-            }
-
-            if peeked.unwrap().precedence().unwrap() <= min_precedence {
-                return Ok(left);
-            }
+        match peeked {
+            Some(TokenType::In) | Some(TokenType::Instanceof) | Some(TokenType::BinOp(_)) => {}
+            _ => return Ok(left),
         }
 
-        if self.cur_tok.token_type.precedence().unwrap() <= min_precedence {
+        if peeked.unwrap().precedence().unwrap() <= min_precedence {
             return Ok(left);
         }
 
@@ -59,7 +49,7 @@ impl<'a> Parser<'a> {
         };
 
         let expr = Expr::Binary(BinaryExpr {
-            span: Span::new(left.span().start, right.span().end),
+            span: self.span(left.span().start, right.span().end),
             left: Box::new(left),
             right: Box::new(right),
             op,

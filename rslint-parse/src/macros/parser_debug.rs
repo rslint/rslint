@@ -19,7 +19,7 @@ macro_rules! expr {
         use crate::parser::Parser;
         Parser::with_source($src, "tests", true)
             .unwrap()
-            .parse_conditional_expr(None)
+            .parse_expr()
             .unwrap()
     }};
 }
