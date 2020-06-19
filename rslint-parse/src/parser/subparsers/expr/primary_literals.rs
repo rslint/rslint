@@ -27,14 +27,22 @@ impl<'a> Parser<'a> {
 
         let open_bracket_span = self.cur_tok.lexeme.to_owned();
         self.advance_lexer(false)?;
-        let after_opening_bracket = self.whitespace(false)?;
+        let afterening_bracket = self.whitespace(false)?;
 
         // Arrays may have undefined elements declared, e.g. `[,,,,,,foo,,,,]`
         let mut exprs: Vec<Option<Expr>> = vec![];
-        let mut comma_whitespaces: Vec<OperatorWhitespace> = vec![];
+        let mut comma_whitespaces: Vec<LiteralWhitespace> = vec![];
 
         loop {
             let loop_leading_whitespace = self.whitespace(true)?;
+
+            if self.done() {
+                let err = self.error(UnterminatedObjectLiteral, "Unterminated array literal")
+                    .secondary(open_bracket_span, "Array literal starts here")
+                    .primary(self.cur_tok.lexeme.to_owned(), "File ends here");
+                
+                return Err(err);
+            }
 
             match self.cur_tok.token_type {
                 TokenType::BracketClose => {
@@ -45,24 +53,24 @@ impl<'a> Parser<'a> {
                         span: Span::new(open_bracket_span.start, after_closing_bracket.end),
                         exprs,
                         comma_whitespaces,
-                        opening_bracket_whitespace: OperatorWhitespace {
-                            before_op: leading_whitespace,
-                            after_op: after_opening_bracket,
+                        opening_bracket_whitespace: LiteralWhitespace {
+                            before: leading_whitespace,
+                            after: afterening_bracket,
                         },
-                        closing_bracket_whitespace: OperatorWhitespace {
-                            before_op: loop_leading_whitespace,
-                            after_op: after_closing_bracket,
+                        closing_bracket_whitespace: LiteralWhitespace {
+                            before: loop_leading_whitespace,
+                            after: after_closing_bracket,
                         },
                     }));
                 }
 
                 TokenType::Comma => {
                     self.advance_lexer(false)?;
-                    let after_op = self.whitespace(false)?;
+                    let after = self.whitespace(false)?;
 
-                    comma_whitespaces.push(OperatorWhitespace {
-                        before_op: loop_leading_whitespace,
-                        after_op,
+                    comma_whitespaces.push(LiteralWhitespace {
+                        before: loop_leading_whitespace,
+                        after,
                     });
                     exprs.push(None);
                 }
@@ -76,9 +84,9 @@ impl<'a> Parser<'a> {
                             self.advance_lexer(false)?;
                             let after_comma = self.whitespace(false)?;
 
-                            comma_whitespaces.push(OperatorWhitespace {
-                                before_op: before_comma,
-                                after_op: after_comma,
+                            comma_whitespaces.push(LiteralWhitespace {
+                                before: before_comma,
+                                after: after_comma,
                             });
                         }
 
@@ -88,11 +96,11 @@ impl<'a> Parser<'a> {
                             // The comma has all of the trailing whitespace of the expr.
                             // The error wont be reported here, it will be reported in the next iteration
 
-                            let before_op = Span::new(expr.span().end, expr.span().end);
-                            let after_op = Span::new(expr.span().end, self.cur_tok.lexeme.start);
-                            comma_whitespaces.push(OperatorWhitespace {
-                                before_op,
-                                after_op,
+                            let before = Span::new(expr.span().end, expr.span().end);
+                            let after = Span::new(expr.span().end, self.cur_tok.lexeme.start);
+                            comma_whitespaces.push(LiteralWhitespace {
+                                before,
+                                after,
                             });
 
                             // We want to avoid skipping over an expression because we can recover and parse it in the next iteration
@@ -150,12 +158,20 @@ impl<'a> Parser<'a> {
 
         let open_brace_span = self.cur_tok.lexeme.to_owned();
         self.advance_lexer(false)?;
-        let after_open_brace_span = self.whitespace(false)?;
+        let afteren_brace_span = self.whitespace(false)?;
         let mut props: Vec<ObjProp> = vec![];
-        let mut comma_whitespaces: Vec<OperatorWhitespace> = vec![];
+        let mut comma_whitespaces: Vec<LiteralWhitespace> = vec![];
 
         loop {
             let loop_leading_whitespace = self.whitespace(true)?;
+
+            if self.done() {
+                let err = self.error(UnterminatedObjectLiteral, "Unterminated object literal")
+                    .secondary(open_brace_span, "Object literal starts here")
+                    .primary(self.cur_tok.lexeme.to_owned(), "File ends here");
+                
+                return Err(err);
+            }
 
             if self.cur_tok.token_type == TokenType::BraceClose {
                 let close_brace_span = self.cur_tok.lexeme.to_owned();
@@ -166,13 +182,13 @@ impl<'a> Parser<'a> {
                     span: Span::new(open_brace_span.start, close_brace_span.end),
                     props,
                     comma_whitespaces,
-                    open_brace_whitespace: OperatorWhitespace {
-                        before_op: leading_whitespace,
-                        after_op: after_open_brace_span,
+                    open_brace_whitespace: LiteralWhitespace {
+                        before: leading_whitespace,
+                        after: afteren_brace_span,
                     },
-                    close_brace_whitespace: OperatorWhitespace {
-                        before_op: loop_leading_whitespace,
-                        after_op: after_close_brace,
+                    close_brace_whitespace: LiteralWhitespace {
+                        before: loop_leading_whitespace,
+                        after: after_close_brace,
                     },
                 }));
             }
@@ -192,13 +208,13 @@ impl<'a> Parser<'a> {
 
                 match peek_or!(self) {
                     Some(TokenType::Comma) => {
-                        let before_op = self.whitespace(true)?;
+                        let before = self.whitespace(true)?;
                         self.advance_lexer(false)?;
-                        let after_op = self.whitespace(false)?;
+                        let after = self.whitespace(false)?;
 
-                        comma_whitespaces.push(OperatorWhitespace {
-                            before_op,
-                            after_op,
+                        comma_whitespaces.push(LiteralWhitespace {
+                            before,
+                            after,
                         });
                     }
                     // Recover from `{a: b c: d}`, the comma's whitespace will be the end of the property value
@@ -211,18 +227,18 @@ impl<'a> Parser<'a> {
                             .primary(prop_span, "A comma is required following this property");
 
                         self.errors.push(err);
-                        comma_whitespaces.push(OperatorWhitespace {
-                            before_op: potential_comma_span.to_owned(),
-                            after_op: potential_comma_span,
+                        comma_whitespaces.push(LiteralWhitespace {
+                            before: potential_comma_span.to_owned(),
+                            after: potential_comma_span,
                         });
                     }
-                    // brace close and unexpected tokens are handled in the next iteration
                     _ => {}
                 }
                 continue;
             }
+            println!("a");
             let unexpected = self.cur_tok.lexeme.to_owned();
-            self.discard_recover(Some("Expected an expression or a closing brace in object literal, but encountered an unexpected token"), |t| t.starts_expr() || t == &TokenType::BraceClose)?;
+            self.discard_recover(Some("Expected an expression or a closing brace in object literal, but encountered an unexpected token"), |t| !t.starts_expr() && t != &TokenType::BraceClose)?;
             let err = self.error(UnexpectedToken, "Expected an expression or a closing brace in object literal, but encountered an unexpected token")
                 .primary(unexpected, "Unexpected");
 
@@ -286,9 +302,9 @@ impl<'a> Parser<'a> {
                         span: self.span(key.span().start, value.span().end),
                         key: Box::new(key),
                         value: Box::new(value),
-                        whitespace: OperatorWhitespace {
-                            before_op: colon_whitespace.to_owned(),
-                            after_op: colon_whitespace,
+                        whitespace: LiteralWhitespace {
+                            before: colon_whitespace.to_owned(),
+                            after: colon_whitespace,
                         },
                     });
                 }
@@ -311,9 +327,9 @@ impl<'a> Parser<'a> {
                         span: self.span(key.span().start, value.span().end),
                         key: Box::new(key),
                         value: Box::new(value),
-                        whitespace: OperatorWhitespace {
-                            before_op: before_colon,
-                            after_op: after_colon,
+                        whitespace: LiteralWhitespace {
+                            before: before_colon,
+                            after: after_colon,
                         },
                     });
                 }
@@ -355,62 +371,62 @@ mod tests {
                         span: span!("{a: 5, b: 7,}", "a: 5"),
                         key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a: 5, b: 7,}", "a"),
-                            whitespace: ExprWhitespace {
+                            whitespace: LiteralWhitespace {
                                 before: Span::new(1, 1),
                                 after: Span::new(2, 2),
                             }
                         })),
                         value: Box::new(Expr::Number(LiteralExpr {
                             span: span!("{a: 5, b: 7,}", "5"),
-                            whitespace: ExprWhitespace {
+                            whitespace: LiteralWhitespace {
                                 before: Span::new(4, 4),
                                 after: Span::new(5, 5),
                             }
                         })),
-                        whitespace: OperatorWhitespace {
-                            before_op: Span::new(2, 2),
-                            after_op: Span::new(3, 4),
+                        whitespace: LiteralWhitespace {
+                            before: Span::new(2, 2),
+                            after: Span::new(3, 4),
                         }
                     },
                     ObjProp {
                         span: span!("{a: 5, b: 7,}", "b: 7"),
                         key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a: 5, b: 7,}", "b"),
-                            whitespace: ExprWhitespace {
+                            whitespace: LiteralWhitespace {
                                 before: Span::new(7, 7),
                                 after: Span::new(8, 8),
                             }
                         })),
                         value: Box::new(Expr::Number(LiteralExpr {
                             span: span!("{a: 5, b: 7,}", "7"),
-                            whitespace: ExprWhitespace {
+                            whitespace: LiteralWhitespace {
                                 before: Span::new(10, 10),
                                 after: Span::new(11, 11),
                             }
                         })),
-                        whitespace: OperatorWhitespace {
-                            before_op: Span::new(8, 8),
-                            after_op: Span::new(9, 10),
+                        whitespace: LiteralWhitespace {
+                            before: Span::new(8, 8),
+                            after: Span::new(9, 10),
                         }
                     }
                 ],
                 comma_whitespaces: vec![
-                    OperatorWhitespace {
-                        before_op: Span::new(5, 5),
-                        after_op: Span::new(6, 7),
+                    LiteralWhitespace {
+                        before: Span::new(5, 5),
+                        after: Span::new(6, 7),
                     },
-                    OperatorWhitespace {
-                        before_op: Span::new(11, 11),
-                        after_op: Span::new(12, 12),
+                    LiteralWhitespace {
+                        before: Span::new(11, 11),
+                        after: Span::new(12, 12),
                     },
                 ],
-                open_brace_whitespace: OperatorWhitespace {
-                    before_op: Span::new(0, 0),
-                    after_op: Span::new(1, 1),
+                open_brace_whitespace: LiteralWhitespace {
+                    before: Span::new(0, 0),
+                    after: Span::new(1, 1),
                 },
-                close_brace_whitespace: OperatorWhitespace {
-                    before_op: Span::new(12, 12),
-                    after_op: Span::new(13, 13),
+                close_brace_whitespace: LiteralWhitespace {
+                    before: Span::new(12, 12),
+                    after: Span::new(13, 13),
                 }
             }),
         )
@@ -427,66 +443,71 @@ mod tests {
                         span: span!("{a  5  b: 7,}", "a  5"),
                         key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a  5  b: 7,}", "a"),
-                            whitespace: ExprWhitespace {
+                            whitespace: LiteralWhitespace {
                                 before: Span::new(1, 1),
                                 after: Span::new(2, 4),
                             }
                         })),
                         value: Box::new(Expr::Number(LiteralExpr {
                             span: span!("{a  5  b: 7,}", "5"),
-                            whitespace: ExprWhitespace {
+                            whitespace: LiteralWhitespace {
                                 before: Span::new(4, 4),
                                 after: Span::new(5, 7),
                             }
                         })),
-                        whitespace: OperatorWhitespace {
-                            before_op: Span::new(2, 2),
-                            after_op: Span::new(2, 2),
+                        whitespace: LiteralWhitespace {
+                            before: Span::new(2, 2),
+                            after: Span::new(2, 2),
                         }
                     },
                     ObjProp {
                         span: span!("{a  5  b: 7,}", "b: 7"),
                         key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a  5  b: 7,}", "b"),
-                            whitespace: ExprWhitespace {
+                            whitespace: LiteralWhitespace {
                                 before: Span::new(7, 7),
                                 after: Span::new(8, 8),
                             }
                         })),
                         value: Box::new(Expr::Number(LiteralExpr {
                             span: span!("{a  5  b: 7,}", "7"),
-                            whitespace: ExprWhitespace {
+                            whitespace: LiteralWhitespace {
                                 before: Span::new(10, 10),
                                 after: Span::new(11, 11),
                             }
                         })),
-                        whitespace: OperatorWhitespace {
-                            before_op: Span::new(8, 8),
-                            after_op: Span::new(9, 10),
+                        whitespace: LiteralWhitespace {
+                            before: Span::new(8, 8),
+                            after: Span::new(9, 10),
                         }
                     }
                 ],
                 comma_whitespaces: vec![
-                    OperatorWhitespace {
-                        before_op: Span::new(5, 5),
-                        after_op: Span::new(5, 5),
+                    LiteralWhitespace {
+                        before: Span::new(5, 5),
+                        after: Span::new(5, 5),
                     },
-                    OperatorWhitespace {
-                        before_op: Span::new(11, 11),
-                        after_op: Span::new(12, 12),
+                    LiteralWhitespace {
+                        before: Span::new(11, 11),
+                        after: Span::new(12, 12),
                     },
                 ],
-                open_brace_whitespace: OperatorWhitespace {
-                    before_op: Span::new(0, 0),
-                    after_op: Span::new(1, 1),
+                open_brace_whitespace: LiteralWhitespace {
+                    before: Span::new(0, 0),
+                    after: Span::new(1, 1),
                 },
-                close_brace_whitespace: OperatorWhitespace {
-                    before_op: Span::new(12, 12),
-                    after_op: Span::new(13, 13),
+                close_brace_whitespace: LiteralWhitespace {
+                    before: Span::new(12, 12),
+                    after: Span::new(13, 13),
                 }
             }),
         )
     }
+
+    #[test]
+    // fn object_literal_unexpected_token() {
+    //     let mut parser = Parser::with_source("{a: b ]}")
+    // }
 
     #[test]
     fn array_literal() {
@@ -497,30 +518,30 @@ mod tests {
                 exprs: vec![
                     Some(Expr::Number(LiteralExpr {
                         span: span!("[ 2, a]", "2"),
-                        whitespace: ExprWhitespace {
+                        whitespace: LiteralWhitespace {
                             before: Span::new(2, 2),
                             after: Span::new(3, 3)
                         }
                     })),
                     Some(Expr::Identifier(LiteralExpr {
                         span: span!("[ 2, a]", "a"),
-                        whitespace: ExprWhitespace {
+                        whitespace: LiteralWhitespace {
                             before: Span::new(5, 5),
                             after: Span::new(6, 6),
                         }
                     })),
                 ],
-                comma_whitespaces: vec![OperatorWhitespace {
-                    before_op: Span::new(3, 3),
-                    after_op: Span::new(4, 5),
+                comma_whitespaces: vec![LiteralWhitespace {
+                    before: Span::new(3, 3),
+                    after: Span::new(4, 5),
                 }],
-                opening_bracket_whitespace: OperatorWhitespace {
-                    before_op: Span::new(0, 0),
-                    after_op: Span::new(1, 2),
+                opening_bracket_whitespace: LiteralWhitespace {
+                    before: Span::new(0, 0),
+                    after: Span::new(1, 2),
                 },
-                closing_bracket_whitespace: OperatorWhitespace {
-                    before_op: Span::new(6, 6),
-                    after_op: Span::new(7, 7)
+                closing_bracket_whitespace: LiteralWhitespace {
+                    before: Span::new(6, 6),
+                    after: Span::new(7, 7)
                 }
             }),
         )
@@ -534,13 +555,13 @@ mod tests {
                 span: span!("[]", "[]"),
                 exprs: vec![],
                 comma_whitespaces: vec![],
-                opening_bracket_whitespace: OperatorWhitespace {
-                    before_op: Span::new(0, 0),
-                    after_op: Span::new(1, 1),
+                opening_bracket_whitespace: LiteralWhitespace {
+                    before: Span::new(0, 0),
+                    after: Span::new(1, 1),
                 },
-                closing_bracket_whitespace: OperatorWhitespace {
-                    before_op: Span::new(1, 1),
-                    after_op: Span::new(2, 2),
+                closing_bracket_whitespace: LiteralWhitespace {
+                    before: Span::new(1, 1),
+                    after: Span::new(2, 2),
                 }
             })
         )
@@ -557,22 +578,22 @@ mod tests {
                 span: span!("[; 2,]", "[; 2,]"),
                 exprs: vec![Some(Expr::Number(LiteralExpr {
                     span: span!("[; 2,]", "2"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(2, 3),
                         after: Span::new(4, 4),
                     }
                 }))],
-                comma_whitespaces: vec![OperatorWhitespace {
-                    before_op: Span::new(4, 4),
-                    after_op: Span::new(5, 5),
+                comma_whitespaces: vec![LiteralWhitespace {
+                    before: Span::new(4, 4),
+                    after: Span::new(5, 5),
                 }],
-                opening_bracket_whitespace: OperatorWhitespace {
-                    before_op: Span::new(0, 0),
-                    after_op: Span::new(1, 1),
+                opening_bracket_whitespace: LiteralWhitespace {
+                    before: Span::new(0, 0),
+                    after: Span::new(1, 1),
                 },
-                closing_bracket_whitespace: OperatorWhitespace {
-                    before_op: Span::new(5, 5),
-                    after_op: Span::new(6, 6)
+                closing_bracket_whitespace: LiteralWhitespace {
+                    before: Span::new(5, 5),
+                    after: Span::new(6, 6)
                 }
             })
         )

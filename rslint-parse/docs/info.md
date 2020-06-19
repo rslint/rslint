@@ -47,7 +47,7 @@ Assign(
         left: Identifier(
             LiteralExpr {
                 span: "foo",
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: "",
                     after: "",
                 },
@@ -56,7 +56,7 @@ Assign(
         right: Identifier(
             LiteralExpr {
                 span: "bar",
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: "",
                     after: "",
                 },
@@ -66,8 +66,8 @@ Assign(
             AddAssign,
         ),
         whitespace: OperatorWhitespace {
-            before_op: "",
-            after_op: " ",
+            before: "",
+            after: " ",
         },
     },
 )```

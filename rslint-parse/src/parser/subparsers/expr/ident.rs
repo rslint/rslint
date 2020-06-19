@@ -50,7 +50,7 @@ impl<'a> Parser<'a> {
         let trailing_whitespace = self.whitespace(false)?;
         Ok(Expr::Identifier(LiteralExpr {
             span,
-            whitespace: ExprWhitespace {
+            whitespace: LiteralWhitespace {
                 before: leading_ws,
                 after: trailing_whitespace,
             },
@@ -73,7 +73,7 @@ mod tests {
                 .unwrap(),
             Expr::Identifier(LiteralExpr {
                 span: Span::new(2, 7),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 2),
                     after: Span::new(7, 8)
                 }
@@ -90,7 +90,7 @@ mod tests {
                 .unwrap(),
             Expr::Identifier(LiteralExpr {
                 span: Span::new(2, 7),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 2),
                     after: Span::new(7, 8)
                 }
@@ -105,7 +105,7 @@ mod tests {
             parser.parse_identifier_name(None).unwrap(),
             Expr::Identifier(LiteralExpr {
                 span: Span::new(2, 7),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 2),
                     after: Span::new(7, 8)
                 }
@@ -121,7 +121,7 @@ mod tests {
             parser.parse_identifier_name(None).unwrap(),
             Expr::Identifier(LiteralExpr {
                 span: Span::new(2, 7),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 2),
                     after: Span::new(7, 8)
                 }

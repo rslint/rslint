@@ -35,10 +35,10 @@ impl<'a> Parser<'a> {
             return Ok(left);
         }
 
-        let before_op = self.whitespace(true)?;
+        let before = self.whitespace(true)?;
         let op = self.cur_tok.token_type;
         self.advance_lexer(false)?;
-        let after_op = self.whitespace(false)?;
+        let after = self.whitespace(false)?;
 
         let right = {
             let left_but_actually_left_of_right = self.parse_unary_expr(None)?;
@@ -53,9 +53,9 @@ impl<'a> Parser<'a> {
             left: Box::new(left),
             right: Box::new(right),
             op,
-            whitespace: OperatorWhitespace {
-                before_op,
-                after_op,
+            whitespace: LiteralWhitespace {
+                before,
+                after,
             },
         });
 
@@ -79,22 +79,22 @@ mod tests {
                 span: span!("1 + 2", "1 + 2"),
                 left: Box::new(Expr::Number(LiteralExpr {
                     span: span!("1 + 2", "1"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(0, 0),
                         after: Span::new(1, 2),
                     }
                 })),
                 right: Box::new(Expr::Number(LiteralExpr {
                     span: span!("1 + 2", "2"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(4, 4),
                         after: Span::new(5, 5),
                     }
                 })),
                 op: TokenType::BinOp(BinToken::Add),
-                whitespace: OperatorWhitespace {
-                    before_op: Span::new(2, 2),
-                    after_op: Span::new(3, 4)
+                whitespace: LiteralWhitespace {
+                    before: Span::new(2, 2),
+                    after: Span::new(3, 4)
                 }
             })
         )
@@ -108,21 +108,21 @@ mod tests {
                 span: span!("foo.bar", "foo.bar"),
                 object: Box::new(Expr::Identifier(LiteralExpr {
                     span: span!("foo.bar", "foo"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(0, 0),
                         after: Span::new(3, 3),
                     }
                 })),
                 property: Box::new(Expr::Identifier(LiteralExpr {
                     span: span!("foo.bar", "bar"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(4, 4),
                         after: Span::new(7, 7),
                     }
                 })),
-                whitespace: MemberExprWhitespace {
-                    before_dot: Span::new(3, 3),
-                    after_dot: Span::new(4, 4)
+                whitespace: LiteralWhitespace {
+                    before: Span::new(3, 3),
+                    after: Span::new(4, 4)
                 }
             })
         )
@@ -144,7 +144,7 @@ mod tests {
                 span: span!("1 + 2 * 4", "1 + 2 * 4"),
                 left: Box::new(Expr::Number(LiteralExpr {
                     span: span!("1 + 2 * 4", "1"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(0, 0),
                         after: Span::new(1, 2),
                     }
@@ -153,28 +153,28 @@ mod tests {
                     span: span!("1 + 2 * 4", "2 * 4"),
                     left: Box::new(Expr::Number(LiteralExpr {
                         span: span!("1 + 2 * 4", "2"),
-                        whitespace: ExprWhitespace {
+                        whitespace: LiteralWhitespace {
                             before: Span::new(4, 4),
                             after: Span::new(5, 6),
                         }
                     })),
                     right: Box::new(Expr::Number(LiteralExpr {
                         span: span!("1 + 2 * 4", "4"),
-                        whitespace: ExprWhitespace {
+                        whitespace: LiteralWhitespace {
                             before: Span::new(8, 8),
                             after: Span::new(9, 9),
                         }
                     })),
                     op: TokenType::BinOp(BinToken::Multiply),
-                    whitespace: OperatorWhitespace {
-                        before_op: Span::new(6, 6),
-                        after_op: Span::new(7, 8),
+                    whitespace: LiteralWhitespace {
+                        before: Span::new(6, 6),
+                        after: Span::new(7, 8),
                     }
                 })),
                 op: TokenType::BinOp(BinToken::Add),
-                whitespace: OperatorWhitespace {
-                    before_op: Span::new(2, 2),
-                    after_op: Span::new(3, 4),
+                whitespace: LiteralWhitespace {
+                    before: Span::new(2, 2),
+                    after: Span::new(3, 4),
                 }
             })
         )
@@ -190,35 +190,35 @@ mod tests {
                     span: span!("1 + 2 + 3", "1 + 2"),
                     left: Box::new(Expr::Number(LiteralExpr {
                         span: span!("1 + 2 + 3", "1"),
-                        whitespace: ExprWhitespace {
+                        whitespace: LiteralWhitespace {
                             before: Span::new(0, 0),
                             after: Span::new(1, 2),
                         }
                     })),
                     right: Box::new(Expr::Number(LiteralExpr {
                         span: span!("1 + 2 + 3", "2"),
-                        whitespace: ExprWhitespace {
+                        whitespace: LiteralWhitespace {
                             before: Span::new(4, 4),
                             after: Span::new(5, 6),
                         }
                     })),
                     op: TokenType::BinOp(BinToken::Add),
-                    whitespace: OperatorWhitespace {
-                        before_op: Span::new(2, 2),
-                        after_op: Span::new(3, 4),
+                    whitespace: LiteralWhitespace {
+                        before: Span::new(2, 2),
+                        after: Span::new(3, 4),
                     }
                 })),
                 right: Box::new(Expr::Number(LiteralExpr {
                     span: span!("1 + 2 + 3", "3"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(8, 8),
                         after: Span::new(9, 9),
                     }
                 })),
                 op: TokenType::BinOp(BinToken::Add),
-                whitespace: OperatorWhitespace {
-                    before_op: Span::new(6, 6),
-                    after_op: Span::new(7, 8)
+                whitespace: LiteralWhitespace {
+                    before: Span::new(6, 6),
+                    after: Span::new(7, 8)
                 }
             })
         )

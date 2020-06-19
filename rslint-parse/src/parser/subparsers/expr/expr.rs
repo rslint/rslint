@@ -18,7 +18,7 @@ impl<'a> Parser<'a> {
         let mut first = true;
         let mut peeked;
         let mut exprs: Vec<Expr> = vec![];
-        let mut whitespaces: Vec<OperatorWhitespace> = vec![];
+        let mut whitespaces: Vec<LiteralWhitespace> = vec![];
 
         loop {
             let expr = if first {
@@ -37,14 +37,14 @@ impl<'a> Parser<'a> {
             }
     
             if peeked == Some(TokenType::Comma) {
-                let before_op = self.whitespace(true)?;
+                let before = self.whitespace(true)?;
                 let comma_span = self.cur_tok.lexeme.to_owned();
                 self.advance_lexer(false)?;
-                let after_op = self.whitespace(false)?;
+                let after = self.whitespace(false)?;
 
-                whitespaces.push(OperatorWhitespace {
-                    before_op,
-                    after_op
+                whitespaces.push(LiteralWhitespace {
+                    before,
+                    after
                 });
 
                 let peeked_expr;
@@ -98,23 +98,23 @@ mod tests {
             exprs: vec![
                 Expr::Identifier(LiteralExpr {
                     span: span!("foo, 2", "foo"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(0, 0),
                         after: Span::new(3, 3),
                     }
                 }),
                 Expr::Number(LiteralExpr {
                     span: span!("foo, 2", "2"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(5, 5),
                         after: Span::new(6, 6)
                     }
                 }),
             ],
             comma_whitespace: vec![
-                OperatorWhitespace {
-                    before_op: Span::new(3, 3),
-                    after_op: Span::new(4, 5),
+                LiteralWhitespace {
+                    before: Span::new(3, 3),
+                    after: Span::new(4, 5),
                 }
             ]
         }))
@@ -125,7 +125,7 @@ mod tests {
         assert_eq!(expr!(" 2\n"),
         Expr::Number(LiteralExpr {
             span: Span::new(1, 2),
-            whitespace: ExprWhitespace {
+            whitespace: LiteralWhitespace {
                 before: Span::new(0, 1),
                 after: Span::new(2, 2)
             }
@@ -142,40 +142,40 @@ mod tests {
                     span: span!("new foo, bar, /aa/g", "new foo"),
                     target: Box::new(Expr::Identifier(LiteralExpr {
                         span: span!("new foo, bar, /aa/g", "foo"),
-                        whitespace: ExprWhitespace {
+                        whitespace: LiteralWhitespace {
                             before: Span::new(4, 4),
                             after: Span::new(7, 7)
                         }
                     })),
                     args: None,
-                    whitespace: NewExprWhitespace {
-                        before_new: Span::new(0, 0),
-                        after_new: Span::new(3, 4)
+                    whitespace: LiteralWhitespace {
+                        before: Span::new(0, 0),
+                        after: Span::new(3, 4)
                     }
                 }),
                 Expr::Identifier(LiteralExpr {
                     span: span!("new foo, bar, /aa/g", "bar"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(9, 9),
                         after: Span::new(12, 12)
                     }
                 }),
                 Expr::Regex(LiteralExpr {
                     span: span!("new foo, bar, /aa/g", "/aa/g"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(14, 14),
                         after: Span::new(19, 19)
                     }
                 })
             ],
             comma_whitespace: vec![
-                OperatorWhitespace {
-                    before_op: Span::new(7, 7),
-                    after_op: Span::new(8, 9)
+                LiteralWhitespace {
+                    before: Span::new(7, 7),
+                    after: Span::new(8, 9)
                 },
-                OperatorWhitespace {
-                    before_op: Span::new(12, 12),
-                    after_op: Span::new(13, 14)
+                LiteralWhitespace {
+                    before: Span::new(12, 12),
+                    after: Span::new(13, 14)
                 }
             ]
         }))
@@ -189,7 +189,7 @@ mod tests {
         assert_eq!(expr,
         Expr::Identifier(LiteralExpr {
             span: span!("foo,", "foo"),
-            whitespace: ExprWhitespace {
+            whitespace: LiteralWhitespace {
                 before: Span::new(0, 0),
                 after: Span::new(3, 3)
             }

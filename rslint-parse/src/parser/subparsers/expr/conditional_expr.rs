@@ -93,21 +93,21 @@ mod tests {
                 span: span!("foo ? bar : baz", "foo ? bar : baz"),
                 condition: Box::new(Expr::Identifier(LiteralExpr {
                     span: span!("foo ? bar : baz", "foo"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(0, 0),
                         after: Span::new(3, 4),
                     }
                 })),
                 if_true: Box::new(Expr::Identifier(LiteralExpr {
                     span: span!("foo ? bar : baz", "bar"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(6, 6),
                         after: Span::new(9, 10),
                     }
                 })),
                 if_false: Box::new(Expr::Identifier(LiteralExpr {
                     span: span!("foo ? bar : baz", "baz"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(12, 12),
                         after: Span::new(15, 15)
                     }
@@ -130,21 +130,21 @@ mod tests {
                 span: span!("foo?bar:baz", "foo?bar:baz"),
                 condition: Box::new(Expr::Identifier(LiteralExpr {
                     span: span!("foo?bar:baz", "foo"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(0, 0),
                         after: Span::new(3, 3),
                     }
                 })),
                 if_true: Box::new(Expr::Identifier(LiteralExpr {
                     span: span!("foo?bar:baz", "bar"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(4, 4),
                         after: Span::new(7, 7),
                     }
                 })),
                 if_false: Box::new(Expr::Identifier(LiteralExpr {
                     span: span!("foo?bar:baz", "baz"),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(8, 8),
                         after: Span::new(11, 11)
                     }
@@ -165,7 +165,7 @@ mod tests {
             expr!("o"),
             Expr::Identifier(LiteralExpr {
                 span: span!("o", "o"),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 0),
                     after: Span::new(1, 1)
                 }

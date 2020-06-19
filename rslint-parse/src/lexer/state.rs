@@ -11,6 +11,7 @@ pub struct LexerState {
   pub had_linebreak: bool,
   pub context: TokenContext,
   pub last_tok: bool,
+  pub returned_eof: bool,
 }
 
 impl LexerState {
@@ -21,6 +22,7 @@ impl LexerState {
       had_linebreak: false,
       context: TokenContext(vec![Context::BraceStmt]),
       last_tok: false,
+      returned_eof: false,
     }
   }
 

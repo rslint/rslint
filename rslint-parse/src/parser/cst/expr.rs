@@ -62,9 +62,9 @@ pub struct ArrayExpr {
     pub span: Span,
     /// This is an option because undefined values can be declared
     pub exprs: Vec<Option<Expr>>,
-    pub comma_whitespaces: Vec<OperatorWhitespace>,
-    pub opening_bracket_whitespace: OperatorWhitespace,
-    pub closing_bracket_whitespace: OperatorWhitespace,
+    pub comma_whitespaces: Vec<LiteralWhitespace>,
+    pub opening_bracket_whitespace: LiteralWhitespace,
+    pub closing_bracket_whitespace: LiteralWhitespace,
 }
 
 /// An expression enclosed by parentheses
@@ -72,8 +72,8 @@ pub struct ArrayExpr {
 pub struct GroupingExpr {
     pub span: Span,
     pub expr: Box<Expr>,
-    pub opening_paren_whitespace: OperatorWhitespace,
-    pub closing_paren_whitespace: OperatorWhitespace,
+    pub opening_paren_whitespace: LiteralWhitespace,
+    pub closing_paren_whitespace: LiteralWhitespace,
 }
 
 /// A member access expression with brackets, such as `foo["bar"]`.
@@ -82,8 +82,8 @@ pub struct BracketExpr {
     pub span: Span,
     pub object: Box<Expr>,
     pub property: Box<Expr>,
-    pub opening_bracket_whitespace: OperatorWhitespace,
-    pub closing_bracket_whitespace: OperatorWhitespace,
+    pub opening_bracket_whitespace: LiteralWhitespace,
+    pub closing_bracket_whitespace: LiteralWhitespace,
 }
 
 /// A call to a function with arguments such as `foo(bar, baz,)`.
@@ -102,7 +102,7 @@ pub struct SequenceExpr {
     /// A vector of the whitespace of each comma in the sequence.  
     /// The length of this vector should always be `exprs.len() - 1`.  
     /// if you find this is not the case, please open an issue at https://github.com/RDambrosio016/RSLint
-    pub comma_whitespace: Vec<OperatorWhitespace>,
+    pub comma_whitespace: Vec<LiteralWhitespace>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -111,7 +111,7 @@ pub struct AssignmentExpr {
     pub left: Box<Expr>,
     pub right: Box<Expr>,
     pub op: TokenType,
-    pub whitespace: OperatorWhitespace
+    pub whitespace: LiteralWhitespace
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -137,7 +137,7 @@ pub struct BinaryExpr {
     pub left: Box<Expr>,
     pub right: Box<Expr>,
     pub op: TokenType,
-    pub whitespace: OperatorWhitespace,
+    pub whitespace: LiteralWhitespace,
 }
 /// An expression such as `++foo` or `--foo`
 #[derive(Debug, Clone, PartialEq)]
@@ -146,7 +146,7 @@ pub struct UpdateExpr {
     pub prefix: bool,
     pub object: Box<Expr>,
     pub op: TokenType,
-    pub whitespace: OperatorWhitespace,
+    pub whitespace: LiteralWhitespace,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -154,13 +154,7 @@ pub struct UnaryExpr {
     pub span: Span,
     pub object: Box<Expr>,
     pub op: TokenType,
-    pub whitespace: OperatorWhitespace,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct OperatorWhitespace {
-    pub before_op: Span,
-    pub after_op: Span,
+    pub whitespace: LiteralWhitespace,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -168,13 +162,7 @@ pub struct MemberExpr {
     pub span: Span,
     pub object: Box<Expr>,
     pub property: Box<Expr>,
-    pub whitespace: MemberExprWhitespace,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct MemberExprWhitespace {
-    pub before_dot: Span,
-    pub after_dot: Span,
+    pub whitespace: LiteralWhitespace,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -182,7 +170,7 @@ pub struct NewExpr {
     pub span: Span,
     pub target: Box<Expr>,
     pub args: Option<Arguments>,
-    pub whitespace: NewExprWhitespace,
+    pub whitespace: LiteralWhitespace,
 }
 
 /// Arguments like `(foo, bar,)`, You can find if there was a trailing comma by checking  
@@ -191,26 +179,20 @@ pub struct NewExpr {
 pub struct Arguments {
     pub span: Span,
     pub arguments: Vec<Expr>,
-    pub open_paren_whitespace: OperatorWhitespace,
-    pub close_paren_whitespace: OperatorWhitespace,
-    pub comma_whitespaces: Vec<OperatorWhitespace>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct NewExprWhitespace {
-    pub before_new: Span,
-    pub after_new: Span,
+    pub open_paren_whitespace: LiteralWhitespace,
+    pub close_paren_whitespace: LiteralWhitespace,
+    pub comma_whitespaces: Vec<LiteralWhitespace>,
 }
 
 /// An expression which can be described as a single token with leading and trailing whitespace
 #[derive(Debug, Clone, PartialEq)]
 pub struct LiteralExpr {
     pub span: Span,
-    pub whitespace: ExprWhitespace,
+    pub whitespace: LiteralWhitespace,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ExprWhitespace {
+pub struct LiteralWhitespace {
     pub before: Span,
     pub after: Span,
 }
@@ -220,9 +202,9 @@ pub struct ExprWhitespace {
 pub struct Object {
     pub span: Span,
     pub props: Vec<ObjProp>,
-    pub comma_whitespaces: Vec<OperatorWhitespace>,
-    pub open_brace_whitespace: OperatorWhitespace,
-    pub close_brace_whitespace: OperatorWhitespace,
+    pub comma_whitespaces: Vec<LiteralWhitespace>,
+    pub open_brace_whitespace: LiteralWhitespace,
+    pub close_brace_whitespace: LiteralWhitespace,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -231,5 +213,5 @@ pub struct ObjProp {
     pub key: Box<Expr>,
     pub value: Box<Expr>,
     /// The whitespace of the colon
-    pub whitespace: OperatorWhitespace,
+    pub whitespace: LiteralWhitespace,
 }

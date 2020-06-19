@@ -767,7 +767,12 @@ impl<'a> Iterator for Lexer<'a> {
   fn next(&mut self) -> Option<Self::Item> {
     let res = self.scan_token();
     if res == (None, None) {
-      return None;
+      if self.state.returned_eof {
+        return None;
+      } else {
+        self.state.returned_eof = true;
+        return Some((Some(Token::new(TokenType::EOF, self.source_len, self.source_len, self.line)), None));
+      }
     }
     Some(res)
   }

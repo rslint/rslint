@@ -37,9 +37,9 @@ impl<'a> Parser<'a> {
                     span: self.span(start, expr_span.end),
                     target: Box::new(expr),
                     args,
-                    whitespace: NewExprWhitespace {
-                        after_new,
-                        before_new: leading_ws,
+                    whitespace: LiteralWhitespace {
+                        after: after_new,
+                        before: leading_ws,
                     },
                 });
 
@@ -50,9 +50,9 @@ impl<'a> Parser<'a> {
                 span: self.span(start, expr_span.end),
                 target: Box::new(expr),
                 args: None,
-                whitespace: NewExprWhitespace {
-                    after_new,
-                    before_new: leading_ws,
+                whitespace: LiteralWhitespace {
+                    after: after_new,
+                    before: leading_ws,
                 },
             }));
         } else {
@@ -80,21 +80,21 @@ mod tests {
                 span: Span::new(0, 9),
                 object: Box::new(Expr::Number(LiteralExpr {
                     span: Span::new(0, 3),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(0, 0),
                         after: Span::new(3, 4)
                     }
                 })),
                 property: Box::new(Expr::Identifier(LiteralExpr {
                     span: Span::new(6, 9),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(6, 6),
                         after: Span::new(9, 9)
                     }
                 })),
-                whitespace: MemberExprWhitespace {
-                    before_dot: Span::new(4, 5),
-                    after_dot: Span::new(6, 6)
+                whitespace: LiteralWhitespace {
+                    before: Span::new(4, 5),
+                    after: Span::new(6, 6)
                 }
             })
         )
@@ -113,27 +113,27 @@ mod tests {
                     span: Span::new(7, 15),
                     object: Box::new(Expr::Identifier(LiteralExpr {
                         span: Span::new(7, 10),
-                        whitespace: ExprWhitespace {
+                        whitespace: LiteralWhitespace {
                             before: Span::new(5, 7),
                             after: Span::new(10, 10),
                         }
                     })),
                     property: Box::new(Expr::Identifier(LiteralExpr {
                         span: Span::new(12, 15),
-                        whitespace: ExprWhitespace {
+                        whitespace: LiteralWhitespace {
                             before: Span::new(12, 12),
                             after: Span::new(15, 15),
                         }
                     })),
-                    whitespace: MemberExprWhitespace {
-                        before_dot: Span::new(10, 10),
-                        after_dot: Span::new(11, 12),
+                    whitespace: LiteralWhitespace {
+                        before: Span::new(10, 10),
+                        after: Span::new(11, 12),
                     }
                 })),
                 args: None,
-                whitespace: NewExprWhitespace {
-                    before_new: Span::new(0, 1),
-                    after_new: Span::new(4, 5),
+                whitespace: LiteralWhitespace {
+                    before: Span::new(0, 1),
+                    after: Span::new(4, 5),
                 }
             }))
         )
@@ -150,15 +150,15 @@ mod tests {
                 span: Span::new(0, 7),
                 target: Box::new(Expr::Identifier(LiteralExpr {
                     span: Span::new(4, 7),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(4, 4),
                         after: Span::new(7, 7)
                     }
                 })),
                 args: None,
-                whitespace: NewExprWhitespace {
-                    before_new: Span::new(0, 0),
-                    after_new: Span::new(3, 4),
+                whitespace: LiteralWhitespace {
+                    before: Span::new(0, 0),
+                    after: Span::new(3, 4),
                 },
             }))
         )
@@ -173,7 +173,7 @@ mod tests {
             res,
             Ok(Expr::Identifier(LiteralExpr {
                 span: Span::new(0, 3),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 0),
                     after: Span::new(3, 3)
                 }
@@ -193,21 +193,21 @@ mod tests {
                 span: Span::new(4, 11),
                 target: Box::new(Expr::Identifier(LiteralExpr {
                     span: Span::new(8, 11),
-                    whitespace: ExprWhitespace {
+                    whitespace: LiteralWhitespace {
                         before: Span::new(8, 8),
                         after: Span::new(11, 11)
                     }
                 })),
                 args: None,
-                whitespace: NewExprWhitespace {
-                    before_new: Span::new(4, 4),
-                    after_new: Span::new(7, 8)
+                whitespace: LiteralWhitespace {
+                    before: Span::new(4, 4),
+                    after: Span::new(7, 8)
                 }
             })),
             args: None,
-            whitespace: NewExprWhitespace {
-                before_new: Span::new(0, 0),
-                after_new: Span::new(3, 4)
+            whitespace: LiteralWhitespace {
+                before: Span::new(0, 0),
+                after: Span::new(3, 4)
             }
         })))
     }

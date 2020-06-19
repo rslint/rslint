@@ -30,7 +30,7 @@ impl<'a> Parser<'a> {
         };
         let cur_lexeme = self.cur_tok.lexeme.to_owned();
 
-        if self.lexer_done && self.cur_tok.is_whitespace() {
+        if self.done() {
             return Err(self
                 .error(
                     ExpectedExpression,
@@ -91,13 +91,13 @@ impl<'a> Parser<'a> {
             return Ok(Expr::Grouping(GroupingExpr {
                 span: Span::new(open_paren_span.start, close_paren_span.end),
                 expr: Box::new(grouped),
-                opening_paren_whitespace: OperatorWhitespace {
-                    before_op: leading_whitespace,
-                    after_op: open_paren_trailing,
+                opening_paren_whitespace: LiteralWhitespace {
+                    before: leading_whitespace,
+                    after: open_paren_trailing,
                 },
-                closing_paren_whitespace: OperatorWhitespace {
-                    before_op: before_close_paren,
-                    after_op: close_paren_trailing,
+                closing_paren_whitespace: LiteralWhitespace {
+                    before: before_close_paren,
+                    after: close_paren_trailing,
                 },
             }));
         }
@@ -123,7 +123,7 @@ impl<'a> Parser<'a> {
         self.advance_lexer(false)?;
         let expr = expr_kind(LiteralExpr {
             span: expr_tok,
-            whitespace: ExprWhitespace {
+            whitespace: LiteralWhitespace {
                 before: leading_whitespace,
                 after: self.whitespace(false)?,
             },
@@ -156,7 +156,7 @@ mod tests {
                 .parse_primary_expr(None),
             Ok(Expr::This(LiteralExpr {
                 span: Span::new(1, 5),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 1),
                     after: Span::new(5, 6),
                 }
@@ -172,7 +172,7 @@ mod tests {
                 .parse_primary_expr(None),
             Ok(Expr::Identifier(LiteralExpr {
                 span: Span::new(2, 7),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 2),
                     after: Span::new(7, 10),
                 }
@@ -188,7 +188,7 @@ mod tests {
                 .parse_primary_expr(None),
             Ok(Expr::String(LiteralExpr {
                 span: Span::new(8, 17),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 8),
                     after: Span::new(17, 18),
                 }
@@ -204,7 +204,7 @@ mod tests {
                 .parse_primary_expr(None),
             Ok(Expr::String(LiteralExpr {
                 span: Span::new(3, 7),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 3),
                     after: Span::new(7, 8),
                 }
@@ -220,7 +220,7 @@ mod tests {
                 .parse_primary_expr(None),
             Ok(Expr::String(LiteralExpr {
                 span: Span::new(0, 3),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 0),
                     after: Span::new(3, 3)
                 }

@@ -126,7 +126,8 @@ pub enum TokenType {
   Undefined,
   Yield,
   QuestionMark,
-  InvalidToken
+  InvalidToken,
+  EOF,
 }
 
 /// Binary operation tokens such as <, and >

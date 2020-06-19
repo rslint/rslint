@@ -27,7 +27,6 @@ pub struct Parser<'a> {
     /// tokens until a valid one is found
     /// This recovery is dangerous and can yield secondary confusing errors
     pub discard_recovery: bool,
-    pub lexer_done: bool,
     pub cst: CST,
     /// The optional start for spans, this is for parsing chunks of code in larger files  
     /// Will be `0` if no offset is specified
@@ -50,7 +49,6 @@ impl<'a> Parser<'a> {
             source,
             file_id,
             discard_recovery,
-            lexer_done: false,
             cst: CST::new(),
             offset: 0,
         })
@@ -79,16 +77,15 @@ impl<'a> Parser<'a> {
         match res {
             // Unrecoverable lexer error
             r @ Some((None, Some(_))) => Err(r.unwrap().1.unwrap()),
-            // Lexer is finished
+            // Lexer is finished after returning EOF
             None => {
-                self.lexer_done = true;
                 Ok(None)
             }
             // Successful scan
             Some((Some(_), None)) => {
                 let tok = res.unwrap().0.unwrap();
                 if skip_linebreak && tok.token_type == TokenType::Linebreak {
-                    while self.cur_tok.token_type == TokenType::Linebreak && !self.lexer_done {
+                    while self.cur_tok.token_type == TokenType::Linebreak {
                         self.advance_lexer(false)?;
                     }
                     return Ok(Some(self.cur_tok.to_owned()));
@@ -118,7 +115,7 @@ impl<'a> Parser<'a> {
         match res {
             // Unrecoverable lexer error
             Some((None, Some(_))) => Err(res.unwrap().1.to_owned().unwrap()),
-            // Lexer is finished
+            // Lexer is finished after returning EOF
             None => Ok(None),
             // Successful scan
             Some((Some(_), None)) => Ok(Some(&res.unwrap().0.as_ref().unwrap())),
@@ -188,7 +185,7 @@ impl<'a> Parser<'a> {
         } else {
             let origin_span = self.cur_tok.lexeme.to_owned();
             self.advance_while(true, |x| func(&x.token_type))?;
-            if self.lexer_done {
+            if self.done() {
                 return Err(self
                     .error(
                         ParseDiagnosticType::UnexpectedToken,
@@ -221,22 +218,12 @@ impl<'a> Parser<'a> {
             self.advance_while(leading, |tok: &Token| {
                 tok.token_type == TokenType::Whitespace
             })?;
-
-            let end = if self.lexer_done {
-                self.cur_tok.lexeme.end
-            } else {
-                self.cur_tok.lexeme.start
-            };
-            Ok(Span::new(start, end))
+            Ok(Span::new(start, self.cur_tok.lexeme.start))
         } else {
-            if self.lexer_done {
-                Ok(Span::new(self.cur_tok.lexeme.end, self.cur_tok.lexeme.end))
-            } else {
-                Ok(Span::new(
-                    self.cur_tok.lexeme.start,
-                    self.cur_tok.lexeme.start,
-                ))
-            }
+            Ok(Span::new(
+                self.cur_tok.lexeme.start,
+                self.cur_tok.lexeme.start,
+            ))
         }
     }
 
@@ -246,6 +233,10 @@ impl<'a> Parser<'a> {
     }
 
     pub fn span(&self, start: usize, end: usize) -> Span {
-        Span::new(start, end)
+        Span::new(start + self.offset, end + self.offset)
+    }
+
+    pub fn done(&self) -> bool {
+        self.cur_tok.token_type == TokenType::EOF
     }
 }

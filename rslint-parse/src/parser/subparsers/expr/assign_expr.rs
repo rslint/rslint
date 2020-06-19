@@ -23,11 +23,11 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_assign_expr_recursive(&mut self, target: Expr) -> Result<Expr, ParserDiagnostic<'a>> {
-        let before_op;
+        let before;
         let op: AssignToken;
 
         if let TokenType::AssignOp(tok) = self.cur_tok.token_type {
-            before_op = self.span(self.cur_tok.lexeme.start, self.cur_tok.lexeme.start);
+            before = self.span(self.cur_tok.lexeme.start, self.cur_tok.lexeme.start);
             op = tok;
         } else {
             // This is to avoid the case of `OTHERTOKEN ASSIGNTOKEN`, peeking would skip over `OTHERTOKEN` and use `ASSIGNTOKEN`
@@ -39,7 +39,7 @@ impl<'a> Parser<'a> {
             let peeked = self.peek_while(|x| x.is_whitespace())?.map(|x| x.token_type);
             
             if let Some(TokenType::AssignOp(kind)) = peeked {
-                before_op = self.whitespace(true)?;
+                before = self.whitespace(true)?;
                 op = kind;
             } else {
                 return Ok(target);
@@ -47,7 +47,7 @@ impl<'a> Parser<'a> {
         }
         self.advance_lexer(false)?;
 
-        let after_op = self.whitespace(false)?;
+        let after = self.whitespace(false)?;
 
         if !target.is_valid_assign_target() {
             let err = self.error(InvalidTargetExpression, &format!("Invalid assignment target for `{}`", op.to_string()))
@@ -63,9 +63,9 @@ impl<'a> Parser<'a> {
             left: Box::new(target),
             right: Box::new(right),
             op: TokenType::AssignOp(op),
-            whitespace: OperatorWhitespace {
-                before_op,
-                after_op
+            whitespace: LiteralWhitespace {
+                before,
+                after
             }
         }))
     }
@@ -86,22 +86,22 @@ mod tests {
             span: span!("foo += bar", "foo += bar"),
             left: Box::new(Expr::Identifier(LiteralExpr {
                 span: span!("foo += bar", "foo"),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 0),
                     after: Span::new(3, 4),
                 }
             })),
             right: Box::new(Expr::Identifier(LiteralExpr {
                 span: span!("foo += bar", "bar"),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(7, 7),
                     after: Span::new(10, 10),
                 }
             })),
             op: TokenType::AssignOp(AssignToken::AddAssign),
-            whitespace: OperatorWhitespace {
-                before_op: Span::new(4, 4),
-                after_op: Span::new(6, 7)
+            whitespace: LiteralWhitespace {
+                before: Span::new(4, 4),
+                after: Span::new(6, 7)
             }
         }))
     }
@@ -113,22 +113,22 @@ mod tests {
             span: span!("true += false", "true += false"),
             left: Box::new(Expr::True(LiteralExpr {
                 span: span!("true += false", "true"),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(0, 0),
                     after: Span::new(4, 5)
                 }
             })),
             right: Box::new(Expr::False(LiteralExpr {
                 span: span!("true += false", "false"),
-                whitespace: ExprWhitespace {
+                whitespace: LiteralWhitespace {
                     before: Span::new(8, 8),
                     after: Span::new(13, 13),
                 }
             })),
             op: TokenType::AssignOp(AssignToken::AddAssign),
-            whitespace: OperatorWhitespace {
-                before_op: Span::new(5, 5),
-                after_op: Span::new(7, 8)
+            whitespace: LiteralWhitespace {
+                before: Span::new(5, 5),
+                after: Span::new(7, 8)
             }
         }))
     }
