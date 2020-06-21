@@ -3,7 +3,7 @@ use crate::lexer::token::TokenType;
 use crate::parser::cst::expr::*;
 use crate::parser::error::ParseDiagnosticType::*;
 use crate::parser::Parser;
-use crate::peek_or;
+use crate::peek;
 use crate::span::Span;
 
 // I decided to not include this logic in the primary expr file since there is a lot of error recovery logic.
@@ -78,7 +78,7 @@ impl<'a> Parser<'a> {
                 t if t.starts_expr() => {
                     let expr = self.parse_assign_expr(Some(loop_leading_whitespace))?;
 
-                    match peek_or!(self) {
+                    match peek!(self) {
                         Some(TokenType::Comma) => {
                             let before_comma = self.whitespace(true)?;
                             self.advance_lexer(false)?;
@@ -206,7 +206,7 @@ impl<'a> Parser<'a> {
                 let prop_span = prop.span.to_owned();
                 props.push(prop);
 
-                match peek_or!(self) {
+                match peek!(self) {
                     Some(TokenType::Comma) => {
                         let before = self.whitespace(true)?;
                         self.advance_lexer(false)?;
@@ -280,7 +280,7 @@ impl<'a> Parser<'a> {
                 self.parse_primary_expr(Some(leading_whitespace))?
             };
 
-            match peek_or!(self) {
+            match peek!(self) {
                 // Recover from `{ a b }` by assuming a colon was there, the whitespace for before and after will be the end of the key's span
                 Some(t) if t.starts_expr() => {
                     let err = self
@@ -314,7 +314,7 @@ impl<'a> Parser<'a> {
                     self.advance_lexer(false)?;
                     let after_colon = self.whitespace(false)?;
 
-                    if peek_or!(self).map(|t| t.starts_expr()).is_none() {
+                    if peek!(self).map(|t| t.starts_expr()).is_none() {
                         self.discard_recover(
                             Some("Expected a value following an object key, but found none"),
                             |t| !t.starts_expr(),

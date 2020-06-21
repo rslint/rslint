@@ -2,3 +2,4 @@
 //! The source code is formatted very opinionated, original whitespace is not preserved
 
 pub mod expr;
+pub mod stmt;

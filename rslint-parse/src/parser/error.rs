@@ -14,4 +14,5 @@ pub enum ParseDiagnosticType {
     UnmatchedBracket,
     ExpectedObjectKey,
     ExpectedSemicolon,
+    IncompleteVariableDeclaration,
 }

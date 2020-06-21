@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! peek_or {
+macro_rules! peek {
     ($parser:expr, $expected:expr) => {{
         if $expected.contains(&$parser.cur_tok.token_type) {
             Some($parser.cur_tok.token_type)

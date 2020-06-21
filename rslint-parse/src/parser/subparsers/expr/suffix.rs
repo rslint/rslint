@@ -5,7 +5,7 @@ use crate::parser::error::ParseDiagnosticType::{
     ExpectedComma, ExpectedIdentifier, UnmatchedBracket,
 };
 use crate::parser::Parser;
-use crate::peek_or;
+use crate::peek;
 use crate::span::Span;
 
 impl<'a> Parser<'a> {
@@ -19,7 +19,7 @@ impl<'a> Parser<'a> {
         object: Expr,
         no_call: bool,
     ) -> Result<Expr, ParserDiagnostic<'a>> {
-        match peek_or!(self, [TokenType::ParenOpen, TokenType::Period]) {
+        match peek!(self, [TokenType::ParenOpen, TokenType::Period]) {
             Some(TokenType::Period) => {
                 let before_dot = self.whitespace(true)?;
                 let dot_span = self.cur_tok.lexeme.to_owned();
@@ -235,7 +235,7 @@ impl<'a> Parser<'a> {
                         after: after_comma,
                     });
 
-                    if peek_or!(self, [TokenType::ParenClose]) == Some(TokenType::ParenClose) {
+                    if peek!(self, [TokenType::ParenClose]) == Some(TokenType::ParenClose) {
                         let before_paren = self.whitespace(true)?;
                         self.advance_lexer(false)?;
                         let after_close_paren = self.whitespace(false)?;
@@ -269,7 +269,7 @@ impl<'a> Parser<'a> {
                     after: after_comma,
                 });
 
-                if peek_or!(self, [TokenType::ParenClose]) == Some(TokenType::ParenClose) {
+                if peek!(self, [TokenType::ParenClose]) == Some(TokenType::ParenClose) {
                     let before_paren = self.whitespace(true)?;
                     self.advance_lexer(false)?;
                     let after_close_paren = self.whitespace(false)?;

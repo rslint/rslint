@@ -2,6 +2,7 @@
 
 pub mod cst;
 pub mod error;
+pub mod state;
 pub mod subparsers;
 pub mod util;
 
@@ -9,10 +10,14 @@ use crate::diagnostic::ParserDiagnostic;
 use crate::diagnostic::ParserDiagnosticType;
 use crate::lexer::lexer::Lexer;
 use crate::lexer::token::*;
+use crate::parser::cst::expr::*;
+use crate::parser::cst::stmt::*;
 use crate::parser::cst::*;
 use crate::parser::error::ParseDiagnosticType;
+use crate::parser::state::ParserState;
 use crate::span::Span;
 use crate::util::multipeek::{multipeek, MultiPeek};
+use crate::peek;
 
 pub struct Parser<'a> {
     pub lexer: MultiPeek<Lexer<'a>>,
@@ -31,6 +36,7 @@ pub struct Parser<'a> {
     /// The optional start for spans, this is for parsing chunks of code in larger files  
     /// Will be `0` if no offset is specified
     pub offset: usize,
+    pub state: ParserState,
 }
 
 impl<'a> Parser<'a> {
@@ -51,6 +57,7 @@ impl<'a> Parser<'a> {
             discard_recovery,
             cst: CST::new(),
             offset: 0,
+            state: ParserState::new(),
         })
     }
 
@@ -78,18 +85,21 @@ impl<'a> Parser<'a> {
             // Unrecoverable lexer error
             r @ Some((None, Some(_))) => Err(r.unwrap().1.unwrap()),
             // Lexer is finished after returning EOF
-            None => {
-                Ok(None)
-            }
+            None => Ok(None),
             // Successful scan
             Some((Some(_), None)) => {
                 let tok = res.unwrap().0.unwrap();
+                // if the current token isnt a whitespace we should update the state's last token to be the current
+                if !self.cur_tok.token_type.is_whitespace() {
+                    self.state.last_token = Some(self.cur_tok.token_type);
+                }
                 if skip_linebreak && tok.token_type == TokenType::Linebreak {
                     while self.cur_tok.token_type == TokenType::Linebreak {
                         self.advance_lexer(false)?;
                     }
                     return Ok(Some(self.cur_tok.to_owned()));
                 }
+
                 self.cur_tok = tok.to_owned();
                 Ok(Some(tok))
             }
@@ -176,7 +186,10 @@ impl<'a> Parser<'a> {
             Err(self
                 .error(
                     ParseDiagnosticType::UnexpectedToken,
-                    message.unwrap_or(&format!("Unexpected token `{}`", self.cur_tok.lexeme.content(self.source))),
+                    message.unwrap_or(&format!(
+                        "Unexpected token `{}`",
+                        self.cur_tok.lexeme.content(self.source)
+                    )),
                 )
                 .primary(
                     self.cur_tok.lexeme.range().to_owned(),
@@ -189,12 +202,12 @@ impl<'a> Parser<'a> {
                 return Err(self
                     .error(
                         ParseDiagnosticType::UnexpectedToken,
-                        message.unwrap_or(&format!("Unexpected token `{}`", self.cur_tok.lexeme.content(self.source))),
+                        message.unwrap_or(&format!(
+                            "Unexpected token `{}`",
+                            self.cur_tok.lexeme.content(self.source)
+                        )),
                     )
-                    .primary(
-                        origin_span,
-                        "Unexpected in the current context",
-                    ));
+                    .primary(origin_span, "Unexpected in the current context"));
             }
             Ok(())
         }
@@ -225,6 +238,39 @@ impl<'a> Parser<'a> {
                 self.cur_tok.lexeme.start,
             ))
         }
+    }
+
+    /// This handles ASI (automatic semicolon insertion), a semicolon is explicit if the next token is a semicolon.  
+    /// A semicolon is implicit if any of the following conditions are true:
+    /// - The next token is EOF  
+    /// - The previous token was a `}`  
+    /// - There is a linebreak after the current token  
+    pub fn semi(&mut self) -> Result<Option<Semicolon>, ParserDiagnostic<'a>> {
+        const ACCEPTABLE: [TokenType; 2] = [TokenType::EOF, TokenType::BraceClose];
+
+        if peek!(self) == Some(TokenType::Semicolon) {
+            let before = self.whitespace(true)?;
+            self.advance_lexer(false)?;
+            let after = self.whitespace(false)?;
+
+            return Ok(Some(Semicolon::Explicit(LiteralWhitespace {
+                before,
+                after,
+            })));
+        }
+
+        // TODO: we can optimize away this second peek
+        if ACCEPTABLE.contains(&self.cur_tok.token_type)
+            || ACCEPTABLE.contains(&self.state.last_token.unwrap_or(TokenType::Await))
+            || self
+                .peek_while(|t| t.token_type == TokenType::Whitespace)?
+                .map(|t| t.token_type)
+                == Some(TokenType::Linebreak)
+        {
+            return Ok(Some(Semicolon::Implicit));
+        }
+
+        Ok(None)
     }
 
     pub fn error(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic<'a> {

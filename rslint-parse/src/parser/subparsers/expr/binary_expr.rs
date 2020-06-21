@@ -3,7 +3,7 @@ use crate::lexer::token::TokenType;
 use crate::parser::cst::expr::*;
 use crate::parser::Parser;
 use crate::span::Span;
-use crate::peek_or;
+use crate::peek;
 
 impl<'a> Parser<'a> {
     pub fn parse_binary_expr(
@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
         left: Expr,
         min_precedence: u8,
     ) -> Result<Expr, ParserDiagnostic<'a>> {
-        let peeked = peek_or!(self);
+        let peeked = peek!(self);
 
         match peeked {
             Some(TokenType::In) | Some(TokenType::Instanceof) | Some(TokenType::BinOp(_)) => {}

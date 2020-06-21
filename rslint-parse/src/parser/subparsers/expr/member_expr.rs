@@ -3,7 +3,7 @@ use crate::lexer::token::TokenType;
 use crate::parser::cst::expr::*;
 use crate::parser::Parser;
 use crate::span::Span;
-use crate::peek_or;
+use crate::peek;
 
 impl<'a> Parser<'a> {
     pub fn parse_member_or_new_expr(
@@ -27,9 +27,9 @@ impl<'a> Parser<'a> {
             let expr = self.parse_member_or_new_expr(None, new_expr)?;
             let expr_span = expr.span();
             
-            if !new_expr || peek_or!(self, [TokenType::ParenOpen]) == Some(TokenType::ParenOpen) {
+            if !new_expr || peek!(self, [TokenType::ParenOpen]) == Some(TokenType::ParenOpen) {
                 let mut args = None;
-                if peek_or!(self, [TokenType::ParenOpen]) == Some(TokenType::ParenOpen) {
+                if peek!(self, [TokenType::ParenOpen]) == Some(TokenType::ParenOpen) {
                     args = Some(self.parse_args(None)?);
                 }
 

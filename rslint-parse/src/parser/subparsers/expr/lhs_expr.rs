@@ -3,7 +3,7 @@ use crate::lexer::token::TokenType;
 use crate::parser::cst::expr::*;
 use crate::parser::Parser;
 use crate::span::Span;
-use crate::peek_or;
+use crate::peek;
 
 impl<'a> Parser<'a> {
     /// Parse a left hand side expression, which includes call, dot, and bracket suffix expressions.
@@ -16,7 +16,7 @@ impl<'a> Parser<'a> {
 
         let callee = self.parse_member_or_new_expr(Some(leading_ws), true)?;
 
-        if peek_or!(self, [TokenType::ParenOpen]) == Some(TokenType::ParenOpen) {
+        if peek!(self, [TokenType::ParenOpen]) == Some(TokenType::ParenOpen) {
             let arguments = self.parse_args(None)?;
             let expr = Expr::Call(CallExpr {
                 span: self.span(callee.span().start, arguments.span.end),
