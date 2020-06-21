@@ -66,11 +66,25 @@ impl<'a> Parser<'a> {
     /// Will return `None` if any of the following are true:  
     /// - The source is an empty string  
     /// - The offset is greater or equal to the source length
-    // pub fn with_source_and_offset(source: &'a str, file_id: &'a str, discard_recovery: bool, offset: usize) -> Option<Self> {
-    //     if source.len() == 0 || offset >= source.len() {
-    //         return None;
-    //     }
-    // }
+    pub fn with_source_and_offset(source: &'a str, file_id: &'a str, discard_recovery: bool, offset: usize) -> Option<Self> {
+        if source.len() == 0 || offset >= source.len() {
+            return None;
+        }
+
+        let mut lexer = multipeek(Lexer::new(source, file_id));
+        let next = lexer.next();
+        Some(Self {
+            lexer,
+            cur_tok: next.unwrap().0.unwrap(),
+            errors: vec![],
+            source,
+            file_id,
+            discard_recovery,
+            cst: CST::new(),
+            offset,
+            state: ParserState::new(),
+        })
+    }
 
     /// Advances the parser's lexer and returns the optional token  
     ///  
