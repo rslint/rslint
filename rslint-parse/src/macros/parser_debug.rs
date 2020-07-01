@@ -5,12 +5,6 @@ macro_rules! span {
         let end = start + $target.len();
         Span::new(start, end)
     }};
-
-    ($src:expr, $target:expr, $idx:expr) => {{
-        let start = $src.matches($target).collect()[$idx];
-        let end = start + $target.len();
-        Span::new(start, end)
-    }};
 }
 
 #[macro_export]

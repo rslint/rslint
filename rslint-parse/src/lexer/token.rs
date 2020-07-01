@@ -259,10 +259,11 @@ pub static BEFORE_EXPR: [TokenType; 27] = [
   Delete
 ];
 
-pub static STARTS_EXPR: [TokenType; 28] = [
+pub static STARTS_EXPR: [TokenType; 29] = [
   BitwiseNot,
   BraceOpen,
   BracketOpen,
+  ParenOpen,
   Await,
   Increment,
   Decrement,

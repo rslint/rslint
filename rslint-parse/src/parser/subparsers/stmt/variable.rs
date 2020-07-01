@@ -57,11 +57,12 @@ impl<'a> Parser<'a> {
             self.errors.push(err);
         }
 
+        let semicolon = semi.unwrap_or(Semicolon::Implicit);
         Ok(Stmt::Variable(VarStmt {
-            span: var_span + declarators.last().unwrap().span(),
+            span: (var_span + declarators.last().unwrap().span()).extend(semicolon.offset()),
             declared: declarators,
             comma_whitespaces,
-            semi: semi.unwrap_or(Semicolon::Implicit),
+            semi: semicolon,
             var_whitespace: LiteralWhitespace {
                 before: leading_whitespace,
                 after: after_var,
@@ -91,6 +92,7 @@ impl<'a> Parser<'a> {
             let value = Some(self.parse_assign_expr(None)?);
 
             let declarator = Declarator {
+                span: ident_span.to_owned() + value.as_ref().map(|x| x.span()).unwrap().to_owned(),
                 name: LiteralExpr {
                     span: ident_span,
                     whitespace: LiteralWhitespace {
@@ -110,6 +112,7 @@ impl<'a> Parser<'a> {
 
         // Variable is being only declared
         Ok(Declarator {
+            span: ident_span.to_owned(),
             name: LiteralExpr {
                 span: ident_span,
                 whitespace: LiteralWhitespace {
@@ -120,5 +123,134 @@ impl<'a> Parser<'a> {
             initializer_whitespace: None,
             value: None,
         })
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::parser::cst::expr::*;
+    use crate::parser::cst::stmt::*;
+    use crate::span;
+    use crate::span::Span;
+    use crate::stmt;
+
+    #[test]
+    fn var_single_decl() {
+        assert_eq!(
+            stmt!(" var a = 6;"),
+            Stmt::Variable(VarStmt {
+                span: span!(" var a = 6;", "var a = 6;"),
+                comma_whitespaces: vec![],
+                var_whitespace:  LiteralWhitespace {
+                    before: Span::new(0, 1),
+                    after: Span::new(4, 5),
+                },
+                semi: Semicolon::Explicit(LiteralWhitespace {
+                    before: Span::new(10, 10),
+                    after: Span::new(11, 11),
+                }),
+                declared: vec![
+                    Declarator {
+                        span: span!(" var a = 6;", "a = 6"),
+                        initializer_whitespace: Some(LiteralWhitespace {
+                            before: Span::new(7, 7),
+                            after: Span::new(8, 9),
+                        }),
+                        name: LiteralExpr {
+                            span: Span::new(5, 6),
+                            whitespace: LiteralWhitespace {
+                                before: Span::new(5, 5),
+                                after: Span::new(6, 7),
+                            }
+                        },
+                        value: Some(Expr::Number(LiteralExpr {
+                            span: span!(" var a = 6;", "6"),
+                            whitespace: LiteralWhitespace {
+                                before: Span::new(9, 9),
+                                after: Span::new(10, 10),
+                            }
+                        }))
+                    }
+                ]
+            })
+        )
+    }
+
+    #[test]
+    fn var_single_decl_no_initializer() {
+        assert_eq!(
+            stmt!("var b"),
+            Stmt::Variable(VarStmt {
+                span: span!("var b", "var b"),
+                var_whitespace:  LiteralWhitespace {
+                    before: Span::new(0, 0),
+                    after: Span::new(3, 4),
+                },
+                semi: Semicolon::Implicit,
+                comma_whitespaces: vec![],
+                declared: vec![
+                    Declarator {
+                        span: span!("var b", "b"),
+                        name: LiteralExpr {
+                            span: span!("var b", "b"),
+                            whitespace: LiteralWhitespace {
+                                before: Span::new(4, 4),
+                                after: Span::new(5, 5),
+                            }
+                        },
+                        value: None,
+                        initializer_whitespace: None,
+                    }
+                ]
+            })
+        )
+    }
+
+    #[test]
+    fn var_multiple_decl_no_initializers() {
+        assert_eq!(
+            stmt!("var b, c"),
+            Stmt::Variable(VarStmt {
+                span: span!("var b, c", "var b, c"),
+                var_whitespace:  LiteralWhitespace {
+                    before: Span::new(0, 0),
+                    after: Span::new(3, 4),
+                },
+                semi: Semicolon::Implicit,
+                comma_whitespaces: vec![
+                    LiteralWhitespace {
+                        before: Span::new(5, 5),
+                        after: Span::new(6, 7),
+                    }
+                ],
+                declared: vec![
+                    Declarator {
+                        span: span!("var b, c", "b"),
+                        name: LiteralExpr {
+                            span: span!("var b, c", "b"),
+                            whitespace: LiteralWhitespace {
+                                before: Span::new(4, 4),
+                                after: Span::new(5, 5),
+                            }
+                        },
+                        value: None,
+                        initializer_whitespace: None,
+                    },
+                    Declarator {
+                        span: span!("var b, c", "c"),
+                        name: LiteralExpr {
+                            span: span!("var b, c", "c"),
+                            whitespace: LiteralWhitespace {
+                                before: Span::new(7, 7),
+                                after: Span::new(8, 8),
+                            }
+                        },
+                        value: None,
+                        initializer_whitespace: None,
+                    }
+                ]
+            })
+        )
     }
 }

@@ -64,6 +64,7 @@ impl Semicolon {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Declarator {
+    pub span: Span,
     pub name: LiteralExpr,
     pub value: Option<Expr>,
     /// The optional whitespace of the `=`
