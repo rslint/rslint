@@ -57,7 +57,7 @@ impl<'a> Parser<'a> {
             self.errors.push(err);
         }
 
-        Ok(Stmt::Variable(VariableDeclaration {
+        Ok(Stmt::Variable(VarStmt {
             span: var_span + declarators.last().unwrap().span(),
             declared: declarators,
             comma_whitespaces,

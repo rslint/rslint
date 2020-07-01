@@ -3,7 +3,7 @@
 use std::ops::{Add, Range};
 
 /// A Struct representing a span of code inside of source code.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Span {
     pub start: usize,
     pub end: usize,
@@ -27,6 +27,11 @@ impl Span {
   pub fn size(&self) -> usize {
     self.end - self.start
   }
+
+  #[inline]
+  pub fn extend(&self, offset: usize) -> Self {
+    Self::new(self.start, self.end + offset)
+  }
 }
 
 impl Add for Span {
@@ -41,6 +46,12 @@ impl Into<Range<usize>> for Span {
     fn into(self) -> Range<usize> {
         self.range()
     }
+}
+
+impl From<usize> for Span {
+  fn from(i: usize) -> Span {
+    Span::new(i, i)
+  }
 }
 
 #[cfg(test)]

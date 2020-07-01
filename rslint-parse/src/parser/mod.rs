@@ -15,10 +15,11 @@ use crate::parser::cst::stmt::*;
 use crate::parser::cst::*;
 use crate::parser::error::ParseDiagnosticType;
 use crate::parser::state::ParserState;
+use crate::peek;
 use crate::span::Span;
 use crate::util::multipeek::{multipeek, MultiPeek};
-use crate::peek;
 
+/// An error tolerant, (mostly) lossless, ECMAScript parser
 pub struct Parser<'a> {
     pub lexer: MultiPeek<Lexer<'a>>,
     pub cur_tok: Token,
@@ -36,7 +37,22 @@ pub struct Parser<'a> {
     /// The optional start for spans, this is for parsing chunks of code in larger files  
     /// Will be `0` if no offset is specified
     pub offset: usize,
-    pub state: ParserState,
+    pub state: ParserState<'a>,
+    pub options: ParserOptions,
+}
+
+/// Options to control the behavior of the parser
+pub struct ParserOptions {
+    /// Whether a `return` statement is allowed outside of a function declaration
+    pub return_outside_function: bool
+}
+
+impl ParserOptions {
+    pub fn new(return_outside_function: bool) -> Self {
+        Self {
+            return_outside_function,
+        }
+    }
 }
 
 impl<'a> Parser<'a> {
@@ -58,6 +74,7 @@ impl<'a> Parser<'a> {
             cst: CST::new(),
             offset: 0,
             state: ParserState::new(),
+            options: ParserOptions::new(false),
         })
     }
 
@@ -66,7 +83,12 @@ impl<'a> Parser<'a> {
     /// Will return `None` if any of the following are true:  
     /// - The source is an empty string  
     /// - The offset is greater or equal to the source length
-    pub fn with_source_and_offset(source: &'a str, file_id: &'a str, discard_recovery: bool, offset: usize) -> Option<Self> {
+    pub fn with_source_and_offset(
+        source: &'a str,
+        file_id: &'a str,
+        discard_recovery: bool,
+        offset: usize,
+    ) -> Option<Self> {
         if source.len() == 0 || offset >= source.len() {
             return None;
         }
@@ -83,6 +105,7 @@ impl<'a> Parser<'a> {
             cst: CST::new(),
             offset,
             state: ParserState::new(),
+            options: ParserOptions::new(false),
         })
     }
 
@@ -230,6 +253,11 @@ impl<'a> Parser<'a> {
     /// Get the span of the current token if it is a whitespace or return a span with length zero
     /// With the start and end set to the current token's start position  
     pub fn whitespace(&mut self, leading: bool) -> Result<Span, ParserDiagnostic<'a>> {
+        const INCLUDED_WHITESPACE: [TokenType; 3] = [
+            TokenType::Whitespace,
+            TokenType::InlineComment,
+            TokenType::MultilineComment,
+        ];
         if self.cur_tok.token_type == TokenType::Whitespace
             || self.cur_tok.token_type == TokenType::Linebreak
         {
@@ -243,7 +271,7 @@ impl<'a> Parser<'a> {
 
             let start = self.cur_tok.lexeme.start;
             self.advance_while(leading, |tok: &Token| {
-                tok.token_type == TokenType::Whitespace
+                INCLUDED_WHITESPACE.contains(&tok.token_type)
             })?;
             Ok(Span::new(start, self.cur_tok.lexeme.start))
         } else {
@@ -260,9 +288,15 @@ impl<'a> Parser<'a> {
     /// - The previous token was a `}`  
     /// - There is a linebreak after the current token  
     pub fn semi(&mut self) -> Result<Option<Semicolon>, ParserDiagnostic<'a>> {
-        const ACCEPTABLE: [TokenType; 2] = [TokenType::EOF, TokenType::BraceClose];
+        const ACCEPTABLE: [TokenType; 3] =
+            [TokenType::EOF, TokenType::BraceClose, TokenType::Linebreak];
 
-        if peek!(self) == Some(TokenType::Semicolon) {
+        if self
+            .peek_while(|x| x.is_whitespace())?
+            .map(|x| x.token_type)
+            == Some(TokenType::Semicolon)
+            || self.cur_tok.token_type == TokenType::Semicolon
+        {
             let before = self.whitespace(true)?;
             self.advance_lexer(false)?;
             let after = self.whitespace(false)?;
@@ -273,18 +307,20 @@ impl<'a> Parser<'a> {
             })));
         }
 
-        // TODO: we can optimize away this second peek
-        if ACCEPTABLE.contains(&self.cur_tok.token_type)
-            || ACCEPTABLE.contains(&self.state.last_token.unwrap_or(TokenType::Await))
+        self.lexer.reset();
+
+        if ACCEPTABLE.contains(&peek!(self).unwrap_or(TokenType::EOF))
+            || ACCEPTABLE.contains(&self.state.last_token.unwrap_or(TokenType::EOF))
+            || self.cur_tok.token_type == TokenType::Linebreak
             || self
-                .peek_while(|t| t.token_type == TokenType::Whitespace)?
-                .map(|t| t.token_type)
+                .peek_while(|x| x.token_type == TokenType::Whitespace || x.is_comment())?
+                .map(|x| x.token_type)
                 == Some(TokenType::Linebreak)
         {
             return Ok(Some(Semicolon::Implicit));
+        } else {
+            return Ok(None);
         }
-
-        Ok(None)
     }
 
     pub fn error(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic<'a> {

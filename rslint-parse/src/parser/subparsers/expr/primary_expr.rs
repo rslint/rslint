@@ -5,18 +5,6 @@ use crate::parser::error::ParseDiagnosticType::*;
 use crate::parser::Parser;
 use crate::span::Span;
 
-pub static PRIMARY_EXPR_ACCEPTABLE: [TokenType; 9] = [
-    TokenType::LiteralRegEx,
-    TokenType::LiteralString,
-    TokenType::LiteralNumber,
-    TokenType::Null,
-    TokenType::True,
-    TokenType::False,
-    TokenType::Identifier,
-    TokenType::This,
-    TokenType::InvalidToken,
-];
-
 impl<'a> Parser<'a> {
     /// Parses a primary expression, expects the current token to be a whitespace or a potential primary expr token.  
     pub fn parse_primary_expr(
@@ -37,6 +25,12 @@ impl<'a> Parser<'a> {
                     "Expected an expression before end of file",
                 )
                 .primary(cur_lexeme, "Expected an expression following this"));
+        }
+        
+        if !self.cur_tok.token_type.starts_expr() {
+            self.discard_recover(Some("Unexpected token, expected an expression"), |x| {
+                !x.starts_expr()
+            })?;
         }
 
         if self.cur_tok.token_type == TokenType::BracketOpen {
@@ -100,12 +94,6 @@ impl<'a> Parser<'a> {
                     after: close_paren_trailing,
                 },
             }));
-        }
-
-        if !PRIMARY_EXPR_ACCEPTABLE.contains(&self.cur_tok.token_type) {
-            self.discard_recover(Some("Unexpected token, expected an expression"), |x| {
-                !PRIMARY_EXPR_ACCEPTABLE.contains(&x)
-            })?;
         }
 
         let expr_kind = match self.cur_tok.token_type {

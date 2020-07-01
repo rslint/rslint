@@ -20,7 +20,13 @@ impl Token {
 
   #[inline]
   pub fn is_whitespace(&self) -> bool {
-    self.token_type == TokenType::Whitespace || self.token_type == TokenType::Linebreak
+    // Comments arent exactly "whitespace" but for the purpose of the parser, they are
+    [TokenType::Whitespace, TokenType::Linebreak, TokenType::InlineComment, TokenType::MultilineComment].contains(&self.token_type)
+  }
+
+  #[inline]
+  pub fn is_comment(&self) -> bool {
+    self.token_type == TokenType::InlineComment || self.token_type == TokenType::MultilineComment
   }
 
   pub fn format_with_span_source(&self, source: &str) -> String {
@@ -253,7 +259,7 @@ pub static BEFORE_EXPR: [TokenType; 27] = [
   Delete
 ];
 
-pub static STARTS_EXPR: [TokenType; 29] = [
+pub static STARTS_EXPR: [TokenType; 28] = [
   BitwiseNot,
   BraceOpen,
   BracketOpen,
@@ -270,7 +276,6 @@ pub static STARTS_EXPR: [TokenType; 29] = [
   BinOp(BinToken::Subtract),
   Identifier,
   Function,
-  Throw,
   New,
   This,
   Super,
@@ -302,7 +307,12 @@ impl TokenType {
 
   #[inline]
   pub fn is_whitespace(&self) -> bool {
-    self == &TokenType::Whitespace || self == &TokenType::Linebreak
+    [TokenType::Whitespace, TokenType::Linebreak, TokenType::InlineComment, TokenType::MultilineComment].contains(self)
+  }
+
+  #[inline]
+  pub fn is_comment(&self) -> bool {
+    self == &TokenType::InlineComment || self == &TokenType::MultilineComment
   }
 
   #[inline]

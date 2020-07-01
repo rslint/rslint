@@ -4,6 +4,7 @@ use crate::parser::cst::expr::*;
 use crate::parser::Parser;
 use crate::parser::error::ParseDiagnosticType::CommaWithoutRightExpression;
 use crate::span::Span;
+use crate::peek;
 
 impl<'a> Parser<'a> {
     /// Parses a single expression or a comma separated list of expressions such as `foo, bar`
@@ -16,7 +17,6 @@ impl<'a> Parser<'a> {
         };
 
         let mut first = true;
-        let mut peeked;
         let mut exprs: Vec<Expr> = vec![];
         let mut whitespaces: Vec<LiteralWhitespace> = vec![];
 
@@ -27,16 +27,9 @@ impl<'a> Parser<'a> {
             } else {
                 self.parse_assign_expr(None)?
             };
-
             exprs.push(expr);
-
-            if self.cur_tok.token_type == TokenType::Comma {
-                peeked = Some(self.cur_tok.token_type);
-            } else {
-                peeked = self.peek_while(|x| x.is_whitespace())?.map(|x| x.token_type);
-            }
     
-            if peeked == Some(TokenType::Comma) {
+            if peek!(self) == Some(TokenType::Comma) {
                 let before = self.whitespace(true)?;
                 let comma_span = self.cur_tok.lexeme.to_owned();
                 self.advance_lexer(false)?;

@@ -4,6 +4,7 @@ use crate::lexer::token::{TokenType, AssignToken};
 use crate::parser::cst::expr::*;
 use crate::parser::Parser;
 use crate::span::Span;
+use crate::peek;
 
 impl<'a> Parser<'a> {
     pub fn parse_assign_expr(&mut self, leading: Option<Span>) -> Result<Expr, ParserDiagnostic<'a>> {
@@ -29,16 +30,8 @@ impl<'a> Parser<'a> {
         if let TokenType::AssignOp(tok) = self.cur_tok.token_type {
             before = self.span(self.cur_tok.lexeme.start, self.cur_tok.lexeme.start);
             op = tok;
-        } else {
-            // This is to avoid the case of `OTHERTOKEN ASSIGNTOKEN`, peeking would skip over `OTHERTOKEN` and use `ASSIGNTOKEN`
-            // There may be a better way of doing this
-            match &self.cur_tok {
-                t if t.is_whitespace() => {},
-                _ => return Ok(target)
-            }
-            let peeked = self.peek_while(|x| x.is_whitespace())?.map(|x| x.token_type);
-            
-            if let Some(TokenType::AssignOp(kind)) = peeked {
+        } else {            
+            if let Some(TokenType::AssignOp(kind)) = peek!(self) {
                 before = self.whitespace(true)?;
                 op = kind;
             } else {

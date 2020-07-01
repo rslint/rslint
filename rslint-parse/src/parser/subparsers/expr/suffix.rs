@@ -29,9 +29,7 @@ impl<'a> Parser<'a> {
 
                 // We could use parse_identifier_name here but this allows us to recover and to offer a more helpful error message
                 if !self.cur_tok.token_type.is_identifier_name() {
-                    let peeked = self.peek_while(|t| {
-                        [TokenType::Whitespace, TokenType::Linebreak].contains(&t.token_type)
-                    })?;
+                    let peeked = self.peek_while(|t| t.is_whitespace())?;
 
                     if peeked
                         .filter(|t| t.token_type.is_identifier_name())

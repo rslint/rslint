@@ -25,6 +25,17 @@ macro_rules! expr {
 }
 
 #[macro_export]
+macro_rules! stmt {
+    ($src:expr) => {{
+        use crate::parser::Parser;
+        Parser::with_source($src, "tests", true)
+            .unwrap()
+            .parse_stmt(None)
+            .unwrap()
+    }};
+}
+
+#[macro_export]
 macro_rules! unwrap_enum {
     ($wrapped:expr, $expected:pat) => {{
         if let Expr::$expected(ref data) = $wrapped {

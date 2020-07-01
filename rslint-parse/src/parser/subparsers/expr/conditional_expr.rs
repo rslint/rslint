@@ -4,6 +4,7 @@ use crate::parser::cst::expr::*;
 use crate::parser::error::ParseDiagnosticType::ConditionalWithoutColon;
 use crate::parser::Parser;
 use crate::span::Span;
+use crate::peek;
 
 impl<'a> Parser<'a> {
     /// Parses a conditional (ternary) expression.  
@@ -24,9 +25,9 @@ impl<'a> Parser<'a> {
         };
 
         let condition = self.parse_binary_expr(Some(leading_ws))?;
-        let before_qmark = self.whitespace(true)?;
 
-        if self.cur_tok.token_type == TokenType::QuestionMark {
+        if peek!(self) == Some(TokenType::QuestionMark) {
+            let before_qmark = self.whitespace(true)?;
             let qmark_span = self.cur_tok.lexeme.to_owned();
             self.advance_lexer(false)?;
             let after_qmark = self.whitespace(false)?;

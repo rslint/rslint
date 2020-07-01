@@ -3,6 +3,7 @@
 
 use crate::lexer::error::LexerDiagnosticType;
 use crate::parser::error::ParseDiagnosticType;
+use crate::regex::error::RegexParserDiagnosticType;
 use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
 use std::ops::Range;
 
@@ -87,4 +88,5 @@ impl<'a> ParserDiagnostic<'a> {
 pub enum ParserDiagnosticType {
     Lexer(LexerDiagnosticType),
     Parser(ParseDiagnosticType),
+    Regex(RegexParserDiagnosticType),
 }
