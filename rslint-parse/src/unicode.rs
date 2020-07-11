@@ -1,9 +1,7 @@
-/*
-* A performant alternative to Unicode-xid
-* Unicode-xid is based on &[(char, char)] tables and binary searching them
-* This is fine for most use cases, but it is far too slow for a lexer, up to 40% of lexer time was being taken up by it.
-* This instead uses a HashSet which will be significantly faster
-*/
+//! A more performant alternative to Unicode-xid
+// Unicode-xid is based on &[(char, char)] tables and binary searching them
+// This is fine for most use cases, but it is far too slow for a lexer, up to 40% of lexer time was being taken up by it.
+// This instead uses a HashSet which will be significantly faster
 
 use once_cell::sync::Lazy;
 use fnv::FnvHashSet;

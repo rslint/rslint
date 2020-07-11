@@ -1,6 +1,7 @@
 pub mod file_walker;
 
 use rslint_parse::{lexer::lexer::Lexer, diagnostic::ParserDiagnostic};
+use rslint_parse::parser::Parser;
 use std::error::Error;
 use crate::linter::file_walker::FileWalker;
 use rayon::prelude::*;
@@ -45,7 +46,11 @@ impl Linter {
   pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
     self.walker.load()?;
     self.walker.files.par_iter().for_each(|file| {
-      Lexer::new(file.1.source(), file.0).for_each(drop);
+      let mut parser = Parser::with_source(file.1.source(), file.0, true).unwrap();
+      parser.parse_stmt_list(None, None);
+      for i in parser.errors {
+        self.throw_diagnostic(i);
+      }
     });
     Ok(())
   }
@@ -90,6 +95,9 @@ impl Linter {
     };
 
     let mut config = term::Config::default();
+    config.chars.multi_top_left = '┌';
+    config.chars.multi_bottom_left = '└';
+    config.chars.source_border_left_break = '┼';
     if diagnostic.simple {
       config.display_style = DisplayStyle::Short;
     }

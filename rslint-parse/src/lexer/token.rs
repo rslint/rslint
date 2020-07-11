@@ -20,7 +20,13 @@ impl Token {
 
   #[inline]
   pub fn is_whitespace(&self) -> bool {
-    self.token_type == TokenType::Whitespace || self.token_type == TokenType::Linebreak
+    // Comments arent exactly "whitespace" but for the purpose of the parser, they are
+    [TokenType::Whitespace, TokenType::Linebreak, TokenType::InlineComment, TokenType::MultilineComment].contains(&self.token_type)
+  }
+
+  #[inline]
+  pub fn is_comment(&self) -> bool {
+    self.token_type == TokenType::InlineComment || self.token_type == TokenType::MultilineComment
   }
 
   pub fn format_with_span_source(&self, source: &str) -> String {
@@ -61,7 +67,6 @@ pub enum TokenType {
   Class,
   Colon,
   Comma,
-  Conditional,
   Const,
   Continue,
   Debugger,
@@ -127,7 +132,8 @@ pub enum TokenType {
   Undefined,
   Yield,
   QuestionMark,
-  InvalidToken
+  InvalidToken,
+  EOF,
 }
 
 /// Binary operation tokens such as <, and >
@@ -253,6 +259,41 @@ pub static BEFORE_EXPR: [TokenType; 27] = [
   Delete
 ];
 
+pub static STARTS_EXPR: [TokenType; 32] = [
+  BitwiseNot,
+  BraceOpen,
+  BracketOpen,
+  ParenOpen,
+  Await,
+  Increment,
+  Decrement,
+  LiteralBinary,
+  LiteralString,
+  LiteralNumber,
+  LiteralRegEx,
+  Null,
+  LogicalNot,
+  True,
+  False,
+  BinOp(BinToken::Add),
+  BinOp(BinToken::Subtract),
+  Identifier,
+  Function,
+  New,
+  This,
+  Super,
+  Class,
+  Extends,
+  InvalidToken,
+  Import,
+  Yield,
+  In,
+  Instanceof,
+  Typeof,
+  Void,
+  Delete,
+];
+
 impl TokenType {
   #[inline]
   pub fn is_keyword(&self) -> bool {
@@ -266,5 +307,20 @@ impl TokenType {
       _ if BEFORE_EXPR.contains(self) => true,
       _ => false
     }
+  }
+
+  #[inline]
+  pub fn is_whitespace(&self) -> bool {
+    [TokenType::Whitespace, TokenType::Linebreak, TokenType::InlineComment, TokenType::MultilineComment].contains(self)
+  }
+
+  #[inline]
+  pub fn is_comment(&self) -> bool {
+    self == &TokenType::InlineComment || self == &TokenType::MultilineComment
+  }
+
+  #[inline]
+  pub fn starts_expr(&self) -> bool {
+    STARTS_EXPR.contains(self)
   }
 }

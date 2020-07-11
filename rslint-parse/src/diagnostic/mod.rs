@@ -1,8 +1,13 @@
+//! Diagnostics (errors, warnings, notes, suggestions, etc) emitted by the RSLint-parse lexer and parser.  
+//! Based on codespan_reporting diagnostics
+
+use crate::lexer::error::LexerDiagnosticType;
+use crate::parser::error::ParseDiagnosticType;
+use crate::regex::error::RegexParserDiagnosticType;
 use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
 use std::ops::Range;
-use crate::lexer::error::LexerDiagnosticType;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParserDiagnostic<'a> {
   pub diagnostic: Diagnostic<&'a str>,
   pub simple: bool,
@@ -55,7 +60,8 @@ impl<'a> ParserDiagnostic<'a> {
     self
   }
 
-  pub fn primary(mut self, range: Range<usize>, message: &str) -> Self {
+  pub fn primary(mut self, range: impl Into<Range<usize>>, message: &str) -> Self {
+    let range = range.into();
     if range.len() > 200 {
       self.simple = true;
     }
@@ -63,7 +69,8 @@ impl<'a> ParserDiagnostic<'a> {
     self
   }
 
-  pub fn secondary(mut self, range: Range<usize>, message: &str) -> Self {
+  pub fn secondary(mut self, range: impl Into<Range<usize>>, message: &str) -> Self {
+    let range = range.into();
     if range.len() > 200 {
       self.simple = true;
     }
@@ -77,8 +84,9 @@ impl<'a> ParserDiagnostic<'a> {
   }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ParserDiagnosticType {
-  Lexer(LexerDiagnosticType)
+    Lexer(LexerDiagnosticType),
+    Parser(ParseDiagnosticType),
+    Regex(RegexParserDiagnosticType),
 }
-
