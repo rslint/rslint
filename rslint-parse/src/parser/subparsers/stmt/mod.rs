@@ -5,6 +5,7 @@
 pub mod block;
 pub mod break_continue;
 pub mod expr;
+pub mod r#for;
 pub mod r#if;
 pub mod r#return;
 pub mod stmt;
@@ -13,3 +14,4 @@ pub mod throw;
 pub mod r#try;
 pub mod variable;
 pub mod r#while;
+pub mod with;

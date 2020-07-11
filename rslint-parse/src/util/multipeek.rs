@@ -1,9 +1,8 @@
 use std::collections::VecDeque;
-use std::iter::Fuse;
 
 /// An iterator which can be peeked multiple times, unlike Peekable.
 pub struct MultiPeek<I: Iterator> {
-    iter: Fuse<I>,
+    iter: I,
     buffer: VecDeque<I::Item>,
     pub idx: usize,
 }
@@ -11,7 +10,7 @@ pub struct MultiPeek<I: Iterator> {
 /// Creates a multi peekable iterator from an iterator
 pub fn multipeek<I: Iterator>(iter: I) -> MultiPeek<I> {
     MultiPeek {
-        iter: iter.fuse(),
+        iter,
         buffer: VecDeque::new(),
         idx: 0,
     }

@@ -122,9 +122,9 @@ dependencies = [
 
 [[package]]
 name = "codespan-reporting"
-version = "0.9.4"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ceface2475f2f57a7ece9ba239b96e06bda8323ee68aa6df539752f13a74f60"
+checksum = "6e0762455306b1ed42bc651ef6a2197aabda5e1d4a43c34d5eab5c1a3634e81d"
 dependencies = [
  "termcolor",
  "unicode-width",

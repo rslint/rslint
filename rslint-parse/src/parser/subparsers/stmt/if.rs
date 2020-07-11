@@ -118,6 +118,7 @@ impl<'a> Parser<'a> {
                         before: before_else,
                         after: after_else,
                     });
+                    continue;
                 }
 
                 // Else block is erroneous

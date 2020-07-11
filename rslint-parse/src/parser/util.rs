@@ -1,13 +1,23 @@
 use crate::lexer::token::{BinToken, TokenType};
 use crate::parser::cst::expr::*;
+use crate::parser::Parser;
+use crate::parser::error::ParseDiagnosticType::DisallowedIdentifier;
 
 impl Expr {
     /// Validate that the expression is a valid assign target.  
     // Productions such as `++--` or `++this` are invalid
-    pub fn is_valid_assign_target(&self) -> bool {
+    pub fn is_valid_assign_target(&self, parser: &mut Parser) -> bool {
         match self {
-            // TODO: Handle strict mode `eval` and `arguments`
-            Expr::Identifier(_) => true,
+            Expr::Identifier(LiteralExpr { span, ..}) => {
+                let content = span.content(parser.source);
+                if parser.state.strict.is_some() && ["eval", "arguments"].contains(&content) {
+                    let err = parser.error(DisallowedIdentifier, &format!("`{}` cannot be assigned to in strict mode code", content))
+                        .primary(span.to_owned(), &format!("Assignment to `{}` is not allowed", content));
+                    
+                    parser.errors.push(err);
+                }
+                true
+            },
 
             // You cant run update expressions on literals
             Expr::This(_)
@@ -18,7 +28,7 @@ impl Expr {
             | Expr::True(_)
             | Expr::Null(_) => false,
 
-            Expr::Member(_) => true,
+            Expr::Member(_) | Expr::Bracket(_) => true,
 
             Expr::New(_)
             | Expr::Update(_)
@@ -28,11 +38,11 @@ impl Expr {
             | Expr::Assign(_)
             | Expr::Sequence(_)
             | Expr::Call(_)
-            | Expr::Bracket(_)
             | Expr::Array(_) 
-            | Expr::Object(_) => false,
+            | Expr::Object(_) 
+            | Expr::Function(_) => false,
 
-            Expr::Grouping(GroupingExpr { ref expr, .. }) => expr.is_valid_assign_target(),
+            Expr::Grouping(GroupingExpr { ref expr, .. }) => expr.is_valid_assign_target(parser),
         }
     }
 }

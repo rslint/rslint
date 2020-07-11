@@ -3,7 +3,7 @@ use crate::lexer::token::TokenType;
 use crate::parser::cst::expr::*;
 use crate::parser::error::ParseDiagnosticType::*;
 use crate::parser::Parser;
-use crate::peek;
+use crate::{peek_token, peek};
 use crate::span::Span;
 
 // I decided to not include this logic in the primary expr file since there is a lot of error recovery logic.
@@ -36,11 +36,12 @@ impl<'a> Parser<'a> {
         loop {
             let loop_leading_whitespace = self.whitespace(true)?;
 
-            if self.done() {
-                let err = self.error(UnterminatedObjectLiteral, "Unterminated array literal")
+            if self.cur_tok.token_type == TokenType::EOF {
+                let err = self
+                    .error(UnterminatedObjectLiteral, "Unterminated array literal")
                     .secondary(open_bracket_span, "Array literal starts here")
                     .primary(self.cur_tok.lexeme.to_owned(), "File ends here");
-                
+
                 return Err(err);
             }
 
@@ -98,10 +99,7 @@ impl<'a> Parser<'a> {
 
                             let before = Span::new(expr.span().end, expr.span().end);
                             let after = Span::new(expr.span().end, self.cur_tok.lexeme.start);
-                            comma_whitespaces.push(LiteralWhitespace {
-                                before,
-                                after,
-                            });
+                            comma_whitespaces.push(LiteralWhitespace { before, after });
 
                             // We want to avoid skipping over an expression because we can recover and parse it in the next iteration
                             if !t.starts_expr() {
@@ -166,10 +164,11 @@ impl<'a> Parser<'a> {
             let loop_leading_whitespace = self.whitespace(true)?;
 
             if self.done() {
-                let err = self.error(UnterminatedObjectLiteral, "Unterminated object literal")
+                let err = self
+                    .error(UnterminatedObjectLiteral, "Unterminated object literal")
                     .secondary(open_brace_span, "Object literal starts here")
                     .primary(self.cur_tok.lexeme.to_owned(), "File ends here");
-                
+
                 return Err(err);
             }
 
@@ -202,8 +201,8 @@ impl<'a> Parser<'a> {
                 || self.cur_tok.token_type.is_keyword()
             {
                 let prop = self.parse_object_property(Some(loop_leading_whitespace))?;
-                let potential_comma_span = Span::new(prop.value.span().end, prop.value.span().end);
-                let prop_span = prop.span.to_owned();
+                let potential_comma_span = Span::new(prop.span().end, prop.span().end);
+                let prop_span = prop.span().to_owned();
                 props.push(prop);
 
                 match peek!(self) {
@@ -212,10 +211,7 @@ impl<'a> Parser<'a> {
                         self.advance_lexer(false)?;
                         let after = self.whitespace(false)?;
 
-                        comma_whitespaces.push(LiteralWhitespace {
-                            before,
-                            after,
-                        });
+                        comma_whitespaces.push(LiteralWhitespace { before, after });
                     }
                     // Recover from `{a: b c: d}`, the comma's whitespace will be the end of the property value
                     Some(t) if t != TokenType::BraceClose => {
@@ -236,7 +232,7 @@ impl<'a> Parser<'a> {
                 }
                 continue;
             }
-            println!("a");
+
             let unexpected = self.cur_tok.lexeme.to_owned();
             self.discard_recover(Some("Expected an expression or a closing brace in object literal, but encountered an unexpected token"), |t| !t.starts_expr() && t != &TokenType::BraceClose)?;
             let err = self.error(UnexpectedToken, "Expected an expression or a closing brace in object literal, but encountered an unexpected token")
@@ -256,10 +252,7 @@ impl<'a> Parser<'a> {
             leading.unwrap()
         };
 
-        // TODO: get and set props (needs stmt parsing)
-
         // property name can only be identifier, string, or number, see: https://www.ecma-international.org/ecma-262/5.1/#sec-11.1.5
-        // TODO: clean this up a bit, it's very ugly right now
         if ![
             TokenType::Identifier,
             TokenType::LiteralString,
@@ -280,6 +273,157 @@ impl<'a> Parser<'a> {
                 self.parse_primary_expr(Some(leading_whitespace))?
             };
 
+            if let Expr::Identifier(LiteralExpr { span, whitespace }) = key.to_owned() {
+                if ["get", "set"].contains(&span.content(self.source)) && peek!(self) != Some(TokenType::Colon) {
+                    let setter = span.content(self.source) == "set";
+                    let string = if setter { "setter" } else { "getter" };
+                    let before_key = self.whitespace(true)?;
+
+                    if ![
+                        TokenType::Identifier,
+                        TokenType::LiteralString,
+                        TokenType::LiteralNumber,
+                    ]
+                    .contains(&self.cur_tok.token_type)
+                        && !self.cur_tok.token_type.is_keyword()
+                    {
+                        let err = self.error(ExpectedObjectKey, &format!("Expected an identifier, string, or number for an object property key, but found `{}`", self.cur_tok.lexeme.content(self.source)))
+                            .primary(self.cur_tok.lexeme.to_owned(), "Unexpected");
+                        return Err(err);
+                    }
+
+                    let prop_key = if self.cur_tok.token_type == TokenType::Identifier
+                        || self.cur_tok.token_type.is_keyword()
+                    {
+                        self.parse_identifier_name(Some(before_key))?
+                    } else {
+                        self.parse_primary_expr(Some(before_key))?
+                    };
+
+                    // is_valid_assign_target checks if the parser is in strict mode and emits an error for `eval` and `arguments`
+                    // which means we can simply reuse that function and ignore the return
+                    prop_key.is_valid_assign_target(self);
+
+                    if peek!(self) != Some(TokenType::ParenOpen) {
+                        self.whitespace(true)?;
+                        let err = self.error(ExpectedParen, &format!("Expected an opening parenthesis after an object {}, but found none", string))
+                            .primary(self.cur_tok.lexeme.to_owned(), "Expected an opening parenthesis here");
+
+                        return Err(err);
+                    }
+
+                    let mut args = self.parse_args(None)?;
+                    let mut argument = None;
+
+                    if args.arguments.len() != 0 && !setter {
+                        let err = self
+                            .error(
+                                InvalidComputedPropertyArgs,
+                                "Object getters cannot take any arguments",
+                            )
+                            .primary(args.span, "These arguments must be empty");
+
+                        self.errors.push(err);
+                    }
+
+                    if args.arguments.len() != 1 && setter {
+                        let err = self
+                            .error(
+                                InvalidComputedPropertyArgs,
+                                "Object setters must take a single argument",
+                            )
+                            .primary(args.span, "Setters are required to take a single argument");
+
+                        self.errors.push(err);
+                    }
+
+                    if setter && args.arguments.len() > 0 {
+                        if let Expr::Identifier(ident) = args.arguments.first().unwrap() {
+                            argument = Some(ident.to_owned());
+                        } else {
+                            let err = self.error(InvalidComputedPropertyArgs, "The argument to an object setter must be an identifier")
+                                .primary(args.arguments.first().unwrap().span().to_owned(), "Expected an identifier here");
+
+                            self.errors.push(err);
+                            args.arguments = vec![];
+                        }
+                    }
+
+                    let open_brace_whitespace;
+                    let body;
+
+                    if peek!(self) != Some(TokenType::BraceOpen) {
+                        let before = self.whitespace(true)?;
+                        let err = self.error(ExpectedBrace, &format!("Expected an opening brace after an object {}, but found `{}`", string, self.cur_tok.lexeme.content(self.source)))
+                            .primary(self.cur_tok.lexeme.to_owned(), "Expected an opening brace here");
+
+                        self.errors.push(err);
+                        open_brace_whitespace = LiteralWhitespace {
+                            before,
+                            after: before.end.into()
+                        };
+
+                        body = self.parse_stmt_decl_list(Some(before), Some(&[TokenType::EOF, TokenType::BraceClose]), true)?;
+                    } else {
+                        let before = self.whitespace(true)?;
+                        self.advance_lexer(false)?;
+                        let after = self.whitespace(false)?;
+
+                        open_brace_whitespace = LiteralWhitespace {
+                            before,
+                            after,
+                        };
+
+                        body = self.parse_stmt_decl_list(None, Some(&[TokenType::EOF, TokenType::BraceClose]), true)?;
+                    }
+
+                    let close_brace_whitespace;
+                    let end;
+
+                    if peek!(self) != Some(TokenType::BraceClose) {
+                        let start = self.cur_tok.lexeme.start;
+                        end = start;
+                        let span = peek_token!(self).as_ref().unwrap().lexeme.to_owned();
+                        let err = self.error(ExpectedBrace, &format!("Expected a closing brace after an object {} body, but found none", string))
+                            .primary(Span::new(open_brace_whitespace.before.end, span.start), "Expected a closing brace to close this block");
+                        
+                        self.errors.push(err);
+                        close_brace_whitespace = LiteralWhitespace {
+                            before: Span::new(start, span.start),
+                            after: span.start.into()
+                        };
+                    } else {
+                        let before = self.whitespace(true)?;
+                        end = self.cur_tok.lexeme.end;
+                        self.advance_lexer(false)?;
+                        let after = self.whitespace(false)?;
+
+                        close_brace_whitespace = LiteralWhitespace {
+                            before,
+                            after
+                        };
+                    }
+
+                    let computed_prop = ComputedObjProp {
+                        span: Span::new(span.start, end),
+                        open_paren_whitespace: args.open_paren_whitespace,
+                        close_paren_whitespace: args.close_paren_whitespace,
+                        argument,
+                        open_brace_whitespace,
+                        close_brace_whitespace,
+                        identifier_whitespace: whitespace,
+                        key: Box::new(prop_key),
+                        body,
+                    };
+
+                    return Ok(if setter {
+                        ObjProp::Setter(computed_prop)
+                    } else {
+                        ObjProp::Getter(computed_prop)
+                    });
+                }
+            }
+
             match peek!(self) {
                 // Recover from `{ a b }` by assuming a colon was there, the whitespace for before and after will be the end of the key's span
                 Some(t) if t.starts_expr() => {
@@ -298,7 +442,7 @@ impl<'a> Parser<'a> {
                     let value = self.parse_assign_expr(None)?;
                     let colon_whitespace = self.span(key.span().end, key.span().end);
 
-                    return Ok(ObjProp {
+                    return Ok(ObjProp::Literal(LiteralObjProp {
                         span: self.span(key.span().start, value.span().end),
                         key: Box::new(key),
                         value: Box::new(value),
@@ -306,7 +450,7 @@ impl<'a> Parser<'a> {
                             before: colon_whitespace.to_owned(),
                             after: colon_whitespace,
                         },
-                    });
+                    }));
                 }
 
                 Some(TokenType::Colon) => {
@@ -323,7 +467,7 @@ impl<'a> Parser<'a> {
 
                     let value = self.parse_assign_expr(None)?;
 
-                    return Ok(ObjProp {
+                    return Ok(ObjProp::Literal(LiteralObjProp {
                         span: self.span(key.span().start, value.span().end),
                         key: Box::new(key),
                         value: Box::new(value),
@@ -331,7 +475,7 @@ impl<'a> Parser<'a> {
                             before: before_colon,
                             after: after_colon,
                         },
-                    });
+                    }));
                 }
 
                 _ => {
@@ -367,7 +511,7 @@ mod tests {
             Expr::Object(Object {
                 span: span!("{a: 5, b: 7,}", "{a: 5, b: 7,}"),
                 props: vec![
-                    ObjProp {
+                    ObjProp::Literal(LiteralObjProp {
                         span: span!("{a: 5, b: 7,}", "a: 5"),
                         key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a: 5, b: 7,}", "a"),
@@ -387,8 +531,8 @@ mod tests {
                             before: Span::new(2, 2),
                             after: Span::new(3, 4),
                         }
-                    },
-                    ObjProp {
+                    }),
+                    ObjProp::Literal(LiteralObjProp {
                         span: span!("{a: 5, b: 7,}", "b: 7"),
                         key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a: 5, b: 7,}", "b"),
@@ -408,7 +552,7 @@ mod tests {
                             before: Span::new(8, 8),
                             after: Span::new(9, 10),
                         }
-                    }
+                    })
                 ],
                 comma_whitespaces: vec![
                     LiteralWhitespace {
@@ -439,7 +583,7 @@ mod tests {
             Expr::Object(Object {
                 span: span!("{a  5  b: 7,}", "{a  5  b: 7,}"),
                 props: vec![
-                    ObjProp {
+                    ObjProp::Literal(LiteralObjProp {
                         span: span!("{a  5  b: 7,}", "a  5"),
                         key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a  5  b: 7,}", "a"),
@@ -459,8 +603,8 @@ mod tests {
                             before: Span::new(2, 2),
                             after: Span::new(2, 2),
                         }
-                    },
-                    ObjProp {
+                    }),
+                    ObjProp::Literal(LiteralObjProp {
                         span: span!("{a  5  b: 7,}", "b: 7"),
                         key: Box::new(Expr::Identifier(LiteralExpr {
                             span: span!("{a  5  b: 7,}", "b"),
@@ -480,7 +624,7 @@ mod tests {
                             before: Span::new(8, 8),
                             after: Span::new(9, 10),
                         }
-                    }
+                    })
                 ],
                 comma_whitespaces: vec![
                     LiteralWhitespace {
@@ -508,7 +652,6 @@ mod tests {
     // fn object_literal_unexpected_token() {
     //     let mut parser = Parser::with_source("{a: b ]}")
     // }
-
     #[test]
     fn array_literal() {
         assert_eq!(

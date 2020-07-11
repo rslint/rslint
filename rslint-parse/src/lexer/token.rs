@@ -259,7 +259,7 @@ pub static BEFORE_EXPR: [TokenType; 27] = [
   Delete
 ];
 
-pub static STARTS_EXPR: [TokenType; 29] = [
+pub static STARTS_EXPR: [TokenType; 32] = [
   BitwiseNot,
   BraceOpen,
   BracketOpen,
@@ -271,6 +271,8 @@ pub static STARTS_EXPR: [TokenType; 29] = [
   LiteralString,
   LiteralNumber,
   LiteralRegEx,
+  Null,
+  LogicalNot,
   True,
   False,
   BinOp(BinToken::Add),
@@ -282,6 +284,7 @@ pub static STARTS_EXPR: [TokenType; 29] = [
   Super,
   Class,
   Extends,
+  InvalidToken,
   Import,
   Yield,
   In,

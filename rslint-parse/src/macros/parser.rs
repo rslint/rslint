@@ -26,3 +26,17 @@ macro_rules! peek {
         }
     }}
 }
+
+#[macro_export]
+macro_rules! peek_token {
+    ($parser:expr) => {{
+        if $parser.cur_tok.is_whitespace() {
+            let res = $parser
+                .peek_while(|x| x.is_whitespace())?;
+            $parser.lexer.reset();
+            res.map(|x| x.to_owned())
+        } else {
+            Some($parser.cur_tok.to_owned())
+        }
+    }}
+}

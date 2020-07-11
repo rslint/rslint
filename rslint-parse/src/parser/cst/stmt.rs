@@ -1,7 +1,8 @@
 use super::expr::*;
+use super::declaration::Declaration;
 use crate::span::Span;
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Eq, Hash)]
 pub enum Stmt {
     Variable(VarStmt),
     Empty(EmptyStmt),
@@ -16,6 +17,10 @@ pub enum Stmt {
     Break(BreakStmt),
     Continue(ContinueStmt),
     Return(ReturnStmt),
+    Try(TryStmt),
+    For(ForStmt),
+    ForIn(ForInStmt),
+    With(WithStmt),
 }
 
 impl Stmt {
@@ -35,11 +40,21 @@ impl Stmt {
             Break(data) => data.span,
             Continue(data) => data.span,
             Return(data) => data.span,
+            Try(data) => data.span,
+            For(data) => data.span,
+            ForIn(data) => data.span,
+            With(data) => data.span,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum StmtListItem {
+    Declaration(Declaration),
+    Stmt(Stmt),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Semicolon {
     /// An automatically inserted semicolon
     Implicit,
@@ -62,7 +77,7 @@ impl Semicolon {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Declarator {
     pub span: Span,
     pub name: LiteralExpr,
@@ -82,7 +97,7 @@ impl Declarator {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VarStmt {
     pub span: Span,
     /// It can only be an identifier so we can just use literal expr for this
@@ -94,7 +109,7 @@ pub struct VarStmt {
     pub semi: Semicolon,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BlockStmt {
     pub span: Span,
     pub stmts: Vec<Stmt>,
@@ -102,20 +117,20 @@ pub struct BlockStmt {
     pub close_brace_whitespace: LiteralWhitespace,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct EmptyStmt {
     pub span: Span,
     pub semi_whitespace: LiteralWhitespace,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExprStmt {
     pub span: Span,
     pub expr: Expr,
     pub semi: Semicolon,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IfStmt {
     pub span: Span,
     pub if_whitespace: LiteralWhitespace,
@@ -127,7 +142,7 @@ pub struct IfStmt {
     pub alt: Option<Box<Stmt>>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Case {
     pub span: Span,
     // Whether the case is a `default:` case, there will only be one in total
@@ -138,7 +153,7 @@ pub struct Case {
     pub cons: Vec<Stmt>
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SwitchStmt {
     pub span: Span,
     pub switch_whitespace: LiteralWhitespace,
@@ -150,7 +165,7 @@ pub struct SwitchStmt {
     pub cases: Vec<Case>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ThrowStmt {
     pub span: Span,
     pub arg: Expr,
@@ -158,7 +173,7 @@ pub struct ThrowStmt {
     pub throw_whitespace: LiteralWhitespace,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WhileStmt {
     pub span: Span,
     pub while_whitespace: LiteralWhitespace,
@@ -168,7 +183,7 @@ pub struct WhileStmt {
     pub cons: Box<Stmt>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DoWhileStmt {
     pub span: Span,
     pub do_whitespace: LiteralWhitespace,
@@ -179,7 +194,7 @@ pub struct DoWhileStmt {
     pub cons: Box<Stmt>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LabelledStmt {
     pub span: Span,
     pub label: LiteralExpr,
@@ -187,7 +202,7 @@ pub struct LabelledStmt {
     pub body: Box<Stmt>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BreakStmt {
     pub span: Span,
     pub break_whitespace: LiteralWhitespace,
@@ -195,7 +210,7 @@ pub struct BreakStmt {
     pub semi: Semicolon,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ContinueStmt {
     pub span: Span,
     pub continue_whitespace: LiteralWhitespace,
@@ -203,10 +218,72 @@ pub struct ContinueStmt {
     pub semi: Semicolon,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ReturnStmt {
     pub span: Span,
     pub return_whitespace: LiteralWhitespace,
     pub value: Option<Expr>,
     pub semi: Semicolon,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct CatchClause {
+    pub span: Span,
+    pub catch_whitespace: LiteralWhitespace,
+    pub open_paren_whitespace: LiteralWhitespace,
+    pub close_paren_whitespace: LiteralWhitespace,
+    pub param: LiteralExpr,
+    pub body: BlockStmt,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TryStmt {
+    pub span: Span,
+    pub try_whitespace: LiteralWhitespace,
+    pub test: BlockStmt,
+    pub handler: Option<CatchClause>,
+    pub finalizer: Option<BlockStmt>,
+    pub final_whitespace: Option<LiteralWhitespace>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ForStmtInit {
+    Expr(Expr),
+    Var(VarStmt),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ForStmt {
+    pub span: Span,
+    pub for_whitespace: LiteralWhitespace,
+    pub open_paren_whitespace: LiteralWhitespace,
+    pub close_paren_whitespace: LiteralWhitespace,
+    pub init: Option<ForStmtInit>,
+    pub test: Option<Expr>,
+    pub update: Option<Expr>,
+    pub body: Box<Stmt>,
+    pub init_semicolon_whitespace: LiteralWhitespace,
+    pub test_semicolon_whitespace: LiteralWhitespace,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ForInStmt {
+    pub span: Span,
+    pub for_whitespace: LiteralWhitespace,
+    pub open_paren_whitespace: LiteralWhitespace,
+    pub close_paren_whitespace: LiteralWhitespace,
+    pub left: ForStmtInit,
+    pub right: Expr,
+    pub in_whitespace: LiteralWhitespace,
+    pub body: Box<Stmt>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct WithStmt {
+    pub span: Span,
+    pub with_whitespace: LiteralWhitespace,
+    pub open_paren_whitespace: LiteralWhitespace,
+    pub close_paren_whitespace: LiteralWhitespace,
+    pub object: Expr,
+    pub body: Box<Stmt>,
 }

@@ -50,7 +50,8 @@ impl<'a> Parser<'a> {
 
         // We can just keep parsing, despite a semicolon being required
         // TODO: see if this is "safe" to do
-        if semi.is_none() {
+        // The no_in check is for `for` statements where for no semicolon the subparser throws its own error and we shouldnt throw one ourselves
+        if semi.is_none() && !self.state.no_in {
             let err = self.error(ExpectedSemicolon, "An explicit semicolon was required after a variable declaration, but none was found")
                 .primary(var_span.to_owned() + declarators.last().unwrap().span(), "A semicolon is required to end this statement");
             
@@ -80,6 +81,15 @@ impl<'a> Parser<'a> {
             
             return Err(err);
         }
+
+        let content = self.cur_tok.lexeme.content(self.source);
+        if self.state.strict.is_some() && ["eval", "arguments"].contains(&content) {
+            let err = self.error(DisallowedIdentifier, &format!("`{}` cannot be used as an identifier in variable declarations in strict mode code", content))
+                .primary(self.cur_tok.lexeme.to_owned(),"This declaration is invalid");
+
+            self.errors.push(err);
+        }
+
         self.advance_lexer(false)?;
         let after_ident = self.whitespace(false)?;
         

@@ -24,7 +24,7 @@ impl<'a> Parser<'a> {
             let after_new = self.whitespace(false)?;
             // TODO: handle `new.target` for ES6
 
-            let expr = self.parse_member_or_new_expr(None, new_expr)?;
+            let expr = Box::new(self.parse_member_or_new_expr(None, new_expr)?);
             let expr_span = expr.span();
             
             if !new_expr || peek!(self, [TokenType::ParenOpen]) == Some(TokenType::ParenOpen) {
@@ -35,7 +35,7 @@ impl<'a> Parser<'a> {
 
                 let new_expr = Expr::New(NewExpr {
                     span: self.span(start, expr_span.end),
-                    target: Box::new(expr),
+                    target: expr,
                     args,
                     whitespace: LiteralWhitespace {
                         after: after_new,
@@ -48,7 +48,7 @@ impl<'a> Parser<'a> {
 
             return Ok(Expr::New(NewExpr {
                 span: self.span(start, expr_span.end),
-                target: Box::new(expr),
+                target: expr,
                 args: None,
                 whitespace: LiteralWhitespace {
                     after: after_new,
@@ -56,7 +56,12 @@ impl<'a> Parser<'a> {
                 },
             }));
         } else {
-            let target = self.parse_primary_expr(Some(leading_ws))?;
+            let target = if self.cur_tok.token_type == TokenType::Function {
+                Expr::Function(self.parse_function_declaration(Some(leading_ws))?)
+            } else {
+                self.parse_primary_expr(Some(leading_ws))?
+            };
+
             self.parse_suffixes(target, true)
         }
     }

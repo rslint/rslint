@@ -44,13 +44,17 @@ pub struct Parser<'a> {
 /// Options to control the behavior of the parser
 pub struct ParserOptions {
     /// Whether a `return` statement is allowed outside of a function declaration
-    pub return_outside_function: bool
+    pub allow_return_outside_function: bool,
+    /// Whether shebang sequences at the top of the file are allowed, e.g. `#!/usr/bin/env node`
+    /// If a shebang is encountered, an error will be issued
+    pub allow_shebang: bool,
 }
 
 impl ParserOptions {
-    pub fn new(return_outside_function: bool) -> Self {
+    pub fn new(allow_return_outside_function: bool, allow_shebang: bool) -> Self {
         Self {
-            return_outside_function,
+            allow_return_outside_function,
+            allow_shebang,
         }
     }
 }
@@ -74,7 +78,7 @@ impl<'a> Parser<'a> {
             cst: CST::new(),
             offset: 0,
             state: ParserState::new(),
-            options: ParserOptions::new(false),
+            options: ParserOptions::new(false, false),
         })
     }
 
@@ -105,14 +109,23 @@ impl<'a> Parser<'a> {
             cst: CST::new(),
             offset,
             state: ParserState::new(),
-            options: ParserOptions::new(false),
+            options: ParserOptions::new(false, false),
         })
+    }
+
+    /// Parse an ECMAScript script into a concrete syntax tree  
+    /// ** The parser can and will emit recoverable errors, you can access them through `parser.errors` after parsing even if the parsing yields
+    /// an unrecoverable error**
+    pub fn parse_script(&mut self) -> Result<CST, ParserDiagnostic<'a>> {
+        self.cst.statements = self.parse_stmt_decl_list(None, Some(&[TokenType::EOF]), true)?;
+        Ok(self.cst.to_owned())
     }
 
     /// Advances the parser's lexer and returns the optional token  
     ///  
     /// # Errors  
     /// Returns an Err if the lexer returns an unrecoverable error  
+    #[inline(always)]
     pub fn advance_lexer(
         &mut self,
         skip_linebreak: bool,
@@ -157,6 +170,7 @@ impl<'a> Parser<'a> {
     ///  
     /// # Errors  
     /// Returns an Err if the lexer returns an unrecoverable error  
+    #[inline(always)]
     pub fn peek_lexer(&mut self) -> Result<Option<&Token>, ParserDiagnostic<'a>> {
         let res = self.lexer.peek();
         match res {
@@ -176,6 +190,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Peek the lexer while a token matches a function and return the token that does not match or None if the lexer is finished
+    #[inline(always)]
     pub fn peek_while<F>(&mut self, func: F) -> Result<Option<Token>, ParserDiagnostic<'a>>
     where
         F: Fn(&Token) -> bool,
@@ -190,6 +205,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Advance the lexer while a token matches a function
+    #[inline(always)]
     pub fn advance_while<F>(
         &mut self,
         skip_linebreak: bool,
@@ -252,15 +268,9 @@ impl<'a> Parser<'a> {
 
     /// Get the span of the current token if it is a whitespace or return a span with length zero
     /// With the start and end set to the current token's start position  
+    #[inline(always)]
     pub fn whitespace(&mut self, leading: bool) -> Result<Span, ParserDiagnostic<'a>> {
-        const INCLUDED_WHITESPACE: [TokenType; 3] = [
-            TokenType::Whitespace,
-            TokenType::InlineComment,
-            TokenType::MultilineComment,
-        ];
-        if self.cur_tok.token_type == TokenType::Whitespace
-            || self.cur_tok.token_type == TokenType::Linebreak
-        {
+        if self.cur_tok.is_whitespace() {
             // If its trailing whitespace, it will not include linebreaks in it
             if !leading && self.cur_tok.token_type == TokenType::Linebreak {
                 return Ok(Span::new(
@@ -271,7 +281,7 @@ impl<'a> Parser<'a> {
 
             let start = self.cur_tok.lexeme.start;
             self.advance_while(leading, |tok: &Token| {
-                INCLUDED_WHITESPACE.contains(&tok.token_type)
+                tok.token_type == TokenType::Whitespace || tok.is_comment()
             })?;
             Ok(Span::new(start, self.cur_tok.lexeme.start))
         } else {
@@ -326,6 +336,11 @@ impl<'a> Parser<'a> {
     pub fn error(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic<'a> {
         let message = &msg.to_owned();
         ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Parser(kind), message)
+    }
+
+    pub fn warning(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic<'a> {
+        let message = &msg.to_owned();
+        ParserDiagnostic::warning(self.file_id, ParserDiagnosticType::Parser(kind), message)
     }
 
     pub fn span(&self, start: usize, end: usize) -> Span {

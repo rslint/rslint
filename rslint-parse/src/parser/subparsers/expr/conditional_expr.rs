@@ -32,7 +32,7 @@ impl<'a> Parser<'a> {
             self.advance_lexer(false)?;
             let after_qmark = self.whitespace(false)?;
 
-            let if_true = self.parse_assign_expr(None)?;
+            let if_true = Box::new(self.parse_assign_expr(None)?);
 
             let before_colon = self.whitespace(true)?;
             let after_colon;
@@ -57,15 +57,15 @@ impl<'a> Parser<'a> {
                 after_colon = self.whitespace(false)?;
             }
 
-            let if_false = self.parse_assign_expr(None)?;
+            let if_false = Box::new(self.parse_assign_expr(None)?);
 
             let span = self.span(condition.span().start, if_false.span().end);
 
             Ok(Expr::Conditional(ConditionalExpr {
                 span,
                 condition: Box::new(condition),
-                if_true: Box::new(if_true),
-                if_false: Box::new(if_false),
+                if_true,
+                if_false,
                 whitespace: ConditionalWhitespace {
                     before_qmark,
                     after_qmark,

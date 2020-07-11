@@ -4,6 +4,15 @@ members = [
   "rslint"
 ]
 
+cargo-features = ["named-profiles"]
+
 [profile]
 release = { lto = true, codegen-units = 1 }
 bench = { lto = true, codegen-units = 1}
+
+# Currently due to the amount of recursion and the size of vars, rslint-parse can stack overflow with larger files in debug mode
+# This may be adressed in the future, but for now we will either build with optimizations or use threads with a larger stack
+# FIXME: resolve stack overflows
+[profile.dev]
+debug = false
+opt-level = 3

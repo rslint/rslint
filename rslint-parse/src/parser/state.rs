@@ -1,7 +1,7 @@
 use crate::lexer::token::TokenType;
 use crate::span::Span;
-use crate::parser::Parser;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParserState<'a> {
     /// The last non-whitespace token 
     pub last_token: Option<TokenType>,
@@ -14,6 +14,12 @@ pub struct ParserState<'a> {
     pub in_iteration_stmt: bool,
     /// Whether we are in a function declaration where return is allowed
     pub in_function: bool,
+    /// Whether the expression parser should ignore binary `in` expressions, this is for `for` loops
+    /// To avoid ambiguity between `for (foo in bar;;)` and `for (foo in bar)`
+    pub no_in: bool,
+    /// Whether we are in strict mode code, this is an optional span so we can use the previous declaration's span
+    /// To issue a better warning
+    pub strict: Option<Span>,
 }
 
 impl<'a> ParserState<'a> {
@@ -24,6 +30,8 @@ impl<'a> ParserState<'a> {
             in_switch_stmt: false,
             in_iteration_stmt: false,
             in_function: false,
+            no_in: false,
+            strict: None,
         }
     }
 

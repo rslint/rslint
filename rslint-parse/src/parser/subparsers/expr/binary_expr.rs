@@ -27,7 +27,8 @@ impl<'a> Parser<'a> {
         let peeked = peek!(self);
 
         match peeked {
-            Some(TokenType::In) | Some(TokenType::Instanceof) | Some(TokenType::BinOp(_)) => {}
+            Some(TokenType::In) if !self.state.no_in => {},
+            Some(TokenType::Instanceof) | Some(TokenType::BinOp(_)) => {}
             _ => return Ok(left),
         }
 
@@ -40,18 +41,18 @@ impl<'a> Parser<'a> {
         self.advance_lexer(false)?;
         let after = self.whitespace(false)?;
 
-        let right = {
+        let right = Box::new({
             let left_but_actually_left_of_right = self.parse_unary_expr(None)?;
             self.parse_binary_expression_recursive(
                 left_but_actually_left_of_right,
                 op.precedence().unwrap(),
             )?
-        };
+        });
 
         let expr = Expr::Binary(BinaryExpr {
             span: self.span(left.span().start, right.span().end),
             left: Box::new(left),
-            right: Box::new(right),
+            right,
             op,
             whitespace: LiteralWhitespace {
                 before,

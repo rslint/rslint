@@ -133,7 +133,6 @@ impl Expr {
                     }
                 }
                 ret.push_str("] ");
-                println!("{}, {}", ret.len(), alloc_size);
                 ret
             }
 
@@ -142,10 +141,16 @@ impl Expr {
                     .props
                     .iter()
                     .map(|prop| {
+                        let unwrapped_prop = if let ObjProp::Literal(ref data) = prop {
+                            data
+                        } else {
+                            unimplemented!();
+                        };
+
                         format!(
                             "{}: {}",
-                            prop.key.to_string(source).trim(),
-                            prop.value.to_string(source).trim()
+                            unwrapped_prop.key.to_string(source).trim(),
+                            unwrapped_prop.value.to_string(source).trim()
                         )
                     })
                     .collect::<Vec<String>>();
@@ -190,6 +195,8 @@ impl Expr {
                 }
                 ret
             }
+
+            Expr::Function(_) => unimplemented!(),
         }
     }
 }
@@ -293,7 +300,6 @@ mod tests {
     #[test]
     fn new_with_args() {
         let src = "new foo   (bar, baz,) ";
-        println!("{}", expr!(src).to_string(src));
         assert_eq!(expr!(src).to_string(src), " new foo(bar, baz) ");
     }
 

@@ -22,10 +22,10 @@ impl<'a> Parser<'a> {
                 // Advance over the token
                 self.advance_lexer(false)?;
                 let after = self.whitespace(false)?;
-                let object = self.parse_unary_expr(None)?;
+                let object = Box::new(self.parse_unary_expr(None)?);
                 let end = object.span().end;
 
-                if !object.is_valid_assign_target() {
+                if !object.is_valid_assign_target(self) {
                     let err = self
                         .error(
                             InvalidTargetExpression,
@@ -45,7 +45,7 @@ impl<'a> Parser<'a> {
                 return Ok(Expr::Update(UpdateExpr {
                     span: self.span(start, end),
                     prefix: true,
-                    object: Box::new(object),
+                    object,
                     op: t,
                     whitespace: LiteralWhitespace {
                         before: leading_whitespace,
@@ -66,7 +66,17 @@ impl<'a> Parser<'a> {
                 let after = self.whitespace(false)?;
                 let object = self.parse_unary_expr(None)?;
                 let end = object.span().end;
-                // TODO: Handle strict mode delete
+
+                if self.state.strict.is_some() && t == TokenType::Delete {
+                    if let Expr::Identifier(ref data) = object {
+                        let err = self.error(IdentifierDeletion, "`delete` cannot be applied to identifiers in strict mode code")
+                            .primary(data.span, "Attempting to delete this identifier is invalid")
+                            .help("Help: `delete` is used to delete object properties");
+
+                        self.errors.push(err);
+                    }
+                }
+
                 return Ok(Expr::Unary(UnaryExpr {
                     span: self.span(start, end),
                     object: Box::new(object),
@@ -81,7 +91,7 @@ impl<'a> Parser<'a> {
             _ => {}
         }
 
-        let object = self.parse_lhs_expr(Some(leading_whitespace))?;
+        let object = Box::new(self.parse_lhs_expr(Some(leading_whitespace))?);
         let start = object.span().start;
         let mut had_linebreak = self.cur_tok.token_type == TokenType::Linebreak;
 
@@ -105,13 +115,13 @@ impl<'a> Parser<'a> {
             self.lexer.reset();
 
             if next != Some(TokenType::Increment) && next != Some(TokenType::Decrement) {
-                return Ok(object);
+                return Ok(*object);
             }
         }
 
         // A linebreak between an expr and a postfix update is not allowed, therefore we need to return here
         if had_linebreak {
-            return Ok(object);
+            return Ok(*object);
         }
 
         let before = self.whitespace(true)?;
@@ -121,7 +131,7 @@ impl<'a> Parser<'a> {
         self.advance_lexer(false)?;
         let after = self.whitespace(false)?;
 
-        if !object.is_valid_assign_target() {
+        if !object.is_valid_assign_target(self) {
             let err = self
                 .error(
                     InvalidTargetExpression,
@@ -138,7 +148,7 @@ impl<'a> Parser<'a> {
         Ok(Expr::Update(UpdateExpr {
             span: self.span(start, end),
             prefix: false,
-            object: Box::new(object),
+            object,
             op,
             whitespace: LiteralWhitespace {
                 before,

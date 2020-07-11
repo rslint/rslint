@@ -1,7 +1,9 @@
 use crate::lexer::token::TokenType;
 use crate::span::Span;
+use super::declaration::FunctionDecl;
+use super::stmt::StmtListItem;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
     This(LiteralExpr),
     Number(LiteralExpr),
@@ -24,6 +26,7 @@ pub enum Expr {
     Grouping(GroupingExpr),
     Array(ArrayExpr),
     Object(Object),
+    Function(FunctionDecl),
 }
 
 impl Expr {
@@ -53,11 +56,12 @@ impl Expr {
             Expr::Grouping(data) => &data.span,
             Expr::Array(data) => &data.span,
             Expr::Object(data) => &data.span,
+            Expr::Function(data) => &data.span,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ArrayExpr {
     pub span: Span,
     /// This is an option because undefined values can be declared
@@ -68,7 +72,7 @@ pub struct ArrayExpr {
 }
 
 /// An expression enclosed by parentheses
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GroupingExpr {
     pub span: Span,
     pub expr: Box<Expr>,
@@ -77,7 +81,7 @@ pub struct GroupingExpr {
 }
 
 /// A member access expression with brackets, such as `foo["bar"]`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BracketExpr {
     pub span: Span,
     pub object: Box<Expr>,
@@ -87,7 +91,7 @@ pub struct BracketExpr {
 }
 
 /// A call to a function with arguments such as `foo(bar, baz,)`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CallExpr {
     pub span: Span,
     pub callee: Box<Expr>,
@@ -95,7 +99,7 @@ pub struct CallExpr {
 }
 
 /// A list of expressions delimited by commas such as `a, b, c`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SequenceExpr {
     pub span: Span,
     pub exprs: Vec<Expr>,
@@ -105,7 +109,7 @@ pub struct SequenceExpr {
     pub comma_whitespace: Vec<LiteralWhitespace>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AssignmentExpr {
     pub span: Span,
     pub left: Box<Expr>,
@@ -114,7 +118,7 @@ pub struct AssignmentExpr {
     pub whitespace: LiteralWhitespace
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConditionalExpr {
     pub span: Span,
     pub condition: Box<Expr>,
@@ -123,7 +127,7 @@ pub struct ConditionalExpr {
     pub whitespace: ConditionalWhitespace,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConditionalWhitespace {
     pub before_qmark: Span,
     pub after_qmark: Span,
@@ -131,7 +135,7 @@ pub struct ConditionalWhitespace {
     pub after_colon: Span,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct BinaryExpr {
     pub span: Span,
     pub left: Box<Expr>,
@@ -140,7 +144,7 @@ pub struct BinaryExpr {
     pub whitespace: LiteralWhitespace,
 }
 /// An expression such as `++foo` or `--foo`
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UpdateExpr {
     pub span: Span,
     pub prefix: bool,
@@ -149,7 +153,7 @@ pub struct UpdateExpr {
     pub whitespace: LiteralWhitespace,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnaryExpr {
     pub span: Span,
     pub object: Box<Expr>,
@@ -157,7 +161,7 @@ pub struct UnaryExpr {
     pub whitespace: LiteralWhitespace,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MemberExpr {
     pub span: Span,
     pub object: Box<Expr>,
@@ -165,7 +169,7 @@ pub struct MemberExpr {
     pub whitespace: LiteralWhitespace,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NewExpr {
     pub span: Span,
     pub target: Box<Expr>,
@@ -175,7 +179,7 @@ pub struct NewExpr {
 
 /// Arguments like `(foo, bar,)`, You can find if there was a trailing comma by checking  
 /// `if comma_whitespace.len() == arguments.len()`
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Arguments {
     pub span: Span,
     pub arguments: Vec<Expr>,
@@ -185,20 +189,20 @@ pub struct Arguments {
 }
 
 /// An expression which can be described as a single token with leading and trailing whitespace
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LiteralExpr {
     pub span: Span,
     pub whitespace: LiteralWhitespace,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LiteralWhitespace {
     pub before: Span,
     pub after: Span,
 }
 
 /// An object literal such as `{}` or `{"a": b}`
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Object {
     pub span: Span,
     pub props: Vec<ObjProp>,
@@ -207,11 +211,43 @@ pub struct Object {
     pub close_brace_whitespace: LiteralWhitespace,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct ObjProp {
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LiteralObjProp {
     pub span: Span,
     pub key: Box<Expr>,
     pub value: Box<Expr>,
     /// The whitespace of the colon
     pub whitespace: LiteralWhitespace,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ComputedObjProp {
+    pub span: Span,
+    /// The whitespace of the "get"
+    pub identifier_whitespace: LiteralWhitespace,
+    pub key: Box<Expr>,
+    pub open_paren_whitespace: LiteralWhitespace,
+    pub close_paren_whitespace: LiteralWhitespace,
+    /// setters take an argument, getters dont, this may also be None if the setter didnt take an argument (for error recovery)
+    pub argument: Option<LiteralExpr>,
+    pub open_brace_whitespace: LiteralWhitespace,
+    pub close_brace_whitespace: LiteralWhitespace,
+    pub body: Vec<StmtListItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ObjProp {
+    Literal(LiteralObjProp),
+    Getter(ComputedObjProp),
+    Setter(ComputedObjProp),
+}
+
+impl ObjProp {
+    pub fn span(&self) -> Span {
+        match *self {
+            ObjProp::Literal(ref data) => data.span,
+            ObjProp::Getter(ref data) => data.span,
+            ObjProp::Setter(ref data) => data.span,
+        }
+    }
 }

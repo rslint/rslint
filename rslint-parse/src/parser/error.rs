@@ -27,4 +27,11 @@ pub enum ParseDiagnosticType {
     InvalidBreak,
     InvalidContinue,
     InvalidReturn,
+    InvalidTrailingComma,
+    RedundantUseStrict,
+    DuplicateFunctionParameters,
+    DisallowedIdentifier,
+    DisallowedStatement,
+    IdentifierDeletion,
+    InvalidComputedPropertyArgs,
 }

@@ -14,7 +14,7 @@ impl<'a> Parser<'a> {
             leading.unwrap()
         };
 
-        let target = self.parse_conditional_expr(Some(leading_whitespace))?;
+        let target = Box::new(self.parse_conditional_expr(Some(leading_whitespace))?);
 
         // It is *technically* wrong to parse an assignment expression if the target is not a LHS expression.
         // However, for the purposes of error recovery, we will still parse it.
@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
         self.parse_assign_expr_recursive(target)
     }
 
-    pub fn parse_assign_expr_recursive(&mut self, target: Expr) -> Result<Expr, ParserDiagnostic<'a>> {
+    pub fn parse_assign_expr_recursive(&mut self, target: Box<Expr>) -> Result<Expr, ParserDiagnostic<'a>> {
         let before;
         let op: AssignToken;
 
@@ -35,26 +35,26 @@ impl<'a> Parser<'a> {
                 before = self.whitespace(true)?;
                 op = kind;
             } else {
-                return Ok(target);
+                return Ok(*target);
             }
         }
         self.advance_lexer(false)?;
 
         let after = self.whitespace(false)?;
 
-        if !target.is_valid_assign_target() {
+        if !target.is_valid_assign_target(self) {
             let err = self.error(InvalidTargetExpression, &format!("Invalid assignment target for `{}`", op.to_string()))
                 .primary(target.span().to_owned(), "Not a valid assignment target");
             
             self.errors.push(err);
         }
 
-        let right = self.parse_assign_expr(None)?;
+        let right = Box::new(self.parse_assign_expr(None)?);
 
         Ok(Expr::Assign(AssignmentExpr {
             span: self.span(target.span().start, right.span().end),
-            left: Box::new(target),
-            right: Box::new(right),
+            left: target,
+            right,
             op: TokenType::AssignOp(op),
             whitespace: LiteralWhitespace {
                 before,
