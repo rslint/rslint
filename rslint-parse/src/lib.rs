@@ -15,4 +15,3 @@ pub mod serialize;
 pub mod span;
 pub mod unicode;
 pub mod util;
-pub mod regex;

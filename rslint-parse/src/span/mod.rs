@@ -10,28 +10,39 @@ pub struct Span {
 }
 
 impl Span {
-  pub fn new(start: usize, end: usize) -> Self {
-    Self { start, end }
-  }
+    pub fn new(start: usize, end: usize) -> Self {
+        Self { start, end }
+    }
 
-  pub fn content<'a>(&self, source: &'a str) -> &'a str {
-    &source[(self.start)..(self.end)]
-  }
+    pub fn content<'a>(&self, source: &'a str) -> &'a str {
+        &source[(self.start)..(self.end)]
+    }
 
-  #[inline]
-  pub fn range(&self) -> Range<usize> {
-    self.start..self.end
-  }
+    #[inline]
+    pub fn range(&self) -> Range<usize> {
+        self.start..self.end
+    }
 
-  #[inline]
-  pub fn size(&self) -> usize {
-    self.end - self.start
-  }
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.end - self.start
+    }
 
-  #[inline]
-  pub fn extend(&self, offset: usize) -> Self {
-    Self::new(self.start, self.end + offset)
-  }
+    #[inline]
+    pub fn extend(&self, offset: usize) -> Self {
+        Self::new(self.start, self.end + offset)
+    }
+
+    /// Check if a whitespace span contains a comment, this is a simple search for `/`,
+    /// **This will be highly inaccurate for non whitespace spans**
+    pub fn contains_comments(&self, source: &str) -> bool {
+        for byte in self.content(source).bytes() {
+            if byte == b'/' {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 impl Add for Span {
@@ -49,9 +60,9 @@ impl Into<Range<usize>> for Span {
 }
 
 impl From<usize> for Span {
-  fn from(i: usize) -> Span {
-    Span::new(i, i)
-  }
+    fn from(i: usize) -> Span {
+        Span::new(i, i)
+    }
 }
 
 #[cfg(test)]

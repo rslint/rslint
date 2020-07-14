@@ -1,8 +1,9 @@
+//! A structure for concurrently loading files from a glob pattern
+
 use codespan_reporting::files::Files;
 use codespan_reporting::files::SimpleFile;
-use glob::glob;
+use glob::{PatternError, glob};
 use std::collections::HashMap;
-use std::error::Error;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::io::Read;
@@ -11,6 +12,7 @@ use std::path::Path;
 use walkdir::WalkDir;
 
 /// A struct for loading and managing the files to be linted
+#[derive(Debug, Clone)]
 pub struct FileWalker {
     pub glob: String,
     pub files: HashMap<String, SimpleFile<String, String>>,
@@ -35,7 +37,9 @@ impl FileWalker {
         res
     }
 
-    pub fn load(&mut self) -> Result<Vec<String>, Box<dyn Error>> {
+    /// Load the files from the glob pattern in parallel and return a vector of warnings for skipped or erroneous files
+    /// Or return an error if the glob pattern is invalid
+    pub fn load(&mut self) -> Result<Vec<String>, PatternError> {
         let mut diagnostics = vec![];
         let paths = glob(&self.glob)?;
         let mut handles = vec![];

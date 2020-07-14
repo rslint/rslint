@@ -177,7 +177,7 @@ impl<'a> Parser<'a> {
                 self.advance_lexer(false)?;
                 let after_close_brace = self.whitespace(false)?;
 
-                return Ok(Expr::Object(Object {
+                return Ok(Expr::Object(ObjectExpr {
                     span: Span::new(open_brace_span.start, close_brace_span.end),
                     props,
                     comma_whitespaces,
@@ -508,7 +508,7 @@ mod tests {
     fn object_literal() {
         assert_eq!(
             expr!("{a: 5, b: 7,}"),
-            Expr::Object(Object {
+            Expr::Object(ObjectExpr {
                 span: span!("{a: 5, b: 7,}", "{a: 5, b: 7,}"),
                 props: vec![
                     ObjProp::Literal(LiteralObjProp {
@@ -580,7 +580,7 @@ mod tests {
     fn object_literal_error_recovery() {
         assert_eq!(
             expr!("{a  5  b: 7,}"),
-            Expr::Object(Object {
+            Expr::Object(ObjectExpr {
                 span: span!("{a  5  b: 7,}", "{a  5  b: 7,}"),
                 props: vec![
                     ObjProp::Literal(LiteralObjProp {

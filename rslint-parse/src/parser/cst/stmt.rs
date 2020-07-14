@@ -48,6 +48,12 @@ impl Stmt {
     }
 }
 
+impl From<Stmt> for Span {
+    fn from(stmt: Stmt) -> Self {
+        stmt.span()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StmtListItem {
     Declaration(Declaration),

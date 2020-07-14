@@ -25,7 +25,7 @@ pub enum Expr {
     Bracket(BracketExpr),
     Grouping(GroupingExpr),
     Array(ArrayExpr),
-    Object(Object),
+    Object(ObjectExpr),
     Function(FunctionDecl),
 }
 
@@ -58,6 +58,12 @@ impl Expr {
             Expr::Object(data) => &data.span,
             Expr::Function(data) => &data.span,
         }
+    }
+}
+
+impl From<Expr> for Span {
+    fn from(expr: Expr) -> Self {
+        *expr.span()
     }
 }
 
@@ -203,7 +209,7 @@ pub struct LiteralWhitespace {
 
 /// An object literal such as `{}` or `{"a": b}`
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Object {
+pub struct ObjectExpr {
     pub span: Span,
     pub props: Vec<ObjProp>,
     pub comma_whitespaces: Vec<LiteralWhitespace>,
