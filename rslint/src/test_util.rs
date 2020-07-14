@@ -2,22 +2,6 @@
 
 /// Assert that a rule's outcome is an error when matched against one or more pieces of source code  
 /// You can also add a `=> start..end` after the source code to assert the location of the error
-/// # Examples 
-/// ```rust
-/// use rslint::rules::groups::errors::no_empty::NoEmpty;
-/// use rslint::assert_lint_err;
-/// 
-/// assert_lint_err! {
-///     NoEmpty,
-///     "{}" => 0..2,
-///     "try { }" => 4..7,
-///     "try { /* a */ } catch(e) { }",
-///     "try { /* a */ } finally { }",
-///     "switch(a) {}",
-///     ";",
-///     "{{}}",
-/// }
-/// ```
 #[macro_export]
 macro_rules! assert_lint_err {
     ($rule:ident, $(
@@ -49,22 +33,6 @@ macro_rules! assert_lint_err {
 }
 
 /// Assert that a rule's outcome is a success when matched against one or more pieces of source code  
-/// # Examples 
-/// ```rust
-/// use rslint::rules::groups::errors::no_empty::NoEmpty;
-/// use rslint::assert_lint_ok;
-/// 
-/// assert_lint_ok! {
-///     NoEmpty,
-///     "{ /* */ }",
-///     "{\n /* */}",
-///     "{/* */\n}",
-///     "function a() {}",
-///     "try { /* \n*/ } catch (e) { /* \n*/ } finally { /* */\n }",
-///     "switch (a) { /* */ }",
-///     "switch (a) { \n case 5: }"
-/// }
-/// ```
 #[macro_export]
 macro_rules! assert_lint_ok {
     ($rule:ident, $(
