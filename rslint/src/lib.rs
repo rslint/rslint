@@ -26,8 +26,6 @@
 //!  - They cannot rely on the result of other LateRules or any CstRules (this may be changed in the future for CstRules) 
 //!  - They cannot change the files for the same reason as CstRules, they can however use a fixer interface 
 
-#![feature(test)]
-
 pub mod linter;
 pub mod rules;
 pub mod visit;

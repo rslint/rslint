@@ -1,5 +1,4 @@
 pub mod no_empty;
-pub mod for_direction;
 
 #[macro_export]
 macro_rules! register_errors_group {
@@ -9,7 +8,6 @@ macro_rules! register_errors_group {
             errors,
             "errors",
             no_empty - NoEmpty,
-            for_direction - ForDirection,
         })
     }
 }
