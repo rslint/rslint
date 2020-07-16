@@ -3,7 +3,8 @@ version: "0.1.0"
 author: Riccardo D'Ambrosio <rdambrosio016@gmail.com>
 about: A fully fledged JavaScript linter written in Rust
 args:
-  - FILE:
-    help: The glob pattern of file or files to lint.
-    required: true
-    index: 1
+    - INPUT:
+        help: The glob pattern of file or files to lint.
+        required: false
+        index: 1
+    

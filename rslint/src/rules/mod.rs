@@ -28,7 +28,7 @@ impl CstRuleGroup {
 /// After using this you must import the Visit trait and implement it for the struct
 #[macro_export]
 macro_rules! cst_rule {
-    ($name:expr, $struct_name:ident, $($implementation:tt)*) => {
+    ($name:expr, $struct_name:ident) => {
         use crate::rules::CstRule;
         use crate::rules::context::RuleContext;
         use rslint_parse::parser::cst::CST;

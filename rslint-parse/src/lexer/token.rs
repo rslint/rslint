@@ -259,7 +259,7 @@ pub static BEFORE_EXPR: [TokenType; 27] = [
   Delete
 ];
 
-pub static STARTS_EXPR: [TokenType; 32] = [
+pub static STARTS_EXPR: [TokenType; 31] = [
   BitwiseNot,
   BraceOpen,
   BracketOpen,
@@ -285,7 +285,6 @@ pub static STARTS_EXPR: [TokenType; 32] = [
   Class,
   Extends,
   InvalidToken,
-  Import,
   Yield,
   In,
   Instanceof,

@@ -7,7 +7,7 @@ use std::any::TypeId;
 
 cst_rule! {
     "no-empty",
-    NoEmpty,
+    NoEmpty
 }
 
 impl Visit for NoEmptyVisitor<'_, '_> {

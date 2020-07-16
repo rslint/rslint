@@ -10,6 +10,7 @@ macro_rules! assert_lint_err {
         use crate::rules::context::RuleContext;
         use crate::rules::{RuleResult, Outcome, CstRule};
         use rslint_parse::parser::Parser;
+        #[allow(unused_imports)]
         use codespan_reporting::diagnostic::LabelStyle;
         $(
             let mut ctx = RuleContext {
