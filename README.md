@@ -41,19 +41,19 @@ If you would like to implement a new rule there are a few steps you must go thro
 
 RSLint's goal is to provide extremely fast and user friendly linting for the whole js ecosystem. There are tons of things to do to bring it up to par with existing linters. This is a list of planned features and things to do ranked in order of highest to lowest priority (this is by no definition final, things will change):
 
-[ ] Refine caching system to include rules run and automatically adding to .gitignore  
-[ ] More tests for rslint-parse statement subparsers  
-[ ] Scope analysis  
-[ ] Implementation of ESLint reccomended rules  
-[ ] ES6+ Support (mostly just parser work)  
-[ ] Benchmarks  
-[ ] Markdown support  
-[ ] Config files  
-[ ] Rule options  
-[ ] Prebuilt binary generation  
-[ ] Neon bindings to allow for installation via npm with a build script  
-[ ] JSX Support  
-[ ] TS Support  
-[ ] JS Plugins  
-[ ] WASM Plugins  
-[ ] Documentation website  
+- [ ] Refine caching system to include rules run and automatically adding to .gitignore  
+- [ ] More tests for rslint-parse statement subparsers  
+- [ ] Scope analysis  
+- [ ] Implementation of ESLint reccomended rules  
+- [ ] ES6+ Support (mostly just parser work)  
+- [ ] Benchmarks  
+- [ ] Markdown support  
+- [ ] Config files  
+- [ ] Rule options  
+- [ ] Prebuilt binary generation  
+- [ ] Neon bindings to allow for installation via npm with a build script  
+- [ ] JSX Support  
+- [ ] TS Support  
+- [ ] JS Plugins  
+- [ ] WASM Plugins  
+- [ ] Documentation website  

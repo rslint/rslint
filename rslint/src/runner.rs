@@ -88,7 +88,6 @@ impl LintRunner {
                         .map(|string| Diagnostic::warning().with_message(string))
                         .collect::<Vec<Diagnostic<usize>>>(),
                 );
-                println!("{}", cached.len());
 
                 for cached_file in cached {
                     linter
@@ -125,7 +124,6 @@ impl LintRunner {
                 .collect::<Vec<Diagnostic<usize>>>(),
         );
 
-        println!("{:#?}", new_walker);
         // let files_cache = Mutex::new(HashMap::with_capacity(linter.walker.files.len()));
 
         // Load all of the builtin cst rules

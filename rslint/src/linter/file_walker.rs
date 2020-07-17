@@ -65,7 +65,6 @@ impl FileWalker {
             .filter(|path| path.extension() == Some(OsStr::new("js")))
             .collect::<Vec<_>>();
 
-        println!("{:#?}", walked_paths);
         Ok(walked_paths)
     }
 
