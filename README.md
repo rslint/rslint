@@ -7,7 +7,7 @@ A  (WIP) JavaScript linter written in Rust designed to be as fast as possible, c
 You must have cargo installed on your machine, then git clone the repository, and either build the binary and run it, or use cargo run directly.
 
 ```sh
-git clone https://github.com/RDambrosio016/RSLint.git
+git clone -b dev https://github.com/RDambrosio016/RSLint.git
 cd RSLint
 cargo run --release -- ./glob/pattern.js
 ```
