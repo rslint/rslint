@@ -10,10 +10,10 @@ use std::str::CharIndices;
 use std::iter::Peekable;
 use once_cell::sync::Lazy;
 
-pub type LexResult<'a> = (Option<Token>, Option<ParserDiagnostic<'a>>);
+pub type LexResult<'a> = (Option<Token>, Option<ParserDiagnostic>);
 
 pub struct Lexer<'a> {
-  pub file_id: &'a str, 
+  pub file_id: usize, 
   pub source: &'a str,
   pub source_iter: Peekable<CharIndices<'a>>,
   pub source_len: usize,
@@ -383,7 +383,7 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
 });
 
 impl<'a> Lexer<'a> {
-  pub fn new(source: &'a str, file_id: &'a str) -> Self {
+  pub fn new(source: &'a str, file_id: usize) -> Self {
     let iter = source.char_indices().peekable();
     let mut lex = Self {
       file_id,
@@ -494,7 +494,7 @@ impl<'a> Lexer<'a> {
     }
   }
 
-  fn validate_escape_sequence(&mut self, escaped: char) -> Result<(), ParserDiagnostic<'a>> {
+  fn validate_escape_sequence(&mut self, escaped: char) -> Result<(), ParserDiagnostic> {
     match escaped {
       'u' => drop(self.read_unicode_escape()?),
       'x' => drop(self.read_hex_escape()?),
@@ -513,7 +513,7 @@ impl<'a> Lexer<'a> {
   /// Reads a hex escape sequence such as \x47
   /// Expects the current char to be the x after the backslash
   // TODO: possibly refactor this and read_unicode_escape into one method
-  fn read_hex_escape(&mut self) -> Result<char, ParserDiagnostic<'a>> {
+  fn read_hex_escape(&mut self) -> Result<char, ParserDiagnostic> {
     let start = self.cur - 1;
     let mut digits = String::with_capacity(2);
 
@@ -548,7 +548,7 @@ impl<'a> Lexer<'a> {
 
   /// Reads a unicode escape sequence such as \u200b
   /// Expects the current char to be the u after the backslash
-  fn read_unicode_escape(&mut self) -> Result<char, ParserDiagnostic<'a>> {
+  fn read_unicode_escape(&mut self) -> Result<char, ParserDiagnostic> {
     let start = self.cur - 1;
     let mut digits = String::with_capacity(4);
 
@@ -583,7 +583,7 @@ impl<'a> Lexer<'a> {
 
   fn read_str_literal(&mut self, quote: char) -> LexResult<'a> {
     let start = self.cur;
-    let mut err: Option<ParserDiagnostic<'a>> = None;
+    let mut err: Option<ParserDiagnostic> = None;
     let start_line = self.line;
 
     loop {
@@ -716,7 +716,7 @@ impl<'a> Lexer<'a> {
     (Some(self.token(start, tok)), err)
   }
 
-  fn validate_regex_flags(&mut self) -> Option<ParserDiagnostic<'a>> {
+  fn validate_regex_flags(&mut self) -> Option<ParserDiagnostic> {
     let (mut global, mut ignore_case, mut multiline) = (false, false, false);
 
     let flag_err = |lexer: &mut Lexer<'a>| {

@@ -98,14 +98,14 @@ pub enum Outcome {
 
 /// The overall result of running a rule on a file constructed by a vector of diagnostics
 #[derive(Debug, Clone)]
-pub struct RuleResult<'a> {
+pub struct RuleResult {
     pub outcome: Outcome,
-    pub diagnostics: Vec<Diagnostic<&'a str>>,
+    pub diagnostics: Vec<Diagnostic<usize>>,
 }
 
-impl<'a> RuleResult<'a> {
+impl RuleResult {
     /// Make a new rule result indicating that the rule was a success
-    pub fn success() -> RuleResult<'a> {
+    pub fn success() -> RuleResult {
         Self {
             outcome: Outcome::Success,
             diagnostics: vec![],
@@ -113,7 +113,7 @@ impl<'a> RuleResult<'a> {
     }
 
     /// Make a new result indicating an error status
-    pub fn error(diagnostic: impl Into<Diagnostic<&'a str>>) -> RuleResult<'a> {
+    pub fn error(diagnostic: impl Into<Diagnostic<usize>>) -> RuleResult {
         Self {
             outcome: Outcome::Error,
             diagnostics: vec![diagnostic.into()]
@@ -141,8 +141,8 @@ impl<'a> RuleResult<'a> {
 }
 
 /// Make a new rule result from a list of diagnostics
-impl<'a> From<Vec<Diagnostic<&'a str>>> for RuleResult<'a> {
-    fn from(diagnostics: Vec<Diagnostic<&'a str>>) -> Self {
+impl<'a> From<Vec<Diagnostic<usize>>> for RuleResult {
+    fn from(diagnostics: Vec<Diagnostic<usize>>) -> Self {
         let mut outcome = Outcome::Success;
         for diagnostic in diagnostics.iter() {
             match diagnostic.severity {
@@ -160,16 +160,16 @@ impl<'a> From<Vec<Diagnostic<&'a str>>> for RuleResult<'a> {
 }
 
 /// Allow merging two results by adding them with `+`
-impl<'a> std::ops::Add for RuleResult<'a> {
-    type Output = RuleResult<'a>;
+impl std::ops::Add for RuleResult {
+    type Output = RuleResult;
 
-    fn add(self, other: RuleResult<'a>) -> RuleResult<'a> {
+    fn add(self, other: RuleResult) -> RuleResult {
         RuleResult::merge(vec![self, other])
     }
 }
 
-impl<'a> std::ops::AddAssign for RuleResult<'a> {
-    fn add_assign(&mut self, other: RuleResult<'a>) {
+impl std::ops::AddAssign for RuleResult {
+    fn add_assign(&mut self, other: RuleResult) {
         if let Outcome::Success = other.outcome {
             self.diagnostics.extend(other.diagnostics);
         } else {

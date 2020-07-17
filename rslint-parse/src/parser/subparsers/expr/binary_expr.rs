@@ -9,7 +9,7 @@ impl<'a> Parser<'a> {
     pub fn parse_binary_expr(
         &mut self,
         leading: Option<Span>,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
         &mut self,
         left: Expr,
         min_precedence: u8,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         let peeked = peek!(self);
 
         match peeked {

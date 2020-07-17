@@ -8,7 +8,7 @@ use crate::peek;
 use crate::span::Span;
 
 impl<'a> Parser<'a> {
-    pub fn parse_try_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic<'a>> {
+    pub fn parse_try_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -90,7 +90,7 @@ impl<'a> Parser<'a> {
 
     fn parse_finally_clause(
         &mut self,
-    ) -> Result<(LiteralWhitespace, BlockStmt), ParserDiagnostic<'a>> {
+    ) -> Result<(LiteralWhitespace, BlockStmt), ParserDiagnostic> {
         let before_finally = self.whitespace(true)?;
         self.advance_lexer(false)?;
         let after_finally = self.whitespace(false)?;
@@ -128,7 +128,7 @@ impl<'a> Parser<'a> {
         ))
     }
 
-    fn parse_catch_clause(&mut self) -> Result<CatchClause, ParserDiagnostic<'a>> {
+    fn parse_catch_clause(&mut self) -> Result<CatchClause, ParserDiagnostic> {
         let before_catch = self.whitespace(true)?;
         let catch_span = self.cur_tok.lexeme.to_owned();
         self.advance_lexer(false)?;

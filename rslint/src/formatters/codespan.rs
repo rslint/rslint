@@ -17,7 +17,7 @@ impl CodespanFormatter {
 }
 
 impl Formatter for CodespanFormatter {
-    fn format(&self, diagnostics: &Vec<Diagnostic<&str>>, walker: &FileWalker) {
+    fn format(&self, diagnostics: &Vec<Diagnostic<usize>>, walker: &FileWalker) {
         for diagnostic in diagnostics {
             let writer = if diagnostic.severity == Severity::Error {
                 StandardStream::stderr(ColorChoice::Always)

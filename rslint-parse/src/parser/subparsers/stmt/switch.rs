@@ -8,7 +8,7 @@ use crate::span::Span;
 use crate::peek;
 
 impl<'a> Parser<'a> {
-    pub fn parse_switch_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic<'a>> {
+    pub fn parse_switch_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -130,7 +130,7 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    fn parse_case_list(&mut self) -> Result<Vec<Case>, ParserDiagnostic<'a>> {
+    fn parse_case_list(&mut self) -> Result<Vec<Case>, ParserDiagnostic> {
         const ENDS_PREV_CASE: [TokenType; 4] = [TokenType::BraceClose, TokenType::Default, TokenType::Case, TokenType::EOF];
 
         let mut cases: Vec<Case> = vec![];

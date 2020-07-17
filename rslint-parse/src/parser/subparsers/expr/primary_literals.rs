@@ -12,7 +12,7 @@ impl<'a> Parser<'a> {
     pub fn parse_array_literal(
         &mut self,
         leading: Option<Span>,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -141,7 +141,7 @@ impl<'a> Parser<'a> {
     pub fn parse_object_literal(
         &mut self,
         leading: Option<Span>,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -245,7 +245,7 @@ impl<'a> Parser<'a> {
     fn parse_object_property(
         &mut self,
         leading: Option<Span>,
-    ) -> Result<ObjProp, ParserDiagnostic<'a>> {
+    ) -> Result<ObjProp, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -712,7 +712,7 @@ mod tests {
 
     #[test]
     fn array_literal_invalid_token_error_recovery() {
-        let mut parser = Parser::with_source("[; 2,]", "tests", true).unwrap();
+        let mut parser = Parser::with_source("[; 2,]", 0, true).unwrap();
         let expr = parser.parse_expr(None).unwrap();
 
         assert_eq!(

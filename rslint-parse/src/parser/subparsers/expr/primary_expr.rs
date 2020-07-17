@@ -10,7 +10,7 @@ impl<'a> Parser<'a> {
     pub fn parse_primary_expr(
         &mut self,
         leading: Option<Span>,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn errors_on_unterminated_string() {
-        assert!(Parser::with_source(" \"a ", "tests", true)
+        assert!(Parser::with_source(" \"a ", 0, true)
             .unwrap()
             .parse_primary_expr(None)
             .is_err());
@@ -139,7 +139,7 @@ mod tests {
     #[test]
     fn this_expr() {
         assert_eq!(
-            Parser::with_source(" this ", "tests", true)
+            Parser::with_source(" this ", 0, true)
                 .unwrap()
                 .parse_primary_expr(None),
             Ok(Expr::This(LiteralExpr {
@@ -155,7 +155,7 @@ mod tests {
     #[test]
     fn invalid_token() {
         assert_eq!(
-            Parser::with_source("  152aa   ", "tests", true)
+            Parser::with_source("  152aa   ", 0, true)
                 .unwrap()
                 .parse_primary_expr(None),
             Ok(Expr::Identifier(LiteralExpr {
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn primary_expr_leading_whitespace_with_linebreaks() {
         assert_eq!(
-            Parser::with_source("\n\n \n \r\n 'yee haw' ", "tests", true)
+            Parser::with_source("\n\n \n \r\n 'yee haw' ", 0, true)
                 .unwrap()
                 .parse_primary_expr(None),
             Ok(Expr::String(LiteralExpr {
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn primary_expr_trailing_whitespace_with_linebreaks() {
         assert_eq!(
-            Parser::with_source("  \n'oi' \n  ", "tests", true)
+            Parser::with_source("  \n'oi' \n  ", 0, true)
                 .unwrap()
                 .parse_primary_expr(None),
             Ok(Expr::String(LiteralExpr {
@@ -203,7 +203,7 @@ mod tests {
     #[test]
     fn no_whitespace() {
         assert_eq!(
-            Parser::with_source("\"a\"", "tests", true)
+            Parser::with_source("\"a\"", 0, true)
                 .unwrap()
                 .parse_primary_expr(None),
             Ok(Expr::String(LiteralExpr {

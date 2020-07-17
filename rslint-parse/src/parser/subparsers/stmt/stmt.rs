@@ -9,7 +9,7 @@ use crate::peek;
 use crate::span::Span;
 
 impl<'a> Parser<'a> {
-    pub fn parse_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic<'a>> {
+    pub fn parse_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -68,7 +68,7 @@ impl<'a> Parser<'a> {
         &mut self,
         leading: Option<Span>,
         end: Option<&[TokenType]>,
-    ) -> Result<Vec<Stmt>, ParserDiagnostic<'a>> {
+    ) -> Result<Vec<Stmt>, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -97,7 +97,7 @@ impl<'a> Parser<'a> {
         leading: Option<Span>,
         end: Option<&[TokenType]>,
         allow_directives: bool,
-    ) -> Result<Vec<StmtListItem>, ParserDiagnostic<'a>> {
+    ) -> Result<Vec<StmtListItem>, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {

@@ -11,7 +11,7 @@ macro_rules! span {
 macro_rules! expr {
     ($src:expr) => {{
         use crate::parser::Parser;
-        Parser::with_source($src, "tests", true)
+        Parser::with_source($src, 0, true)
             .unwrap()
             .parse_expr(None)
             .unwrap()
@@ -22,7 +22,7 @@ macro_rules! expr {
 macro_rules! stmt {
     ($src:expr) => {{
         use crate::parser::Parser;
-        Parser::with_source($src, "tests", true)
+        Parser::with_source($src, 0, true)
             .unwrap()
             .parse_stmt(None)
             .unwrap()

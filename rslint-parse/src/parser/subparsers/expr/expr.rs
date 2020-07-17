@@ -9,7 +9,7 @@ use crate::peek;
 impl<'a> Parser<'a> {
     /// Parses a single expression or a comma separated list of expressions such as `foo, bar`
     // TODO: recover from multiple erroneous commas too, a cheap way to do this may be to advance until a linebreak or other token
-    pub fn parse_expr(&mut self, leading: Option<Span>) -> Result<Expr, ParserDiagnostic<'a>> {
+    pub fn parse_expr(&mut self, leading: Option<Span>) -> Result<Expr, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -176,7 +176,7 @@ mod tests {
 
     #[test]
     fn invalid_comma_recovery() {
-        let mut parser = Parser::with_source("foo,", "tests", false).unwrap();
+        let mut parser = Parser::with_source("foo,", 0, false).unwrap();
         let expr = parser.parse_expr(None).unwrap();
         
         assert_eq!(expr,

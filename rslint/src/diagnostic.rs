@@ -5,11 +5,11 @@ use std::ops::Range;
 
 /// A simple builder for creating codespan diagnostics sequentially
 #[derive(Debug, Clone)]
-pub struct DiagnosticBuilder<'a>(Diagnostic<&'a str>, &'a str);
+pub struct DiagnosticBuilder(Diagnostic<usize>, usize);
 
-impl<'a> DiagnosticBuilder<'a> {
+impl DiagnosticBuilder {
     /// Create a new builder with a severity of error
-    pub fn error<T: Into<String>>(file_id: &'a str, code: T, message: T) -> Self {
+    pub fn error<T: Into<String>>(file_id: usize, code: T, message: T) -> Self {
         Self(Diagnostic {
             code: Some(code.into()),
             message: message.into(),
@@ -44,8 +44,8 @@ impl<'a> DiagnosticBuilder<'a> {
     }
 }
 
-impl<'a> From<DiagnosticBuilder<'a>> for Diagnostic<&'a str> {
-    fn from(builder: DiagnosticBuilder<'a>) -> Diagnostic<&'a str> {
+impl From<DiagnosticBuilder> for Diagnostic<usize> {
+    fn from(builder: DiagnosticBuilder) -> Diagnostic<usize> {
         builder.0
     }
 }

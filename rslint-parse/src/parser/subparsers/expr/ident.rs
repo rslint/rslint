@@ -10,7 +10,7 @@ impl<'a> Parser<'a> {
     pub fn parse_identifier_name(
         &mut self,
         leading_whitespace: Option<Span>,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         let leading_ws = if leading_whitespace.is_some() {
             leading_whitespace.unwrap()
         } else {
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn identifier_name() {
         assert_eq!(
-            Parser::with_source(" \nbeans \n\n", "tests", true)
+            Parser::with_source(" \nbeans \n\n", 0, true)
                 .unwrap()
                 .parse_identifier_name(None)
                 .unwrap(),
@@ -84,7 +84,7 @@ mod tests {
     #[test]
     fn identifier_name_with_keyword() {
         assert_eq!(
-            Parser::with_source(" \nclass \n\n", "tests", true)
+            Parser::with_source(" \nclass \n\n", 0, true)
                 .unwrap()
                 .parse_identifier_name(None)
                 .unwrap(),
@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn identifier_name_string_recovery() {
-        let mut parser = Parser::with_source(" \n'yee' \n\n", "tests", true).unwrap();
+        let mut parser = Parser::with_source(" \n'yee' \n\n", 0, true).unwrap();
         assert_eq!(
             parser.parse_identifier_name(None).unwrap(),
             Expr::Identifier(LiteralExpr {
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn identifier_name_number_recovery() {
-        let mut parser = Parser::with_source(" \n12345 \n\n", "tests", true).unwrap();
+        let mut parser = Parser::with_source(" \n12345 \n\n", 0, true).unwrap();
         assert_eq!(
             parser.parse_identifier_name(None).unwrap(),
             Expr::Identifier(LiteralExpr {
@@ -133,7 +133,7 @@ mod tests {
     #[should_panic]
     #[test]
     fn invalid_identifier_name() {
-        Parser::with_source(" \n/aaa/g \n\n", "tests", false)
+        Parser::with_source(" \n/aaa/g \n\n", 0, false)
             .unwrap()
             .parse_identifier_name(None)
             .unwrap();

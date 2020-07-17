@@ -8,7 +8,7 @@ use crate::span::Span;
 use crate::peek;
 
 impl<'a> Parser<'a> {
-    pub fn parse_break_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic<'a>> {
+    pub fn parse_break_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -59,7 +59,7 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    pub fn parse_continue_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic<'a>> {
+    pub fn parse_continue_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -110,7 +110,7 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    fn parse_optional_label(&mut self) -> Result<Option<LiteralExpr>, ParserDiagnostic<'a>> {
+    fn parse_optional_label(&mut self) -> Result<Option<LiteralExpr>, ParserDiagnostic> {
         if self.cur_tok.token_type == TokenType::Linebreak || peek!(self) != Some(TokenType::Identifier) {
             return Ok(None);
         }

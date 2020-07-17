@@ -7,7 +7,7 @@ use crate::span::Span;
 use crate::peek;
 
 impl<'a> Parser<'a> {
-    pub fn parse_assign_expr(&mut self, leading: Option<Span>) -> Result<Expr, ParserDiagnostic<'a>> {
+    pub fn parse_assign_expr(&mut self, leading: Option<Span>) -> Result<Expr, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -23,7 +23,7 @@ impl<'a> Parser<'a> {
         self.parse_assign_expr_recursive(target)
     }
 
-    pub fn parse_assign_expr_recursive(&mut self, target: Box<Expr>) -> Result<Expr, ParserDiagnostic<'a>> {
+    pub fn parse_assign_expr_recursive(&mut self, target: Box<Expr>) -> Result<Expr, ParserDiagnostic> {
         let before;
         let op: AssignToken;
 

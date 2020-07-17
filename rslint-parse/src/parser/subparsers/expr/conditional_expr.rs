@@ -17,7 +17,7 @@ impl<'a> Parser<'a> {
     pub fn parse_conditional_expr(
         &mut self,
         leading_whitespace: Option<Span>,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         let leading_ws = if leading_whitespace.is_some() {
             leading_whitespace.unwrap()
         } else {

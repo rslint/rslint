@@ -9,7 +9,7 @@ use crate::span::Span;
 
 impl<'a> Parser<'a> {
     // This takes care of `for (...)`, `for (foo in bar)`, and *eventually* `for (foo of bar)`
-    pub fn parse_for_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic<'a>> {
+    pub fn parse_for_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -201,7 +201,7 @@ impl<'a> Parser<'a> {
     fn parse_for_init(
         &mut self,
         leading: Span,
-    ) -> Result<(ForStmtInit, LiteralWhitespace, bool), ParserDiagnostic<'a>> {
+    ) -> Result<(ForStmtInit, LiteralWhitespace, bool), ParserDiagnostic> {
         self.state.no_in = true;
         match self.cur_tok.token_type {
             TokenType::Var => {

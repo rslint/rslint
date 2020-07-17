@@ -7,21 +7,21 @@ use codespan_reporting::diagnostic::{Diagnostic, Label, Severity};
 use std::ops::Range;
 
 #[derive(Debug, Clone)]
-pub struct ParserDiagnostic<'a> {
-  pub diagnostic: Diagnostic<&'a str>,
+pub struct ParserDiagnostic {
+  pub diagnostic: Diagnostic<usize>,
   pub simple: bool,
   pub error_type: ParserDiagnosticType,
-  pub file_id: &'a str,
+  pub file_id: usize,
 }
 
-impl<'a> PartialEq for ParserDiagnostic<'a> {
+impl PartialEq for ParserDiagnostic {
   fn eq(&self, other: &Self) -> bool {
     self.error_type == other.error_type
   }
 }
 
-impl<'a> ParserDiagnostic<'a> {
-  pub fn new(file_id: &'a str, r#type: ParserDiagnosticType, message: &str) -> Self {
+impl ParserDiagnostic {
+  pub fn new(file_id: usize, r#type: ParserDiagnosticType, message: &str) -> Self {
     Self {
       diagnostic: Diagnostic::error()
         .with_code("ParseError")
@@ -32,7 +32,7 @@ impl<'a> ParserDiagnostic<'a> {
     }
   }
 
-  pub fn warning(file_id: &'a str, r#type: ParserDiagnosticType, message: &str) -> Self {
+  pub fn warning(file_id: usize, r#type: ParserDiagnosticType, message: &str) -> Self {
     Self {
       diagnostic: Diagnostic::warning()
         .with_code("ParserWarning")
@@ -43,7 +43,7 @@ impl<'a> ParserDiagnostic<'a> {
     }
   }
 
-  pub fn note(file_id: &'a str, r#type: ParserDiagnosticType, message: &str) -> Self {
+  pub fn note(file_id: usize, r#type: ParserDiagnosticType, message: &str) -> Self {
     Self {
       diagnostic: Diagnostic::note()
         .with_code("ParserNote")

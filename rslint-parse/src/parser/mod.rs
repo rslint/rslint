@@ -25,9 +25,9 @@ pub struct Parser<'a> {
     pub cur_tok: Token,
 
     /// Errors reported by the parser or the lexer which have been recovered from.
-    pub errors: Vec<ParserDiagnostic<'a>>,
+    pub errors: Vec<ParserDiagnostic>,
     pub source: &'a str,
-    pub file_id: &'a str,
+    pub file_id: usize,
 
     /// Whether the parser should attempt secondary recovery by throwing out
     /// tokens until a valid one is found
@@ -62,7 +62,7 @@ impl ParserOptions {
 impl<'a> Parser<'a> {
     /// Makes a parser directly from source code, calling the lexer automatically.
     /// Will return None if the source is empty.
-    pub fn with_source(source: &'a str, file_id: &'a str, discard_recovery: bool) -> Option<Self> {
+    pub fn with_source(source: &'a str, file_id: usize, discard_recovery: bool) -> Option<Self> {
         if source.len() == 0 {
             return None;
         }
@@ -89,7 +89,7 @@ impl<'a> Parser<'a> {
     /// - The offset is greater or equal to the source length
     pub fn with_source_and_offset(
         source: &'a str,
-        file_id: &'a str,
+        file_id: usize,
         discard_recovery: bool,
         offset: usize,
     ) -> Option<Self> {
@@ -116,7 +116,7 @@ impl<'a> Parser<'a> {
     /// Parse an ECMAScript script into a concrete syntax tree  
     /// ** The parser can and will emit recoverable errors, you can access them through `parser.errors` after parsing even if the parsing yields
     /// an unrecoverable error**
-    pub fn parse_script(&mut self) -> Result<CST, ParserDiagnostic<'a>> {
+    pub fn parse_script(&mut self) -> Result<CST, ParserDiagnostic> {
         self.cst.statements = self.parse_stmt_decl_list(None, Some(&[TokenType::EOF]), true)?;
         Ok(self.cst.to_owned())
     }
@@ -129,7 +129,7 @@ impl<'a> Parser<'a> {
     pub fn advance_lexer(
         &mut self,
         skip_linebreak: bool,
-    ) -> Result<Option<Token>, ParserDiagnostic<'a>> {
+    ) -> Result<Option<Token>, ParserDiagnostic> {
         let res = self.lexer.next();
         match res {
             // Unrecoverable lexer error
@@ -171,7 +171,7 @@ impl<'a> Parser<'a> {
     /// # Errors  
     /// Returns an Err if the lexer returns an unrecoverable error  
     #[inline(always)]
-    pub fn peek_lexer(&mut self) -> Result<Option<&Token>, ParserDiagnostic<'a>> {
+    pub fn peek_lexer(&mut self) -> Result<Option<&Token>, ParserDiagnostic> {
         let res = self.lexer.peek();
         match res {
             // Unrecoverable lexer error
@@ -191,7 +191,7 @@ impl<'a> Parser<'a> {
 
     /// Peek the lexer while a token matches a function and return the token that does not match or None if the lexer is finished
     #[inline(always)]
-    pub fn peek_while<F>(&mut self, func: F) -> Result<Option<Token>, ParserDiagnostic<'a>>
+    pub fn peek_while<F>(&mut self, func: F) -> Result<Option<Token>, ParserDiagnostic>
     where
         F: Fn(&Token) -> bool,
     {
@@ -210,7 +210,7 @@ impl<'a> Parser<'a> {
         &mut self,
         skip_linebreak: bool,
         func: F,
-    ) -> Result<(), ParserDiagnostic<'a>>
+    ) -> Result<(), ParserDiagnostic>
     where
         F: Fn(&Token) -> bool,
     {
@@ -231,7 +231,7 @@ impl<'a> Parser<'a> {
         &mut self,
         message: Option<&'a str>,
         func: F,
-    ) -> Result<(), ParserDiagnostic<'a>>
+    ) -> Result<(), ParserDiagnostic>
     where
         F: Fn(&TokenType) -> bool,
     {
@@ -269,7 +269,7 @@ impl<'a> Parser<'a> {
     /// Get the span of the current token if it is a whitespace or return a span with length zero
     /// With the start and end set to the current token's start position  
     #[inline(always)]
-    pub fn whitespace(&mut self, leading: bool) -> Result<Span, ParserDiagnostic<'a>> {
+    pub fn whitespace(&mut self, leading: bool) -> Result<Span, ParserDiagnostic> {
         if self.cur_tok.is_whitespace() {
             // If its trailing whitespace, it will not include linebreaks in it
             if !leading && self.cur_tok.token_type == TokenType::Linebreak {
@@ -297,7 +297,7 @@ impl<'a> Parser<'a> {
     /// - The next token is EOF  
     /// - The previous token was a `}`  
     /// - There is a linebreak after the current token  
-    pub fn semi(&mut self) -> Result<Option<Semicolon>, ParserDiagnostic<'a>> {
+    pub fn semi(&mut self) -> Result<Option<Semicolon>, ParserDiagnostic> {
         const ACCEPTABLE: [TokenType; 3] =
             [TokenType::EOF, TokenType::BraceClose, TokenType::Linebreak];
 
@@ -333,12 +333,12 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn error(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic<'a> {
+    pub fn error(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic {
         let message = &msg.to_owned();
         ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Parser(kind), message)
     }
 
-    pub fn warning(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic<'a> {
+    pub fn warning(&self, kind: ParseDiagnosticType, msg: &str) -> ParserDiagnostic {
         let message = &msg.to_owned();
         ParserDiagnostic::warning(self.file_id, ParserDiagnosticType::Parser(kind), message)
     }

@@ -39,7 +39,7 @@ fn get_neg_zero<'a>(left: &'a Expr, right: &'a Expr, source: &str) -> Option<&'a
 }
 
 impl Visit for NoCompareNegZeroVisitor<'_, '_> {
-    fn visit_binary_expr(&mut self, expr: &BinaryExpr, _: &dyn Node) {
+    fn visit_binary_expr(&mut self, expr: &BinaryExpr, _parent: &dyn Node) {
         match expr.op {
             TokenType::BinOp(ref tok) if CHECKED_BIN.contains(tok) => {
                 let neg = get_neg_zero(&expr.left, &expr.right, self.ctx.file_source);
@@ -65,6 +65,9 @@ impl Visit for NoCompareNegZeroVisitor<'_, '_> {
             }
             _ => {}
         }
+        
+        self.visit_expr(&expr.left, _parent);
+        self.visit_expr(&expr.right, _parent);
     }
 }
 

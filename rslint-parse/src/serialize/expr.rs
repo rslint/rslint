@@ -349,7 +349,7 @@ mod tests {
     fn arguments() {
         use crate::parser::Parser;
         let src = "(foo,bar,     baz, 6 + 7, 9,  )";
-        let mut parser = Parser::with_source(src, "tests", true).unwrap();
+        let mut parser = Parser::with_source(src, 0, true).unwrap();
         assert_eq!(
             parser.parse_args(None).unwrap().to_string(src),
             "(foo, bar, baz, 6 + 7, 9)"

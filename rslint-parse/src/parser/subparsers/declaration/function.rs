@@ -11,7 +11,7 @@ impl<'a> Parser<'a> {
     pub fn parse_function_declaration(
         &mut self,
         leading: Option<Span>,
-    ) -> Result<FunctionDecl, ParserDiagnostic<'a>> {
+    ) -> Result<FunctionDecl, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {

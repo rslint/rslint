@@ -10,7 +10,7 @@ impl<'a> Parser<'a> {
     pub fn parse_debugger_stmt(
         &mut self,
         leading: Option<Span>,
-    ) -> Result<Stmt, ParserDiagnostic<'a>> {
+    ) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {

@@ -6,7 +6,7 @@ mod test {
 
   macro_rules! tokens {
     ($src:expr) => {
-      Lexer::new(&String::from($src), "").map(|x| { if x.1.is_some() { panic!() }; x.0.unwrap() }).collect::<Vec<Token>>();
+      Lexer::new(&String::from($src), 0).map(|x| { if x.1.is_some() { panic!() }; x.0.unwrap() }).collect::<Vec<Token>>();
     };
   }
   
@@ -263,7 +263,7 @@ mod test {
       rslint best \\\r\n
       linter \\\u{2028}
       ever \\\u{2029}
-     ' a", "").skip(2).next().unwrap().0.unwrap();
+     ' a", 0).skip(2).next().unwrap().0.unwrap();
     assert_eq!(tok.line, 5);
   }
 

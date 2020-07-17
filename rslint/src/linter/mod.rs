@@ -10,6 +10,7 @@ use std::sync::Once;
 use clap::App;
 use clap::load_yaml;
 use std::env::current_dir;
+use glob::PatternError;
 
 static CONFIGURE_RAYON: Once = Once::new();
 
@@ -22,24 +23,24 @@ pub struct Linter {
 }
 
 impl Linter {
-    /// Make a new linter with a glob pattern to pass to the file walker
+    /// Make a new linter with a glob pattern to pass to the file walker, this method will return an error if the glob pattern is invalid
     #[allow(unused_must_use)]
-    pub fn new(target: String) -> Self {
+    pub fn new(target: String) -> Result<Self, PatternError> {
         CONFIGURE_RAYON.call_once(|| {
             // Initialize the thread pool with a larger stack than the windows default (1 mb) to avoid overflows on very large files
             rayon::ThreadPoolBuilder::new().stack_size(8000000).build_global();
         });
 
-        Self {
-            walker: FileWalker::new(target),
+        Ok(Self {
+            walker: FileWalker::with_glob(target)?,
             // TODO: Dynamic formatters
             formatter: CodespanFormatter::new()
-        }
+        })
     }
 
     /// Create a new linter from CLI args, this will either use the provided glob pattern or the current working directory
     /// # Panics
-    /// This method will panic if there was no glob provided through CLI, and current working directory is unreadable
+    /// This method will panic if there was no glob provided through CLI, and current working directory is unreadable, or the glob pattern is invalid
     pub fn from_cli_args() -> Self {
         let yaml = load_yaml!("../../cli.yml");
         let app = App::from_yaml(yaml);
@@ -47,10 +48,10 @@ impl Linter {
         let glob = args.value_of("INPUT");
 
         if let Some(pat) = glob {
-            Self::new(pat.to_string())
+            Self::new(pat.to_string()).expect("The provided glob pattern is invalid")
         } else {
             if let Ok(default) = current_dir() {
-                Self::new(default.into_os_string().to_string_lossy().to_string())
+                Self::new(default.into_os_string().to_string_lossy().to_string()).expect("Cwd glob is invalid")
             } else {
                 panic!("Error: No glob pattern was provided, and the current working directory is unreadable or invalid");
             }

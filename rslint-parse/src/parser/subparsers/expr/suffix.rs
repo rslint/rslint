@@ -18,7 +18,7 @@ impl<'a> Parser<'a> {
         &mut self,
         object: Expr,
         no_call: bool,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         match peek!(self, [TokenType::ParenOpen, TokenType::Period]) {
             Some(TokenType::Period) => {
                 let before_dot = self.whitespace(true)?;
@@ -153,7 +153,7 @@ impl<'a> Parser<'a> {
     /// Parse arguments to a call such as `foo(bar)` or `new foo(bar, foo,)`.  
     /// The function assumes the token after the leading whitespace is a parentheses.  
     /// If the token after the whitespace is not a parentheses, it is an internal parser error.
-    pub fn parse_args(&mut self, leading: Option<Span>) -> Result<Arguments, ParserDiagnostic<'a>> {
+    pub fn parse_args(&mut self, leading: Option<Span>) -> Result<Arguments, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -305,7 +305,7 @@ mod tests {
 
     #[test]
     fn dot_deref_suffixes() {
-        let mut parser = Parser::with_source(" a\n . \n\n b. a", "tests", true).unwrap();
+        let mut parser = Parser::with_source(" a\n . \n\n b. a", 0, true).unwrap();
         let expr = parser.parse_primary_expr(None).unwrap();
         let member = parser.parse_suffixes(expr, false);
         assert_eq!(
@@ -350,7 +350,7 @@ mod tests {
 
     #[test]
     fn attempt_to_parse_suffixes_without_suffixes() {
-        let mut parser = Parser::with_source("foo  ", "tests", true).unwrap();
+        let mut parser = Parser::with_source("foo  ", 0, true).unwrap();
         let expr = parser.parse_primary_expr(None).unwrap();
         let member = parser.parse_suffixes(expr, false);
 
@@ -368,7 +368,7 @@ mod tests {
 
     #[test]
     fn suffixes_with_identifier_following() {
-        let mut parser = Parser::with_source("foo  bar", "tests", true).unwrap();
+        let mut parser = Parser::with_source("foo  bar", 0, true).unwrap();
         let expr = parser.parse_primary_expr(None).unwrap();
         let member = parser.parse_suffixes(expr, false);
 
@@ -386,7 +386,7 @@ mod tests {
 
     #[test]
     fn arguments_no_trailing() {
-        let mut parser = Parser::with_source("(foo, bar ) ", "tests", true).unwrap();
+        let mut parser = Parser::with_source("(foo, bar ) ", 0, true).unwrap();
         let args = parser.parse_args(None).unwrap();
 
         assert_eq!(
@@ -427,7 +427,7 @@ mod tests {
 
     #[test]
     fn empty_arguments() {
-        let mut parser = Parser::with_source(" ( \n) ", "tests", true).unwrap();
+        let mut parser = Parser::with_source(" ( \n) ", 0, true).unwrap();
         let args = parser.parse_args(None).unwrap();
 
         assert_eq!(
@@ -450,7 +450,7 @@ mod tests {
 
     #[test]
     fn single_argument() {
-        let mut parser = Parser::with_source("(/a/g)", "tests", true).unwrap();
+        let mut parser = Parser::with_source("(/a/g)", 0, true).unwrap();
         let args = parser.parse_args(None).unwrap();
 
         assert_eq!(
@@ -479,7 +479,7 @@ mod tests {
 
     #[test]
     fn trailing_comma_args() {
-        let mut parser = Parser::with_source("(foo,)", "tests", true).unwrap();
+        let mut parser = Parser::with_source("(foo,)", 0, true).unwrap();
         let args = parser.parse_args(None).unwrap();
 
         assert_eq!(
@@ -511,7 +511,7 @@ mod tests {
 
     #[test]
     fn no_comma_recovery() {
-        let mut parser = Parser::with_source("(foo bar)", "tests", true).unwrap();
+        let mut parser = Parser::with_source("(foo bar)", 0, true).unwrap();
         let args = parser.parse_args(None).unwrap();
 
         assert_eq!(
@@ -585,7 +585,7 @@ mod tests {
 
     #[test]
     fn bracket_suffix_error_recovery() {
-        let mut parser = Parser::with_source("foo[bar;[]", "tests", true).unwrap();
+        let mut parser = Parser::with_source("foo[bar;[]", 0, true).unwrap();
         let expr = parser.parse_expr(None).unwrap();
 
         assert_eq!(

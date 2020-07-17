@@ -8,7 +8,7 @@ use crate::span::Span;
 use crate::peek;
 
 impl<'a> Parser<'a> {
-    pub fn parse_if_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic<'a>> {
+    pub fn parse_if_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -28,7 +28,7 @@ impl<'a> Parser<'a> {
         let before_paren = self.whitespace(true)?;
         let open_paren_whitespace: LiteralWhitespace;
         let condition: Expr;
-        let mut error: Option<ParserDiagnostic<'a>> = None;
+        let mut error: Option<ParserDiagnostic> = None;
 
         // recover from `if a` by ignoring the need for an open paren and instead reporting an error and parsing the expression
         if self.cur_tok.token_type != TokenType::ParenOpen {

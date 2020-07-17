@@ -10,7 +10,7 @@ impl<'a> Parser<'a> {
         &mut self,
         leading_whitespace: Option<Span>,
         new_expr: bool,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         let leading_ws = if leading_whitespace.is_some() {
             leading_whitespace.unwrap()
         } else {
@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn member_expr_with_suffix() {
-        let res = Parser::with_source("361 \n.bar\n", "tests", true)
+        let res = Parser::with_source("361 \n.bar\n", 0, true)
             .unwrap()
             .parse_member_or_new_expr(None, false)
             .unwrap();
@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn new_expr_with_member_suffixes() {
-        let res = Parser::with_source(" new \n foo. bar", "tests", true)
+        let res = Parser::with_source(" new \n foo. bar", 0, true)
             .unwrap()
             .parse_member_or_new_expr(None, true);
         assert_eq!(
@@ -146,7 +146,7 @@ mod tests {
 
     #[test]
     fn new_expr_without_suffixes() {
-        let res = Parser::with_source("new foo", "tests", true)
+        let res = Parser::with_source("new foo", 0, true)
             .unwrap()
             .parse_member_or_new_expr(None, true);
         assert_eq!(
@@ -171,7 +171,7 @@ mod tests {
 
     #[test]
     fn member_expr_without_suffixes() {
-        let res = Parser::with_source("foo", "tests", true)
+        let res = Parser::with_source("foo", 0, true)
             .unwrap()
             .parse_member_or_new_expr(None, false);
         assert_eq!(
@@ -188,7 +188,7 @@ mod tests {
 
     #[test]
     fn recursive_new_expr() {
-        let res = Parser::with_source("new new foo", "tests", true)
+        let res = Parser::with_source("new new foo", 0, true)
             .unwrap()
             .parse_member_or_new_expr(None, false);
         assert_eq!(res,

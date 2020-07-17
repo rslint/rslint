@@ -8,7 +8,7 @@ use crate::peek;
 use crate::span::Span;
 
 impl<'a> Parser<'a> {
-    pub fn parse_var_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic<'a>> {
+    pub fn parse_var_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -71,7 +71,7 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    fn parse_var_declarator(&mut self) -> Result<Declarator, ParserDiagnostic<'a>> {
+    fn parse_var_declarator(&mut self) -> Result<Declarator, ParserDiagnostic> {
         let before_ident = self.whitespace(true)?;
         let ident_span = self.cur_tok.lexeme.to_owned();
 

@@ -9,7 +9,7 @@ impl<'a> Parser<'a> {
     pub fn parse_unary_expr(
         &mut self,
         leading: Option<Span>,
-    ) -> Result<Expr, ParserDiagnostic<'a>> {
+    ) -> Result<Expr, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {
@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn unary_prefix_update() {
-        let mut parser = Parser::with_source("--foo \n++5", "tests", true).unwrap();
+        let mut parser = Parser::with_source("--foo \n++5", 0, true).unwrap();
         let first = parser.parse_unary_expr(None);
         let second = parser.parse_unary_expr(None);
         assert_eq!(
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn postfix_unary_valid_target() {
-        let mut parser = Parser::with_source("mark++", "tests", true).unwrap();
+        let mut parser = Parser::with_source("mark++", 0, true).unwrap();
         let res = parser.parse_unary_expr(None).unwrap();
         assert_eq!(
             res,
@@ -239,7 +239,7 @@ mod tests {
 
     #[test]
     fn postfix_unary_with_whitespace() {
-        let mut parser = Parser::with_source("\nmk -- \n\n", "tests", true).unwrap();
+        let mut parser = Parser::with_source("\nmk -- \n\n", 0, true).unwrap();
         let res = parser.parse_unary_expr(None).unwrap();
         assert_eq!(
             res,
@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn postfix_unary_invalid_target() {
-        let mut parser = Parser::with_source("true++", "tests", true).unwrap();
+        let mut parser = Parser::with_source("true++", 0, true).unwrap();
         let res = parser.parse_unary_expr(None).unwrap();
         assert_eq!(
             res,
@@ -290,7 +290,7 @@ mod tests {
 
     #[test]
     fn prefix_update_valid_target() {
-        let mut parser = Parser::with_source(" ++ foo ", "tests", true).unwrap();
+        let mut parser = Parser::with_source(" ++ foo ", 0, true).unwrap();
         let res = parser.parse_unary_expr(None).unwrap();
         assert_eq!(
             res,
@@ -315,7 +315,7 @@ mod tests {
 
     #[test]
     fn prefix_unary() {
-        let mut parser = Parser::with_source("delete the_world", "tests", true).unwrap();
+        let mut parser = Parser::with_source("delete the_world", 0, true).unwrap();
         let res = parser.parse_unary_expr(None).unwrap();
         assert_eq!(
             res,

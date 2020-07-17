@@ -15,10 +15,10 @@ macro_rules! assert_lint_err {
         $(
             let mut ctx = RuleContext {
                 file_source: $string,
-                file_id: "tests",
+                file_id: 0,
                 diagnostics: vec![],
             };
-            let cst = Parser::with_source($string, "tests", true).unwrap().parse_script().unwrap();
+            let cst = Parser::with_source($string, 0, true).unwrap().parse_script().unwrap();
 
             $rule {}.lint(&mut ctx, &cst);
             let result = RuleResult::from(ctx.diagnostics);
@@ -45,10 +45,10 @@ macro_rules! assert_lint_ok {
         $(
             let mut ctx = RuleContext {
                 file_source: $string,
-                file_id: "tests",
+                file_id: 0,
                 diagnostics: vec![],
             };
-            let cst = Parser::with_source($string, "tests", true).unwrap().parse_script().unwrap();
+            let cst = Parser::with_source($string, 0, true).unwrap().parse_script().unwrap();
 
             $rule {}.lint(&mut ctx, &cst);
 

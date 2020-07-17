@@ -7,7 +7,7 @@ use crate::parser::Parser;
 use crate::span::Span;
 
 impl<'a> Parser<'a> {
-    pub fn parse_block_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic<'a>> {
+    pub fn parse_block_stmt(&mut self, leading: Option<Span>) -> Result<Stmt, ParserDiagnostic> {
         let leading_whitespace = if leading.is_none() {
             self.whitespace(true)?
         } else {

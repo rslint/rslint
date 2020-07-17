@@ -7,7 +7,7 @@ use crate::peek;
 
 impl<'a> Parser<'a> {
     /// Parse a left hand side expression, which includes call, dot, and bracket suffix expressions.
-    pub fn parse_lhs_expr(&mut self, leading_whitespace: Option<Span>) -> Result<Expr, ParserDiagnostic<'a>> {
+    pub fn parse_lhs_expr(&mut self, leading_whitespace: Option<Span>) -> Result<Expr, ParserDiagnostic> {
         let leading_ws = if leading_whitespace.is_some() {
             leading_whitespace.unwrap()
         } else {
