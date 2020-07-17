@@ -10,10 +10,10 @@ use std::str::CharIndices;
 use std::iter::Peekable;
 use once_cell::sync::Lazy;
 
-pub type LexResult<'a> = (Option<Token>, Option<ParserDiagnostic<'a>>);
+pub type LexResult<'a> = (Option<Token>, Option<ParserDiagnostic>);
 
 pub struct Lexer<'a> {
-  pub file_id: &'a str, 
+  pub file_id: usize, 
   pub source: &'a str,
   pub source_iter: Peekable<CharIndices<'a>>,
   pub source_len: usize,
@@ -56,6 +56,14 @@ macro_rules! lookup_fn {
   };
 }
 
+macro_rules! lookup_mul {
+  ($l:expr, ($($entry:expr, $(,)?)*), $fn:expr) => {
+    $(
+      $l.add_char_entry($entry, $fn);
+    )*
+  }
+}
+
 /// A lookup table for matching ascii charactes to functions to handle their tokens
 /// Each function is stored as a usize pointer then transmuted when called
 /// Unicode characters are handled after the lookup table
@@ -91,11 +99,13 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
     lexer.line += 1;
     tok
   });
-  lookup!(l, '\u{0009}', Whitespace);
-  lookup!(l, '\u{000B}', Whitespace);
-  lookup!(l, '\u{000C}', Whitespace);
-  lookup!(l, '\u{0020}', Whitespace);
-  lookup!(l, '\u{00A0}', Whitespace);
+
+  lookup_mul!(l, ('\u{0009}', '\u{000B}', '\u{000C}', '\u{0020}', '\u{00A0}',), |lexer: &mut Lexer, _: char| {
+    let start = lexer.cur;
+    lexer.advance_while(|x| x.is_js_whitespace());
+    tok!(lexer, Whitespace, start)
+  });
+
   // A - Z - can only be identifier
   range_lookup!(l, 65..91, |lexer: &mut Lexer, _: char| {
     (Some(lexer.resolve_identifier(lexer.cur)), None)
@@ -133,7 +143,7 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
         tok!(lexer, tok, start)
       }
     } else {
-      tok!(lexer, BinOp(BinToken::Assign), start)
+      tok!(lexer, TokenType::AssignOp(AssignToken::Assign), start)
     }
   });
 
@@ -367,11 +377,13 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
       _ => tok!(lexer, Period, start)
     }
   });
+
+  lookup_mul!(l, ('_', '$',), |lexer: &mut Lexer, _: char| (Some(lexer.resolve_identifier(lexer.cur)), None));
   l
 });
 
 impl<'a> Lexer<'a> {
-  pub fn new(source: &'a str, file_id: &'a str) -> Self {
+  pub fn new(source: &'a str, file_id: usize) -> Self {
     let iter = source.char_indices().peekable();
     let mut lex = Self {
       file_id,
@@ -400,7 +412,7 @@ impl<'a> Lexer<'a> {
   }
 
   pub fn advance_while<F>(&mut self, func: F) 
-    where F: FnOnce(char) -> bool + Copy
+    where F: Fn(char) -> bool
   {
     loop {
       match self.advance() {
@@ -429,8 +441,35 @@ impl<'a> Lexer<'a> {
         self.state.update(Some(token));
       }
     }
+
     let end = if self.state.last_tok { self.cur + 1 } else { self.cur };
     Token::new(token, start, end, self.line)
+  }
+
+  fn scan_non_lookup_token(&mut self) -> LexResult<'a> {
+    let start = self.cur;
+    match self.cur_char {
+      c if c.is_js_whitespace() => {
+        self.advance_while(|x| x.is_js_whitespace());
+        tok!(self, TokenType::Whitespace, start)
+      },
+
+      c if c.is_line_break() => {
+        self.advance();
+        self.line += 1;
+        tok!(self, TokenType::Linebreak, start)
+      }
+
+      // Keywords are only ascii lowercase, handled by the lookup table, therefore it must be an identifier
+      c if c.is_identifier_start() => {
+        (Some(self.resolve_identifier(start)), None)
+      },
+
+      _ => {
+        (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), &format!("Unexpected token `{}`", self.cur_char))
+          .primary(self.cur..self.next_idx(), "Invalid")))
+      }
+    }
   }
 
   /// The lexer may yield a token and a diagnostic, this is to allow the parser to recover from some errors
@@ -447,36 +486,15 @@ impl<'a> Lexer<'a> {
       let func = LEXER_LOOKUP.lookup(c);
       let res = func(self, c);
       if res == (None, None) {
-        return (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), &format!("Unexpected token `{}`", self.cur_char))
-          .primary(self.cur..self.next_idx(), "Invalid")));
+        return self.scan_non_lookup_token();
       }
       res
     } else {
-      let start = self.cur;
-      match self.cur_char {
-        c if c.is_js_whitespace() => {
-          self.advance();
-          tok!(self, TokenType::Whitespace, start)
-        },
-
-        c if c.is_line_break() => {
-          self.advance();
-          self.line += 1;
-          tok!(self, TokenType::Linebreak, start)
-        }
-
-        // Keywords are only ascii lowercase, handled by the lookup table, therefore it must be an identifier
-        c if c.is_identifier_start() => (Some(self.resolve_identifier(start)), None),
-
-        _ => {
-          (None, Some(ParserDiagnostic::new(self.file_id, ParserDiagnosticType::Lexer(UnexpectedToken), &format!("Unexpected token `{}`", self.cur_char))
-            .primary(self.cur..self.next_idx(), "Invalid")))
-        }
-      }
+      self.scan_non_lookup_token()
     }
   }
 
-  fn validate_escape_sequence(&mut self, escaped: char) -> Result<(), ParserDiagnostic<'a>> {
+  fn validate_escape_sequence(&mut self, escaped: char) -> Result<(), ParserDiagnostic> {
     match escaped {
       'u' => drop(self.read_unicode_escape()?),
       'x' => drop(self.read_hex_escape()?),
@@ -495,7 +513,7 @@ impl<'a> Lexer<'a> {
   /// Reads a hex escape sequence such as \x47
   /// Expects the current char to be the x after the backslash
   // TODO: possibly refactor this and read_unicode_escape into one method
-  fn read_hex_escape(&mut self) -> Result<char, ParserDiagnostic<'a>> {
+  fn read_hex_escape(&mut self) -> Result<char, ParserDiagnostic> {
     let start = self.cur - 1;
     let mut digits = String::with_capacity(2);
 
@@ -530,7 +548,7 @@ impl<'a> Lexer<'a> {
 
   /// Reads a unicode escape sequence such as \u200b
   /// Expects the current char to be the u after the backslash
-  fn read_unicode_escape(&mut self) -> Result<char, ParserDiagnostic<'a>> {
+  fn read_unicode_escape(&mut self) -> Result<char, ParserDiagnostic> {
     let start = self.cur - 1;
     let mut digits = String::with_capacity(4);
 
@@ -565,7 +583,7 @@ impl<'a> Lexer<'a> {
 
   fn read_str_literal(&mut self, quote: char) -> LexResult<'a> {
     let start = self.cur;
-    let mut err: Option<ParserDiagnostic<'a>> = None;
+    let mut err: Option<ParserDiagnostic> = None;
     let start_line = self.line;
 
     loop {
@@ -698,7 +716,7 @@ impl<'a> Lexer<'a> {
     (Some(self.token(start, tok)), err)
   }
 
-  fn validate_regex_flags(&mut self) -> Option<ParserDiagnostic<'a>> {
+  fn validate_regex_flags(&mut self) -> Option<ParserDiagnostic> {
     let (mut global, mut ignore_case, mut multiline) = (false, false, false);
 
     let flag_err = |lexer: &mut Lexer<'a>| {
@@ -749,7 +767,12 @@ impl<'a> Iterator for Lexer<'a> {
   fn next(&mut self) -> Option<Self::Item> {
     let res = self.scan_token();
     if res == (None, None) {
-      return None;
+      if self.state.returned_eof {
+        return None;
+      } else {
+        self.state.returned_eof = true;
+        return Some((Some(Token::new(TokenType::EOF, self.source_len, self.source_len, self.line)), None));
+      }
     }
     Some(res)
   }

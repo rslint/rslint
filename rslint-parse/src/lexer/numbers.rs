@@ -221,7 +221,7 @@ mod test {
 
   macro_rules! num_literal {
     ($source:expr) => {
-      let tok = Lexer::new($source, "test").next().unwrap().0.unwrap();
+      let tok = Lexer::new($source, 0).next().unwrap().0.unwrap();
       assert_eq!(tok.token_type, LiteralNumber);
       assert_eq!(tok.lexeme.content($source), $source);
     };
@@ -230,7 +230,7 @@ mod test {
   macro_rules! invalid_num_literal {
     // An invalid token recovery is expected
     ($source:expr, $expected_err:ident) => {
-      let lexer_res = Lexer::new($source, "test").next().unwrap();
+      let lexer_res = Lexer::new($source, 0).next().unwrap();
       let tok = lexer_res.0.unwrap();
       assert_eq!(tok.token_type, InvalidToken);
       assert_eq!(tok.lexeme.content($source), $source);
@@ -330,21 +330,21 @@ mod test {
 
   #[test]
   fn num_decimal_redundant_zeroes() {
-    let note = Lexer::new("0.500", "").next().unwrap().1.unwrap();
+    let note = Lexer::new("0.500", 0).next().unwrap().1.unwrap();
     assert_eq!(note.error_type, ParserDiagnosticType::Lexer(RedundantZeroesAfterNumber));
     assert_eq!(note.diagnostic.labels[0].range, 3..4);
   }
 
   #[test]
   fn num_exponent_redundant_zeroes() {
-    let note = Lexer::new("0.00e+6", "").next().unwrap().1.unwrap();
+    let note = Lexer::new("0.00e+6", 0).next().unwrap().1.unwrap();
     assert_eq!(note.error_type, ParserDiagnosticType::Lexer(RedundantExponent));
     assert_eq!(note.diagnostic.labels[0].range, 4..6);
   }
 
   #[test]
   fn num_hex_literal_redundant_zeroes() {
-    let note = Lexer::new("0x00300", "").next().unwrap().1.unwrap();
+    let note = Lexer::new("0x00300", 0).next().unwrap().1.unwrap();
     assert_eq!(note.error_type, ParserDiagnosticType::Lexer(RedundantHexZeroes));
     assert_eq!(note.diagnostic.labels[0].range, 2..4);
   }

@@ -1,10 +1,8 @@
 use crate::span::Span;
 use std::fmt;
-use once_cell::sync::Lazy;
 use ansi_term::Color::Red;
-use fnv::FnvHashSet;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
   pub token_type: TokenType,
   pub lexeme: Span,
@@ -20,8 +18,15 @@ impl Token {
     }
   }
 
+  #[inline]
   pub fn is_whitespace(&self) -> bool {
-    self.token_type == TokenType::Whitespace || self.token_type == TokenType::Linebreak
+    // Comments arent exactly "whitespace" but for the purpose of the parser, they are
+    [TokenType::Whitespace, TokenType::Linebreak, TokenType::InlineComment, TokenType::MultilineComment].contains(&self.token_type)
+  }
+
+  #[inline]
+  pub fn is_comment(&self) -> bool {
+    self.token_type == TokenType::InlineComment || self.token_type == TokenType::MultilineComment
   }
 
   pub fn format_with_span_source(&self, source: &str) -> String {
@@ -62,7 +67,6 @@ pub enum TokenType {
   Class,
   Colon,
   Comma,
-  Conditional,
   Const,
   Continue,
   Debugger,
@@ -128,7 +132,8 @@ pub enum TokenType {
   Undefined,
   Yield,
   QuestionMark,
-  InvalidToken
+  InvalidToken,
+  EOF,
 }
 
 /// Binary operation tokens such as <, and >
@@ -136,7 +141,6 @@ pub enum TokenType {
 #[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum BinToken {
-  Assign,
   Equality,
   Inequality,
   StrictEquality,
@@ -164,6 +168,7 @@ pub enum BinToken {
 #[repr(u8)]
 #[derive(Debug, PartialEq, Copy, Clone, Hash, Eq)]
 pub enum AssignToken {
+  Assign,
   AddAssign,
   SubtractAssign,
   MultiplyAssign,
@@ -178,101 +183,143 @@ pub enum AssignToken {
   DivideAssign
 }
 
-pub static KEYWORDS: Lazy<FnvHashSet<TokenType>> = Lazy::new(|| {
-  use TokenType::*;
-  let mut set: FnvHashSet<TokenType> = FnvHashSet::with_capacity_and_hasher(41, std::default::Default::default());
-  set.extend(vec![
-    Await,
-    Break,
-    Case,
-    Catch,
-    Class,
-    Const,
-    Continue,
-    Debugger,
-    Default,
-    Delete,
-    Do,
-    Else,
-    Enum,
-    Export,
-    Extends,
-    Finally,
-    For,
-    Function,
-    If,
-    Implements,
-    Import,
-    In,
-    Instanceof,
-    Interface,
-    Let,
-    New,
-    Private,
-    Protected,
-    Public,
-    Return,
-    Static,
-    Super,
-    Switch,
-    This,
-    Throw,
-    Try,
-    Typeof,
-    Var,
-    Void,
-    While,
-    With,
-    Yield
-  ]);
-  set
-});
+pub static KEYWORDS: [TokenType; 42] = [
+  Await,
+  Break,
+  Case,
+  Catch,
+  Class,
+  Const,
+  Continue,
+  Debugger,
+  Default,
+  Delete,
+  Do,
+  Else,
+  Enum,
+  Export,
+  Extends,
+  Finally,
+  For,
+  Function,
+  If,
+  Implements,
+  Import,
+  In,
+  Instanceof,
+  Interface,
+  Let,
+  New,
+  Private,
+  Protected,
+  Public,
+  Return,
+  Static,
+  Super,
+  Switch,
+  This,
+  Throw,
+  Try,
+  Typeof,
+  Var,
+  Void,
+  While,
+  With,
+  Yield
+];
 
-pub static BEFORE_EXPR: Lazy<FnvHashSet<TokenType>> = Lazy::new(|| {
-  use TokenType::*;
-  let mut set: FnvHashSet<TokenType> = FnvHashSet::with_capacity_and_hasher(26, std::default::Default::default());
-  set.extend(vec![
-    Spread,
-    LogicalNot,
-    ParenOpen,
-    BracketOpen,
-    BraceOpen,
-    Semicolon,
-    Comma,
-    Colon,
-    TemplateOpen,
-    QuestionMark,
-    Increment,
-    Decrement,
-    BitwiseNot,
-    Await,
-    Case,
-    Default,
-    Do,
-    Else,
-    Return,
-    Throw,
-    New,
-    Extends,
-    Yield,
-    In,
-    Typeof,
-    Void,
-    Delete
-  ]);
-  set
-});
+use TokenType::*;
+pub static BEFORE_EXPR: [TokenType; 27] = [
+  Spread,
+  LogicalNot,
+  ParenOpen,
+  BracketOpen,
+  BraceOpen,
+  Semicolon,
+  Comma,
+  Colon,
+  TemplateOpen,
+  QuestionMark,
+  Increment,
+  Decrement,
+  BitwiseNot,
+  Await,
+  Case,
+  Default,
+  Do,
+  Else,
+  Return,
+  Throw,
+  New,
+  Extends,
+  Yield,
+  In,
+  Typeof,
+  Void,
+  Delete
+];
+
+pub static STARTS_EXPR: [TokenType; 31] = [
+  BitwiseNot,
+  BraceOpen,
+  BracketOpen,
+  ParenOpen,
+  Await,
+  Increment,
+  Decrement,
+  LiteralBinary,
+  LiteralString,
+  LiteralNumber,
+  LiteralRegEx,
+  Null,
+  LogicalNot,
+  True,
+  False,
+  BinOp(BinToken::Add),
+  BinOp(BinToken::Subtract),
+  Identifier,
+  Function,
+  New,
+  This,
+  Super,
+  Class,
+  Extends,
+  InvalidToken,
+  Yield,
+  In,
+  Instanceof,
+  Typeof,
+  Void,
+  Delete,
+];
 
 impl TokenType {
+  #[inline]
   pub fn is_keyword(&self) -> bool {
     KEYWORDS.contains(self)
   }
 
+  #[inline]
   pub fn is_before_expr(&self) -> bool {
     match self {
       TokenType::BinOp(_) | TokenType::AssignOp(_) => true,
       _ if BEFORE_EXPR.contains(self) => true,
       _ => false
     }
+  }
+
+  #[inline]
+  pub fn is_whitespace(&self) -> bool {
+    [TokenType::Whitespace, TokenType::Linebreak, TokenType::InlineComment, TokenType::MultilineComment].contains(self)
+  }
+
+  #[inline]
+  pub fn is_comment(&self) -> bool {
+    self == &TokenType::InlineComment || self == &TokenType::MultilineComment
+  }
+
+  #[inline]
+  pub fn starts_expr(&self) -> bool {
+    STARTS_EXPR.contains(self)
   }
 }

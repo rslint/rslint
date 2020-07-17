@@ -9,6 +9,7 @@ pub trait CharExt: Copy {
 }
 
 impl CharExt for char {
+  #[inline]
   fn is_identifier_start(&self) -> bool {
     (*self).is_ascii_alphabetic() ||
     *self == '$' ||
@@ -17,6 +18,7 @@ impl CharExt for char {
     is_xid_start(*self)
   }
 
+  #[inline]
   fn is_identifier_part(&self) -> bool {
     (*self).is_ascii_alphanumeric() ||
     *self == '$' ||
@@ -25,6 +27,7 @@ impl CharExt for char {
     is_xid_continue(*self)
   }
 
+  #[inline]
   fn is_line_break(&self) -> bool {
     match *self {
       '\r' | '\n' | '\u{2028}' | '\u{2029}' => true,
@@ -32,6 +35,7 @@ impl CharExt for char {
     }
   }
 
+  #[inline]
   fn is_js_whitespace(&self) -> bool {
     match self {
       '\u{0009}' | '\u{000b}' | '\u{000c}' | '\u{0020}' | '\u{00a0}' | '\u{feff}' => true,

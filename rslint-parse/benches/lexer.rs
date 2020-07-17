@@ -5,7 +5,7 @@ use std::io::Read;
 use std::path::Path;
 
 fn lex_js(source: String) {
-  Lexer::new(&source, "bench").for_each(drop);
+  Lexer::new(&source, 0).for_each(drop);
 }
 
 fn bench(c: &mut Criterion) {

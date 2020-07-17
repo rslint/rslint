@@ -1,100 +1,73 @@
+//! An extremely fast linter for JavaScript
+
 pub mod file_walker;
 
-use rslint_parse::{lexer::lexer::Lexer, diagnostic::ParserDiagnostic};
-use std::error::Error;
 use crate::linter::file_walker::FileWalker;
-use rayon::prelude::*;
-use rayon::iter::ParallelIterator;
-use std::io;
+use crate::runner::LintRunner;
+use super::formatters::Formatter;
+use super::formatters::codespan::CodespanFormatter;
+use std::sync::Once;
+use clap::App;
+use clap::load_yaml;
+use std::env::current_dir;
+use glob::PatternError;
 
+static CONFIGURE_RAYON: Once = Once::new();
+
+/// The entry point for RSLint, it serves as a dispatcher for using the linter from the cli, as a rust crate, etc.
+/// The linting process itself is carried out by a distinct [lint runner](crate::runner)
+#[derive(Debug)]
 pub struct Linter {
-  walker: FileWalker,
+    pub walker: FileWalker,
+    pub formatter: Box<dyn Formatter>,
 }
 
 impl Linter {
-  pub fn new(target: String) -> Self {
-    Self {
-      walker: FileWalker::new(target),
-    }
-  }
+    /// Make a new linter with a glob pattern to pass to the file walker, this method will return an error if the glob pattern is invalid
+    #[allow(unused_must_use)]
+    pub fn new(target: String) -> Result<Self, PatternError> {
+        CONFIGURE_RAYON.call_once(|| {
+            // Initialize the thread pool with a larger stack than the windows default (1 mb) to avoid overflows on very large files
+            rayon::ThreadPoolBuilder::new().stack_size(8000000).build_global();
+        });
 
-  pub fn repl() {
-    loop {
-      let mut source = String::new();
-
-      io::stdin().read_line(&mut source)
-        .expect("Failed to read line");
-      
-      let linter = Self {
-        walker: FileWalker::with_files(vec![(String::from("REPL.js"), source)])
-      };
-
-      let lexer = Lexer::new(linter.walker.get_existing_source("REPL.js").unwrap(), "REPL.js");
-      linter.lexer_debug(lexer);
-
-      print!("\n > ");
-    }
-  }
-
-  pub fn with_source(source: String, filename: String) -> Self {
-    Self {
-      walker: FileWalker::with_files(vec![(filename, source)])
-    }
-  }
-
-  pub fn run(&mut self) -> Result<(), Box<dyn Error>> {
-    self.walker.load()?;
-    self.walker.files.par_iter().for_each(|file| {
-      Lexer::new(file.1.source(), file.0).for_each(drop);
-    });
-    Ok(())
-  }
-
-  fn lexer_debug(&self, lexer: Lexer) {
-    use rslint_parse::lexer::token::TokenType::Whitespace;
-
-    println!("\n Lexer debug for: {} ------------------- \n", lexer.file_id);
-    use ansi_term::Style;
-    use ansi_term::Color::*;
-
-    let source = lexer.source;
-    let mut cur_ln = 1;
-    for token in lexer {
-      if token.1.is_some() {
-        self.throw_diagnostic(token.1.unwrap());
-      }
-      if token.0.is_none() { break }
-      let tok = token.0.unwrap();
-      if tok.line > cur_ln {
-        println!();
-        cur_ln += 1;
-      }
-      if tok.token_type == Whitespace {
-        print!("{}", Style::new().on(White).paint(" ".repeat(tok.lexeme.size())));
-        continue;
-      }
-      print!(" {}({})", Style::new().on(Cyan).fg(Black).paint(format!("{:?}", tok.token_type)).to_string(), tok.lexeme.content(source));
-    }
-  }
-
-  fn throw_diagnostic(&self, diagnostic: ParserDiagnostic) {
-    use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
-    use codespan_reporting::term::DisplayStyle;
-    use codespan_reporting::term;
-    use codespan_reporting::diagnostic::Severity;
-
-    let writer = if diagnostic.diagnostic.severity == Severity::Error {
-      StandardStream::stderr(ColorChoice::Always)
-    } else {
-      StandardStream::stdout(ColorChoice::Always)
-    };
-
-    let mut config = term::Config::default();
-    if diagnostic.simple {
-      config.display_style = DisplayStyle::Short;
+        Ok(Self {
+            walker: FileWalker::with_glob(target)?,
+            // TODO: Dynamic formatters
+            formatter: CodespanFormatter::new()
+        })
     }
 
-    term::emit(&mut writer.lock(), &config, &self.walker, &diagnostic.diagnostic)
-      .expect("Failed to throw diagnostic");
-  }
+    /// Create a new linter from CLI args, this will either use the provided glob pattern or the current working directory
+    /// # Panics
+    /// This method will panic if there was no glob provided through CLI, and current working directory is unreadable, or the glob pattern is invalid
+    pub fn from_cli_args() -> Self {
+        let yaml = load_yaml!("../../cli.yml");
+        let app = App::from_yaml(yaml);
+        let args = app.get_matches();
+        let glob = args.value_of("INPUT");
+
+        if let Some(pat) = glob {
+            Self::new(pat.to_string()).expect("The provided glob pattern is invalid")
+        } else {
+            if let Ok(default) = current_dir() {
+                Self::new(default.into_os_string().to_string_lossy().to_string()).expect("Cwd glob is invalid")
+            } else {
+                panic!("Error: No glob pattern was provided, and the current working directory is unreadable or invalid");
+            }
+        }
+    }
+
+    /// Create a new linter from a single file
+    pub fn with_source(source: String, filename: String) -> Self {
+        Self {
+          walker: FileWalker::with_files(vec![(filename, source)]),
+          formatter: CodespanFormatter::new(),
+        }
+    }
+
+    /// Run the linter, for more details on what this does, check out the [runner documentation](crate::runner)
+    pub fn run(&mut self) -> () {
+        LintRunner::new().exec(self);
+    }
 }

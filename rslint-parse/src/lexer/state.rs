@@ -1,6 +1,4 @@
 use super::token::TokenType;
-use once_cell::sync::Lazy;
-use fnv::FnvHashSet;
 use log::trace;
 
 /// A structure for keeping track of context for template and regex literals
@@ -13,6 +11,7 @@ pub struct LexerState {
   pub had_linebreak: bool,
   pub context: TokenContext,
   pub last_tok: bool,
+  pub returned_eof: bool,
 }
 
 impl LexerState {
@@ -23,6 +22,7 @@ impl LexerState {
       had_linebreak: false,
       context: TokenContext(vec![Context::BraceStmt]),
       last_tok: false,
+      returned_eof: false,
     }
   }
 
@@ -35,8 +35,11 @@ impl LexerState {
   }
 
   fn update_expr_allowed(&mut self, next: Option<TokenType>) -> bool {
+    if next.is_none() {
+      return false;
+    }
 
-    if next.filter(|tt| tt.is_keyword()).is_some() && self.prev == Some(TokenType::Period) {
+    if next.unwrap().is_keyword() && self.prev == Some(TokenType::Period) {
       return false;
     }
 
@@ -141,22 +144,19 @@ pub enum Context {
 }
 
 impl Context {
+  #[inline]
   pub fn is_expr(&self) -> bool {
     EXPR_CTXTS.contains(self)
   }
 }
 
-static EXPR_CTXTS: Lazy<FnvHashSet<Context>> = Lazy::new(|| {
-  let mut set: FnvHashSet<Context> = FnvHashSet::with_capacity_and_hasher(5, Default::default());
-  set.extend(vec![
-    Context::BraceExpr,
-    Context::TplInternal,
-    Context::ParenExpr,
-    Context::Template,
-    Context::FnExpr
-  ]);
-  set
-});
+static EXPR_CTXTS: [Context; 5] = [
+  Context::BraceExpr,
+  Context::TplInternal,
+  Context::ParenExpr,
+  Context::Template,
+  Context::FnExpr
+];
 
 #[derive(Debug)]
 pub struct TokenContext(Vec<Context>);
@@ -169,7 +169,8 @@ impl TokenContext {
         // { a: {} }
         //   ^  ^
         Some(Context::BraceExpr) => return false,
-        _ => unreachable!(),
+        
+        _ => {},
       }
     }
 
