@@ -50,6 +50,8 @@ pub mod runner;
 pub mod test_util;
 pub mod visit;
 pub mod cache;
+pub mod util;
+pub mod tablegen;
 
 pub use linter::Linter;
 pub use diagnostic::DiagnosticBuilder;

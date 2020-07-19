@@ -26,17 +26,15 @@ impl Visit for NoDuplicateCaseVisitor<'_, '_> {
                             code_str
                         ),
                     )
-                    .secondary(map.get(code_str).unwrap().to_owned(), &format!("`{}` is first tested for here", code_str))
-                    .primary(test.span().to_owned(), &format!("`{}` is again checked for here", code_str));
+                    .secondary(map.get(code_str).unwrap().to_owned(), "first test occurs here")
+                    .primary(test.span().to_owned(), "second test is redundant");
 
                     self.ctx.diagnostics.push(builder.into());
                 } else {
                     map.insert(test.span().content(self.ctx.file_source), test.span().to_owned());
                 }
             }
-            for stmt in case.cons.iter() {
-                self.visit_stmt(stmt, _parent);
-            }
+            self.visit_stmts(&case.cons, switch as _);
         }
     }
 }

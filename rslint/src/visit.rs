@@ -396,4 +396,26 @@ define!({
         Getter(ComputedObjProp),
         Setter(ComputedObjProp),
     }
+
+    pub enum Declaration {
+        Function(FunctionDecl),
+    }
+
+    pub struct FunctionDecl {
+        pub span: Span,
+        pub function_whitespace: LiteralWhitespace,
+        pub name: Option<LiteralExpr>,
+        pub parameters: Parameters,
+        pub open_brace_whitespace: LiteralWhitespace,
+        pub close_brace_whitespace: LiteralWhitespace,
+        pub body: Vec<StmtListItem>,
+    }
+
+    pub struct Parameters {
+        pub span: Span,
+        pub parameters: Vec<LiteralExpr>,
+        pub comma_whitespaces: Vec<LiteralWhitespace>,
+        pub open_paren_whitespace: LiteralWhitespace,
+        pub close_paren_whitespace: LiteralWhitespace,
+    }
 });

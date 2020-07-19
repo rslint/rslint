@@ -23,7 +23,7 @@ macro_rules! assert_lint_err {
             $rule {}.lint(&mut ctx, &cst);
             let result = RuleResult::from(ctx.diagnostics);
 
-            assert_eq!(result.outcome, Outcome::Error);
+            assert_eq!(result.outcome, Outcome::Error, "`{}` Failed", $string);
 
             $(
                 let err = result.diagnostics.first().unwrap().labels.iter().find(|x| x.style == LabelStyle::Primary).unwrap();
