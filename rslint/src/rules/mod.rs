@@ -24,7 +24,7 @@ impl CstRuleGroup {
     }
 }
 
-/// A macro for easily creating rules, consisting of the name of the rule as a string, and its struct name
+/// A macro for easily creating rules, consisting of the name of the rule as a string, and its struct name  
 /// After using this you must import the Visit trait and implement it for the struct
 #[macro_export]
 macro_rules! cst_rule {

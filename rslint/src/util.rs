@@ -1,5 +1,5 @@
 use rslint_parse::lexer::token::*;
-use rslint_parse::parser::cst::{declaration::*, expr::*, stmt::*};
+use rslint_parse::parser::cst::expr::*;
 
 /// Try to coerce a simple constant expression to a bool, this includes literals and logical expressions
 /// with simple const left and right values, this is used for more helpful errors about the impact of const conditions

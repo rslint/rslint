@@ -37,7 +37,7 @@ impl<'a> Cell<'a> {
     }
 }
 
-/// A simple but limited unicode table renderer for rendering tables in the terminal
+/// A simple but limited unicode table renderer for rendering tables in the terminal  
 /// The first cell of a row is used as the heading, any extra row elements will be thrown out,
 /// any missing row elements will be rendered as empty
 pub struct Table<'a> {
