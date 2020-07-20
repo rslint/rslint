@@ -27,6 +27,41 @@ RSLint is designed to be the fastest JavaScript linter ever made, it accomplishe
   - Running each rule from every group in parallel over the concrete syntax tree
   - Caching lint results by default
 
+This is evidenced by crude benchmarks (these will be updated with proper benchmarks later) outlining the major operations and top 10 slowest rules
+```
+╒═══════════════════════╤════════════════════╤═══════════════╕
+│ Rule                  │ Avg duration (μs)  │ Percent total │
+╞═══════════════════════╪════════════════════╪═══════════════╡
+│ no-constant-condition │ 27                 │ 3             │
+├───────────────────────┼────────────────────┼───────────────┤
+│ no-empty              │ 20                 │ 2             │
+├───────────────────────┼────────────────────┼───────────────┤
+│ no-duplicate-case     │ 11                 │ 1             │
+├───────────────────────┼────────────────────┼───────────────┤
+│ no-compare-neg-zero   │ 10                 │ 1             │
+├───────────────────────┼────────────────────┼───────────────┤
+│ no-cond-assign        │ 6                  │ 1             │
+├───────────────────────┼────────────────────┼───────────────┤
+│ no-unsafe-finally     │ 5                  │ 1             │
+└───────────────────────┴────────────────────┴───────────────┘
+
+╒═══════════════╤════════════════╤═══════════════╕
+│ Operation     │ Duration (μs)  │ Percent total │
+╞═══════════════╪════════════════╪═══════════════╡
+│ Loading cache │ 289            │ 33            │
+├───────────────┼────────────────┼───────────────┤
+│ Loading files │ 277            │ 31            │
+├───────────────┼────────────────┼───────────────┤
+│ Linting files │ 314            │ 35            │
+├───────────────┼────────────────┼───────────────┤
+│ Overall       │ 888            │               │
+└───────────────┴────────────────┴───────────────┘
+```
+
+If you would like to generate these tables for your run, set the `TIMING` env var to `1`  
+**Note that these benchmarks are highly inaccurate, the linting process will end up being a lot faster if benchmarked over thousands of iterations**  
+Furthermore, rule times are measured as the average over all files, so the total time is closer to the avg duration than `duration * files`.
+
 # Caching 
 
 RSLint will cache results by default, this is done through a `.rslintcache` binary file. The file is protected in various ways to avoid erroneous runs: 
