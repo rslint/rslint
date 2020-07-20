@@ -6,14 +6,14 @@ use std::io::Write;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 /// A structure representing a single cell inside of a table, this could be a heading, or a row element
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Cell<'a> {
-    pub text: &'a str,
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Cell {
+    pub text: String,
     pub color: Option<Color>,
 }
 
-impl<'a> From<&'a str> for Cell<'a> {
-    fn from(string: &'a str) -> Self {
+impl From<String> for Cell {
+    fn from(string: String) -> Self {
         Cell {
             text: string,
             color: None,
@@ -21,15 +21,15 @@ impl<'a> From<&'a str> for Cell<'a> {
     }
 }
 
-impl<'a> Cell<'a> {
-    pub fn new(text: &'a str) -> Self {
+impl Cell {
+    pub fn new(text: String) -> Self {
         Self {
             text,
             color: None,
         }
     }
 
-    pub fn with_color(text: &'a str, color: Color) -> Self {
+    pub fn with_color(text: String, color: Color) -> Self {
         Self {
             text,
             color: Some(color),
@@ -40,15 +40,15 @@ impl<'a> Cell<'a> {
 /// A simple but limited unicode table renderer for rendering tables in the terminal  
 /// The first cell of a row is used as the heading, any extra row elements will be thrown out,
 /// any missing row elements will be rendered as empty
-pub struct Table<'a> {
-    pub columns: Vec<Cell<'a>>,
-    pub rows: Vec<Vec<Cell<'a>>>,
-    pub notes: Vec<Cell<'a>>,
+pub struct Table {
+    pub columns: Vec<Cell>,
+    pub rows: Vec<Vec<Cell>>,
+    pub notes: Vec<Cell>,
     renderer: StandardStream,
 }
 
-impl<'a> Table<'a> {
-    pub fn new(columns: Vec<Cell<'a>>, rows: Vec<Vec<Cell<'a>>>, notes: Vec<Cell<'a>>) -> Self {
+impl Table {
+    pub fn new(columns: Vec<Cell>, rows: Vec<Vec<Cell>>, notes: Vec<Cell>) -> Self {
         Self {
             columns,
             rows,
@@ -70,13 +70,9 @@ impl<'a> Table<'a> {
             let mut max_len = column.text.len();
 
             for row in self.rows.iter() {
-                if row.get(idx).map(|cell| cell.text.len()).unwrap_or(0) > max_len {
-                    max_len = row[idx].text.len();
+                if row.get(idx).map(|cell| cell.text.chars().count()).unwrap_or(0) > max_len {
+                    max_len = row[idx].text.chars().count();
                 }
-            }
-            if idx == self.columns.len() {
-                // Right pipe if its the last cell in the row
-                max_len += 1;
             }
 
             res.push(max_len + 2);
@@ -169,7 +165,6 @@ impl<'a> Table<'a> {
             if let Some(cell) = rows.get(idx) {
                 if let Some(color) = cell.color {
                     self.renderer.set_color(ColorSpec::new().set_fg(Some(color)));
-
                     write!(&mut self.renderer, "{}", cell.text)
                         .expect("Failed to write to stdout");
 
@@ -179,9 +174,9 @@ impl<'a> Table<'a> {
                         .expect("Failed to write to stdout");
                 }
                 
-                let trailing_spaces = (column - 2) - cell.text.len();
+                let trailing_spaces = (column - 2) - cell.text.chars().count();
 
-                write!(&mut self.renderer, " {}", " ".repeat(trailing_spaces))
+                write!(&mut self.renderer, "{} ", " ".repeat(trailing_spaces))
                     .expect("Failed to write to stdout");
             } else {
                 write!(&mut self.renderer, "{}", " ".repeat(column - 1))

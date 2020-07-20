@@ -41,6 +41,12 @@
 //!  - The timestamp of when the cache file was generated  
 //! 
 //! If you would like to know more about cache you should check out [the cache module](cache)
+//!  
+//! # Profiling  
+//! If you would like to profile the performance of RSLint you should first run benchmarks. RSLint also allows for showing an approximation of the duration
+//! of every major linting operation, as well as an average of the top ten slowest rules.  
+//! To display these statistics set the env var `TIMING` to `1`
+
 
 pub mod diagnostic;
 pub mod formatters;

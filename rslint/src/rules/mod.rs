@@ -96,6 +96,34 @@ pub enum Outcome {
     Warning,
 }
 
+impl From<&Vec<Diagnostic<usize>>> for Outcome {
+    fn from(diagnostics: &Vec<Diagnostic<usize>>) -> Self {
+        let mut outcome = Outcome::Success;
+        for diagnostic in diagnostics.iter() {
+            match diagnostic.severity {
+                Severity::Error | Severity::Bug => outcome = Outcome::Error,
+                Severity::Warning if outcome != Outcome::Error => outcome = Outcome::Warning,
+                _ => {},
+            }
+        }
+        outcome
+    }
+}
+
+impl From<&Vec<Outcome>> for Outcome {
+    fn from(outcomes: &Vec<Outcome>) -> Self {
+        let mut res = Outcome::Success;
+        for outcome in outcomes.iter() {
+            match outcome {
+                Outcome::Error => res = Outcome::Error,
+                Outcome::Warning if res != Outcome::Error => res = Outcome::Warning,
+                _ => {},
+            }
+        }
+        res
+    }
+}
+
 /// The overall result of running a rule on a file constructed by a vector of diagnostics
 #[derive(Debug, Clone)]
 pub struct RuleResult {
@@ -143,17 +171,8 @@ impl RuleResult {
 /// Make a new rule result from a list of diagnostics
 impl<'a> From<Vec<Diagnostic<usize>>> for RuleResult {
     fn from(diagnostics: Vec<Diagnostic<usize>>) -> Self {
-        let mut outcome = Outcome::Success;
-        for diagnostic in diagnostics.iter() {
-            match diagnostic.severity {
-                Severity::Error | Severity::Bug => outcome = Outcome::Error,
-                Severity::Warning => outcome = Outcome::Warning,
-                _ => {},
-            }
-        }
-
         Self {
-            outcome,
+            outcome: Outcome::from(&diagnostics),
             diagnostics
         }
     }
