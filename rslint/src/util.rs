@@ -15,7 +15,7 @@ pub fn simple_bool_cast(expr: &Expr, source: &str) -> Option<bool> {
         },
         Expr::Null(_) | Expr::False(_) => Some(false),
         Expr::Number(num) => Some(num.span.content(source) != "0"),
-        Expr::String(string) => Some(string.span.size() == 2),
+        Expr::String(string) => Some(string.span.size() != 2),
         Expr::Unary(unexpr) => match unexpr.op {
             TokenType::Void => Some(false),
             TokenType::LogicalNot => Some(!simple_bool_cast(&unexpr.object, source)?),
