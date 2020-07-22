@@ -31,6 +31,14 @@ pub fn simple_bool_cast(expr: &Expr, source: &str) -> Option<bool> {
                 simple_bool_cast(&binexpr.left, source)?
                     || simple_bool_cast(&binexpr.right, source)?,
             ),
+            TokenType::BinOp(BinToken::Equality) => {
+                Some(simple_bool_cast(&binexpr.left, source)?
+                    == simple_bool_cast(&binexpr.right, source)?)
+            },
+            TokenType::BinOp(BinToken::Inequality) => {
+                Some(simple_bool_cast(&binexpr.left, source)?
+                    != simple_bool_cast(&binexpr.right, source)?)
+            },
             _ => None,
         },
         Expr::Conditional(condexpr) => {
@@ -40,6 +48,7 @@ pub fn simple_bool_cast(expr: &Expr, source: &str) -> Option<bool> {
                 Some(simple_bool_cast(&condexpr.if_false, source)?)
             }
         }
+        Expr::Sequence(seqexpr) => simple_bool_cast(seqexpr.exprs.last().unwrap(), source),
         _ => None,
     }
 }

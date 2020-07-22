@@ -1,10 +1,10 @@
 use crate::cst_rule;
 use crate::diagnostic::DiagnosticBuilder;
+use crate::util::{is_const_ident, simple_bool_cast};
 use crate::visit::{Node, Visit};
 use rslint_parse::lexer::token::*;
 use rslint_parse::parser::cst::expr::*;
 use rslint_parse::parser::cst::stmt::*;
-use crate::util::{is_const_ident, simple_bool_cast};
 
 cst_rule! {
     "no-constant-condition",
@@ -12,7 +12,7 @@ cst_rule! {
 }
 
 // check if an expression is constant and return a second bool saying if the expr is truthy or falsey
-fn is_const(expr: &Expr, source: &str, bool_pos: bool) -> bool {
+fn is_const(expr: &Expr, parent: Option<&Expr>, source: &str, bool_pos: bool) -> bool {
     match expr {
         Expr::Regex(_)
         | Expr::Object(_)
@@ -23,45 +23,58 @@ fn is_const(expr: &Expr, source: &str, bool_pos: bool) -> bool {
         | Expr::False(_)
         | Expr::True(_) => true,
         Expr::Identifier(ident) => is_const_ident(ident, source),
-        Expr::Conditional(condexpr) => {
-            is_const(&condexpr.condition, source, true)
+        Expr::Conditional(condexpr) => is_const(&condexpr.condition, Some(expr), source, true),
+        Expr::Array(array) => {
+            if let Some(Expr::Binary(binexpr)) = parent {
+                if binexpr.op == TokenType::BinOp(BinToken::Add) {
+                    array.exprs.iter().all(|elem| {
+                        if let Some(element) = elem {
+                            is_const(element, parent, source, false)
+                        } else {
+                            true
+                        }
+                    })
+                } else {
+                    true
+                }
+            } else {
+                true
+            }
         }
-        Expr::Array(array) => array.exprs.iter().all(|expr| {
-            expr.as_ref()
-                .map(|x| is_const(&x, source, false))
-                .unwrap_or(true)
-        }),
         Expr::Unary(unary) => {
             if unary.op == TokenType::Void {
                 true
             } else {
-                (unary.op == TokenType::Typeof && bool_pos) || is_const(&unary.object, source, true)
+                (unary.op == TokenType::Typeof && bool_pos)
+                    || is_const(&unary.object, Some(expr), source, true)
             }
         }
         Expr::Binary(binexpr) => match binexpr.op {
             TokenType::BinOp(BinToken::LogicalOr) | TokenType::BinOp(BinToken::LogicalAnd) => {
-                let left_const = is_const(&binexpr.left, source, bool_pos);
-                let right_const = is_const(&binexpr.right, source, bool_pos);
+                let left_const = is_const(&binexpr.left, Some(expr), source, bool_pos);
+                let right_const = is_const(&binexpr.right, Some(expr), source, bool_pos);
 
                 // TODO: Handle OR cases with a right const value, this needs truthy value handling so its slightly more complex
                 (left_const && right_const)
                     || short_circuits(&binexpr.left, source, binexpr.op)
                     || short_circuits(&binexpr.right, source, binexpr.op)
             }
-            _ => {
-                is_const(&binexpr.left, source, false)
-                    && is_const(&binexpr.right, source, false)
+            t if t != TokenType::In => {
+                is_const(&binexpr.left, Some(expr), source, false)
+                    && is_const(&binexpr.right, Some(expr), source, false)
                     && binexpr.op != TokenType::In
             }
+            _ => false,
         },
         Expr::Assign(assignexpr) => {
             assignexpr.op == TokenType::AssignOp(AssignToken::Assign)
-                && is_const(&assignexpr.right, source, bool_pos)
+                && is_const(&assignexpr.right, Some(expr), source, bool_pos)
         }
-        Expr::Sequence(seqexp) => seqexp
-            .exprs
-            .iter()
-            .all(|expr| is_const(expr, source, bool_pos)),
+        Expr::Sequence(seqexp) => {
+            is_const(seqexp.exprs.last().unwrap(), Some(expr), source, bool_pos)
+        }
+
+        Expr::Grouping(groupexpr) => is_const(&groupexpr.expr, Some(expr), source, bool_pos),
 
         _ => false,
     }
@@ -97,23 +110,35 @@ fn short_circuits(expr: &Expr, source: &str, op: TokenType) -> bool {
 
 impl Visit for NoConstantConditionVisitor<'_, '_> {
     fn visit_conditional_expr(&mut self, condexpr: &ConditionalExpr, _: &dyn Node) {
-        if is_const(&*condexpr.condition, self.ctx.file_source, true) {
-            let mut err = DiagnosticBuilder::error(self.ctx.file_id, "no-constant-condition", "Unexpected constant condition in conditional expression");
+        if is_const(&*condexpr.condition, None, self.ctx.file_source, true) {
+            let mut err = DiagnosticBuilder::error(
+                self.ctx.file_id,
+                "no-constant-condition",
+                "Unexpected constant condition in conditional expression",
+            );
 
             // If we can easily deduce whether the condition is truthy or falsey we can offer more context around why the condition is bad
             // This does not factor in math operations like 5 - 5, since that would pretty much require an interpreter and number parsing
             if let Some(cast) = simple_bool_cast(&*condexpr.condition, self.ctx.file_source) {
                 if cast {
-                    err = err.secondary(condexpr.if_true.span().to_owned(), "...which means this expression is always returned")
+                    err = err
+                        .secondary(
+                            condexpr.if_true.span().to_owned(),
+                            "...which means this expression is always returned",
+                        )
                         .primary(condexpr.span, "this expression is always truthy...");
                 } else {
-                    err = err.secondary(condexpr.if_false.span().to_owned(), "...which means this expression is always returned")
+                    err = err
+                        .secondary(
+                            condexpr.if_false.span().to_owned(),
+                            "...which means this expression is always returned",
+                        )
                         .primary(condexpr.span, "this expression is always falsey...");
                 }
             } else {
                 err = err.primary(condexpr.span, "this expression is always yields one result");
             }
-            
+
             self.ctx.diagnostics.push(err.into());
         }
 
@@ -123,21 +148,45 @@ impl Visit for NoConstantConditionVisitor<'_, '_> {
     }
 
     fn visit_if_stmt(&mut self, ifstmt: &IfStmt, _: &dyn Node) {
-        if is_const(&ifstmt.condition, self.ctx.file_source, true) {
-            let mut err = DiagnosticBuilder::error(self.ctx.file_id, "no-constant-condition", "Unexpected constant condition in if statement");
-            
+        if is_const(&ifstmt.condition, None, self.ctx.file_source, true) {
+            let mut err = DiagnosticBuilder::error(
+                self.ctx.file_id,
+                "no-constant-condition",
+                "Unexpected constant condition in if statement",
+            );
+
             if let Some(cast) = simple_bool_cast(&ifstmt.condition, self.ctx.file_source) {
                 if cast && ifstmt.alt.is_some() {
-                    err = err.secondary(ifstmt.alt.as_ref().unwrap().span(), "...which makes this `else` unreachable")
-                        .primary(ifstmt.condition.span().to_owned(), "this expression is always truthy...");
+                    err = err
+                        .secondary(
+                            ifstmt.alt.as_ref().unwrap().span(),
+                            "...which makes this `else` unreachable",
+                        )
+                        .primary(
+                            ifstmt.condition.span().to_owned(),
+                            "this expression is always truthy...",
+                        );
                 } else if !cast {
-                    err = err.secondary(ifstmt.cons.span(), "...which makes this statement unreachable")
-                        .primary(ifstmt.condition.span().to_owned(), "this expression is always falsey...");
+                    err = err
+                        .secondary(
+                            ifstmt.cons.span(),
+                            "...which makes this statement unreachable",
+                        )
+                        .primary(
+                            ifstmt.condition.span().to_owned(),
+                            "this expression is always falsey...",
+                        );
                 } else {
-                    err = err.primary(ifstmt.condition.span().to_owned(), "this expression is always truthy");
+                    err = err.primary(
+                        ifstmt.condition.span().to_owned(),
+                        "this expression is always truthy",
+                    );
                 }
             } else {
-                err = err.primary(ifstmt.condition.span().to_owned(), "this expression is always yields one result");
+                err = err.primary(
+                    ifstmt.condition.span().to_owned(),
+                    "this expression is always yields one result",
+                );
             }
 
             self.ctx.diagnostics.push(err.into());
@@ -149,19 +198,37 @@ impl Visit for NoConstantConditionVisitor<'_, '_> {
     }
 
     fn visit_while_stmt(&mut self, whilestmt: &WhileStmt, _: &dyn Node) {
-        if is_const(&whilestmt.condition, self.ctx.file_source, true) {
-            let mut err = DiagnosticBuilder::error(self.ctx.file_id, "no-constant-condition", "Unexpected constant condition in while statement");
-            
+        if is_const(&whilestmt.condition, None, self.ctx.file_source, true) {
+            let mut err = DiagnosticBuilder::error(
+                self.ctx.file_id,
+                "no-constant-condition",
+                "Unexpected constant condition in while statement",
+            );
+
             if let Some(cast) = simple_bool_cast(&whilestmt.condition, self.ctx.file_source) {
                 if cast {
-                    err = err.secondary(whilestmt.cons.span(), "...which makes this infinitely loop")
-                        .primary(whilestmt.condition.span().to_owned(), "this expression is always truthy");
+                    err = err
+                        .secondary(whilestmt.cons.span(), "...which makes this infinitely loop")
+                        .primary(
+                            whilestmt.condition.span().to_owned(),
+                            "this expression is always truthy",
+                        );
                 } else {
-                    err = err.secondary(whilestmt.cons.span(), "...which makes this loop unreachable")
-                    .primary(whilestmt.condition.span().to_owned(), "this expression is always falsey");
+                    err = err
+                        .secondary(
+                            whilestmt.cons.span(),
+                            "...which makes this loop unreachable",
+                        )
+                        .primary(
+                            whilestmt.condition.span().to_owned(),
+                            "this expression is always falsey",
+                        );
                 }
             } else {
-                err = err.primary(whilestmt.condition.span().to_owned(), "this expression is always yields one result");
+                err = err.primary(
+                    whilestmt.condition.span().to_owned(),
+                    "this expression is always yields one result",
+                );
             }
 
             self.ctx.diagnostics.push(err.into());
@@ -172,19 +239,37 @@ impl Visit for NoConstantConditionVisitor<'_, '_> {
     }
 
     fn visit_do_while_stmt(&mut self, dowhile: &DoWhileStmt, _: &dyn Node) {
-        if is_const(&dowhile.condition, self.ctx.file_source, true) {
-            let mut err = DiagnosticBuilder::error(self.ctx.file_id, "no-constant-condition", "Unexpected constant condition in do while statement");
-            
+        if is_const(&dowhile.condition, None, self.ctx.file_source, true) {
+            let mut err = DiagnosticBuilder::error(
+                self.ctx.file_id,
+                "no-constant-condition",
+                "Unexpected constant condition in do while statement",
+            );
+
             if let Some(cast) = simple_bool_cast(&dowhile.condition, self.ctx.file_source) {
                 if cast {
-                    err = err.secondary(dowhile.cons.span(), "...which makes this infinitely loop")
-                        .primary(dowhile.condition.span().to_owned(), "this expression is always truthy...");
+                    err = err
+                        .secondary(dowhile.cons.span(), "...which makes this infinitely loop")
+                        .primary(
+                            dowhile.condition.span().to_owned(),
+                            "this expression is always truthy...",
+                        );
                 } else {
-                    err = err.secondary(dowhile.cons.span(), "...which makes this loop only run once")
-                    .primary(dowhile.condition.span().to_owned(), "this expression is always falsey...");
+                    err = err
+                        .secondary(
+                            dowhile.cons.span(),
+                            "...which makes this loop only run once",
+                        )
+                        .primary(
+                            dowhile.condition.span().to_owned(),
+                            "this expression is always falsey...",
+                        );
                 }
             } else {
-                err = err.primary(dowhile.condition.span().to_owned(), "this expression is always yields one result");
+                err = err.primary(
+                    dowhile.condition.span().to_owned(),
+                    "this expression is always yields one result",
+                );
             }
 
             self.ctx.diagnostics.push(err.into());
@@ -196,19 +281,34 @@ impl Visit for NoConstantConditionVisitor<'_, '_> {
 
     fn visit_for_stmt(&mut self, forstmt: &ForStmt, _: &dyn Node) {
         if let Some(ref test) = forstmt.test {
-            if is_const(test, self.ctx.file_source, true) {
-                let mut err = DiagnosticBuilder::error(self.ctx.file_id, "no-constant-condition", "Unexpected constant condition in for loop");
-            
+            if is_const(test, None, self.ctx.file_source, true) {
+                let mut err = DiagnosticBuilder::error(
+                    self.ctx.file_id,
+                    "no-constant-condition",
+                    "Unexpected constant condition in for loop",
+                );
+
                 if let Some(cast) = simple_bool_cast(test, self.ctx.file_source) {
                     if cast {
-                        err = err.secondary(forstmt.body.span(), "...which makes this infinitely loop")
-                            .primary(test.span().to_owned(), "this expression is always truthy...");
+                        err = err
+                            .secondary(forstmt.body.span(), "...which makes this infinitely loop")
+                            .primary(
+                                test.span().to_owned(),
+                                "this expression is always truthy...",
+                            );
                     } else {
-                        err = err.secondary(forstmt.body.span(), "...which makes this loop unreachable")
-                        .primary(test.span().to_owned(), "this expression is always falsey...");
+                        err = err
+                            .secondary(forstmt.body.span(), "...which makes this loop unreachable")
+                            .primary(
+                                test.span().to_owned(),
+                                "this expression is always falsey...",
+                            );
                     }
                 } else {
-                    err = err.primary(test.span().to_owned(), "this expression is always yields one result");
+                    err = err.primary(
+                        test.span().to_owned(),
+                        "this expression is always yields one result",
+                    );
                 }
 
                 self.ctx.diagnostics.push(err.into());
@@ -224,8 +324,8 @@ impl Visit for NoConstantConditionVisitor<'_, '_> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{assert_lint_err, assert_lint_ok};
     use crate::rules::groups::errors::no_constant_condition::NoConstantCondition;
+    use crate::{assert_lint_err, assert_lint_ok};
 
     #[test]
     fn no_constant_condition_err() {
