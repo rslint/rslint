@@ -209,8 +209,8 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
         return tok!(lexer, InlineComment, start);
       },
       Some('*') => {
+        lexer.advance();
         loop {
-          lexer.advance();
           match lexer.advance() {
             Some('*') if lexer.advance() == Some('/') => {
               lexer.advance();
