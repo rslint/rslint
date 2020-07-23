@@ -202,13 +202,15 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
 
   lookup_fn!(l, '/', |lexer: &mut Lexer, _: char| {
     let start = lexer.cur;
-    match lexer.advance() {
+    match lexer.peek() {
       Some('/') => {
+        lexer.advance();
         lexer.advance_while(|x| !x.is_line_break());
         return tok!(lexer, InlineComment, start);
       },
       Some('*') => {
         loop {
+          lexer.advance();
           match lexer.advance() {
             Some('*') if lexer.advance() == Some('/') => {
               lexer.advance();
@@ -233,6 +235,7 @@ pub static LEXER_LOOKUP: Lazy<LexerLookupTable> = Lazy::new(|| {
       _ if lexer.state.expr_allowed => lexer.read_regex(),
 
       _ => {
+        lexer.advance();
         let tok = BinOp(BinToken::Divide);
         return tok!(lexer, tok, start);
       }
@@ -589,7 +592,7 @@ impl<'a> Lexer<'a> {
     loop {
       match self.advance() {
         Some('\\') if self.peek().is_some() => {
-          let next = self.advance().unwrap();
+          let next = self.peek().unwrap();
           let res = self.validate_escape_sequence(next);
           if res.is_err() { err = Some(res.err().unwrap()); }
         },
