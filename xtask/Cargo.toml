@@ -1,0 +1,12 @@
+[package]
+edition = "2018"
+name = "xtask"
+version = "0.1.0"
+authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
+license = "MIT"
+
+[dependencies]
+quote = "1.0.2"
+proc-macro2 = "1.0.8"
+anyhow = "1.0.26"
+pico-args = "0.3.1"

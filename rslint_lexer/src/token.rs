@@ -1,0 +1,41 @@
+//! Token definitions for the lexer
+
+use rslint_syntax::SyntaxKind;
+
+/// A single raw token.  
+/// This does NOT include multipart tokens such as `+=` and `-=`, they will be emitted as two separate tokens
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Token {
+    /// The kind of token this is
+    pub kind: SyntaxKind,
+    /// How long the token is in bytes
+    pub len: usize
+}
+
+impl Token {
+    /// Create a new token which has an exact length of 1.
+    pub fn single(kind: SyntaxKind) -> Self {
+        Self {
+            kind,
+            len: 1,
+        }
+    }
+
+    /// Create a new token which has a specific length.
+    pub fn new(kind: SyntaxKind, len: usize) -> Self {
+        Self {
+            kind,
+            len,
+        }
+    }
+}
+
+macro_rules! tok {
+    ($tok:tt) => {
+        (Token::new(T![$tok], stringify!($tok).len()), None)
+    };
+    ($tok:ident, $len:expr) => {
+        (Token::new(SyntaxKind::$tok, $len), None)
+    }
+}
+

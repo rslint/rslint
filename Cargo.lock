@@ -38,6 +38,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85bb70cc08ec97ca5450e6eba421deeea5f172c0fc61f78b5357b2a8e8be195f"
+
+[[package]]
 name = "atty"
 version = "0.2.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -421,6 +427,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "pico-args"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b1eee8b1f4966c8343d7ca0f5a8452cd35d5610a2e0efbe2a68cae44bef2046"
+
+[[package]]
 name = "plotters"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -525,6 +537,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7fe5bd57d1d7414c6b5ed48563a2c855d995ff777729dcd91c369ec7fea395ae"
 
 [[package]]
+name = "rowan"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e081ed6eacce09e243b619ab90f069c27b0cff8a6d0eb8ad2ec935b65853798"
+dependencies = [
+ "rustc-hash",
+ "smol_str",
+ "text-size",
+ "thin-dst",
+]
+
+[[package]]
 name = "rslint"
 version = "0.1.0"
 dependencies = [
@@ -537,7 +561,7 @@ dependencies = [
  "once_cell",
  "paste",
  "rayon",
- "rslint-parse",
+ "rslint_parse",
  "serde",
  "serde_derive",
  "swc_ecma_visit_macros",
@@ -546,7 +570,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "rslint-parse"
+name = "rslint_lexer"
+version = "0.1.0"
+dependencies = [
+ "codespan-reporting",
+ "rslint_syntax",
+ "unicode-xid",
+]
+
+[[package]]
+name = "rslint_parse"
 version = "0.1.0"
 dependencies = [
  "ansi_term 0.12.1",
@@ -559,6 +592,20 @@ dependencies = [
  "slab",
  "snmalloc-rs",
 ]
+
+[[package]]
+name = "rslint_syntax"
+version = "0.1.0"
+dependencies = [
+ "codespan-reporting",
+ "rowan",
+]
+
+[[package]]
+name = "rustc-hash"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc_version"
@@ -643,6 +690,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
+name = "smol_str"
+version = "0.1.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f7909a1d8bc166a862124d84fdc11bda0ea4ed3157ccca662296919c2972db1"
+
+[[package]]
 name = "snmalloc-rs"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -714,6 +767,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "text-size"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f03e7efdedc3bc78cb2337f1e2785c39e45f5ef762d9e4ebb137fff7380a6d8a"
+
+[[package]]
 name = "textwrap"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -721,6 +780,12 @@ checksum = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
 dependencies = [
  "unicode-width",
 ]
+
+[[package]]
+name = "thin-dst"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db3c46be180f1af9673ebb27bc1235396f61ef6965b3fe0dbb2e624deb604f0e"
 
 [[package]]
 name = "thread_local"
@@ -749,9 +814,9 @@ checksum = "caaa9d531767d1ff2150b9332433f32a24622147e5ebb1f26409d5da67afd479"
 
 [[package]]
 name = "unicode-xid"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "826e7639553986605ec5979c7dd957c7895e93eabed50ab2ffa7f6128a75097c"
+checksum = "f7fe0bb3479651439c9112f72b6c505038574c9fbb575ed1bf3b797fa39dd564"
 
 [[package]]
 name = "vec_map"
@@ -864,6 +929,16 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
+
+[[package]]
+name = "xtask"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "pico-args",
+ "proc-macro2",
+ "quote",
+]
 
 [[package]]
 name = "yaml-rust"

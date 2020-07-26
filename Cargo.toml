@@ -1,7 +1,10 @@
 [workspace]
 members = [
-  "rslint-parse",
-  "rslint"
+  "rslint_parse",
+  "rslint",
+  "rslint_syntax",
+  "rslint_lexer",
+  "xtask",
 ]
 
 [profile]
