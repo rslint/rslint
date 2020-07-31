@@ -74,6 +74,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "do",
         "else",
         "enum",
+        "export",
         "extends",
         "finally",
         "for",

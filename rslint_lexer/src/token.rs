@@ -6,9 +6,10 @@ use rslint_syntax::SyntaxKind;
 /// This does NOT include multipart tokens such as `+=` and `-=`, they will be emitted as two separate tokens
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Token {
-    /// The kind of token this is
+    /// The kind of token this is.
     pub kind: SyntaxKind,
-    /// How long the token is in bytes
+    /// How long the token is in bytes. For tokens with escape sequences
+    /// like strings with `\uXXXX` escapes, the length is the raw length, not considering the char backed by the escape.
     pub len: usize
 }
 

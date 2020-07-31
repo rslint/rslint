@@ -9,3 +9,7 @@ license = "MIT"
 codespan-reporting = "0.9.5"
 rslint_syntax = { version = "0.1.0", path = "../rslint_syntax" }
 unicode-xid = "0.2.1"
+
+[dev-dependencies]
+quickcheck = "0.9"
+quickcheck_macros = "0.9"
