@@ -50,11 +50,6 @@ mod tests {
     }
 
     #[test]
-    fn it_works() {
-        println!("{:#?}", Lexer::from_str("import", 0).collect::<Vec<_>>())
-    }
-
-    #[test]
     fn empty() {
         assert_lex! {
             "",
@@ -672,6 +667,72 @@ mod tests {
         assert_lex! {
             ".0e+5",
             NUMBER:5
+        }
+    }
+
+    #[test]
+    fn single_line_comments() {
+        assert_lex! {
+            "//abc
+",
+            COMMENT:5,
+            WHITESPACE:1
+        }
+
+        assert_lex! {
+            "//a",
+            COMMENT:3
+        }
+    }
+
+    #[test]
+    fn block_comment() {
+        assert_lex! {
+            "/* 
+            */",
+            COMMENT:18
+        }
+
+        assert_lex! {
+            "/* */",
+            COMMENT:5
+        }
+
+        assert_lex! {
+            "/* *",
+            ERROR:4
+        }
+    }
+
+    #[test]
+    fn regex() {
+        assert_lex! {
+            "var a = /aa/gim",
+            VAR_KW:3,
+            WHITESPACE:1,
+            IDENT:1,
+            WHITESPACE:1,
+            EQ:1,
+            WHITESPACE:1,
+            REGEX:7
+        }
+    }
+
+    #[test]
+    fn division() {
+        assert_lex! {
+            "var a = 5 / 6",
+            VAR_KW:3,
+            WHITESPACE:1,
+            IDENT:1,
+            WHITESPACE:1,
+            EQ:1,
+            WHITESPACE:1,
+            NUMBER:1,
+            WHITESPACE:1,
+            SLASH:1,
+            WHITESPACE:1,
+            NUMBER:1
         }
     }
 }

@@ -10,6 +10,7 @@
 #[macro_use]
 mod token;
 mod labels;
+mod state;
 mod tests;
 
 pub use token::Token;
@@ -17,6 +18,7 @@ pub use token::Token;
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 // There is a way of making these functions 7x faster, but it involves 100kb+ static bitmaps
 // Although i am reluctant of using that currently as it does not seem needed, but this will have to be considered
+use state::LexerState;
 use unicode_xid::UnicodeXID;
 
 pub use rslint_syntax::{SyntaxKind, T};
@@ -58,10 +60,11 @@ const UNICODE_SPACES: [char; 16] = [
 ];
 
 /// An extremely fast, lookup table based, lossless ECMAScript lexer
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Lexer<'src> {
     bytes: &'src [u8],
     cur: usize,
+    state: LexerState,
     pub file_id: usize,
 }
 
@@ -73,6 +76,7 @@ impl<'src> Lexer<'src> {
             bytes,
             cur: 0,
             file_id,
+            state: LexerState::new(),
         }
     }
 
@@ -82,6 +86,7 @@ impl<'src> Lexer<'src> {
             bytes: string.as_bytes(),
             cur: 0,
             file_id,
+            state: LexerState::new(),
         }
     }
 
@@ -94,12 +99,16 @@ impl<'src> Lexer<'src> {
     // Consume all whitespace starting from the current byte
     fn consume_whitespace(&mut self) {
         unwind_loop! {
-            if let Some(byte) = self.next() {
+            let next = self.next().map(|x| *x);
+            if let Some(byte) = next {
                 // This is the most likely scenario, unicode spaces are very uncommon
-                if DISPATCHER[*byte as usize] != Dispatch::WHS {
+                if DISPATCHER[byte as usize] != Dispatch::WHS {
                     // try to short circuit the branch by checking the first byte of the potential unicode space
-                    if *byte > 0xC1 && UNICODE_WHITESPACE_STARTS.contains(&byte) {
+                    if byte > 0xC1 && UNICODE_WHITESPACE_STARTS.contains(&byte) {
                         let chr = self.get_unicode_char();
+                        if is_linebreak(chr) {
+                            self.state.had_linebreak = true;
+                        }
                         if !UNICODE_SPACES.contains(&chr) {
                             return;
                         }
@@ -107,6 +116,9 @@ impl<'src> Lexer<'src> {
                     } else {
                         return;
                     }
+                }
+                if is_linebreak(byte as char) {
+                    self.state.had_linebreak = true;
                 }
             } else {
                 return;
@@ -407,6 +419,59 @@ impl<'src> Lexer<'src> {
         }
     }
 
+    #[inline]
+    fn read_zero(&mut self) {
+        // TODO: Octal literals
+        match self.bytes.get(self.cur + 1) {
+            Some(b'x') | Some(b'X') => {
+                if self
+                    .bytes
+                    .get(self.cur + 2)
+                    .map(|x| (*x as char).is_ascii_hexdigit())
+                    .unwrap_or(false)
+                {
+                    self.cur += 1;
+                    return self.read_hexnumber();
+                }
+            }
+            Some(b'.') => {
+                self.cur += 1;
+                return self.read_float();
+            }
+            Some(b'e') | Some(b'E') => {
+                // At least one digit is required
+                match self.bytes.get(self.cur + 2) {
+                    Some(b'-') | Some(b'+') => {
+                        if let Some(b'0'..=b'9') = self.bytes.get(self.cur + 3) {
+                            self.next();
+                            return self.read_exponent();
+                        } else {
+                            return;
+                        }
+                    }
+                    Some(b'0'..=b'9') => return self.read_exponent(),
+                    _ => return,
+                }
+            }
+            // FIXME: many engines actually allow things like `09`, but by the spec, this is not allowed
+            // maybe we should not allow it if we want to go fully by the spec
+            _ => return self.read_number(),
+        }
+    }
+
+    #[inline]
+    fn read_hexnumber(&mut self) {
+        unwind_loop! {
+            if let Some(b) = self.next_bounded() {
+                if !(*b as char).is_ascii_hexdigit() {
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
+    }
+
     // Read a number which does not start with 0, since that can be more things and is handled
     // by another function
     #[inline]
@@ -496,6 +561,140 @@ impl<'src> Lexer<'src> {
         }
     }
 
+    #[inline]
+    fn read_slash(&mut self) -> LexerReturn {
+        let start = self.cur;
+        match self.bytes.get(self.cur + 1) {
+            Some(b'*') => {
+                self.next();
+                while let Some(b) = self.next().map(|x| *x) {
+                    match b {
+                        b'*' if self.bytes.get(self.cur + 1) == Some(&b'/') => {
+                            self.advance(2);
+                            return tok!(COMMENT, self.cur - start);
+                        }
+                        _ => {}
+                    }
+                }
+
+                let err = Diagnostic::error()
+                    .with_message("Unterminated block comment")
+                    .with_labels(vec![
+                        Label::primary(self.file_id, self.cur..self.cur + 1)
+                            .with_message("... but the file ends here"),
+                        Label::secondary(self.file_id, start..start + 2)
+                            .with_message("A block comment starts here..."),
+                    ]);
+
+                (Token::new(SyntaxKind::ERROR, self.cur - start), Some(err))
+            }
+            Some(b'/') => {
+                self.next();
+                while let Some(_) = self.next() {
+                    let chr = self.get_unicode_char();
+                    self.cur += chr.len_utf8() - 1;
+
+                    if is_linebreak(chr) {
+                        return tok!(COMMENT, self.cur - start);
+                    }
+                }
+                tok!(COMMENT, self.cur - start)
+            },
+            _ if self.state.expr_allowed => self.read_regex(),
+            _ => self.eat(tok![/]),
+        }
+    }
+
+    #[inline]
+    fn flag_err(&self, flag: char) -> Diagnostic<usize> {
+        Diagnostic::error()
+            .with_message(&format!("Duplicate flag `{}`", flag))
+            .with_labels(vec![Label::primary(self.file_id, self.cur..self.cur + 1)
+                .with_message("This flag was already used")])
+    }
+
+    // TODO: Due to our return of (Token, Option<Error>) we cant issue more than one regex error
+    // This is not a huge issue but it would be helpful to users
+    #[inline]
+    fn read_regex(&mut self) -> LexerReturn {
+        let start = self.cur;
+        let mut in_class = false;
+        let mut diagnostic = None;
+
+        unwind_loop! {
+            match self.next() {
+                Some(b'[') => in_class = true,
+                Some(b']') => in_class = false,
+                Some(b'/') => {
+                    if !in_class {
+                        let (mut g, mut i, mut m) = (false, false, false);
+
+                        unwind_loop! {
+                            let next = self.next_bounded().map(|x| *x);
+                            match next {
+                               Some(b'g') => {
+                                   if g && diagnostic.is_none() {
+                                        diagnostic = Some(self.flag_err('g'))
+                                   }
+                                   g = true;
+                               },
+                               Some(b'i') => {
+                                if i && diagnostic.is_none() {
+                                        diagnostic = Some(self.flag_err('i'))
+                                }
+                                i = true;
+                               },
+                               Some(b'm') => {
+                                if m && diagnostic.is_none() {
+                                     diagnostic = Some(self.flag_err('m'))
+                                }
+                                m = true;
+                                },
+                                Some(_) if self.cur_is_ident_part() => {
+                                    let chr_start = self.cur;
+                                    self.cur += self.get_unicode_char().len_utf8() - 1;
+                                    if diagnostic.is_none() {
+                                        diagnostic = Some(Diagnostic::error()
+                                        .with_message("Invalid regex flag")
+                                        .with_labels(vec![Label::primary(self.file_id, chr_start..self.cur + 1)
+                                            .with_message("This is not a valid regex flag")]));
+                                    }
+                                },
+                                _ => {
+                                    return if diagnostic.is_some() {
+                                        (Token::new(SyntaxKind::ERROR, self.cur - start), diagnostic)
+                                    } else {
+                                        tok!(REGEX, self.cur - start)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                Some(b'\\') => {
+                    if self.next_bounded().is_none() {
+                        let err = Diagnostic::error().with_message("Expected a character after a regex escape, but found none")
+                        .with_labels(vec![
+                            Label::primary(self.file_id, self.cur..self.cur + 1).with_message("Expected a character following this")
+                        ]);
+
+                        return (Token::new(SyntaxKind::ERROR, self.cur - start), Some(err));
+                    }
+                },
+                None => {
+                    let err = Diagnostic::error().with_message("Unterminated regex literal")
+                        .with_labels(vec![
+                            Label::primary(self.file_id, self.cur..self.cur).with_message("...but the file ends here"),
+                            Label::secondary(self.file_id, start..start + 1).with_message("a regex literal starts here...")
+                        ]);
+                    
+                    return (Token::new(SyntaxKind::ERROR, self.cur - start), Some(err));
+                },
+                _ => {},
+            }
+        }
+    }
+
     /// Lex the next token
     fn lex_token(&mut self) -> LexerReturn {
         // Safety: we always call lex_token when we are at a valid char
@@ -522,6 +721,11 @@ impl<'src> Lexer<'src> {
             PLS => self.eat(tok![+]),
             COM => self.eat(tok![,]),
             MIN => self.eat(tok![-]),
+            SLH => self.read_slash(),
+            ZER => {
+                self.read_zero();
+                self.verify_number_end(start)
+            }
             PRD => {
                 if let Some(b'0'..=b'9') = self.bytes.get(self.cur + 1) {
                     self.read_float();
@@ -529,7 +733,7 @@ impl<'src> Lexer<'src> {
                 } else {
                     self.eat(tok![.])
                 }
-            },
+            }
             BSL => {
                 if self.bytes.get(self.cur + 1) == Some(&b'u') {
                     self.next();
@@ -547,17 +751,15 @@ impl<'src> Lexer<'src> {
                                 (Token::new(SyntaxKind::ERROR, self.cur - start), Some(err))
                             }
                         }
-                        Err(err) => {
-                            (Token::new(SyntaxKind::ERROR, self.cur - start), Some(err))
-                        }
+                        Err(err) => (Token::new(SyntaxKind::ERROR, self.cur - start), Some(err)),
                     }
                 } else {
                     let err = Diagnostic::error()
-                    .with_message(&format!("Unexpected token `{}`", byte as char))
-                    .with_labels(vec![Label::primary(self.file_id, start..self.cur + 1)]);
-                     self.next();
+                        .with_message(&format!("Unexpected token `{}`", byte as char))
+                        .with_labels(vec![Label::primary(self.file_id, start..self.cur + 1)]);
+                    self.next();
 
-                (Token::new(SyntaxKind::ERROR, 1), Some(err))
+                    (Token::new(SyntaxKind::ERROR, 1), Some(err))
                 }
             }
             QOT => {
@@ -594,6 +796,10 @@ impl<'src> Lexer<'src> {
             }
             UNI => {
                 if UNICODE_WHITESPACE_STARTS.contains(&byte) {
+                    let chr = self.get_unicode_char();
+                    if is_linebreak(chr) {
+                        self.state.had_linebreak = true;
+                    }
                     self.cur += self.get_unicode_char().len_utf8() - 1;
                     self.consume_whitespace();
                     tok!(WHITESPACE, self.cur - start)
@@ -620,6 +826,10 @@ impl<'src> Lexer<'src> {
     }
 }
 
+fn is_linebreak(chr: char) -> bool {
+    ['\n', '\r', '\u{2028}', '\u{2029}'].contains(&chr)
+}
+
 impl Iterator for Lexer<'_> {
     type Item = LexerReturn;
 
@@ -628,7 +838,11 @@ impl Iterator for Lexer<'_> {
             return None;
         }
 
-        Some(self.lex_token())
+        let token = self.lex_token();
+        if ![SyntaxKind::COMMENT, SyntaxKind::WHITESPACE].contains(&token.0.kind) {
+            self.state.update(token.0.kind); 
+        }
+        Some(token)
     }
 }
 
