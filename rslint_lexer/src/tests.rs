@@ -344,14 +344,14 @@ mod tests {
             BREAK_KW:5
         }
 
-        // assert_lex! {
-        //     "breaking speed records",
-        //     IDENT:8,
-        //     WHITESPACE:1,
-        //     IDENT:5,
-        //     WHITESPACE:1,
-        //     IDENT:7
-        // }
+        assert_lex! {
+            "breaking speed records",
+            IDENT:8,
+            WHITESPACE:1,
+            IDENT:5,
+            WHITESPACE:1,
+            IDENT:7
+        }
     }
 
     #[test]
