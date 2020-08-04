@@ -1,11 +1,8 @@
 //! Extended AST node definitions for statements which are unique and special enough to generate code for manually
 
 use crate::{
-    ast::{self, support, AstChildren, AstNode, Stmt, Declaration, VarStmt, Expr},
-    SmolStr,
+    ast::{AstNode, Stmt, Declaration, VarStmt, Expr},
     SyntaxKind,
-    SyntaxKind::*,
-    SyntaxToken,
     syntax_node::SyntaxNode,
 };
 

@@ -8,3 +8,5 @@ license = "MIT"
 [dependencies]
 rowan = "0.10.0"
 codespan-reporting = "0.9.5"
+rslint_lexer = { path = "../rslint_lexer", version = "0.1" }
+rslint_parser = { path = "../rslint_parser", version = "0.1" }

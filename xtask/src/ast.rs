@@ -76,6 +76,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "enum",
         "export",
         "extends",
+        "false",
         "finally",
         "for",
         "function",
@@ -87,6 +88,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "implements",
         "let",
         "new",
+        "null",
         "package",
         "private",
         "protected",
@@ -98,6 +100,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "this",
         "throw",
         "try",
+        "true",
         "typeof",
         "var",
         "void",
@@ -106,8 +109,6 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "yield"
     ],
     literals: &[
-        "NULL",
-        "BOOL",
         "NUMBER",
         "STRING",
         "REGEX",
@@ -484,7 +485,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct DotExpr {
             object: Expr,
             T![.],
-            /* prop name */
+            prop: Name,
         }
 
         struct NewExpr {
@@ -582,6 +583,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         */
 
         enum Expr {
+            Name,
             ThisExpr,
             ArrayExpr,
             ObjectExpr,

@@ -9,14 +9,16 @@ mod tests {
     macro_rules! assert_lex {
         ($src:expr, $($kind:ident:$len:expr $(,)?)*) => {{
             let mut lexer = Lexer::from_str($src, 0);
-            let tokens = lexer.collect::<Vec<_>>();
+            let mut tokens = lexer.collect::<Vec<_>>();
             let mut idx = 0;
             let mut tok_idx = 0;
 
             let mut new_str = String::with_capacity($src.len());
+            // remove eof
+            tokens.pop();
 
             $(
-                assert_eq!(tokens[idx].0.kind, rslint_syntax::SyntaxKind::$kind,
+                assert_eq!(tokens[idx].0.kind, rslint_parser::SyntaxKind::$kind,
                     "expected token kind {}, but found {:?}", stringify!($kind), tokens[idx].0.kind
                 );
                 assert_eq!(tokens[idx].0.len, $len,

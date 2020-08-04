@@ -21,7 +21,7 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 use state::LexerState;
 use unicode_xid::UnicodeXID;
 
-pub use rslint_syntax::{SyntaxKind, T};
+pub use rslint_parser::{SyntaxKind, T};
 pub type LexerReturn = (Token, Option<Diagnostic<usize>>);
 
 // Simple macro for unwinding a loop
@@ -66,6 +66,7 @@ pub struct Lexer<'src> {
     cur: usize,
     state: LexerState,
     pub file_id: usize,
+    returned_eof: bool,
 }
 
 impl<'src> Lexer<'src> {
@@ -77,6 +78,7 @@ impl<'src> Lexer<'src> {
             cur: 0,
             file_id,
             state: LexerState::new(),
+            returned_eof: false
         }
     }
 
@@ -87,6 +89,7 @@ impl<'src> Lexer<'src> {
             cur: 0,
             file_id,
             state: LexerState::new(),
+            returned_eof: false
         }
     }
 
@@ -849,7 +852,8 @@ impl<'src> Lexer<'src> {
     }
 }
 
-fn is_linebreak(chr: char) -> bool {
+/// Check if a char is a JS linebreak
+pub fn is_linebreak(chr: char) -> bool {
     ['\n', '\r', '\u{2028}', '\u{2029}'].contains(&chr)
 }
 
@@ -858,6 +862,10 @@ impl Iterator for Lexer<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.cur >= self.bytes.len() {
+            if !self.returned_eof {
+                self.returned_eof = true;
+                return Some(tok!(EOF, 0));
+            }
             return None;
         }
 

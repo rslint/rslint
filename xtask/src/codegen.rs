@@ -14,7 +14,7 @@ pub use self::{
 // const OK_INLINE_TESTS_DIR: &str = "crates/ra_syntax/test_data/parser/inline/ok";
 // const ERR_INLINE_TESTS_DIR: &str = "crates/ra_syntax/test_data/parser/inline/err";
 
-const SYNTAX_KINDS: &str = "rslint_syntax/src/syntax_kind/generated.rs";
+const SYNTAX_KINDS: &str = "rslint_parser/src/syntax_kind/generated.rs";
 const AST_NODES: &str = "rslint_syntax/src/ast/generated/nodes.rs";
 const AST_TOKENS: &str = "rslint_syntax/src/ast/generated/tokens.rs";
 

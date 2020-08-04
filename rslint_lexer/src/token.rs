@@ -1,6 +1,6 @@
 //! Token definitions for the lexer
 
-use rslint_syntax::SyntaxKind;
+use rslint_parser::SyntaxKind;
 
 /// A single raw token.  
 /// This does NOT include multipart tokens such as `+=` and `-=`, they will be emitted as two separate tokens

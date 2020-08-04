@@ -7,7 +7,7 @@ license = "MIT"
 
 [dependencies]
 codespan-reporting = "0.9.5"
-rslint_syntax = { version = "0.1.0", path = "../rslint_syntax" }
+rslint_parser = { version = "0.1.0", path = "../rslint_parser" }
 unicode-xid = "0.2.1"
 
 [dev-dependencies]

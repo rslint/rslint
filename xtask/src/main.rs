@@ -1,5 +1,3 @@
-use std::env;
-
 use pico_args::Arguments;
 use xtask::{
     codegen::{self, Mode},

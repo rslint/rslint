@@ -657,7 +657,7 @@ dependencies = [
  "codespan-reporting",
  "quickcheck",
  "quickcheck_macros",
- "rslint_syntax",
+ "rslint_parser",
  "unicode-xid",
 ]
 
@@ -677,11 +677,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "rslint_parser"
+version = "0.1.0"
+dependencies = [
+ "codespan-reporting",
+]
+
+[[package]]
 name = "rslint_syntax"
 version = "0.1.0"
 dependencies = [
  "codespan-reporting",
  "rowan",
+ "rslint_lexer",
+ "rslint_parser",
 ]
 
 [[package]]

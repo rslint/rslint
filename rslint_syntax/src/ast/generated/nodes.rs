@@ -362,6 +362,7 @@ pub struct DotExpr {
 impl DotExpr {
     pub fn object(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn dot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![.]) }
+    pub fn prop(&self) -> Option<Name> { support::child(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NewExpr {
@@ -464,6 +465,7 @@ pub enum Stmt {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
+    Name(Name),
     ThisExpr(ThisExpr),
     ArrayExpr(ArrayExpr),
     ObjectExpr(ObjectExpr),
@@ -1164,6 +1166,9 @@ impl AstNode for Stmt {
         }
     }
 }
+impl From<Name> for Expr {
+    fn from(node: Name) -> Expr { Expr::Name(node) }
+}
 impl From<ThisExpr> for Expr {
     fn from(node: ThisExpr) -> Expr { Expr::ThisExpr(node) }
 }
@@ -1209,14 +1214,15 @@ impl From<SequenceExpr> for Expr {
 impl AstNode for Expr {
     fn can_cast(kind: SyntaxKind) -> bool {
         match kind {
-            THIS_EXPR | ARRAY_EXPR | OBJECT_EXPR | GROUPING_EXPR | BRACKET_EXPR | DOT_EXPR
-            | NEW_EXPR | CALL_EXPR | POSTFIX_EXPR | UNARY_EXPR | BIN_EXPR | COND_EXPR
-            | ASSIGN_EXPR | SEQUENCE_EXPR => true,
+            NAME | THIS_EXPR | ARRAY_EXPR | OBJECT_EXPR | GROUPING_EXPR | BRACKET_EXPR
+            | DOT_EXPR | NEW_EXPR | CALL_EXPR | POSTFIX_EXPR | UNARY_EXPR | BIN_EXPR
+            | COND_EXPR | ASSIGN_EXPR | SEQUENCE_EXPR => true,
             _ => false,
         }
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
+            NAME => Expr::Name(Name { syntax }),
             THIS_EXPR => Expr::ThisExpr(ThisExpr { syntax }),
             ARRAY_EXPR => Expr::ArrayExpr(ArrayExpr { syntax }),
             OBJECT_EXPR => Expr::ObjectExpr(ObjectExpr { syntax }),
@@ -1237,6 +1243,7 @@ impl AstNode for Expr {
     }
     fn syntax(&self) -> &SyntaxNode {
         match self {
+            Expr::Name(it) => &it.syntax,
             Expr::ThisExpr(it) => &it.syntax,
             Expr::ArrayExpr(it) => &it.syntax,
             Expr::ObjectExpr(it) => &it.syntax,

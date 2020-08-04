@@ -72,6 +72,7 @@ pub enum SyntaxKind {
     ENUM_KW,
     EXPORT_KW,
     EXTENDS_KW,
+    FALSE_KW,
     FINALLY_KW,
     FOR_KW,
     FUNCTION_KW,
@@ -83,6 +84,7 @@ pub enum SyntaxKind {
     IMPLEMENTS_KW,
     LET_KW,
     NEW_KW,
+    NULL_KW,
     PACKAGE_KW,
     PRIVATE_KW,
     PROTECTED_KW,
@@ -94,14 +96,13 @@ pub enum SyntaxKind {
     THIS_KW,
     THROW_KW,
     TRY_KW,
+    TRUE_KW,
     TYPEOF_KW,
     VAR_KW,
     VOID_KW,
     WHILE_KW,
     WITH_KW,
     YIELD_KW,
-    NULL,
-    BOOL,
     NUMBER,
     STRING,
     REGEX,
@@ -166,12 +167,11 @@ impl SyntaxKind {
         match self {
             BREAK_KW | CASE_KW | CATCH_KW | CLASS_KW | CONST_KW | CONTINUE_KW | DEBUGGER_KW
             | DEFAULT_KW | DELETE_KW | DO_KW | ELSE_KW | ENUM_KW | EXPORT_KW | EXTENDS_KW
-            | FINALLY_KW | FOR_KW | FUNCTION_KW | IF_KW | IN_KW | INSTANCEOF_KW | INTERFACE_KW
-            | IMPORT_KW | IMPLEMENTS_KW | LET_KW | NEW_KW | PACKAGE_KW | PRIVATE_KW
-            | PROTECTED_KW | PUBLIC_KW | RETURN_KW | STATIC_KW | SUPER_KW | SWITCH_KW | THIS_KW
-            | THROW_KW | TRY_KW | TYPEOF_KW | VAR_KW | VOID_KW | WHILE_KW | WITH_KW | YIELD_KW => {
-                true
-            }
+            | FALSE_KW | FINALLY_KW | FOR_KW | FUNCTION_KW | IF_KW | IN_KW | INSTANCEOF_KW
+            | INTERFACE_KW | IMPORT_KW | IMPLEMENTS_KW | LET_KW | NEW_KW | NULL_KW | PACKAGE_KW
+            | PRIVATE_KW | PROTECTED_KW | PUBLIC_KW | RETURN_KW | STATIC_KW | SUPER_KW
+            | SWITCH_KW | THIS_KW | THROW_KW | TRY_KW | TRUE_KW | TYPEOF_KW | VAR_KW | VOID_KW
+            | WHILE_KW | WITH_KW | YIELD_KW => true,
             _ => false,
         }
     }
@@ -188,7 +188,7 @@ impl SyntaxKind {
     }
     pub fn is_literal(self) -> bool {
         match self {
-            NULL | BOOL | NUMBER | STRING | REGEX => true,
+            NUMBER | STRING | REGEX => true,
             _ => false,
         }
     }
@@ -218,6 +218,7 @@ impl SyntaxKind {
             "enum" => ENUM_KW,
             "export" => EXPORT_KW,
             "extends" => EXTENDS_KW,
+            "false" => FALSE_KW,
             "finally" => FINALLY_KW,
             "for" => FOR_KW,
             "function" => FUNCTION_KW,
@@ -229,6 +230,7 @@ impl SyntaxKind {
             "implements" => IMPLEMENTS_KW,
             "let" => LET_KW,
             "new" => NEW_KW,
+            "null" => NULL_KW,
             "package" => PACKAGE_KW,
             "private" => PRIVATE_KW,
             "protected" => PROTECTED_KW,
@@ -240,6 +242,7 @@ impl SyntaxKind {
             "this" => THIS_KW,
             "throw" => THROW_KW,
             "try" => TRY_KW,
+            "true" => TRUE_KW,
             "typeof" => TYPEOF_KW,
             "var" => VAR_KW,
             "void" => VOID_KW,
@@ -282,4 +285,4 @@ impl SyntaxKind {
     }
 }
 #[macro_export]
-macro_rules ! T { [ ; ] => { $ crate :: SyntaxKind :: SEMICOLON } ; [ , ] => { $ crate :: SyntaxKind :: COMMA } ; [ '(' ] => { $ crate :: SyntaxKind :: L_PAREN } ; [ ')' ] => { $ crate :: SyntaxKind :: R_PAREN } ; [ '{' ] => { $ crate :: SyntaxKind :: L_CURLY } ; [ '}' ] => { $ crate :: SyntaxKind :: R_CURLY } ; [ '[' ] => { $ crate :: SyntaxKind :: L_BRACK } ; [ ']' ] => { $ crate :: SyntaxKind :: R_BRACK } ; [ < ] => { $ crate :: SyntaxKind :: L_ANGLE } ; [ > ] => { $ crate :: SyntaxKind :: R_ANGLE } ; [ ~ ] => { $ crate :: SyntaxKind :: TILDE } ; [ ? ] => { $ crate :: SyntaxKind :: QUESTION } ; [ & ] => { $ crate :: SyntaxKind :: AMP } ; [ | ] => { $ crate :: SyntaxKind :: PIPE } ; [ + ] => { $ crate :: SyntaxKind :: PLUS } ; [ ++ ] => { $ crate :: SyntaxKind :: PLUS2 } ; [ * ] => { $ crate :: SyntaxKind :: STAR } ; [ / ] => { $ crate :: SyntaxKind :: SLASH } ; [ ^ ] => { $ crate :: SyntaxKind :: CARET } ; [ % ] => { $ crate :: SyntaxKind :: PERCENT } ; [ . ] => { $ crate :: SyntaxKind :: DOT } ; [ : ] => { $ crate :: SyntaxKind :: COLON } ; [ = ] => { $ crate :: SyntaxKind :: EQ } ; [ == ] => { $ crate :: SyntaxKind :: EQ2 } ; [ === ] => { $ crate :: SyntaxKind :: EQ3 } ; [ => ] => { $ crate :: SyntaxKind :: FAT_ARROW } ; [ ! ] => { $ crate :: SyntaxKind :: BANG } ; [ != ] => { $ crate :: SyntaxKind :: NEQ } ; [ !== ] => { $ crate :: SyntaxKind :: NEQ2 } ; [ - ] => { $ crate :: SyntaxKind :: MINUS } ; [ -- ] => { $ crate :: SyntaxKind :: MINUS2 } ; [ <= ] => { $ crate :: SyntaxKind :: LTEQ } ; [ >= ] => { $ crate :: SyntaxKind :: GTEQ } ; [ += ] => { $ crate :: SyntaxKind :: PLUSEQ } ; [ -= ] => { $ crate :: SyntaxKind :: MINUSEQ } ; [ |= ] => { $ crate :: SyntaxKind :: PIPEEQ } ; [ &= ] => { $ crate :: SyntaxKind :: AMPEQ } ; [ ^= ] => { $ crate :: SyntaxKind :: CARETEQ } ; [ /= ] => { $ crate :: SyntaxKind :: SLASHEQ } ; [ *= ] => { $ crate :: SyntaxKind :: STAREQ } ; [ %= ] => { $ crate :: SyntaxKind :: PERCENTEQ } ; [ && ] => { $ crate :: SyntaxKind :: AMP2 } ; [ || ] => { $ crate :: SyntaxKind :: PIPE2 } ; [ << ] => { $ crate :: SyntaxKind :: SHL } ; [ >> ] => { $ crate :: SyntaxKind :: SHR } ; [ >>> ] => { $ crate :: SyntaxKind :: USHR } ; [ <<= ] => { $ crate :: SyntaxKind :: SHLEQ } ; [ >>= ] => { $ crate :: SyntaxKind :: SHREQ } ; [ >>>= ] => { $ crate :: SyntaxKind :: USHREQ } ; [ break ] => { $ crate :: SyntaxKind :: BREAK_KW } ; [ case ] => { $ crate :: SyntaxKind :: CASE_KW } ; [ catch ] => { $ crate :: SyntaxKind :: CATCH_KW } ; [ class ] => { $ crate :: SyntaxKind :: CLASS_KW } ; [ const ] => { $ crate :: SyntaxKind :: CONST_KW } ; [ continue ] => { $ crate :: SyntaxKind :: CONTINUE_KW } ; [ debugger ] => { $ crate :: SyntaxKind :: DEBUGGER_KW } ; [ default ] => { $ crate :: SyntaxKind :: DEFAULT_KW } ; [ delete ] => { $ crate :: SyntaxKind :: DELETE_KW } ; [ do ] => { $ crate :: SyntaxKind :: DO_KW } ; [ else ] => { $ crate :: SyntaxKind :: ELSE_KW } ; [ enum ] => { $ crate :: SyntaxKind :: ENUM_KW } ; [ export ] => { $ crate :: SyntaxKind :: EXPORT_KW } ; [ extends ] => { $ crate :: SyntaxKind :: EXTENDS_KW } ; [ finally ] => { $ crate :: SyntaxKind :: FINALLY_KW } ; [ for ] => { $ crate :: SyntaxKind :: FOR_KW } ; [ function ] => { $ crate :: SyntaxKind :: FUNCTION_KW } ; [ if ] => { $ crate :: SyntaxKind :: IF_KW } ; [ in ] => { $ crate :: SyntaxKind :: IN_KW } ; [ instanceof ] => { $ crate :: SyntaxKind :: INSTANCEOF_KW } ; [ interface ] => { $ crate :: SyntaxKind :: INTERFACE_KW } ; [ import ] => { $ crate :: SyntaxKind :: IMPORT_KW } ; [ implements ] => { $ crate :: SyntaxKind :: IMPLEMENTS_KW } ; [ let ] => { $ crate :: SyntaxKind :: LET_KW } ; [ new ] => { $ crate :: SyntaxKind :: NEW_KW } ; [ package ] => { $ crate :: SyntaxKind :: PACKAGE_KW } ; [ private ] => { $ crate :: SyntaxKind :: PRIVATE_KW } ; [ protected ] => { $ crate :: SyntaxKind :: PROTECTED_KW } ; [ public ] => { $ crate :: SyntaxKind :: PUBLIC_KW } ; [ return ] => { $ crate :: SyntaxKind :: RETURN_KW } ; [ static ] => { $ crate :: SyntaxKind :: STATIC_KW } ; [ super ] => { $ crate :: SyntaxKind :: SUPER_KW } ; [ switch ] => { $ crate :: SyntaxKind :: SWITCH_KW } ; [ this ] => { $ crate :: SyntaxKind :: THIS_KW } ; [ throw ] => { $ crate :: SyntaxKind :: THROW_KW } ; [ try ] => { $ crate :: SyntaxKind :: TRY_KW } ; [ typeof ] => { $ crate :: SyntaxKind :: TYPEOF_KW } ; [ var ] => { $ crate :: SyntaxKind :: VAR_KW } ; [ void ] => { $ crate :: SyntaxKind :: VOID_KW } ; [ while ] => { $ crate :: SyntaxKind :: WHILE_KW } ; [ with ] => { $ crate :: SyntaxKind :: WITH_KW } ; [ yield ] => { $ crate :: SyntaxKind :: YIELD_KW } ; [ ident ] => { $ crate :: SyntaxKind :: IDENT } ; }
+macro_rules ! T { [ ; ] => { $ crate :: SyntaxKind :: SEMICOLON } ; [ , ] => { $ crate :: SyntaxKind :: COMMA } ; [ '(' ] => { $ crate :: SyntaxKind :: L_PAREN } ; [ ')' ] => { $ crate :: SyntaxKind :: R_PAREN } ; [ '{' ] => { $ crate :: SyntaxKind :: L_CURLY } ; [ '}' ] => { $ crate :: SyntaxKind :: R_CURLY } ; [ '[' ] => { $ crate :: SyntaxKind :: L_BRACK } ; [ ']' ] => { $ crate :: SyntaxKind :: R_BRACK } ; [ < ] => { $ crate :: SyntaxKind :: L_ANGLE } ; [ > ] => { $ crate :: SyntaxKind :: R_ANGLE } ; [ ~ ] => { $ crate :: SyntaxKind :: TILDE } ; [ ? ] => { $ crate :: SyntaxKind :: QUESTION } ; [ & ] => { $ crate :: SyntaxKind :: AMP } ; [ | ] => { $ crate :: SyntaxKind :: PIPE } ; [ + ] => { $ crate :: SyntaxKind :: PLUS } ; [ ++ ] => { $ crate :: SyntaxKind :: PLUS2 } ; [ * ] => { $ crate :: SyntaxKind :: STAR } ; [ / ] => { $ crate :: SyntaxKind :: SLASH } ; [ ^ ] => { $ crate :: SyntaxKind :: CARET } ; [ % ] => { $ crate :: SyntaxKind :: PERCENT } ; [ . ] => { $ crate :: SyntaxKind :: DOT } ; [ : ] => { $ crate :: SyntaxKind :: COLON } ; [ = ] => { $ crate :: SyntaxKind :: EQ } ; [ == ] => { $ crate :: SyntaxKind :: EQ2 } ; [ === ] => { $ crate :: SyntaxKind :: EQ3 } ; [ => ] => { $ crate :: SyntaxKind :: FAT_ARROW } ; [ ! ] => { $ crate :: SyntaxKind :: BANG } ; [ != ] => { $ crate :: SyntaxKind :: NEQ } ; [ !== ] => { $ crate :: SyntaxKind :: NEQ2 } ; [ - ] => { $ crate :: SyntaxKind :: MINUS } ; [ -- ] => { $ crate :: SyntaxKind :: MINUS2 } ; [ <= ] => { $ crate :: SyntaxKind :: LTEQ } ; [ >= ] => { $ crate :: SyntaxKind :: GTEQ } ; [ += ] => { $ crate :: SyntaxKind :: PLUSEQ } ; [ -= ] => { $ crate :: SyntaxKind :: MINUSEQ } ; [ |= ] => { $ crate :: SyntaxKind :: PIPEEQ } ; [ &= ] => { $ crate :: SyntaxKind :: AMPEQ } ; [ ^= ] => { $ crate :: SyntaxKind :: CARETEQ } ; [ /= ] => { $ crate :: SyntaxKind :: SLASHEQ } ; [ *= ] => { $ crate :: SyntaxKind :: STAREQ } ; [ %= ] => { $ crate :: SyntaxKind :: PERCENTEQ } ; [ && ] => { $ crate :: SyntaxKind :: AMP2 } ; [ || ] => { $ crate :: SyntaxKind :: PIPE2 } ; [ << ] => { $ crate :: SyntaxKind :: SHL } ; [ >> ] => { $ crate :: SyntaxKind :: SHR } ; [ >>> ] => { $ crate :: SyntaxKind :: USHR } ; [ <<= ] => { $ crate :: SyntaxKind :: SHLEQ } ; [ >>= ] => { $ crate :: SyntaxKind :: SHREQ } ; [ >>>= ] => { $ crate :: SyntaxKind :: USHREQ } ; [ break ] => { $ crate :: SyntaxKind :: BREAK_KW } ; [ case ] => { $ crate :: SyntaxKind :: CASE_KW } ; [ catch ] => { $ crate :: SyntaxKind :: CATCH_KW } ; [ class ] => { $ crate :: SyntaxKind :: CLASS_KW } ; [ const ] => { $ crate :: SyntaxKind :: CONST_KW } ; [ continue ] => { $ crate :: SyntaxKind :: CONTINUE_KW } ; [ debugger ] => { $ crate :: SyntaxKind :: DEBUGGER_KW } ; [ default ] => { $ crate :: SyntaxKind :: DEFAULT_KW } ; [ delete ] => { $ crate :: SyntaxKind :: DELETE_KW } ; [ do ] => { $ crate :: SyntaxKind :: DO_KW } ; [ else ] => { $ crate :: SyntaxKind :: ELSE_KW } ; [ enum ] => { $ crate :: SyntaxKind :: ENUM_KW } ; [ export ] => { $ crate :: SyntaxKind :: EXPORT_KW } ; [ extends ] => { $ crate :: SyntaxKind :: EXTENDS_KW } ; [ false ] => { $ crate :: SyntaxKind :: FALSE_KW } ; [ finally ] => { $ crate :: SyntaxKind :: FINALLY_KW } ; [ for ] => { $ crate :: SyntaxKind :: FOR_KW } ; [ function ] => { $ crate :: SyntaxKind :: FUNCTION_KW } ; [ if ] => { $ crate :: SyntaxKind :: IF_KW } ; [ in ] => { $ crate :: SyntaxKind :: IN_KW } ; [ instanceof ] => { $ crate :: SyntaxKind :: INSTANCEOF_KW } ; [ interface ] => { $ crate :: SyntaxKind :: INTERFACE_KW } ; [ import ] => { $ crate :: SyntaxKind :: IMPORT_KW } ; [ implements ] => { $ crate :: SyntaxKind :: IMPLEMENTS_KW } ; [ let ] => { $ crate :: SyntaxKind :: LET_KW } ; [ new ] => { $ crate :: SyntaxKind :: NEW_KW } ; [ null ] => { $ crate :: SyntaxKind :: NULL_KW } ; [ package ] => { $ crate :: SyntaxKind :: PACKAGE_KW } ; [ private ] => { $ crate :: SyntaxKind :: PRIVATE_KW } ; [ protected ] => { $ crate :: SyntaxKind :: PROTECTED_KW } ; [ public ] => { $ crate :: SyntaxKind :: PUBLIC_KW } ; [ return ] => { $ crate :: SyntaxKind :: RETURN_KW } ; [ static ] => { $ crate :: SyntaxKind :: STATIC_KW } ; [ super ] => { $ crate :: SyntaxKind :: SUPER_KW } ; [ switch ] => { $ crate :: SyntaxKind :: SWITCH_KW } ; [ this ] => { $ crate :: SyntaxKind :: THIS_KW } ; [ throw ] => { $ crate :: SyntaxKind :: THROW_KW } ; [ try ] => { $ crate :: SyntaxKind :: TRY_KW } ; [ true ] => { $ crate :: SyntaxKind :: TRUE_KW } ; [ typeof ] => { $ crate :: SyntaxKind :: TYPEOF_KW } ; [ var ] => { $ crate :: SyntaxKind :: VAR_KW } ; [ void ] => { $ crate :: SyntaxKind :: VOID_KW } ; [ while ] => { $ crate :: SyntaxKind :: WHILE_KW } ; [ with ] => { $ crate :: SyntaxKind :: WITH_KW } ; [ yield ] => { $ crate :: SyntaxKind :: YIELD_KW } ; [ ident ] => { $ crate :: SyntaxKind :: IDENT } ; }

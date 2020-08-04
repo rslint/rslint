@@ -151,6 +151,14 @@ impl Lexer<'_> {
     #[inline]
     pub(crate) fn resolve_label_f(&mut self) -> Option<SyntaxKind> {
         match self.bytes.get(self.cur + 1) {
+            Some(b'a') => {
+                if let Some(b"lse") = self.bytes.get(self.cur + 2..self.cur + 5) {
+                    self.advance(4);
+                    Some(T![false])
+                } else {
+                    None
+                }
+            }
             Some(b'i') => {
                 if let Some(b"nally") = self.bytes.get(self.cur + 2..self.cur + 7) {
                     self.advance(6);
@@ -210,11 +218,24 @@ impl Lexer<'_> {
 
     #[inline]
     pub(crate) fn resolve_label_n(&mut self) -> Option<SyntaxKind> {
-        if let Some(b"new") = self.bytes.get(self.cur..self.cur + 3) {
-            self.advance(2);
-            Some(T![new])
-        } else {
-            None
+        match self.bytes.get(self.cur + 1) {
+            Some(b'u') => {
+                if let Some(b"ll") = self.bytes.get(self.cur + 2..self.cur + 4) {
+                    self.advance(3);
+                    Some(T![null])
+                } else {
+                    None
+                }
+            },
+            Some(b'e') => {
+                if let Some(b'w') = self.bytes.get(self.cur + 2) {
+                    self.advance(2);
+                    Some(T![new])
+                } else {
+                    None
+                }
+            },
+            _ => None,
         }
     }
 
@@ -238,7 +259,7 @@ impl Lexer<'_> {
                 } else {
                     None
                 }
-            },
+            }
             Some(b'w') => {
                 // Dont mind this :)
                 if let Some(b"itch") = self.bytes.get(self.cur + 2..self.cur + 6) {
@@ -247,8 +268,8 @@ impl Lexer<'_> {
                 } else {
                     None
                 }
-            },
-            _ => None
+            }
+            _ => None,
         }
     }
 
@@ -256,33 +277,40 @@ impl Lexer<'_> {
     pub(crate) fn resolve_label_t(&mut self) -> Option<SyntaxKind> {
         match self.bytes.get(self.cur + 1) {
             Some(b'r') => {
-                if let Some(b'y') = self.bytes.get(self.cur + 2) {
-                    self.advance(2);
-                    Some(T![try])
-                } else {
-                    None
-                }
-            },
-            Some(b'h') => {
                 match self.bytes.get(self.cur + 2) {
-                    Some(b'i') => {
-                        if let Some(b's') = self.bytes.get(self.cur + 3) {
+                    Some(b'y') => {
+                        self.advance(2);
+                        Some(T![try])
+                    }
+                    Some(b'u') => {
+                        if let Some(b'e') = self.bytes.get(self.cur + 3) {
                             self.advance(3);
-                            Some(T![this])
+                            Some(T![true])
                         } else {
                             None
                         }
-                    },
-                    Some(b'r') => {
-                        if let Some(b"ow") = self.bytes.get(self.cur + 3..self.cur + 5) {
-                            self.advance(4);
-                            Some(T![throw])
-                        } else {
-                            None
-                        }
-                    },
+                    }
                     _ => None,
                 }
+            }
+            Some(b'h') => match self.bytes.get(self.cur + 2) {
+                Some(b'i') => {
+                    if let Some(b's') = self.bytes.get(self.cur + 3) {
+                        self.advance(3);
+                        Some(T![this])
+                    } else {
+                        None
+                    }
+                }
+                Some(b'r') => {
+                    if let Some(b"ow") = self.bytes.get(self.cur + 3..self.cur + 5) {
+                        self.advance(4);
+                        Some(T![throw])
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
             },
             Some(b'y') => {
                 if let Some(b"peof") = self.bytes.get(self.cur + 2..self.cur + 6) {
@@ -306,7 +334,7 @@ impl Lexer<'_> {
                 } else {
                     None
                 }
-            },
+            }
             Some(b'o') => {
                 if let Some(b"id") = self.bytes.get(self.cur + 2..self.cur + 4) {
                     self.advance(3);
@@ -314,7 +342,7 @@ impl Lexer<'_> {
                 } else {
                     None
                 }
-            },
+            }
             _ => None,
         }
     }
@@ -329,7 +357,7 @@ impl Lexer<'_> {
                 } else {
                     None
                 }
-            },
+            }
             Some(b'i') => {
                 if let Some(b"th") = self.bytes.get(self.cur + 2..self.cur + 4) {
                     self.advance(3);
@@ -337,7 +365,7 @@ impl Lexer<'_> {
                 } else {
                     None
                 }
-            },
+            }
             _ => None,
         }
     }

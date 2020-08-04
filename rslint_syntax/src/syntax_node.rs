@@ -10,7 +10,6 @@ use rowan::{GreenNodeBuilder, Language};
 use crate::{Parse, SmolStr, SyntaxKind};
 
 pub use rowan::GreenNode;
-pub(crate) use rowan::GreenToken;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct JsLanguage;

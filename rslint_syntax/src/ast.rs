@@ -2,7 +2,7 @@ mod generated;
 mod expr_ext;
 mod stmt_ext;
 
-use crate::{syntax_kind::SyntaxKind, syntax_node::*};
+use crate::{SyntaxKind, syntax_node::*};
 use std::marker::PhantomData;
 use rowan::SmolStr;
 
