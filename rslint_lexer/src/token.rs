@@ -1,9 +1,8 @@
 //! Token definitions for the lexer
 
-use rslint_parser::SyntaxKind;
+use crate::SyntaxKind;
 
-/// A single raw token.  
-/// This does NOT include multipart tokens such as `+=` and `-=`, they will be emitted as two separate tokens
+/// A single raw token such as `>>` or `||` or `"abc"`.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Token {
     /// The kind of token this is.

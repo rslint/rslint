@@ -1,16 +1,16 @@
 //! Extended AST node definitions for statements which are unique and special enough to generate code for manually
 
 use crate::{
-    ast::{AstNode, Stmt, Declaration, VarStmt, Expr},
-    SyntaxKind,
+    ast::{AstNode, Declaration, Expr, Stmt, VarStmt},
     syntax_node::SyntaxNode,
+    SyntaxKind,
 };
 
 /// Either a statement or a declaration such as a function
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum StmtListItem {
     Stmt(Stmt),
-    Declaration(Declaration)
+    Declaration(Declaration),
 }
 
 impl AstNode for StmtListItem {
@@ -29,7 +29,7 @@ impl AstNode for StmtListItem {
     fn syntax(&self) -> &SyntaxNode {
         match self {
             StmtListItem::Stmt(stmt) => stmt.syntax(),
-            StmtListItem::Declaration(decl) => decl.syntax()
+            StmtListItem::Declaration(decl) => decl.syntax(),
         }
     }
 }
@@ -57,7 +57,7 @@ impl AstNode for ForHead {
     fn syntax(&self) -> &SyntaxNode {
         match self {
             ForHead::VarStmt(stmt) => stmt.syntax(),
-            ForHead::Expr(expr) => expr.syntax()
+            ForHead::Expr(expr) => expr.syntax(),
         }
     }
 }

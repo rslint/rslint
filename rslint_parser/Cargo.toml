@@ -7,3 +7,6 @@ license = "MIT"
 
 [dependencies]
 codespan-reporting = "0.9.5"
+rslint_syntax = { path = "../rslint_syntax", version = "0.1" }
+rslint_lexer = { path = "../rslint_lexer", version = "0.1" }
+rowan = "0.10.0"

@@ -343,6 +343,7 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
             }
         }
 
+        /// Utility macro for creating a SyntaxKind through simple macro syntax
         #[macro_export]
         macro_rules! T {
             #([#punctuation_values] => { $crate::SyntaxKind::#punctuation };)*

@@ -444,9 +444,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct LiteralProp {
-            key: Literal,
-            T![:],
-            value: Expr,
+            /* key */
+            T![:]
+            /* value */
         }
 
         struct GetterProp {
@@ -476,9 +476,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct BracketExpr {
-            object: Expr,
+            /* object */
             T!['['],
-            prop: Expr,
+            /* prop */
             T![']'],
         }
 
@@ -520,11 +520,11 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct CondExpr {
-            test: Expr,
+            /* test */
             T![?],
-            cons: Expr,
+            /* cons */
             T![:],
-            alt: Expr,
+            /* alt */
         }
 
         // Perhaps we should merge this into binexpr?
@@ -583,6 +583,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         */
 
         enum Expr {
+            Literal,
             Name,
             ThisExpr,
             ArrayExpr,

@@ -21,7 +21,7 @@ use codespan_reporting::diagnostic::{Diagnostic, Label};
 use state::LexerState;
 use unicode_xid::UnicodeXID;
 
-pub use rslint_parser::{SyntaxKind, T};
+pub use rslint_syntax::*;
 pub type LexerReturn = (Token, Option<Diagnostic<usize>>);
 
 // Simple macro for unwinding a loop
@@ -721,6 +721,148 @@ impl<'src> Lexer<'src> {
         }
     }
 
+    #[inline]
+    fn bin_or_assign(&mut self, bin: SyntaxKind, assign: SyntaxKind) -> LexerReturn {
+        if let Some(b'=') = self.next() {
+            self.next();
+            (Token::new(assign, 2), None)
+        } else {
+            (Token::new(bin, 1), None)
+        }
+    }
+
+    #[inline]
+    fn resolve_bang(&mut self) -> LexerReturn {
+        match self.next() {
+            Some(b'=') => {
+                if let Some(b'=') = self.next() {
+                    self.next();
+                    tok!(NEQ2, 3)
+                } else {
+                    tok!(NEQ, 2)
+                }
+            },
+            _ => tok!(!)
+        }
+    }
+
+    #[inline]
+    fn resolve_amp(&mut self) -> LexerReturn {
+        match self.next() {
+            Some(b'&') => {
+                self.next();
+                tok!(AMP2, 2)
+            },
+            Some(b'=') => {
+                self.next();
+                tok!(AMPEQ, 2)
+            },
+            _ => tok!(&)
+        }
+    }
+
+    #[inline]
+    fn resolve_plus(&mut self) -> LexerReturn {
+        match self.next() {
+            Some(b'+') => {
+                self.next();
+                tok!(PLUS2, 2)
+            },
+            Some(b'=') => {
+                self.next();
+                tok!(PLUSEQ, 2)
+            },
+            _ => tok!(+)
+        }
+    }
+
+    #[inline]
+    fn resolve_minus(&mut self) -> LexerReturn {
+        match self.next() {
+            Some(b'-') => {
+                self.next();
+                tok!(MINUS2, 2)
+            },
+            Some(b'=') => {
+                self.next();
+                tok!(MINUSEQ, 2)
+            },
+            _ => tok!(-)
+        }
+    }
+
+    #[inline]
+    fn resolve_less_than(&mut self) -> LexerReturn {
+        match self.next() {
+            Some(b'<') => {
+                if let Some(b'=') = self.next() {
+                    self.next();
+                    tok!(SHLEQ, 3)
+                } else {
+                    tok!(SHL, 2)
+                }
+            },
+            Some(b'=') => {
+                self.next();
+                tok!(LTEQ, 2)
+            },
+            _ => tok!(<)
+        }
+    }
+
+    #[inline]
+    fn resolve_greater_than(&mut self) -> LexerReturn {
+        match self.next() {
+            Some(b'>') => {
+                if let Some(b'>') = self.next() {
+                    if let Some(b'=') = self.next() {
+                        self.next();
+                        tok!(USHREQ, 4)
+                    } else {
+                        tok!(USHR, 3)
+                    }
+                } else {
+                    tok!(SHR, 2)
+                }
+            },
+            Some(b'=') => {
+                self.next();
+                tok!(GTEQ, 2)
+            },
+            _ => tok!(>)
+        }
+    }
+
+    #[inline]
+    fn resolve_eq(&mut self) -> LexerReturn {
+        match self.next() {
+            Some(b'=') => {
+                if let Some(b'=') = self.next() {
+                    self.next();
+                    tok!(EQ3, 3)
+                } else {
+                    tok!(EQ2, 2)
+                }
+            },
+            _ => tok!(=)
+        }
+    }
+    
+    #[inline]
+    fn resolve_pipe(&mut self) -> LexerReturn {
+        match self.next() {
+            Some(b'|') => {
+                self.next();
+                tok!(PIPE2, 2)
+            },
+            Some(b'=') => {
+                self.next();
+                tok!(PIPEEQ, 2)
+            },
+            _ => tok!(|)
+        }
+    }
+
     /// Lex the next token
     fn lex_token(&mut self) -> LexerReturn {
         // Safety: we always call lex_token when we are at a valid char
@@ -738,15 +880,15 @@ impl<'src> Lexer<'src> {
                 self.consume_whitespace();
                 tok!(WHITESPACE, self.cur - start)
             }
-            EXL => self.eat(tok![!]),
-            PRC => self.eat(tok![%]),
-            AMP => self.eat(tok![&]),
+            EXL => self.resolve_bang(),
+            PRC => self.bin_or_assign(T![%], T![%=]),
+            AMP => self.resolve_amp(),
             PNO => self.eat(tok!(L_PAREN, 1)),
             PNC => self.eat(tok!(R_PAREN, 1)),
-            MUL => self.eat(tok![*]),
-            PLS => self.eat(tok![+]),
+            MUL => self.bin_or_assign(T![*], T![*=]),
+            PLS => self.resolve_plus(),
             COM => self.eat(tok![,]),
-            MIN => self.eat(tok![-]),
+            MIN => self.resolve_minus(),
             SLH => self.read_slash(),
             ZER => {
                 self.read_zero();
@@ -806,16 +948,16 @@ impl<'src> Lexer<'src> {
             }
             COL => self.eat(tok![:]),
             SEM => self.eat(tok![;]),
-            LSS => self.eat(tok![<]),
-            EQL => self.eat(tok![=]),
-            MOR => self.eat(tok![>]),
+            LSS => self.resolve_less_than(),
+            EQL => self.resolve_eq(),
+            MOR => self.resolve_greater_than(),
             QST => self.eat(tok![?]),
             BTO => self.eat(tok!(L_BRACK, 1)),
             BTC => self.eat(tok![R_BRACK, 1]),
-            CRT => self.eat(tok![^]),
+            CRT => self.bin_or_assign(T![^], T![^=]),
             BEO => self.eat(tok![L_CURLY, 1]),
             BEC => self.eat(tok![R_CURLY, 1]),
-            PIP => self.eat(tok![|]),
+            PIP => self.resolve_pipe(),
             TLD => self.eat(tok![~]),
             L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T | L_V | L_W => {
                 self.resolve_label(dispatched)

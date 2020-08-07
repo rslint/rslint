@@ -18,7 +18,7 @@ mod tests {
             tokens.pop();
 
             $(
-                assert_eq!(tokens[idx].0.kind, rslint_parser::SyntaxKind::$kind,
+                assert_eq!(tokens[idx].0.kind, rslint_syntax::SyntaxKind::$kind,
                     "expected token kind {}, but found {:?}", stringify!($kind), tokens[idx].0.kind
                 );
                 assert_eq!(tokens[idx].0.len, $len,
@@ -90,8 +90,7 @@ mod tests {
             DOT:1,
             COLON:1,
             SEMICOLON:1,
-            L_ANGLE:1,
-            EQ:1,
+            LTEQ:2,
             R_ANGLE:1,
             QUESTION:1,
             L_BRACK:1,
@@ -108,15 +107,12 @@ mod tests {
     fn consecutive_punctuators() {
         assert_lex! {
             "&&&&^^^||",
-            AMP:1,
-            AMP:1,
-            AMP:1,
-            AMP:1,
+            AMP2:2,
+            AMP2:2,
             CARET:1,
             CARET:1,
             CARET:1,
-            PIPE:1,
-            PIPE:1,
+            PIPE2:2,
         }
     }
 
@@ -270,8 +266,7 @@ mod tests {
             WHITESPACE:1,
             IDENT:5,
             WHITESPACE:1,
-            PLUS:1,
-            EQ:1,
+            PLUSEQ:2,
             WHITESPACE:1,
             STRING:14,
             SEMICOLON:1
@@ -282,8 +277,7 @@ mod tests {
             WHITESPACE:1,
             IDENT:5,
             WHITESPACE:1,
-            PLUS:1,
-            EQ:1,
+            PLUSEQ:2,
             WHITESPACE:1,
             STRING:14,
             SEMICOLON:1

@@ -1,13 +1,13 @@
-//! This module defines the Concrete Syntax Tree used by RSLint. 
-//! 
-//! The tree is entirely lossless, whitespace, comments, and errors are preserved. 
-//! It also provides traversal methods including parent, children, and siblings of nodes. 
-//! 
-//! This is a simple wrapper around the `rowan` crate which does most of the heavy lifting and is language agnostic. 
+//! This module defines the Concrete Syntax Tree used by RSLint.
+//!
+//! The tree is entirely lossless, whitespace, comments, and errors are preserved.
+//! It also provides traversal methods including parent, children, and siblings of nodes.
+//!
+//! This is a simple wrapper around the `rowan` crate which does most of the heavy lifting and is language agnostic.
 
+use crate::{Parse, SmolStr, SyntaxKind};
 use codespan_reporting::diagnostic::Diagnostic;
 use rowan::{GreenNodeBuilder, Language};
-use crate::{Parse, SmolStr, SyntaxKind};
 
 pub use rowan::GreenNode;
 
@@ -34,7 +34,8 @@ pub type SyntaxElementChildren = rowan::SyntaxElementChildren<JsLanguage>;
 
 pub use rowan::{Direction, NodeOrToken};
 
-#[derive(Default)]
+/// Simple wrapper around a rowan [`GreenNodeBuilder`]
+#[derive(Default, Debug)]
 pub struct SyntaxTreeBuilder {
     errors: Vec<Diagnostic<usize>>,
     inner: GreenNodeBuilder<'static>,

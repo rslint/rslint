@@ -26,6 +26,7 @@ const fn mask(kind: SyntaxKind) -> u128 {
     1u128 << (kind as usize)
 }
 
+/// Utility macro for making a new token set
 #[macro_export]
 macro_rules! token_set {
     ($($t:expr),*) => { TokenSet::EMPTY$(.union(TokenSet::singleton($t)))* };

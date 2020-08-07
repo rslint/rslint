@@ -1,14 +1,20 @@
-mod generated;
+//! AST definitions for converting untyped syntax nodes into typed AST nodes.
+//!
+//! Every field of every AST node is optional, this is to allow the parser to recover
+//! from any error and produce an ast from any source code. If you don't want to account for
+//! optionals for everything, you can use ...
+
 mod expr_ext;
+mod generated;
 mod stmt_ext;
 
-use crate::{SyntaxKind, syntax_node::*};
+use crate::{syntax_node::*, SmolStr, SyntaxKind};
 use std::marker::PhantomData;
-use rowan::SmolStr;
 
 pub use self::{
+    expr_ext::*,
     generated::{nodes::*, tokens::*},
-    stmt_ext::{ForHead, StmtListItem},
+    stmt_ext::*,
 };
 
 /// The main trait to go from untyped `SyntaxNode`  to a typed ast. The
@@ -53,7 +59,10 @@ pub struct AstChildren<N> {
 
 impl<N> AstChildren<N> {
     fn new(parent: &SyntaxNode) -> Self {
-        AstChildren { inner: parent.children(), ph: PhantomData }
+        AstChildren {
+            inner: parent.children(),
+            ph: PhantomData,
+        }
     }
 }
 
@@ -76,6 +85,9 @@ mod support {
     }
 
     pub(super) fn token(parent: &SyntaxNode, kind: SyntaxKind) -> Option<SyntaxToken> {
-        parent.children_with_tokens().filter_map(|it| it.into_token()).find(|it| it.kind() == kind)
+        parent
+            .children_with_tokens()
+            .filter_map(|it| it.into_token())
+            .find(|it| it.kind() == kind)
     }
 }

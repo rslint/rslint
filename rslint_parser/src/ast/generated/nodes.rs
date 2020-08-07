@@ -301,9 +301,7 @@ pub struct LiteralProp {
     pub(crate) syntax: SyntaxNode,
 }
 impl LiteralProp {
-    pub fn key(&self) -> Option<Literal> { support::child(&self.syntax) }
     pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![:]) }
-    pub fn value(&self) -> Option<Expr> { support::child(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GetterProp {
@@ -350,9 +348,7 @@ pub struct BracketExpr {
     pub(crate) syntax: SyntaxNode,
 }
 impl BracketExpr {
-    pub fn object(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn l_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['[']) }
-    pub fn prop(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn r_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![']']) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -414,11 +410,8 @@ pub struct CondExpr {
     pub(crate) syntax: SyntaxNode,
 }
 impl CondExpr {
-    pub fn test(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn question_mark_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![?]) }
-    pub fn cons(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![:]) }
-    pub fn alt(&self) -> Option<Expr> { support::child(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AssignExpr {
@@ -465,6 +458,7 @@ pub enum Stmt {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
+    Literal(Literal),
     Name(Name),
     ThisExpr(ThisExpr),
     ArrayExpr(ArrayExpr),
@@ -1166,6 +1160,9 @@ impl AstNode for Stmt {
         }
     }
 }
+impl From<Literal> for Expr {
+    fn from(node: Literal) -> Expr { Expr::Literal(node) }
+}
 impl From<Name> for Expr {
     fn from(node: Name) -> Expr { Expr::Name(node) }
 }
@@ -1214,14 +1211,15 @@ impl From<SequenceExpr> for Expr {
 impl AstNode for Expr {
     fn can_cast(kind: SyntaxKind) -> bool {
         match kind {
-            NAME | THIS_EXPR | ARRAY_EXPR | OBJECT_EXPR | GROUPING_EXPR | BRACKET_EXPR
-            | DOT_EXPR | NEW_EXPR | CALL_EXPR | POSTFIX_EXPR | UNARY_EXPR | BIN_EXPR
-            | COND_EXPR | ASSIGN_EXPR | SEQUENCE_EXPR => true,
+            LITERAL | NAME | THIS_EXPR | ARRAY_EXPR | OBJECT_EXPR | GROUPING_EXPR
+            | BRACKET_EXPR | DOT_EXPR | NEW_EXPR | CALL_EXPR | POSTFIX_EXPR | UNARY_EXPR
+            | BIN_EXPR | COND_EXPR | ASSIGN_EXPR | SEQUENCE_EXPR => true,
             _ => false,
         }
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
+            LITERAL => Expr::Literal(Literal { syntax }),
             NAME => Expr::Name(Name { syntax }),
             THIS_EXPR => Expr::ThisExpr(ThisExpr { syntax }),
             ARRAY_EXPR => Expr::ArrayExpr(ArrayExpr { syntax }),
@@ -1243,6 +1241,7 @@ impl AstNode for Expr {
     }
     fn syntax(&self) -> &SyntaxNode {
         match self {
+            Expr::Literal(it) => &it.syntax,
             Expr::Name(it) => &it.syntax,
             Expr::ThisExpr(it) => &it.syntax,
             Expr::ArrayExpr(it) => &it.syntax,

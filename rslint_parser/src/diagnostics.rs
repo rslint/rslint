@@ -7,15 +7,17 @@ use std::ops::Range;
 /// A builder for generating codespan diagnostics
 pub struct ErrorBuilder {
     pub inner: ParserError,
-    pub file_id: usize
+    pub file_id: usize,
 }
 
 impl ErrorBuilder {
     /// Make a new builder with error severity
     pub fn error(file_id: usize, message: &str) -> Self {
         Self {
-            inner: Diagnostic::error().with_code("ParserError").with_message(message),
-            file_id
+            inner: Diagnostic::error()
+                .with_code("ParserError")
+                .with_message(message),
+            file_id,
         }
     }
 
@@ -23,7 +25,7 @@ impl ErrorBuilder {
     pub fn new(file_id: usize, diagnostic: Diagnostic<usize>) -> Self {
         Self {
             inner: diagnostic,
-            file_id
+            file_id,
         }
     }
 
@@ -32,16 +34,20 @@ impl ErrorBuilder {
         self.inner.severity = severity;
         self
     }
-    
+
     /// Add a primary label to the diagnostic
     pub fn primary(mut self, range: impl Into<Range<usize>>, message: impl AsRef<str>) -> Self {
-        self.inner.labels.append(&mut vec![Label::primary(self.file_id, range.into()).with_message(message.as_ref())]);
+        self.inner.labels.append(&mut vec![
+            Label::primary(self.file_id, range.into()).with_message(message.as_ref())
+        ]);
         self
     }
 
     /// Add a secondary label to this diagnostic
     pub fn secondary(mut self, range: impl Into<Range<usize>>, message: impl AsRef<str>) -> Self {
-        self.inner.labels.append(&mut vec![Label::secondary(self.file_id, range.into()).with_message(message.as_ref())]);
+        self.inner.labels.append(&mut vec![
+            Label::secondary(self.file_id, range.into()).with_message(message.as_ref())
+        ]);
         self
     }
 
