@@ -15,7 +15,7 @@ cargo run --release -- ./glob/pattern.js
 # Limitations
 
 The project is in very early development, there will be bugs and weird productions. If you find any bugs feel free to submit an issue 👍.
-**RSLint currently only works on ECMAScript 5 due to the parser (rslint-parse) being still in development**, however, support for further ES versions and JSX plus TypeScript is planned in the future.
+~~RSLint currently only works on ECMAScript 5 due to the parser (rslint-parse) being still in development~~ (New parser with ES2021 support is done but not integrated into the linter), however, support for further ES versions and JSX plus TypeScript is planned in the future.
 
 # Speed
 
@@ -77,16 +77,17 @@ If you would like to implement a new rule there are a few steps you must go thro
 RSLint's goal is to provide extremely fast and user friendly linting for the whole js ecosystem. There are tons of things to do to bring it up to par with existing linters. This is a list of planned features and things to do ranked in order of highest to lowest priority (this is by no definition final, things will change):
 
 - [ ] Refine caching system to include rules run and automatically adding to .gitignore  
-- [ ] More tests for rslint-parse statement subparsers  
+- [x] ~~More tests for rslint-parse statement subparsers~~ New parser, new goal: 
+  - [ ] Run Test262 and pass all tests  
 - [ ] Scope analysis  
 - [ ] Implementation of ESLint reccomended rules  
-- [ ] ES6+ Support (mostly just parser work)  
+- [x] ~~ES6+ Support (mostly just parser work)~~ Parser with ES2021 support is done, needs integration into main linter
 - [ ] Benchmarks  
 - [ ] Markdown support  
 - [ ] Config files  
 - [ ] Rule options  
 - [ ] Prebuilt binary generation  
-- [ ] Neon bindings to allow for installation via npm with a build script  
+- [x] ~~Neon bindings to allow for installation via npm with a build script~~ Dont need to do this, we can just ship binaries and use npm bin category  
 - [ ] JSX Support  
 - [ ] TS Support  
 - [ ] JS Plugins  
