@@ -10,4 +10,11 @@ codespan-reporting = "0.9.5"
 rslint_syntax = { path = "../rslint_syntax", version = "0.1" }
 rslint_lexer = { path = "../rslint_lexer", version = "0.1", features = ["highlight"] }
 rowan = "0.10.0"
-ansi_term="0.12.1"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "parser"
+harness = false
+
