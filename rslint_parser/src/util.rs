@@ -33,10 +33,7 @@ pub trait SyntaxNodeExt {
     /// # Panics
     /// Panics if the underlying node cannot be cast to the AST node
     fn to<T: AstNode>(&self) -> T {
-        T::cast(self.to_node().to_owned()).expect(&format!(
-            "Tried to cast node as `{:?}` but was unable to cast",
-            stringify!(T)
-        ))
+        T::cast(self.to_node().to_owned()).unwrap_or_else(|| panic!("Tried to cast node as `{:?}` but was unable to cast", stringify!(T)))
     }
 
     /// Try to cast this node to a certain AST node
