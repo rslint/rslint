@@ -245,21 +245,3 @@ pub fn parse_expr(text: &str, file_id: usize) -> Parse<Expr> {
     errors.extend(parse_errors);
     Parse::new(green, errors)
 }
-
-#[test]
-fn it_works() {
-    let src = std::fs::read_to_string("C:\\Users\\caval\\Desktop\\Github\\RSLint\\rslint_parser\\src\\a.js").unwrap();
-    let mut files = codespan_reporting::files::SimpleFiles::new();
-    files.add(0, src.to_owned());
-    let parse = parse_module_lossy(&src, 0);
-    std::fs::write("./a.rast", format!("{:#?}", parse.syntax()));
-    use codespan_reporting::term::*;
-    for err in parse.errors().into_iter() {
-        emit(
-            &mut termcolor::StandardStream::stderr(termcolor::ColorChoice::Always),
-            &Config::default(),
-            &files,
-            &err,
-        );
-    }
-}
