@@ -206,7 +206,7 @@ fn generate_nodes(kinds: KindsSrc<'_>, grammar: AstSrc<'_>) -> Result<String> {
     let ast = quote! {
         use crate::{
             SyntaxNode, SyntaxToken, SyntaxKind::{self, *},
-            ast::{AstNode, AstChildren, support, ForHead, StmtListItem},
+            ast::*,
             T,
         };
 

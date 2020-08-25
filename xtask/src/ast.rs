@@ -23,15 +23,21 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         (">", "R_ANGLE"),
         ("~", "TILDE"),
         ("?", "QUESTION"),
+        ("??", "QUESTION2"),
+        // These are *not* question AND dot tokens, they are one
+        // to distinguish between `? .3134` and `?.` per ecma specs
+        ("?.", "QUESTIONDOT"),
         ("&", "AMP"),
         ("|", "PIPE"),
         ("+", "PLUS"),
         ("++", "PLUS2"),
         ("*", "STAR"),
+        ("**", "STAR2"),
         ("/", "SLASH"),
         ("^", "CARET"),
         ("%", "PERCENT"),
         (".", "DOT"),
+        ("...", "DOT2"),
         (":", "COLON"),
         ("=", "EQ"),
         ("==", "EQ2"),
@@ -60,8 +66,13 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         ("<<=", "SHLEQ"),
         (">>=", "SHREQ"),
         (">>>=", "USHREQ"),
+        ("&&=", "AMP2EQ"),
+        ("||=", "PIPE2EQ"),
+        ("**=", "STAR2EQ"),
+        ("??=", "QUESTION2EQ"),
     ],
     keywords: &[
+        "await",
         "break",
         "case",
         "catch",
@@ -86,7 +97,6 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "interface",
         "import",
         "implements",
-        "let",
         "new",
         "null",
         "package",
@@ -114,16 +124,21 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "REGEX",
     ],
     tokens: &[
-        "ERROR",
+        "TEMPLATE_CHUNK",
+        "DOLLARCURLY", // ${
+        "BACKTICK",
+        "ERROR_TOKEN",
         "IDENT",
         "WHITESPACE",
         "COMMENT",
         "SHEBANG"
     ],
     nodes: &[
-        "PROGRAM",
+        "SCRIPT",
+        "MODULE",
+        "ERROR",
         "BLOCK_STMT",
-        "VAR_STMT",
+        "VAR_DECL",
         "DECLARATOR",
         "EMPTY_STMT",
         "EXPR_STMT",
@@ -138,21 +153,22 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "WITH_STMT",
         "SWITCH_STMT",
         "CASE_CLAUSE",
+        "DEFAULT_CLAUSE",
         "LABELLED_STMT",
         "THROW_STMT",
         "TRY_STMT",
         "CATCH_CLAUSE",
+        "FINALIZER",
         "DEBUGGER_STMT",
         "FN_DECL",
         "NAME",
-        "FN_BODY",
         "PARAMETER_LIST",
         "THIS_EXPR",
         "ARRAY_EXPR",
         "OBJECT_EXPR",
         "LITERAL_PROP",
-        "GETTER_PROP",
-        "SETTER_PROP",
+        "GETTER",
+        "SETTER",
         "GROUPING_EXPR",
         "NEW_EXPR",
         "FN_EXPR",
@@ -167,7 +183,41 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "SEQUENCE_EXPR",
         "ARG_LIST",
         "LITERAL",
+        "TEMPLATE",
+        "TEMPLATE_ELEMENT",
         "CONDITION",
+        "SPREAD_ELEMENT",
+        "SUPER_CALL",
+        "IMPORT_CALL",
+        "NEW_TARGET",
+        "IMPORT_META",
+        "IDENT_PROP",
+        "SPREAD_PROP",
+        "INITIALIZED_PROP",
+        "OBJECT_PATTERN",
+        "ARRAY_PATTERN",
+        "ASSIGN_PATTERN",
+        "REST_PATTERN",
+        "KEY_VALUE_PATTERN",
+        "COMPUTED_PROPERTY_NAME",
+        "FOR_OF_STMT",
+        "SINGLE_PATTERN",
+        "ARROW_EXPR",
+        "YIELD_EXPR",
+        "STATIC_METHOD",
+        "CLASS_DECL",
+        "CLASS_EXPR",
+        "CLASS_BODY",
+        "METHOD",
+        "IMPORT_DECL",
+        "EXPORT_DECL",
+        "EXPORT_NAMED",
+        "EXPORT_DEFAULT_DECL",
+        "EXPORT_DEFAULT_EXPR",
+        "EXPORT_WILDCARD",
+        "WILDCARD_IMPORT",
+        "NAMED_IMPORTS",
+        "SPECIFIER",
     ]
 };
 
@@ -201,14 +251,14 @@ pub(crate) struct AstEnumSrc<'a> {
 macro_rules! ast_nodes {
     ($(
         struct $name:ident {
-            $($field_name:ident $(![$token:tt])? $(: $ty:tt)?),*$(,)?
+            $($field_name:ident $(![$($token:tt)*])? $(: $ty:tt)?),*$(,)?
         }
     )*) => {
         [$(
             AstNodeSrc {
                 name: stringify!($name),
                 fields: &[
-                    $(field!($(T![$token])? $field_name $($ty)?)),*
+                    $(field!($(T![$($token)*])? $field_name $($ty)?)),*
                 ],
             }
         ),*]
@@ -216,8 +266,8 @@ macro_rules! ast_nodes {
 }
 
 macro_rules! field {
-    (T![$token:tt] T) => {
-        Field::Token(stringify!($token))
+    (T![$($token:tt)*] T) => {
+        Field::Token(stringify!($($token)*))
     };
     ($field_name:ident) => {
         Field::Node { name: stringify!($field_name), src: FieldSrc::Shorthand }
@@ -251,8 +301,71 @@ macro_rules! ast_enums {
 pub(crate) const AST_SRC: AstSrc = AstSrc {
     tokens: &["Whitespace", "Comment", "String"],
     nodes: &ast_nodes! {
-        struct Program {
-            items: [StmtListItem],
+        struct Script {
+            items: [Stmt],
+        }
+
+        struct Module {
+            items: [ModuleItem],
+        }
+
+        struct ImportDecl {
+            T![import],
+            imports: [ImportClause],
+            /* from */
+            /* source */
+            T![;]
+        }
+
+        struct WildcardImport {
+            T![*],
+            /* as */
+            T![ident]
+        }
+
+        struct NamedImports {
+            T!['{'],
+            specifiers: [Specifier],
+            T!['}']
+        }
+
+        struct Specifier {
+            /* manual impl */
+        }
+
+        struct ExportDecl {
+            T![export],
+            decl: Decl
+        } 
+
+        struct ExportNamed {
+            T![export],
+            T!['{'],
+            specifiers: [Specifier],
+            T!['}'],
+            /* from */
+            /* source */
+        }
+
+        struct ExportWildcard {
+            T![export],
+            T![*],
+            /* as */
+            /* name */
+            /* from */
+            /* source */
+        }
+
+        struct ExportDefaultDecl {
+            T![export],
+            T![default],
+            decl: DefaultDecl
+        }
+
+        struct ExportDefaultExpr {
+            T![export],
+            T![default],
+            expr: Expr
         }
 
         struct Literal { /*LiteralToken*/ }
@@ -263,16 +376,18 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T!['}'],
         }
 
-        struct VarStmt {
+        struct VarDecl {
             T![var],
+            /* let */
+            T![const],
             declared: [Declarator],
             T![;],
         }
 
         struct Declarator {
-            T![ident],
+            pattern: Pattern,
             T![=],
-            value: AssignExpr,
+            value: Expr,
         }
 
         struct EmptyStmt {
@@ -313,6 +428,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ForStmt {
             T![for],
+            T![await],
             T!['('],
             init: ForHead,
             /* semicolon */
@@ -325,12 +441,24 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ForInStmt {
             T![for],
+            T![await],
             T!['('],
             left: ForHead,
             T![in],
             right: Expr,
             T![')'],
             cons: Stmt,
+        }
+
+        struct ForOfStmt {
+            T![for],
+            T![await],
+            T!['('],
+            left: ForHead,
+            /* of */
+            right: Expr,
+            T![')'],
+            cons: Stmt
         }
 
         struct ContinueStmt {
@@ -361,16 +489,21 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![switch],
             test: Condition,
             T!['{'],
-            cases: [CaseClause],
+            cases: [SwitchCase],
             T!['}'],
         }
 
         struct CaseClause {
-            T![default],
             T![case],
             test: Expr,
             T![:],
             cons: [Stmt],
+        }
+
+        struct DefaultClause {
+            T![default],
+            T![:],
+            cons: [Stmt]
         }
 
         struct LabelledStmt {
@@ -389,8 +522,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![try],
             test: BlockStmt,
             handler: CatchClause,
-            T![finally],
-            finalizer: BlockStmt,
+            finalizer: Finalizer,
         }
 
         struct CatchClause {
@@ -401,30 +533,31 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             cons: BlockStmt
         }
 
+        struct Finalizer {
+            T![finally],
+            cons: BlockStmt
+        }
+
         struct DebuggerStmt {
             T![debugger],
             T![;],
         }
 
         struct FnDecl {
+            /* async */
             T![function],
+            T![*],
             name: Name,
             parameters: ParameterList,
-            body: FnBody,
+            body: BlockStmt,
         }
 
         struct Name { T![ident] }
 
         struct ParameterList {
             T!['('],
-            parameters: [Name],
+            parameters: [Pattern],
             T![')'],
-        }
-
-        struct FnBody {
-            T!['{'],
-            body: [StmtListItem],
-            T!['}'],
         }
 
         struct ThisExpr {
@@ -433,7 +566,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ArrayExpr {
             T!['['],
-            elements: [Expr],
+            elements: [ExprOrSpread],
             T![']'],
         }
 
@@ -443,23 +576,39 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T!['}'],
         }
 
+        struct SpreadProp {
+            T![...],
+            value: Expr,
+        }
+
+        struct InitializedProp {
+            T![ident],
+            T![=],
+            value: Expr,
+        }
+
+        struct IdentProp {
+            T![ident]
+        }
+
         struct LiteralProp {
             /* key */
             T![:]
             /* value */
         }
 
-        struct GetterProp {
-            T![ident],
+        struct Getter {
+            /* get */
             key: Literal,
-            parameters: ParameterList,
-            body: FnBody,
+            T!['('],
+            T![')'],
+            body: BlockStmt,
         }
 
-        struct SetterProp {
-            key: Literal,
+        struct Setter {
+            /* get */
             parameters: ParameterList,
-            body: FnBody,
+            body: BlockStmt,
         }
 
         struct GroupingExpr {
@@ -468,22 +617,19 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![')'],
         }
 
-        struct FnExpr {
-            T![function],
-            name: Name,
-            parameters: ParameterList,
-            body: FnBody,
-        }
-
         struct BracketExpr {
+            T![super],
             /* object */
+            /* optional chain */
             T!['['],
             /* prop */
             T![']'],
         }
 
         struct DotExpr {
+            T![super],
             object: Expr,
+            /* optional chain */
             T![.],
             prop: Name,
         }
@@ -496,13 +642,40 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ArgList {
             T!['('],
+            // TODO: Change this to expr or spread
             args: [Expr],
             T![')'],
         }
 
         struct CallExpr {
             callee: Expr,
+            /* optional chain */
             arguments: ArgList,
+        }
+        
+        struct SuperCall {
+            T![super],
+            arguments: ArgList
+        }
+
+        struct ImportCall {
+            T![import],
+            // This only takes one arg, it doesnt take an ArgList
+            T!['('],
+            argument: Expr,
+            T![')']
+        }
+
+        struct NewTarget {
+            T![new],
+            T![.],
+            /* target */
+        }
+
+        struct ImportMeta {
+            T![import],
+            T![.],
+            /* meta */
         }
 
         struct PostfixExpr {
@@ -535,13 +708,205 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct SequenceExpr {
             exprs: [Expr],
         }
+
+        struct Template {
+            T![ident],
+            /* backtick */
+            /* chunks */
+            elements: [TemplateElement],
+            /* backtick */
+        }
+        
+        struct TemplateElement {
+            /* dollarcurly */
+            expr: Expr,
+            T!['}']
+        }
+
+        struct SpreadElement {
+            T![...],
+            element: Expr
+        }
+
+        struct ArrayPattern {
+            T!['['],
+            elements: [Pattern],
+            T![']']
+        }
+
+        struct ObjectPattern {
+            T!['{'],
+            elements: [ObjectPatternProp],
+            T!['}']
+        }
+
+        struct RestPattern {
+            T![...],
+            pat: Pattern
+        }
+
+        struct AssignPattern {
+            T![ident],
+            T![=],
+            value: Expr
+        }
+
+        struct KeyValuePattern {
+            key: PropName,
+            T![:],
+            /* pattern */
+        }
+
+        struct ComputedPropertyName {
+            T!['['],
+            prop: Expr,
+            T![']']
+        }
+
+        struct SinglePattern {
+            name: Name
+        }
+
+        struct ArrowExpr {
+            /* async */
+            params: ArrowExprParams,
+            T![=>],
+            /* ExprOrBlock */
+        }
+
+        struct YieldExpr {
+            T![yield],
+            T![*],
+            value: Expr
+        }
+
+        struct FnExpr {
+            /* async */
+            T![function],
+            T![*],
+            name: Name,
+            parameters: ParameterList,
+            body: BlockStmt,
+        }
+
+        struct Method {
+            /* async */
+            T![*],
+            name: PropName,
+            parameters: ParameterList,
+            body: BlockStmt
+        }
+
+        struct StaticMethod {
+            T![static],
+            method: Method
+        }
+
+        struct ClassDecl {
+            T![class],
+            /* name */
+            T![extends],
+            /* parent */
+            body: ClassBody
+        }
+
+        struct ClassExpr {
+            T![class],
+            /* name */
+            T![extends],
+            /* parent */
+            body: ClassBody
+        }
+
+        struct ClassBody {
+            T!['{'],
+            elements: ClassElement,
+            T!['}']
+        }
     },
     enums: &ast_enums!{
         enum ObjectProp {
             LiteralProp,
-            GetterProp,
-            SetterProp,
+            Getter,
+            Setter,
+            SpreadProp,
+            InitializedProp,
+            IdentProp,
+            Method
         }
+
+        enum Pattern {
+            SinglePattern,
+            RestPattern,
+            AssignPattern,
+            KeyValuePattern,
+            ObjectPattern,
+            ArrayPattern
+        }
+
+        enum SwitchCase {
+            CaseClause,
+            DefaultClause,
+        }
+
+        enum ObjectPatternProp {
+            AssignPattern,
+            KeyValuePattern,
+            RestPattern,
+            SinglePattern,
+        }
+
+        enum ArrowExprParams {
+            Name,
+            ParameterList
+        }
+
+        enum MethodDefinition {
+            Method,
+            Getter,
+            Setter
+        }
+
+        enum ClassElement {
+            EmptyStmt,
+            Method,
+            StaticMethod
+        }
+
+        enum ImportClause {
+            WildcardImport,
+            NamedImports,
+            Name
+        }
+
+        enum DefaultDecl {
+            FnDecl,
+            ClassDecl
+        }
+
+        enum ModuleItem {
+            ImportDecl,
+            ExportNamed,
+            ExportDefaultDecl,
+            ExportDefaultExpr,
+            ExportWildcard,
+            ExportDecl
+        }
+
+        /* 
+        enum ModuleItem {
+            Stmt,
+            ImportDeclaration,
+            ExportDeclaration
+        }
+        */
+
+        /*
+        enum ExprOrSpread {
+            Expr,
+            SpreadElement
+        }
+        */
 
         /* 
         enum StmtListItem {
@@ -550,29 +915,10 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
         */
         
-        enum Declaration {
-            FnDecl
-        }
-
-        enum Stmt {
-            BlockStmt,
-            VarStmt,
-            EmptyStmt,
-            ExprStmt,
-            IfStmt,
-            DoWhileStmt,
-            WhileStmt,
-            ForStmt,
-            ForInStmt,
-            ContinueStmt,
-            BreakStmt,
-            ReturnStmt,
-            WithStmt,
-            LabelledStmt,
-            SwitchStmt,
-            ThrowStmt,
-            TryStmt,
-            DebuggerStmt
+        enum Decl {
+            FnDecl,
+            ClassDecl,
+            VarDecl,
         }
 
         /* 
@@ -584,6 +930,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         enum Expr {
             Literal,
+            Template,
             Name,
             ThisExpr,
             ArrayExpr,
@@ -599,6 +946,11 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             CondExpr,
             AssignExpr,
             SequenceExpr,
+            FnDecl,
+            NewTarget,
+            ImportMeta,
+            SuperCall,
+            ImportCall,
         }
     }
 };

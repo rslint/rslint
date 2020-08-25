@@ -1,10 +1,9 @@
 //! Utilities for high level parsing of js code.
 
 use crate::{
-    ast::Program, AstNode, GreenNode, ParserError, SyntaxKind, SyntaxNode, LosslessTreeSink,
-    TokenSource,
-    Event,
-    LossyTreeSink
+    ast::{Expr, Script, Module},
+    AstNode, Event, GreenNode, LosslessTreeSink, LossyTreeSink, ParserError, SyntaxKind,
+    SyntaxNode, TokenSource,
 };
 use std::{marker::PhantomData, sync::Arc};
 
@@ -12,7 +11,7 @@ use std::{marker::PhantomData, sync::Arc};
 #[derive(Debug)]
 pub struct Parse<T> {
     green: GreenNode,
-    errors: Arc<Vec<ParserError>>,
+    errors: Vec<ParserError>,
     _ty: PhantomData<fn() -> T>,
 }
 
@@ -30,13 +29,33 @@ impl<T> Parse<T> {
     pub fn new(green: GreenNode, errors: Vec<ParserError>) -> Parse<T> {
         Parse {
             green,
-            errors: Arc::new(errors),
+            errors,
             _ty: PhantomData,
         }
     }
 
     /// The syntax node represented by this Parse result
-    pub fn syntax_node(&self) -> SyntaxNode {
+    ///
+    /// ```
+    /// use rslint_parse::{SyntaxNode, parse_text, ast::IfStmt, SyntaxNodeExt};
+    ///
+    /// let parse = parse_text(
+    /// "
+    ///     if (a > 5) {
+    ///         /* something */
+    ///     }
+    /// ", 0);
+    ///
+    /// // The first child of the root syntax node (Script) is the if statement.
+    /// let if_stmt = parse.syntax().first_child().unwrap();
+    ///
+    /// assert_eq!(if_stmt.kind(), SyntaxNode::IF_STMT);
+    ///
+    /// // The if statement node is untyped, we must first cast it to a typed ast node
+    /// // to be able to get properties of it in an easy way.
+    /// assert_eq!(if_stmt.as::<IfStmt>().unwrap().condition().unwrap().syntax().text(), "(a > 5)");
+    /// ```
+    pub fn syntax(&self) -> SyntaxNode {
         SyntaxNode::new_root(self.green.clone())
     }
 
@@ -47,7 +66,7 @@ impl<T> Parse<T> {
 }
 
 impl<T: AstNode> Parse<T> {
-    /// Convert the result to an untyped SyntaxNode parse
+    /// Convert the result to an untyped SyntaxNode parse.
     pub fn to_syntax(self) -> Parse<SyntaxNode> {
         Parse {
             green: self.green,
@@ -61,16 +80,16 @@ impl<T: AstNode> Parse<T> {
     /// # Panics
     /// Panics if the node represented by this parse result mismatches.
     pub fn tree(&self) -> T {
-        T::cast(self.syntax_node()).unwrap()
+        T::cast(self.syntax()).unwrap()
     }
 
     /// Try to convert this parse's untyped syntax node into an AST node.
     pub fn try_tree(&self) -> Option<T> {
-        T::cast(self.syntax_node())
+        T::cast(self.syntax())
     }
 
     /// Convert this parse into a result
-    pub fn ok(self) -> Result<T, Arc<Vec<ParserError>>> {
+    pub fn ok(self) -> Result<T, Vec<ParserError>> {
         if self.errors.is_empty() {
             Ok(self.tree())
         } else {
@@ -92,28 +111,37 @@ pub fn tokenize(text: &str, file_id: usize) -> (Vec<rslint_lexer::Token>, Vec<Pa
     (tokens, errors)
 }
 
-fn parse_common(text: &str, file_id: usize) -> (Vec<Event>, Vec<ParserError>, Vec<rslint_lexer::Token>) {
+fn parse_common(
+    text: &str,
+    file_id: usize,
+    module: bool
+) -> (Vec<Event>, Vec<ParserError>, Vec<rslint_lexer::Token>) {
     let (tokens, errors) = tokenize(&text, file_id);
 
     let tok_source = TokenSource::new(text, &tokens);
+    
+    let parser = if module {
+        let mut parser = crate::Parser::new_module(tok_source, file_id);
+        crate::syntax::program::module(&mut parser);
+        parser
+    } else {
+        let mut parser = crate::Parser::new(tok_source, file_id);
+        crate::syntax::program::script(&mut parser);
+        parser
+    };
 
-    let mut parser = crate::Parser::new(tok_source, file_id);
-    /* PLACEHOLDER */
-    let m = parser.start();
-    crate::syntax::expr::expr(&mut parser);
-    m.complete(&mut parser, SyntaxKind::PROGRAM);
     (parser.finish(), errors, tokens)
 }
 
 /// Parse text into a [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
-/// Or turned into a typed [`Program`](crate::ast::Program) with [`tree`](Parse::tree).
+/// Or turned into a typed [`Script`](Script) with [`tree`](Parse::tree).
 ///
 /// ```
 /// use rslint_parser::{ast::BracketExpr, parse_text, AstNode, SyntaxToken, SyntaxNodeExt, util};
 ///
 /// let parse = parse_text("foo. bar[2]", 0);
-/// // The untyped syntax node of `foo.bar[2]`, the root node is `Program`.
-/// let untyped_expr_node = parse.syntax_node().first_child().unwrap();
+/// // The untyped syntax node of `foo.bar[2]`, the root node is `Script`.
+/// let untyped_expr_node = parse.syntax().first_child().unwrap();
 ///
 /// // SyntaxNodes can be turned into a nice string representation.
 /// println!("{:#?}", untyped_expr_node);
@@ -132,8 +160,8 @@ fn parse_common(text: &str, file_id: usize) -> (Vec<Event>, Vec<ParserError>, Ve
 ///
 /// assert_eq!(&util::concat_tokens(&tokens), "foo. bar[2]")
 /// ```
-pub fn parse_text(text: &str, file_id: usize) -> Parse<Program> {
-    let (events, mut errors, tokens) = parse_common(text, file_id);
+pub fn parse_text(text: &str, file_id: usize) -> Parse<Script> {
+    let (events, mut errors, tokens) = parse_common(text, file_id, false);
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events);
     let (green, parse_errors) = tree_sink.finish();
@@ -142,16 +170,19 @@ pub fn parse_text(text: &str, file_id: usize) -> Parse<Program> {
 }
 
 /// Lossly parse text into a [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
-/// Or turned into a typed [`Program`](crate::ast::Program) with [`tree`](Parse::tree).
+/// Or turned into a typed [`Script`](Script) with [`tree`](Parse::tree).
 ///
-/// Unlike [`parse_text`], the final parse result includes no whitespace, it does however include errors. 
-/// 
+/// Unlike [`parse_text`], the final parse result includes no whitespace, it does however include errors.
+///
+/// Note however that the ranges and text of nodes still includes whitespace! Therefore you should trim text before rendering it.  
+/// The [`util`](crate::util) module has utility functions for dealing with this easily.
+///
 /// ```
 /// use rslint_parser::{ast::BracketExpr, parse_text_lossy, AstNode, SyntaxToken, SyntaxNodeExt, util};
 ///
 /// let parse = parse_text_lossy("foo. bar[2]", 0);
-/// // The untyped syntax node of `foo.bar[2]`, the root node is `Program`.
-/// let untyped_expr_node = parse.syntax_node().first_child().unwrap();
+/// // The untyped syntax node of `foo.bar[2]`, the root node is `Script`.
+/// let untyped_expr_node = parse.syntax().first_child().unwrap();
 ///
 /// // SyntaxNodes can be turned into a nice string representation.
 /// println!("{:#?}", untyped_expr_node);
@@ -171,9 +202,44 @@ pub fn parse_text(text: &str, file_id: usize) -> Parse<Program> {
 /// // End result does not include whitespace because the parsing is lossy in this case
 /// assert_eq!(&util::concat_tokens(&tokens), "foo.bar[2]")
 /// ```
-pub fn parse_text_lossy(text: &str, file_id: usize) -> Parse<Program> {
-    let (events, mut errors, tokens) = parse_common(text, file_id);
+pub fn parse_text_lossy(text: &str, file_id: usize) -> Parse<Script> {
+    let (events, mut errors, tokens) = parse_common(text, file_id, false);
     let mut tree_sink = LossyTreeSink::new(text, &tokens);
+    crate::process(&mut tree_sink, events);
+    let (green, parse_errors) = tree_sink.finish();
+    errors.extend(parse_errors);
+    Parse::new(green, errors)
+}
+
+/// Same as [`parse_text_lossy`] but configures the parser to parse an ECMAScript module instead of a Script
+pub fn parse_module_lossy(text: &str, file_id: usize) -> Parse<Module> {
+    let (events, mut errors, tokens) = parse_common(text, file_id, true);
+    let mut tree_sink = LossyTreeSink::new(text, &tokens);
+    crate::process(&mut tree_sink, events);
+    let (green, parse_errors) = tree_sink.finish();
+    errors.extend(parse_errors);
+    Parse::new(green, errors)
+}
+
+/// Same as [`parse_text`] but configures the parser to parse an ECMAScript module instead of a script
+pub fn parse_module(text: &str, file_id: usize) -> Parse<Module> {
+    let (events, mut errors, tokens) = parse_common(text, file_id, true);
+    let mut tree_sink = LosslessTreeSink::new(text, &tokens);
+    crate::process(&mut tree_sink, events);
+    let (green, parse_errors) = tree_sink.finish();
+    errors.extend(parse_errors);
+    Parse::new(green, errors)
+}
+
+/// Losslessly Parse text into an expression [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
+/// Or turned into a typed [`Expr`](Expr) with [`tree`](Parse::tree).
+pub fn parse_expr(text: &str, file_id: usize) -> Parse<Expr> {
+    let (tokens, errors) = tokenize(&text, file_id);
+    let tok_source = TokenSource::new(text, &tokens);
+    let mut parser = crate::Parser::new(tok_source, file_id);
+    crate::syntax::expr::expr(&mut parser);
+    let (events, mut errors, tokens) = (parser.finish(), errors, tokens);
+    let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events);
     let (green, parse_errors) = tree_sink.finish();
     errors.extend(parse_errors);
@@ -182,12 +248,18 @@ pub fn parse_text_lossy(text: &str, file_id: usize) -> Parse<Program> {
 
 #[test]
 fn it_works() {
-    let parse = parse_text("{
-        a: foo,
-        b: 6 += 3
-        5: 1
-    }", 0);
-    println!("{:#?}", parse.syntax_node());
-    println!("{:#?}", parse.syntax_node().text());
-    println!("{:#?}", parse.errors());
+    let src = std::fs::read_to_string("C:\\Users\\caval\\Desktop\\Github\\RSLint\\rslint_parser\\src\\a.js").unwrap();
+    let mut files = codespan_reporting::files::SimpleFiles::new();
+    files.add(0, src.to_owned());
+    let parse = parse_module_lossy(&src, 0);
+    std::fs::write("./a.rast", format!("{:#?}", parse.syntax()));
+    use codespan_reporting::term::*;
+    for err in parse.errors().into_iter() {
+        emit(
+            &mut termcolor::StandardStream::stderr(termcolor::ColorChoice::Always),
+            &Config::default(),
+            &files,
+            &err,
+        );
+    }
 }

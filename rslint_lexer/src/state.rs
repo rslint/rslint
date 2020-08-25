@@ -1,4 +1,4 @@
-use crate::{T, SyntaxKind};
+use crate::{SyntaxKind, T};
 
 // We need to keep context for regex literals
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -6,7 +6,7 @@ pub(crate) struct LexerState {
     pub(crate) expr_allowed: bool,
     pub(crate) prev: Option<SyntaxKind>,
     pub(crate) had_linebreak: bool,
-    ctx: Vec<Context>
+    pub(crate) ctx: Vec<Context>,
 }
 
 impl LexerState {
@@ -15,8 +15,12 @@ impl LexerState {
             expr_allowed: true,
             prev: None,
             had_linebreak: false,
-            ctx: vec![Context::BraceStmt]
+            ctx: vec![Context::BraceStmt],
         }
+    }
+
+    pub(crate) fn is_in_template(&self) -> bool {
+        self.ctx.last() == Some(&Context::Template)
     }
 
     pub(crate) fn update(&mut self, next: SyntaxKind) {
@@ -35,7 +39,9 @@ impl LexerState {
                     return true;
                 }
 
-                let closed = self.ctx.pop()
+                let closed = self
+                    .ctx
+                    .pop()
                     .expect("Tried update state with ) or } but context is somehow empty");
 
                 if closed == Context::BraceStmt && self.ctx.last() == Some(&Context::FnExpr) {
@@ -43,25 +49,51 @@ impl LexerState {
                     return false;
                 }
 
+                if closed == Context::TplInternal {
+                    return !self.is_in_template();
+                }
+
                 !ctx_is_expr(closed)
-                // TODO: closed tmpl literal for es6
-            },
+            }
 
             T![function] => {
-                if self.expr_allowed && ctx_is_brace_block(&self.ctx, self.prev, self.had_linebreak, self.expr_allowed) {
+                if self.expr_allowed
+                    && ctx_is_brace_block(
+                        &self.ctx,
+                        self.prev,
+                        self.had_linebreak,
+                        self.expr_allowed,
+                    )
+                {
                     self.ctx.push(Context::FnExpr);
                 }
                 false
-            },
-
-            // TODO: es6 for of
-
-            T![ident] => {
-                self.prev == Some(T![var]) && self.had_linebreak
             }
 
+            SyntaxKind::BACKTICK => {
+                if let Some(Context::Template) = self.ctx.last() {
+                    self.ctx.pop();
+                } else {
+                    self.ctx.push(Context::Template);
+                }
+                false
+            }
+
+            SyntaxKind::DOLLARCURLY => {
+                self.ctx.push(Context::TplInternal);
+                true
+            }
+
+            // TODO: es6 for of
+            T![ident] => self.prev == Some(T![var]) && self.had_linebreak,
+
             T!['{'] => {
-                let next = if ctx_is_brace_block(&self.ctx, self.prev, self.had_linebreak, self.expr_allowed) {
+                let next = if ctx_is_brace_block(
+                    &self.ctx,
+                    self.prev,
+                    self.had_linebreak,
+                    self.expr_allowed,
+                ) {
                     Context::BraceStmt
                 } else {
                     Context::BraceExpr
@@ -75,13 +107,13 @@ impl LexerState {
                     Some(t) if t.is_keyword() => match t {
                         T![if] | T![with] | T![while] => Context::ParenStmt { for_loop: false },
                         T![for] => Context::ParenStmt { for_loop: true },
-                        _ => Context::ParenExpr
+                        _ => Context::ParenExpr,
                     },
-                    _ => Context::ParenExpr
+                    _ => Context::ParenExpr,
                 };
                 self.ctx.push(next);
                 true
-            },
+            }
 
             T![++] | T![--] => self.expr_allowed,
 
@@ -91,26 +123,33 @@ impl LexerState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Context {
+pub(crate) enum Context {
     BraceStmt,
     BraceExpr,
     TplInternal,
-    ParenStmt {
-      for_loop: bool
-    },
+    ParenStmt { for_loop: bool },
     ParenExpr,
     Template,
-    FnExpr
+    FnExpr,
 }
 
 fn ctx_is_expr(ctx: Context) -> bool {
     match ctx {
-        Context::BraceExpr | Context::TplInternal | Context::ParenExpr | Context::Template | Context::FnExpr => true,
-        _ => false
+        Context::BraceExpr
+        | Context::TplInternal
+        | Context::ParenExpr
+        | Context::Template
+        | Context::FnExpr => true,
+        _ => false,
     }
 }
 
-fn ctx_is_brace_block(ctx: &Vec<Context>, prev: Option<SyntaxKind>, had_linebreak: bool, expr_allowed: bool) -> bool {
+fn ctx_is_brace_block(
+    ctx: &Vec<Context>,
+    prev: Option<SyntaxKind>,
+    had_linebreak: bool,
+    expr_allowed: bool,
+) -> bool {
     if let Some(T![:]) = prev {
         match ctx.last() {
             Some(Context::BraceStmt) => return true,
@@ -126,6 +165,6 @@ fn ctx_is_brace_block(ctx: &Vec<Context>, prev: Option<SyntaxKind>, had_linebrea
 
         Some(T!['{']) => ctx.last() == Some(&Context::BraceStmt),
 
-        _ => !expr_allowed
+        _ => !expr_allowed,
     }
 }

@@ -2,6 +2,16 @@ use crate::{Lexer, SyntaxKind, T};
 
 impl Lexer<'_> {
     #[inline]
+    pub(crate) fn resolve_label_a(&mut self) -> Option<SyntaxKind> {
+        if let Some(b"wait") = self.bytes.get(self.cur + 1..self.cur + 5) {
+            self.advance(4);
+            Some(T![await])
+        } else {
+            None
+        }
+    }
+
+    #[inline]
     pub(crate) fn resolve_label_b(&mut self) -> Option<SyntaxKind> {
         match self.bytes.get(self.cur..(self.cur + 5)) {
             Some(b"break") => {
@@ -226,7 +236,7 @@ impl Lexer<'_> {
                 } else {
                     None
                 }
-            },
+            }
             Some(b'e') => {
                 if let Some(b'w') = self.bytes.get(self.cur + 2) {
                     self.advance(2);
@@ -234,7 +244,7 @@ impl Lexer<'_> {
                 } else {
                     None
                 }
-            },
+            }
             _ => None,
         }
     }
@@ -276,23 +286,21 @@ impl Lexer<'_> {
     #[inline]
     pub(crate) fn resolve_label_t(&mut self) -> Option<SyntaxKind> {
         match self.bytes.get(self.cur + 1) {
-            Some(b'r') => {
-                match self.bytes.get(self.cur + 2) {
-                    Some(b'y') => {
-                        self.advance(2);
-                        Some(T![try])
-                    }
-                    Some(b'u') => {
-                        if let Some(b'e') = self.bytes.get(self.cur + 3) {
-                            self.advance(3);
-                            Some(T![true])
-                        } else {
-                            None
-                        }
-                    }
-                    _ => None,
+            Some(b'r') => match self.bytes.get(self.cur + 2) {
+                Some(b'y') => {
+                    self.advance(2);
+                    Some(T![try])
                 }
-            }
+                Some(b'u') => {
+                    if let Some(b'e') = self.bytes.get(self.cur + 3) {
+                        self.advance(3);
+                        Some(T![true])
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            },
             Some(b'h') => match self.bytes.get(self.cur + 2) {
                 Some(b'i') => {
                     if let Some(b's') = self.bytes.get(self.cur + 3) {

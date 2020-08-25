@@ -654,10 +654,12 @@ dependencies = [
 name = "rslint_lexer"
 version = "0.1.0"
 dependencies = [
+ "ansi_term 0.12.1",
+ "atty",
  "codespan-reporting",
  "quickcheck",
  "quickcheck_macros",
- "rslint_parser",
+ "rslint_syntax",
  "unicode-xid",
 ]
 
@@ -680,17 +682,18 @@ dependencies = [
 name = "rslint_parser"
 version = "0.1.0"
 dependencies = [
+ "ansi_term 0.12.1",
  "codespan-reporting",
+ "rowan",
+ "rslint_lexer",
+ "rslint_syntax",
 ]
 
 [[package]]
 name = "rslint_syntax"
 version = "0.1.0"
 dependencies = [
- "codespan-reporting",
  "rowan",
- "rslint_lexer",
- "rslint_parser",
 ]
 
 [[package]]

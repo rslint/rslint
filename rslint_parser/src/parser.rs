@@ -52,6 +52,7 @@ use crate::*;
 /// // Make a new text tree sink, its job is assembling events into a rowan GreenNode.
 /// // At each point (Start, Token, Finish, Error) it also consumes whitespace.
 /// // Other abstractions can also yield lossy syntax nodes if whitespace is not wanted.
+/// // Swap this for a LossyTreeSink for a lossy AST result.
 /// let mut sink = LosslessTreeSink::new(source, &tokens);
 ///
 /// // Consume the parser and get its events, then apply them to a tree sink with `process`.
@@ -74,7 +75,7 @@ use crate::*;
 pub struct Parser<'t> {
     pub file_id: usize,
     tokens: TokenSource<'t>,
-    events: Vec<Event>,
+    pub(crate) events: Vec<Event>,
     // This is for tracking if the parser is infinitely recursing.
     // We use a cell so we dont need &mut self on `nth()`
     steps: Cell<u32>,
@@ -82,14 +83,34 @@ pub struct Parser<'t> {
 }
 
 impl<'t> Parser<'t> {
+    /// Make a new parser configured to parse a script
     pub fn new(tokens: TokenSource<'t>, file_id: usize) -> Parser<'t> {
         Parser {
             file_id,
             tokens,
             events: vec![],
             steps: Cell::new(0),
-            state: ParserState::default()
+            state: ParserState::default(),
         }
+    }
+
+    /// Make a new parser configured to parse a module
+    pub fn new_module(tokens: TokenSource<'t>, file_id: usize) -> Parser<'t> {
+        Parser {
+            file_id,
+            tokens,
+            events: vec![],
+            steps: Cell::new(0),
+            state: ParserState::module(),
+        }
+    }
+
+    /// Get the source code of a token
+    pub fn token_src(&self, token: &Token) -> &str {
+        self.tokens
+            .source()
+            .get(token.range.to_owned())
+            .expect("Token range and src mismatch")
     }
 
     /// Consume the parser and return the list of events it produced
@@ -202,6 +223,11 @@ impl<'t> Parser<'t> {
         assert!(self.eat(kind));
     }
 
+    /// Consume any token but cast it as a different kind
+    pub fn bump_remap(&mut self, kind: SyntaxKind) {
+        self.do_bump(kind)
+    }
+
     /// Advances the parser by one token
     pub fn bump_any(&mut self) {
         let kind = self.nth(0);
@@ -252,13 +278,20 @@ impl<'t> Parser<'t> {
         if self.eat(kind) {
             true
         } else {
-            let err = self
-                .err_builder(&format!(
+            let err = if self.cur() == SyntaxKind::EOF {
+                self.err_builder(&format!(
+                    "Expected token `{:?}` but instead the file ends",
+                    kind
+                ))
+                .primary(self.cur_tok().range, "The file ends here")
+            } else {
+                self.err_builder(&format!(
                     "Expected token `{:?}` but instead found `{:?}`",
                     kind,
                     self.cur()
                 ))
-                .primary(self.cur_tok().range, "Unexpected");
+                .primary(self.cur_tok().range, "Unexpected")
+            };
 
             self.error(err);
             false
@@ -298,6 +331,36 @@ impl<'t> Parser<'t> {
         T::cast(SyntaxNode::new_root(sink.finish().0))
             .expect("Marker was parsed to the wrong ast node")
     }
+
+    /// Get the source code of a range
+    pub fn source(&self, range: TextRange) -> &str {
+        &self.tokens.source()[range]
+    }
+
+    /// Rewind the token position back to a former position
+    pub fn rewind(&mut self, pos: usize) {
+        self.tokens.rewind(pos)
+    }
+
+    /// Get the current index of the last event
+    pub fn cur_event_pos(&self) -> usize {
+        self.events.len() - 1
+    }
+
+    /// Remove `amount` events from the parser
+    pub fn drain_events(&mut self, amount: usize) {
+        self.events.truncate(self.events.len() - amount);
+    }
+
+    /// Get the current token position
+    pub fn token_pos(&self) -> usize {
+        self.tokens.cur_token_idx()
+    }
+
+    /// Make a new error builder with warning severity
+    pub fn warning_builder(&self, message: &str) -> ErrorBuilder {
+        ErrorBuilder::warning(self.file_id, message)
+    }
 }
 
 /// A structure signifying the start of parsing of a syntax tree node
@@ -307,7 +370,7 @@ pub struct Marker {
     pub pos: u32,
     /// The byte index where the node starts
     pub start: usize,
-    old_start: u32,
+    pub old_start: u32,
 }
 
 impl Marker {
@@ -320,7 +383,6 @@ impl Marker {
     }
 
     pub(crate) fn old_start(mut self, old: u32) -> Self {
-        // For multiple precedes we should not update the old start
         if self.old_start >= old {
             self.old_start = old;
         };
@@ -342,7 +404,7 @@ impl Marker {
         }
         let finish_pos = p.events.len() as u32;
         p.push_event(Event::Finish {
-            end: p.cur_tok().range.end,
+            end: p.tokens.last().map(|t| t.range.end).unwrap_or(0),
         });
         CompletedMarker::new(self.pos, finish_pos, kind).old_start(self.old_start)
     }
@@ -364,13 +426,13 @@ impl Marker {
     }
 }
 
-/// A structure signifying a completed marker
+/// A structure signifying a completed node
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct CompletedMarker {
     start_pos: u32,
     // Hack for parsing completed markers which have been preceded
     // This should be redone completely in the future
-    old_start: u32,
+    pub(crate) old_start: u32,
     finish_pos: u32,
     kind: SyntaxKind,
 }
@@ -391,6 +453,45 @@ impl CompletedMarker {
             self.old_start = old;
         };
         self
+    }
+
+    /// Change the kind of node this marker represents
+    pub fn change_kind(&mut self, p: &mut Parser, new_kind: SyntaxKind) {
+        self.kind = new_kind;
+        match p
+            .events
+            .get_mut(self.start_pos as usize)
+            .expect("Finish position of marker is OOB")
+        {
+            Event::Start { kind, .. } => {
+                *kind = new_kind;
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    // Get the correct offset range in source code of an item inside of a parsed marker
+    pub fn offset_range(&self, p: &Parser, range: TextRange) -> TextRange {
+        let offset = self.range(p).start();
+        TextRange::new(range.start() + offset, range.end() + offset)
+    }
+
+    /// Get the range of the marker
+    pub fn range(&self, p: &Parser) -> TextRange {
+        let start = match p.events[self.old_start as usize] {
+            Event::Start { start, .. } => start as u32,
+            _ => unreachable!(),
+        };
+        let end = match p.events[self.finish_pos as usize] {
+            Event::Finish { end } => end as u32,
+            _ => unreachable!(),
+        };
+        TextRange::new(start.into(), end.into())
+    }
+
+    /// Get the underlying text of a marker
+    pub fn text<'a>(&self, p: &'a Parser) -> &'a str {
+        &p.tokens.source()[self.range(p)]
     }
 
     /// This method allows to create a new node which starts
@@ -417,7 +518,7 @@ impl CompletedMarker {
             }
             _ => unreachable!(),
         }
-        new_pos.old_start(idx as u32)
+        new_pos.old_start(self.old_start as u32)
     }
 
     /// Undo this completion and turns into a `Marker`

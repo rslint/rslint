@@ -79,6 +79,29 @@ impl<'a> LossyTreeSink<'a> {
         }
     }
 
+    /// Make a new tree sink but start the sink at a specific token, this is used for making completed markers
+    /// into AST nodes for rules which need them.
+    ///
+    /// # Panics
+    /// Panics if the token start does not line up to a token's start index or is out of bounds
+    pub fn with_offset(text: &'a str, tokens: &'a [Token], token_start: usize) -> Self {
+        let mut len = 0;
+        for (idx, tok) in tokens.iter().enumerate() {
+            if len == token_start {
+                return Self {
+                    text,
+                    tokens,
+                    text_pos: (len as u32).into(),
+                    token_pos: idx,
+                    state: State::PendingStart,
+                    inner: SyntaxTreeBuilder::default(),
+                };
+            }
+            len += tok.len;
+        }
+        panic!("Token start does not line up to a token or is out of bounds")
+    }
+
     pub fn finish(mut self) -> (GreenNode, Vec<ParserError>) {
         match mem::replace(&mut self.state, State::Normal) {
             State::PendingFinish => {

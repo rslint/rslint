@@ -35,7 +35,7 @@ pub enum Event {
     /// For example, lexer tokenizes `>>` as `>`, `>`, and
     /// `n_raw_tokens = 2` is used to produced a single `>>`.
     Token {
-        kind: SyntaxKind
+        kind: SyntaxKind,
     },
 
     Error {

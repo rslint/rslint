@@ -44,7 +44,7 @@ fn mk_token(pos: usize, token_offset_pairs: &[(rslint_lexer::Token, TextSize)]) 
     Token {
         kind,
         range: range.to_owned(),
-        len: TextSize::from(range.len() as u32)
+        len: TextSize::from(range.len() as u32),
     }
 }
 
@@ -90,6 +90,18 @@ impl<'t> TokenSource<'t> {
         }
     }
 
+    /// Rewind the current position to a former position. 
+    pub fn rewind(&mut self, pos: usize) {
+        self.cur = (mk_token(pos, &self.token_offset_pairs), pos);
+    }
+
+    pub fn last(&self) -> Option<Token> {
+        if self.cur.1 == 0 {
+            return None;
+        }
+        Some(mk_token(self.cur.1 - 1, &self.token_offset_pairs))
+    }
+
     pub fn current(&self) -> Token {
         self.cur.0.to_owned()
     }
@@ -129,11 +141,13 @@ impl<'t> TokenSource<'t> {
     }
 
     pub fn cur_pos(&self) -> usize {
-        self.token_offset_pairs
-            .get(self.cur.1)
-            .expect("Cur and token offset pair vector lengths mismatch")
+        self.token_offset_pairs[self.cur.1]
             .1
             .into()
+    }
+
+    pub fn cur_token_idx(&self) -> usize {
+        self.cur.1
     }
 
     pub fn size_hint(&self) -> usize {

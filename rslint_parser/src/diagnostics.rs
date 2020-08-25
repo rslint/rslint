@@ -15,7 +15,16 @@ impl ErrorBuilder {
     pub fn error(file_id: usize, message: &str) -> Self {
         Self {
             inner: Diagnostic::error()
-                .with_code("ParserError")
+                .with_code("SyntaxError")
+                .with_message(message),
+            file_id,
+        }
+    }
+
+    pub fn warning(file_id: usize, message: &str) -> Self {
+        Self {
+            inner: Diagnostic::warning()
+                .with_code("ParserWarning")
                 .with_message(message),
             file_id,
         }

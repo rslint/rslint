@@ -1,5 +1,5 @@
 #[cfg(test)]
-#[allow(unused_mut, unused_variables, unused_assignments)] 
+#[allow(unused_mut, unused_variables, unused_assignments)]
 mod tests {
     use crate::Lexer;
     use quickcheck_macros::quickcheck;
@@ -26,7 +26,7 @@ mod tests {
 
                 new_str.push_str($src.get(tok_idx..(tok_idx + tokens[idx].0.len)).unwrap());
                 tok_idx += tokens[idx].0.len;
-        
+
                 idx += 1;
             )*
 
@@ -44,13 +44,17 @@ mod tests {
         let mut idx = 0;
 
         for token in tokens {
+            if string.get(idx..(idx + token.len)).is_none() {
+                println!("{}", string);
+            }
+
             new_str.push_str(string.get(idx..(idx + token.len)).unwrap());
             idx += token.len;
         }
 
         string == new_str
     }
-    
+
     #[test]
     fn strip_shebang() {
         let mut lex = Lexer::from_str("#! /bin/node \n\n", 0);
@@ -136,9 +140,9 @@ mod tests {
     #[test]
     fn all_whitespace() {
         assert_lex! {
-            "   
+            "
             ",
-            WHITESPACE:16
+            WHITESPACE:13
         }
     }
 
@@ -152,6 +156,42 @@ mod tests {
         assert_lex! {
             "''",
             STRING:2
+        }
+    }
+
+    #[test]
+    fn template_literals() {
+        assert_lex! {
+            "`abcdefg` `abc",
+            BACKTICK:1,
+            TEMPLATE_CHUNK:7,
+            BACKTICK:1,
+            WHITESPACE:1,
+            BACKTICK:1,
+            TEMPLATE_CHUNK:3,
+        }
+
+        assert_lex! {
+            "`${a} a`",
+            BACKTICK:1,
+            DOLLARCURLY:2,
+            IDENT:1,
+            R_CURLY:1,
+            TEMPLATE_CHUNK:2,
+            BACKTICK:1
+        }
+
+        assert_lex! {
+            "`${a} b ${b}`",
+            BACKTICK:1,
+            DOLLARCURLY:2,
+            IDENT:1,
+            R_CURLY:1,
+            TEMPLATE_CHUNK:3,
+            DOLLARCURLY:2,
+            IDENT:1,
+            R_CURLY:1,
+            BACKTICK:1
         }
     }
 
@@ -172,12 +212,12 @@ mod tests {
     fn string_unicode_escape_invalid() {
         assert_lex! {
             r#""abcd\u21""#,
-            ERROR:10
+            ERROR_TOKEN:10
         }
 
         assert_lex! {
             r#"'abcd\u21'"#,
-            ERROR:10
+            ERROR_TOKEN:10
         }
     }
 
@@ -211,12 +251,12 @@ mod tests {
     fn string_hex_escape_invalid() {
         assert_lex! {
             r#""abcd \xZ0 \xGH""#,
-            ERROR:16
+            ERROR_TOKEN:16
         }
 
         assert_lex! {
             r#"'abcd \xZ0 \xGH'"#,
-            ERROR:16
+            ERROR_TOKEN:16
         }
     }
 
@@ -237,12 +277,12 @@ mod tests {
     fn unterminated_string() {
         assert_lex! {
             r#""abcd"#,
-            ERROR:5
+            ERROR_TOKEN:5
         }
 
         assert_lex! {
             r#"'abcd"#,
-            ERROR:5
+            ERROR_TOKEN:5
         }
     }
 
@@ -250,12 +290,12 @@ mod tests {
     fn string_all_escapes() {
         assert_lex! {
             r#""\x\u2004\u20\ux\xNN""#,
-            ERROR:21
+            ERROR_TOKEN:21
         }
 
         assert_lex! {
             r#"'\x\u2004\u20\ux\xNN'"#,
-            ERROR:21
+            ERROR_TOKEN:21
         }
     }
 
@@ -288,7 +328,7 @@ mod tests {
     fn unterminated_string_length() {
         assert_lex! {
             "'abc",
-            ERROR:4
+            ERROR_TOKEN:4
         }
     }
 
@@ -296,32 +336,32 @@ mod tests {
     fn unterminated_string_with_escape_len() {
         assert_lex! {
             "'abc\\",
-            ERROR:5
+            ERROR_TOKEN:5
         }
 
         assert_lex! {
             r#"'abc\x"#,
-            ERROR:6
+            ERROR_TOKEN:6
         }
 
         assert_lex! {
             r#"'abc\x4"#,
-            ERROR:7
+            ERROR_TOKEN:7
         }
 
         assert_lex! {
             r#"'abc\x45"#,
-            ERROR:8
+            ERROR_TOKEN:8
         }
 
         assert_lex! {
             r#"'abc\u"#,
-            ERROR:6
+            ERROR_TOKEN:6
         }
 
         assert_lex! {
             r#"'abc\u20"#,
-            ERROR:8
+            ERROR_TOKEN:8
         }
     }
 
@@ -330,6 +370,19 @@ mod tests {
         assert_lex! {
             "$a",
             IDENT:2
+        }
+    }
+
+    #[test]
+    fn labels_a() {
+        assert_lex! {
+            "await",
+            AWAIT_KW:5
+        }
+
+        assert_lex! {
+            "awaited",
+            IDENT:7
         }
     }
 
@@ -496,7 +549,7 @@ mod tests {
             "return",
             RETURN_KW:6
         }
-        
+
         assert_lex! {
             "returning",
             IDENT:9
@@ -615,25 +668,25 @@ mod tests {
     fn number_basic_err() {
         assert_lex! {
             "2_?",
-            ERROR:2,
+            ERROR_TOKEN:2,
             QUESTION:1
         }
 
         assert_lex! {
             r#"25\u0046abcdef"#,
-            ERROR:14
+            ERROR_TOKEN:14
         }
 
         assert_lex! {
             r#"25\uFEFFb"#,
             NUMBER:2,
-            ERROR:6,
+            ERROR_TOKEN:6,
             IDENT:1
         }
 
         assert_lex! {
             r#".32\u0046abde"#,
-            ERROR:13
+            ERROR_TOKEN:13
         }
     }
 
@@ -674,12 +727,52 @@ mod tests {
     }
 
     #[test]
+    fn binary_literals() {
+        assert_lex! {
+            "0b10101010, 0B10101010, 0b10101010n",
+            NUMBER:10,
+            COMMA:1,
+            WHITESPACE:1,
+            NUMBER:10,
+            COMMA:1,
+            WHITESPACE:1,
+            NUMBER:11
+        }
+    }
+
+    #[test]
+    fn octal_literals() {
+        assert_lex! {
+            "0o01742242, 0B10101010, 0b10101010n",
+            NUMBER:10,
+            COMMA:1,
+            WHITESPACE:1,
+            NUMBER:10,
+            COMMA:1,
+            WHITESPACE:1,
+            NUMBER:11
+        }
+    }
+
+    #[test]
+    fn bigint_literals() {
+        assert_lex! {
+            "0n 1743642n 1n",
+            NUMBER:2,
+            WHITESPACE:1,
+            NUMBER:8,
+            WHITESPACE:1,
+            NUMBER:2
+        }
+    }
+
+    #[test]
     fn single_line_comments() {
         assert_lex! {
             "//abc
-",
+        ",
             COMMENT:5,
-            WHITESPACE:1
+            WHITESPACE:9
         }
 
         assert_lex! {
@@ -691,9 +784,9 @@ mod tests {
     #[test]
     fn block_comment() {
         assert_lex! {
-            "/* 
+            "/*
             */",
-            COMMENT:18
+            COMMENT:17
         }
 
         assert_lex! {
@@ -703,7 +796,7 @@ mod tests {
 
         assert_lex! {
             "/* *",
-            ERROR:4
+            COMMENT:4
         }
     }
 

@@ -5,7 +5,7 @@ use crate::{
 use rslint_lexer::Token;
 use std::mem;
 
-/// Structure for converting events to a syntax tree representation, while preserving whitespace. 
+/// Structure for converting events to a syntax tree representation, while preserving whitespace.
 ///
 /// `LosslessTreeSink` also handles attachment of trivia (whitespace) to nodes.
 #[derive(Debug)]
