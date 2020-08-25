@@ -2,10 +2,10 @@
 
 use crate::{
     ast::{Expr, Script, Module},
-    AstNode, Event, GreenNode, LosslessTreeSink, LossyTreeSink, ParserError, SyntaxKind,
+    AstNode, Event, GreenNode, LosslessTreeSink, LossyTreeSink, ParserError,
     SyntaxNode, TokenSource,
 };
-use std::{marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 /// A utility struct for managing the result of a parser job
 #[derive(Debug)]
@@ -67,6 +67,7 @@ impl<T> Parse<T> {
 
 impl<T: AstNode> Parse<T> {
     /// Convert the result to an untyped SyntaxNode parse.
+    #[allow(clippy::wrong_self_convention)]
     pub fn to_syntax(self) -> Parse<SyntaxNode> {
         Parse {
             green: self.green,

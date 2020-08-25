@@ -30,7 +30,7 @@ fn mk_token(pos: usize, token_offset_pairs: &[(rslint_lexer::Token, TextSize)]) 
             let end = start + x.0.len;
             start..end
         })
-        .unwrap_or(
+        .unwrap_or_else(|| {
             token_offset_pairs
                 .last()
                 .map(|x| {
@@ -38,8 +38,8 @@ fn mk_token(pos: usize, token_offset_pairs: &[(rslint_lexer::Token, TextSize)]) 
                     let end = start + x.0.len;
                     start..end
                 })
-                .unwrap_or(0..0),
-        );
+                .unwrap_or(0..0)
+        });
 
     Token {
         kind,
@@ -66,7 +66,7 @@ impl<'t> TokenSource<'t> {
                 let src = source
                     .get(len.into()..(usize::from(len) + token.len))
                     .expect("src and tokens do not match");
-                if !has_linebreak && src.chars().any(|c| is_linebreak(c)) {
+                if !has_linebreak && src.chars().any(is_linebreak) {
                     has_linebreak = true;
                 }
             } else {
@@ -90,7 +90,7 @@ impl<'t> TokenSource<'t> {
         }
     }
 
-    /// Rewind the current position to a former position. 
+    /// Rewind the current position to a former position.
     pub fn rewind(&mut self, pos: usize) {
         self.cur = (mk_token(pos, &self.token_offset_pairs), pos);
     }
@@ -141,9 +141,7 @@ impl<'t> TokenSource<'t> {
     }
 
     pub fn cur_pos(&self) -> usize {
-        self.token_offset_pairs[self.cur.1]
-            .1
-            .into()
+        self.token_offset_pairs[self.cur.1].1.into()
     }
 
     pub fn cur_token_idx(&self) -> usize {

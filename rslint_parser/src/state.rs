@@ -80,10 +80,8 @@ impl ParserState {
             
             p.error(err);
             marker.change_kind(p, SyntaxKind::ERROR);
-        } else {
-            if self.is_module {
-                self.default_item = Some(marker.range(p).into());
-            }
+        } else if self.is_module {
+            self.default_item = Some(marker.range(p).into());
         }
         marker
     }
@@ -97,7 +95,7 @@ impl ParserState {
     pub fn strict(&mut self, p: &mut Parser, range: Range<usize>, top_level: bool) {
         if self.is_module {
             let err = p.warning_builder("Redundant strict mode declaration in module")
-                .primary(range.to_owned(), "")
+                .primary(range, "")
                 .help("Note: modules are always in strict mode");
 
             p.error(err);

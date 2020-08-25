@@ -52,6 +52,7 @@ pub const STARTS_EXPR: TokenSet = token_set![
     T![ident],
     T![...],
     T![this],
+    T![yield],
     BACKTICK,
 ]
 .union(LITERAL);
@@ -184,7 +185,7 @@ fn binary_expr_recursive(
         }
     }
 
-    let m = left.map(|m| m.precede(p)).unwrap_or(p.start());
+    let m = left.map(|m| m.precede(p)).unwrap_or_else(|| p.start());
     p.bump_any();
 
     // This is a hack to allow us to effectively recover from `foo + / bar`
@@ -229,19 +230,17 @@ fn binary_expr_recursive(
     if let Some(BIN_EXPR) = recursive_right.map(|x| x.kind()) {
         let right_ref = recursive_right.as_ref().unwrap();
         let parsed = p.parse_marker::<BinExpr>(right_ref);
-        if parsed.op() == Some(BinOp::NullishCoalescing) {
-            if matches!(parsed.rhs(), Some(Expr::BinExpr(bin)) if bin.op() == Some(BinOp::LogicalAnd) || bin.op() == Some(BinOp::LogicalOr))
-            {
-                let rhs_range =
-                    right_ref.offset_range(p, parsed.rhs().unwrap().syntax().text_range());
+        if parsed.op() == Some(BinOp::NullishCoalescing)
+            && matches!(parsed.rhs(), Some(Expr::BinExpr(bin)) if bin.op() == Some(BinOp::LogicalAnd) || bin.op() == Some(BinOp::LogicalOr))
+        {
+            let rhs_range = right_ref.offset_range(p, parsed.rhs().unwrap().syntax().text_range());
 
-                let err = p.err_builder("The nullish coalescing operator (??) cannot be mixed with logical operators (|| and &&)")
+            let err = p.err_builder("The nullish coalescing operator (??) cannot be mixed with logical operators (|| and &&)")
                     .secondary(rhs_range, "Because this expression would first be evaluated...")
-                    .primary(op_tok.range.to_owned(), "...Then it would be used for the right hand side value of this operator, which is most likely unwanted behavior")
+                    .primary(op_tok.range, "...Then it would be used for the right hand side value of this operator, which is most likely unwanted behavior")
                     .help(&format!("Note: if this is expected, indicate precedence by wrapping `{}` in parentheses", color(parsed.rhs().unwrap().syntax().text().to_string().trim())));
 
-                p.error(err);
-            }
+            p.error(err);
         }
 
         // || has the same precedence as ?? so catching `foo ?? bar || baz` is not the same as `foo ?? bar && baz`
@@ -387,8 +386,7 @@ pub fn dot_expr(p: &mut Parser, lhs: CompletedMarker, optional_chain: bool) -> C
         p.expect(T![.]);
     }
     identifier_name(p);
-    let comp = m.complete(p, DOT_EXPR);
-    comp
+    m.complete(p, DOT_EXPR)
 }
 
 /// An array expression for property access or indexing, such as `foo[0]` or `foo?.["bar"]`
@@ -449,7 +447,10 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
     p.expect(T!['(']);
     let mut spread_range = None;
 
-    let mut temp = p.with_state(ParserState { potential_arrow_start: true, ..p.state.clone() });
+    let mut temp = p.with_state(ParserState {
+        potential_arrow_start: true,
+        ..p.state.clone()
+    });
     if temp.at_ts(STARTS_EXPR) {
         expr(&mut *temp);
     }
@@ -485,10 +486,10 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
         }
     }
 
-    if spread_range.is_some() {
+    if let Some(m) = spread_range {
         let err = p
             .err_builder("Illegal spread element inside grouping expression")
-            .primary(spread_range.unwrap().range(p), "");
+            .primary(m.range(p), "");
 
         p.error(err);
     }
@@ -662,7 +663,7 @@ pub fn identifier_reference(p: &mut Parser) -> Option<CompletedMarker> {
                 .primary(p.cur_tok(), "");
 
             p.err_recover(err, token_set![]);
-            return None;
+            None
         }
     }
 }
@@ -759,12 +760,12 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
                 && STARTS_OBJ_PROP.contains(p.nth(1)) =>
         {
             method(p, None)
-        },
+        }
         T![...] => {
             p.bump_any();
             assign_expr(p);
             Some(m.complete(p, SPREAD_PROP))
-        },
+        }
         _ => {
             let prop = object_prop_name(p, false);
             if let Some(NAME) = prop.map(|m| m.kind()) {

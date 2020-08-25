@@ -424,24 +424,22 @@ fn declarator(p: &mut Parser, is_const: &Option<Range<usize>>, for_stmt: bool) -
 
     if p.eat(T![=]) {
         assign_expr(p);
-    } else {
-        if let Some(ref marker) = pat {
-            if marker.kind() != SINGLE_PATTERN {
-                let err = p
-                    .err_builder("Object and Array patterns require initializers")
-                    .primary(
-                        marker.range(p),
-                        "this pattern is declared, but it is not given an initialized value",
-                    );
+    } else if let Some(ref marker) = pat {
+        if marker.kind() != SINGLE_PATTERN {
+            let err = p
+                .err_builder("Object and Array patterns require initializers")
+                .primary(
+                    marker.range(p),
+                    "this pattern is declared, but it is not given an initialized value",
+                );
 
-                p.error(err);
-            } else if is_const.is_some() && !for_stmt {
-                let err = p
-                    .err_builder("Const var declarations must have an initialized value")
-                    .primary(marker.range(p), "this variable needs to be initialized");
+            p.error(err);
+        } else if is_const.is_some() && !for_stmt {
+            let err = p
+                .err_builder("Const var declarations must have an initialized value")
+                .primary(marker.range(p), "this variable needs to be initialized");
 
-                p.error(err);
-            }
+            p.error(err);
         }
     }
 

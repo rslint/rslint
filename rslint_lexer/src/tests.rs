@@ -641,6 +641,19 @@ mod tests {
     }
 
     #[test]
+    fn labels_y() {
+        assert_lex! {
+            "yield",
+            YIELD_KW:5
+        }
+
+        assert_lex! {
+            "yielding",
+            IDENT:8
+        }
+    }
+
+    #[test]
     fn number_basic() {
         assert_lex! {
             "1",

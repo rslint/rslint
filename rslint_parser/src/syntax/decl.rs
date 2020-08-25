@@ -39,13 +39,11 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
     while !p.at(EOF) && !p.at(T![')']) {
         if first {
             first = false;
+        } else if p.nth_at(1, T![')']) {
+            p.eat(T![,]);
+            break;
         } else {
-            if p.nth_at(1, T![')']) {
-                p.eat(T![,]);
-                break;
-            } else {
-                p.expect(T![,]);
-            }
+            p.expect(T![,]);
         }
 
         if p.at(T![...]) {
@@ -102,7 +100,9 @@ fn class_body(p: &mut Parser) -> CompletedMarker {
                 method(p, None);
                 inner.complete(p, STATIC_METHOD);
             },
-            _ => drop(method(p, None)),
+            _ => {
+                method(p, None);
+            },
         }
     }
     p.expect(T!['}']);

@@ -377,4 +377,14 @@ impl Lexer<'_> {
             _ => None,
         }
     }
+
+    #[inline]
+    pub(crate) fn resolve_label_y(&mut self) -> Option<SyntaxKind> {
+        if let Some(b"ield") = self.bytes.get(self.cur + 1..self.cur + 5) {
+            self.advance(4);
+            Some(T![yield])
+        } else {
+            None
+        }
+    }
 }

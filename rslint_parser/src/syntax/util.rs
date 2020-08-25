@@ -196,7 +196,7 @@ fn check_name_pat(
 pub fn check_for_stmt_lhs(p: &mut Parser, expr: Expr, marker: &CompletedMarker) {
     match expr {
         Expr::Name(ident) => check_simple_assign_target(p, &Expr::from(ident), marker.range(p)),
-        Expr::DotExpr(_) | Expr::BracketExpr(_) => return,
+        Expr::DotExpr(_) | Expr::BracketExpr(_) => {},
         Expr::AssignExpr(expr) => {
             if let Some(rhs) = expr.rhs() {
                 check_for_stmt_lhs(p, rhs, marker);
@@ -217,10 +217,8 @@ pub fn check_for_stmt_lhs(p: &mut Parser, expr: Expr, marker: &CompletedMarker) 
                             .primary(marker.offset_range(p, spread.syntax().trimmed_range()), "");
 
                         p.error(err);
-                    } else {
-                        if let Some(element) = spread.element() {
-                            check_spread_element(p, element, marker);
-                        }
+                    } else if let Some(element) = spread.element() {
+                        check_spread_element(p, element, marker);
                     }
                 }
                 check_for_stmt_lhs(p, elem.syntax().to::<Expr>(), marker);

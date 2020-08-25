@@ -100,11 +100,11 @@ pub trait SyntaxNodeExt {
         let start = tokens
             .first()
             .map(|t| t.text_range().start())
-            .unwrap_or(0.into());
+            .unwrap_or_else(|| 0.into());
         let end = tokens
             .last()
             .map(|t| t.text_range().end())
-            .unwrap_or(0.into());
+            .unwrap_or_else(|| 0.into());
 
         TextRange::new(start, end)
     }
@@ -231,7 +231,7 @@ impl SyntaxNodeExt for SyntaxNode {
 }
 
 /// Concatenate tokens into a string
-pub fn concat_tokens(tokens: &Vec<SyntaxToken>) -> String {
+pub fn concat_tokens(tokens: &[SyntaxToken]) -> String {
     tokens
         .iter()
         .map(|token| token.text().to_string())

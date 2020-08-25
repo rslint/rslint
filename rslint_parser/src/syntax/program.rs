@@ -1,9 +1,9 @@
 //! Top level functions for parsing a script or module, also includes module specific items. 
 
 use crate::{SyntaxKind::*, *};
-use super::stmt::{block_items, STMT_RECOVERY_SET, var_decl, FOLLOWS_LET, semi};
+use super::stmt::{block_items, STMT_RECOVERY_SET, var_decl, semi};
 use super::pat::binding_identifier;
-use super::decl::{class_decl, function_decl, method};
+use super::decl::{class_decl, function_decl};
 use super::expr::assign_expr;
 
 /// Parse an ECMAScript script. 
@@ -87,13 +87,11 @@ fn named_list(p: &mut Parser, m: impl Into<Option<Marker>>) -> Marker {
     while !p.at(EOF) && !p.at(T!['}']) {
         if first {
             first = false;
+        } else if p.at(T![,]) && p.nth_at(1, T!['}']) {
+            p.bump_any();
+            break;
         } else {
-            if p.at(T![,]) && p.nth_at(1, T!['}']) {
-                p.bump_any();
-                break;
-            } else {
-                p.expect(T![,]);
-            }
+            p.expect(T![,]);
         }
 
         specifier(p);

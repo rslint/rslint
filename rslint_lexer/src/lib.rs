@@ -418,7 +418,7 @@ impl<'src> Lexer<'src> {
 
         match Self::lookup(*b) {
             IDT | DIG | ZER | L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T
-            | L_V | L_W => true,
+            | L_V | L_W | L_Y => true,
             // FIXME: This should use ID_Continue, not XID_Continue
             UNI => {
                 let res = self.get_unicode_char().is_xid_continue();
@@ -473,7 +473,7 @@ impl<'src> Lexer<'src> {
                     false
                 }
             }
-            IDT | L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T | L_V | L_W => {
+            IDT | L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T | L_V | L_W | L_Y => {
                 true
             }
             _ => false,
@@ -497,6 +497,7 @@ impl<'src> Lexer<'src> {
             L_T => self.resolve_label_t(),
             L_V => self.resolve_label_v(),
             L_W => self.resolve_label_w(),
+            L_Y => self.resolve_label_y(),
             // Safety: this method is never called outside of the lex_token match, and it is only called on L_* dispatches
             _ => unsafe { core::hint::unreachable_unchecked() },
         };
@@ -1177,7 +1178,7 @@ impl<'src> Lexer<'src> {
             BEC => self.eat(tok![R_CURLY, 1]),
             PIP => self.resolve_pipe(),
             TLD => self.eat(tok![~]),
-            L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T | L_V | L_W => {
+            L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T | L_V | L_W | L_Y => {
                 self.resolve_label(dispatched)
             }
             UNI => {
@@ -1342,6 +1343,7 @@ enum Dispatch {
     L_T,
     L_V,
     L_W,
+    L_Y,
     BEO,
     PIP,
     BEC,
@@ -1354,7 +1356,7 @@ use Dispatch::*;
 // This is taken from the ratel project lexer and modified
 // FIXME: Should we ignore the first ascii control chars which are nearly never seen instead of returning Err?
 static DISPATCHER: [Dispatch; 256] = [
-    //   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F   //
+//   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F   //
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, WHS, WHS, WHS, WHS, WHS, ERR, ERR, // 0
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
     WHS, EXL, QOT, ERR, IDT, PRC, AMP, QOT, PNO, PNC, MUL, PLS, COM, MIN, PRD, SLH, // 2
@@ -1362,7 +1364,7 @@ static DISPATCHER: [Dispatch; 256] = [
     ERR, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, // 4
     IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, BTO, BSL, BTC, CRT, IDT, // 5
     TPL, L_A, L_B, L_C, L_D, L_E, L_F, IDT, IDT, L_I, IDT, IDT, IDT, IDT, L_N, IDT, // 6
-    IDT, IDT, L_R, L_S, L_T, IDT, L_V, L_W, IDT, IDT, IDT, BEO, PIP, BEC, TLD, ERR, // 7
+    IDT, IDT, L_R, L_S, L_T, IDT, L_V, L_W, IDT, L_Y, IDT, BEO, PIP, BEC, TLD, ERR, // 7
     UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, // 8
     UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, // 9
     UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, // A

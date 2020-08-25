@@ -36,10 +36,7 @@ pub enum PropName {
 
 impl AstNode for PropName {
     fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            NAME | LITERAL | COMPUTED_PROPERTY_NAME => true,
-            _ => false,
-        }
+        matches!(kind, NAME | LITERAL | COMPUTED_PROPERTY_NAME)
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {

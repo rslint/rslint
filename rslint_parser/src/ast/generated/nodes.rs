@@ -1770,11 +1770,10 @@ impl From<Method> for ObjectProp {
 }
 impl AstNode for ObjectProp {
     fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            LITERAL_PROP | GETTER | SETTER | SPREAD_PROP | INITIALIZED_PROP | IDENT_PROP
-            | METHOD => true,
-            _ => false,
-        }
+        matches!(
+            kind,
+            LITERAL_PROP | GETTER | SETTER | SPREAD_PROP | INITIALIZED_PROP | IDENT_PROP | METHOD
+        )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
@@ -1821,11 +1820,15 @@ impl From<ArrayPattern> for Pattern {
 }
 impl AstNode for Pattern {
     fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            SINGLE_PATTERN | REST_PATTERN | ASSIGN_PATTERN | KEY_VALUE_PATTERN | OBJECT_PATTERN
-            | ARRAY_PATTERN => true,
-            _ => false,
-        }
+        matches!(
+            kind,
+            SINGLE_PATTERN
+                | REST_PATTERN
+                | ASSIGN_PATTERN
+                | KEY_VALUE_PATTERN
+                | OBJECT_PATTERN
+                | ARRAY_PATTERN
+        )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
@@ -1857,12 +1860,7 @@ impl From<DefaultClause> for SwitchCase {
     fn from(node: DefaultClause) -> SwitchCase { SwitchCase::DefaultClause(node) }
 }
 impl AstNode for SwitchCase {
-    fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            CASE_CLAUSE | DEFAULT_CLAUSE => true,
-            _ => false,
-        }
-    }
+    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, CASE_CLAUSE | DEFAULT_CLAUSE) }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             CASE_CLAUSE => SwitchCase::CaseClause(CaseClause { syntax }),
@@ -1892,10 +1890,10 @@ impl From<SinglePattern> for ObjectPatternProp {
 }
 impl AstNode for ObjectPatternProp {
     fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            ASSIGN_PATTERN | KEY_VALUE_PATTERN | REST_PATTERN | SINGLE_PATTERN => true,
-            _ => false,
-        }
+        matches!(
+            kind,
+            ASSIGN_PATTERN | KEY_VALUE_PATTERN | REST_PATTERN | SINGLE_PATTERN
+        )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
@@ -1923,12 +1921,7 @@ impl From<ParameterList> for ArrowExprParams {
     fn from(node: ParameterList) -> ArrowExprParams { ArrowExprParams::ParameterList(node) }
 }
 impl AstNode for ArrowExprParams {
-    fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            NAME | PARAMETER_LIST => true,
-            _ => false,
-        }
-    }
+    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, NAME | PARAMETER_LIST) }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             NAME => ArrowExprParams::Name(Name { syntax }),
@@ -1954,12 +1947,7 @@ impl From<Setter> for MethodDefinition {
     fn from(node: Setter) -> MethodDefinition { MethodDefinition::Setter(node) }
 }
 impl AstNode for MethodDefinition {
-    fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            METHOD | GETTER | SETTER => true,
-            _ => false,
-        }
-    }
+    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, METHOD | GETTER | SETTER) }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             METHOD => MethodDefinition::Method(Method { syntax }),
@@ -1987,12 +1975,7 @@ impl From<StaticMethod> for ClassElement {
     fn from(node: StaticMethod) -> ClassElement { ClassElement::StaticMethod(node) }
 }
 impl AstNode for ClassElement {
-    fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            EMPTY_STMT | METHOD | STATIC_METHOD => true,
-            _ => false,
-        }
-    }
+    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, EMPTY_STMT | METHOD | STATIC_METHOD) }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             EMPTY_STMT => ClassElement::EmptyStmt(EmptyStmt { syntax }),
@@ -2020,12 +2003,7 @@ impl From<Name> for ImportClause {
     fn from(node: Name) -> ImportClause { ImportClause::Name(node) }
 }
 impl AstNode for ImportClause {
-    fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            WILDCARD_IMPORT | NAMED_IMPORTS | NAME => true,
-            _ => false,
-        }
-    }
+    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, WILDCARD_IMPORT | NAMED_IMPORTS | NAME) }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             WILDCARD_IMPORT => ImportClause::WildcardImport(WildcardImport { syntax }),
@@ -2050,12 +2028,7 @@ impl From<ClassDecl> for DefaultDecl {
     fn from(node: ClassDecl) -> DefaultDecl { DefaultDecl::ClassDecl(node) }
 }
 impl AstNode for DefaultDecl {
-    fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            FN_DECL | CLASS_DECL => true,
-            _ => false,
-        }
-    }
+    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, FN_DECL | CLASS_DECL) }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             FN_DECL => DefaultDecl::FnDecl(FnDecl { syntax }),
@@ -2091,11 +2064,15 @@ impl From<ExportDecl> for ModuleItem {
 }
 impl AstNode for ModuleItem {
     fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            IMPORT_DECL | EXPORT_NAMED | EXPORT_DEFAULT_DECL | EXPORT_DEFAULT_EXPR
-            | EXPORT_WILDCARD | EXPORT_DECL => true,
-            _ => false,
-        }
+        matches!(
+            kind,
+            IMPORT_DECL
+                | EXPORT_NAMED
+                | EXPORT_DEFAULT_DECL
+                | EXPORT_DEFAULT_EXPR
+                | EXPORT_WILDCARD
+                | EXPORT_DECL
+        )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
@@ -2130,12 +2107,7 @@ impl From<VarDecl> for Decl {
     fn from(node: VarDecl) -> Decl { Decl::VarDecl(node) }
 }
 impl AstNode for Decl {
-    fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            FN_DECL | CLASS_DECL | VAR_DECL => true,
-            _ => false,
-        }
-    }
+    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, FN_DECL | CLASS_DECL | VAR_DECL) }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             FN_DECL => Decl::FnDecl(FnDecl { syntax }),
@@ -2221,13 +2193,31 @@ impl From<ImportCall> for Expr {
 }
 impl AstNode for Expr {
     fn can_cast(kind: SyntaxKind) -> bool {
-        match kind {
-            LITERAL | TEMPLATE | NAME | THIS_EXPR | ARRAY_EXPR | OBJECT_EXPR | GROUPING_EXPR
-            | BRACKET_EXPR | DOT_EXPR | NEW_EXPR | CALL_EXPR | POSTFIX_EXPR | UNARY_EXPR
-            | BIN_EXPR | COND_EXPR | ASSIGN_EXPR | SEQUENCE_EXPR | FN_DECL | NEW_TARGET
-            | IMPORT_META | SUPER_CALL | IMPORT_CALL => true,
-            _ => false,
-        }
+        matches!(
+            kind,
+            LITERAL
+                | TEMPLATE
+                | NAME
+                | THIS_EXPR
+                | ARRAY_EXPR
+                | OBJECT_EXPR
+                | GROUPING_EXPR
+                | BRACKET_EXPR
+                | DOT_EXPR
+                | NEW_EXPR
+                | CALL_EXPR
+                | POSTFIX_EXPR
+                | UNARY_EXPR
+                | BIN_EXPR
+                | COND_EXPR
+                | ASSIGN_EXPR
+                | SEQUENCE_EXPR
+                | FN_DECL
+                | NEW_TARGET
+                | IMPORT_META
+                | SUPER_CALL
+                | IMPORT_CALL
+        )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
