@@ -1,8 +1,9 @@
 [package]
-name = "rslint-parse"
+name = "rslint_parse"
 version = "0.1.0"
 authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
 edition = "2018"
+license = "MIT"
 
 [dependencies]
 once_cell = "1.3.1"

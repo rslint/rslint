@@ -3,9 +3,10 @@ name = "rslint"
 version = "0.1.0"
 authors = ["RDambrosio016 <cavalier.archer@gmail.com>"]
 edition = "2018"
+license = "MIT"
 
 [dependencies]
-rslint-parse = { path = "../rslint-parse", version = "0.1" }
+rslint_parse = { path = "../rslint_parse", version = "0.1" }
 once_cell = "1.3.1"
 codespan-reporting = { version = "0.9.5", features = ["serialization"] }
 clap = {version = "2", features = ["yaml"]}
