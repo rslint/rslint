@@ -47,7 +47,7 @@ pub fn check_label_use(p: &mut Parser, label: &CompletedMarker) {
                 name.text()
             ))
             .primary(
-                name.text_range(),
+                label.range(p),
                 "This label is used, but it is never defined",
             );
 

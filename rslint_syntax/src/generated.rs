@@ -206,6 +206,9 @@ pub enum SyntaxKind {
     WILDCARD_IMPORT,
     NAMED_IMPORTS,
     SPECIFIER,
+    AWAIT_EXPR,
+    FOR_STMT_TEST,
+    FOR_STMT_UPDATE,
     #[doc(hidden)]
     __LAST,
 }

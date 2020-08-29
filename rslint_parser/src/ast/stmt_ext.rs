@@ -231,7 +231,9 @@ impl std::fmt::Display for Stmt {
 
 impl VarDecl {
     pub fn let_token(&self) -> Option<SyntaxToken> {
-        self.syntax().first_token().filter(|t| t.kind() == T![ident] && t.text() == "let")
+        self.syntax()
+            .first_token()
+            .filter(|t| t.kind() == T![ident] && t.text() == "let")
     }
 
     /// Whether the declaration is a const declaration

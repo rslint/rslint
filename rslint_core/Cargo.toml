@@ -1,0 +1,12 @@
+[package]
+name = "rslint_core"
+version = "0.1.0"
+authors = ["RDambrosio016 <cavalier.archer@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+rslint_parser = { path = "../rslint_parser", version = "0.1.0" }
+codespan-reporting = { git = "https://github.com/brendanzab/codespan.git", features = ["serialization"] }
+serde = { version = "1.0.115", features = ["derive"] }
+typetag = "0.1.5"
+rayon = "1.4.0"

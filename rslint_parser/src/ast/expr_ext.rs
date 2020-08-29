@@ -1,6 +1,6 @@
 //! Extensions for things which are not easily generated in ast expr nodes
 
-use crate::{ast::*, T, util::*, SyntaxText, TextSize};
+use crate::{ast::*, util::*, SyntaxText, TextSize, TokenSet, T};
 use SyntaxKind::*;
 
 impl BracketExpr {
@@ -196,6 +196,11 @@ impl BinExpr {
     pub fn rhs(&self) -> Option<Expr> {
         support::children(self.syntax()).nth(1)
     }
+
+    /// Whether this binary expr is a `||` or `&&` expression. 
+    pub fn conditional(&self) -> bool {
+        token_set![T![||], T![&&]].contains(self.op_token().map(|x| x.kind()).unwrap_or(T![&]))
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -260,7 +265,10 @@ impl KeyValuePattern {
         if self.syntax().children().count() == 2 {
             Pattern::cast(self.syntax().last_child().unwrap())
         } else {
-            self.colon_token()?.next_sibling_or_token()?.into_node()?.try_to::<Pattern>()
+            self.colon_token()?
+                .next_sibling_or_token()?
+                .into_node()?
+                .try_to::<Pattern>()
         }
     }
 }
@@ -332,7 +340,11 @@ impl AssignExpr {
 impl ArrayExpr {
     pub fn has_trailing_comma(&self) -> bool {
         if let Some(last) = self.elements().last().map(|it| it.syntax().to_owned()) {
-            if let Some(tok) = last.next_sibling_or_token().map(|it| it.into_token()).flatten() {
+            if let Some(tok) = last
+                .next_sibling_or_token()
+                .map(|it| it.into_token())
+                .flatten()
+            {
                 return tok.kind() == T![,];
             }
         }
@@ -343,14 +355,14 @@ impl ArrayExpr {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ExprOrSpread {
     Expr(Expr),
-    Spread(SpreadElement)
+    Spread(SpreadElement),
 }
 
 impl AstNode for ExprOrSpread {
     fn can_cast(kind: SyntaxKind) -> bool {
         match kind {
             SPREAD_ELEMENT => true,
-            _ => Expr::can_cast(kind)
+            _ => Expr::can_cast(kind),
         }
     }
 
@@ -369,7 +381,7 @@ impl AstNode for ExprOrSpread {
     fn syntax(&self) -> &SyntaxNode {
         match self {
             ExprOrSpread::Expr(it) => it.syntax(),
-            ExprOrSpread::Spread(it) => it.syntax()
+            ExprOrSpread::Spread(it) => it.syntax(),
         }
     }
 }
@@ -387,7 +399,11 @@ impl ExprOrSpread {
 impl ObjectExpr {
     pub fn has_trailing_comma(&self) -> bool {
         if let Some(last) = self.props().last().map(|it| it.syntax().to_owned()) {
-            if let Some(tok) = last.next_sibling_or_token().map(|it| it.into_token()).flatten() {
+            if let Some(tok) = last
+                .next_sibling_or_token()
+                .map(|it| it.into_token())
+                .flatten()
+            {
                 return tok.kind() == T![,];
             }
         }
@@ -401,16 +417,16 @@ pub enum LiteralKind {
     String,
     Null,
     Bool(bool),
-    Regex
+    Regex,
 }
 
 impl Literal {
     pub fn token(&self) -> SyntaxToken {
         self.syntax()
-        .children_with_tokens()
-        .find(|e| !e.kind().is_trivia())
-        .and_then(|e| e.into_token())
-        .unwrap() 
+            .children_with_tokens()
+            .find(|e| !e.kind().is_trivia())
+            .and_then(|e| e.into_token())
+            .unwrap()
     }
 
     pub fn kind(&self) -> LiteralKind {
@@ -420,7 +436,7 @@ impl Literal {
             STRING => LiteralKind::String,
             TRUE_KW => LiteralKind::Bool(true),
             FALSE_KW => LiteralKind::Bool(false),
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -447,7 +463,11 @@ impl Literal {
         }
 
         let start = self.syntax().text_range().start() + TextSize::from(1);
-        let end_char = self.syntax().text().char_at(self.syntax().text().len() - TextSize::from(1)).unwrap();
+        let end_char = self
+            .syntax()
+            .text()
+            .char_at(self.syntax().text().len() - TextSize::from(1))
+            .unwrap();
         let end = if end_char == '"' || end_char == '\'' {
             self.syntax().text_range().end() - TextSize::from(1)
         } else {

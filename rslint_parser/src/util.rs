@@ -2,6 +2,8 @@
 
 use crate::*;
 
+pub use rslint_lexer::color;
+
 /// Extensions to rowan's SyntaxNode
 pub trait SyntaxNodeExt {
     #[doc(hidden)]
@@ -23,6 +25,14 @@ pub trait SyntaxNodeExt {
             .collect()
     }
 
+    /// Get the first non-whitespace child token.
+    fn first_lossy_token(&self) -> Option<SyntaxToken> {
+        self.to_node()
+            .children_with_tokens()
+            .filter_map(|it| it.into_token().filter(|x| !x.kind().is_trivia()))
+            .next()
+    }
+
     /// Check if the node is a certain AST node and that it can be casted to it.
     fn is<T: AstNode>(&self) -> bool {
         T::can_cast(self.to_node().kind())
@@ -33,7 +43,12 @@ pub trait SyntaxNodeExt {
     /// # Panics
     /// Panics if the underlying node cannot be cast to the AST node
     fn to<T: AstNode>(&self) -> T {
-        T::cast(self.to_node().to_owned()).unwrap_or_else(|| panic!("Tried to cast node as `{:?}` but was unable to cast", stringify!(T)))
+        T::cast(self.to_node().to_owned()).unwrap_or_else(|| {
+            panic!(
+                "Tried to cast node as `{:?}` but was unable to cast",
+                stringify!(T)
+            )
+        })
     }
 
     /// Try to cast this node to a certain AST node
@@ -117,7 +132,12 @@ pub trait SyntaxNodeExt {
     /// assert_eq!(node.trimmed_text(), "foo. bar");
     /// ```
     fn trimmed_text(&self) -> SyntaxText {
-        self.to_node().text().slice(self.to_node().trimmed_range())
+        let trimmed = self.to_node().trimmed_range();
+        let offset = self.to_node().text_range().start();
+        self.to_node().text().slice(TextRange::new(
+            trimmed.start() - offset,
+            trimmed.end() - offset,
+        ))
     }
 
     /// Get the directly adjacent previous token before the node.
@@ -219,12 +239,135 @@ pub trait SyntaxNodeExt {
             }
         }
     }
+
+    /// Check whether this node's kind is contained in a token set.
+    fn in_ts(&self, set: TokenSet) -> bool {
+        set.contains(self.to_node().kind())
+    }
+
+    /// A human readable name for this node's kind. e.g.:
+    /// `BREAK_STMT` => `Break statement`
+    ///
+    /// Returns a capitalized name without an underscore for anything not a statement. e.g.:
+    /// `FN_DECL` => `Fn decl`
+    fn readable_stmt_name(&self) -> String {
+        let mut string = format!("{:?}", self.to_node().kind())
+            .to_ascii_lowercase()
+            .replace("_", " ");
+        // Safety: the kind cannot produce an empty string and all kinds are ascii uppercase letters.
+        unsafe {
+            string.as_bytes_mut()[0] = string.as_bytes()[0] - 32;
+        }
+
+        if self.to_node().is::<ast::Stmt>() {
+            string = string.replace("stmt", "statement");
+        }
+
+        string
+    }
+
+    /// Whether this node is an iteration statement. 
+    #[inline]
+    fn is_loop(&self) -> bool {
+        const ITERATION_STMT: [SyntaxKind; 5] = [
+            SyntaxKind::FOR_IN_STMT,
+            SyntaxKind::FOR_OF_STMT,
+            SyntaxKind::FOR_STMT,
+            SyntaxKind::WHILE_STMT,
+            SyntaxKind::DO_WHILE_STMT,
+        ];
+        ITERATION_STMT.contains(&self.to_node().kind())
+    }
 }
 
 impl SyntaxNodeExt for SyntaxNode {
     fn to_node(&self) -> &SyntaxNode {
         self
     }
+}
+
+pub trait SyntaxTokenExt {
+    fn to_token(&self) -> &SyntaxToken;
+
+    /// Convert a comment to a more detailed representation.
+    fn comment(&self) -> Option<Comment> {
+        if self.to_token().kind() != SyntaxKind::COMMENT {
+            return None;
+        }
+
+        let token = self.to_token();
+        let (kind, content) = match &token.text()[0..2] {
+            "//" => (
+                CommentKind::Inline,
+                token
+                    .text()
+                    .get(2..)
+                    .map(|x| x.to_string())
+                    .unwrap_or_default(),
+            ),
+            "/*" if token.text().chars().nth(2) == Some('*') => {
+                let len = token.text().len();
+                let end = if token.text().get(len - 2..len) == Some("*/") {
+                    len - 2
+                } else {
+                    len
+                };
+                (
+                    CommentKind::JsDoc,
+                    token
+                        .text()
+                        .get(3..end)
+                        .map(|x| x.to_string())
+                        .unwrap_or_default(),
+                )
+            }
+            "/*" => {
+                let len = token.text().len();
+                let end = if token.text().get(len - 2..len) == Some("*/") {
+                    len - 2
+                } else {
+                    len
+                };
+                (
+                    CommentKind::JsDoc,
+                    token
+                        .text()
+                        .get(3..end)
+                        .map(|x| x.to_string())
+                        .unwrap_or_default(),
+                )
+            }
+            _ => return None,
+        };
+        Some(Comment { kind, content })
+    }
+
+    /// Check whether this token's kind is contained in a token set.
+    fn in_ts(&self, set: TokenSet) -> bool {
+        set.contains(self.to_token().kind())
+    }
+}
+
+impl SyntaxTokenExt for SyntaxToken {
+    fn to_token(&self) -> &SyntaxToken {
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Comment {
+    pub kind: CommentKind,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CommentKind {
+    /// A block comment which starts with `/**`
+    JsDoc,
+    /// A block comment which starts with `/*`
+    Multiline,
+    /// An inline comment which starts with `//`
+    Inline,
 }
 
 /// Concatenate tokens into a string

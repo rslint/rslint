@@ -34,6 +34,13 @@ impl<T> Parse<T> {
         }
     }
 
+    /// Consume the parse result and get its green node. 
+    /// This is useful for multithreaded accesses to the tree as 
+    /// syntax nodes are not sync but green nodes are. 
+    pub fn green(self) -> GreenNode {
+        self.green
+    }
+
     /// The syntax node represented by this Parse result
     ///
     /// ```

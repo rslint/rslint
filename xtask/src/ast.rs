@@ -218,6 +218,12 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "WILDCARD_IMPORT",
         "NAMED_IMPORTS",
         "SPECIFIER",
+        "AWAIT_EXPR",
+        // These two are just hacks for converting to ast node without
+        // having to handle every error recovery case.
+        // in the future we might just tag the underlying rowan nodes
+        "FOR_STMT_TEST",
+        "FOR_STMT_UPDATE"
     ]
 };
 
@@ -428,20 +434,26 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ForStmt {
             T![for],
-            T![await],
             T!['('],
             init: ForHead,
             /* semicolon */
-            test: Expr,
+            test: ForStmtTest,
             /* semicolon */
-            update: Expr,
+            update: ForStmtUpdate,
             T![')'],
             cons: Stmt,
         }
 
+        struct ForStmtTest {
+            expr: Expr
+        }
+
+        struct ForStmtUpdate {
+            expr: Expr
+        }
+
         struct ForInStmt {
             T![for],
-            T![await],
             T!['('],
             left: ForHead,
             T![in],
@@ -823,6 +835,11 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             elements: ClassElement,
             T!['}']
         }
+
+        struct AwaitExpr {
+            T![await],
+            expr: Expr
+        }
     },
     enums: &ast_enums!{
         enum ObjectProp {
@@ -951,6 +968,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             ImportMeta,
             SuperCall,
             ImportCall,
+            YieldExpr,
+            AwaitExpr
         }
     }
 };

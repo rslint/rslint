@@ -7,17 +7,17 @@ use crate::SyntaxKind;
 pub struct TokenSet(u128);
 
 impl TokenSet {
-    pub(crate) const EMPTY: TokenSet = TokenSet(0);
+    pub const EMPTY: TokenSet = TokenSet(0);
 
-    pub(crate) const fn singleton(kind: SyntaxKind) -> TokenSet {
+    pub const fn singleton(kind: SyntaxKind) -> TokenSet {
         TokenSet(mask(kind))
     }
 
-    pub(crate) const fn union(self, other: TokenSet) -> TokenSet {
+    pub const fn union(self, other: TokenSet) -> TokenSet {
         TokenSet(self.0 | other.0)
     }
 
-    pub(crate) fn contains(&self, kind: SyntaxKind) -> bool {
+    pub fn contains(&self, kind: SyntaxKind) -> bool {
         self.0 & mask(kind) != 0
     }
 }

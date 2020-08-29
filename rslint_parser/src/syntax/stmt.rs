@@ -182,20 +182,25 @@ pub fn throw_stmt(p: &mut Parser) -> CompletedMarker {
 /// A break statement with an optional label such as `break a;`
 pub fn break_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
-    let start = p.cur_tok().range.start;
+    let start = p.cur_tok().range;
     p.expect(T![break]);
-    if !p.has_linebreak_before_n(0) && p.at(T![ident]) {
+    let end = if !p.has_linebreak_before_n(0) && p.at(T![ident]) {
+        let end = p.cur_tok().range.end;
         let label = primary_expr(p).unwrap();
         check_label_use(p, &label);
-    }
-    semi(p, start..p.cur_tok().range.end);
+        end
+    } else {
+        start.end
+    };
+
+    semi(p, start.start..p.cur_tok().range.end);
 
     if !p.state.break_allowed && p.state.labels.is_empty() {
         let err = p
             .err_builder("Invalid break not inside of a switch, loop, or labelled statement")
             .primary(
-                start..p.cur_tok().range.end,
-                "This break statement is invalid in this context",
+                start.start..end,
+                "",
             );
 
         p.error(err);
@@ -207,20 +212,25 @@ pub fn break_stmt(p: &mut Parser) -> CompletedMarker {
 /// A continue statement with an optional label such as `continue a;`
 pub fn continue_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
-    let start = p.cur_tok().range.start;
+    let start = p.cur_tok().range;
     p.expect(T![continue]);
-    if !p.has_linebreak_before_n(0) && p.at(T![ident]) {
+    let end = if !p.has_linebreak_before_n(0) && p.at(T![ident]) {
+        let end = p.cur_tok().range.end;
         let label = primary_expr(p).unwrap();
         check_label_use(p, &label);
-    }
-    semi(p, start..p.cur_tok().range.end);
+        end
+    } else {
+        start.end
+    };
 
-    if !p.state.continue_allowed {
+    semi(p, start.start..p.cur_tok().range.end);
+
+    if !p.state.break_allowed && p.state.labels.is_empty() {
         let err = p
             .err_builder("Invalid continue not inside of a loop")
             .primary(
-                start..p.cur_tok().range.end,
-                "This continue statement is invalid in this context",
+                start.start..end,
+                "",
             );
 
         p.error(err);
@@ -511,12 +521,16 @@ fn for_each_head(p: &mut Parser, is_in: bool) -> SyntaxKind {
 
 fn normal_for_head(p: &mut Parser) {
     if !p.eat(T![;]) {
+        let m = p.start();
         expr(p);
+        m.complete(p, FOR_STMT_TEST);
         p.expect(T![;]);
     }
 
     if !p.at(T![')']) {
+        let m = p.start();
         expr(p);
+        m.complete(p, FOR_STMT_UPDATE);
     }
 }
 
@@ -524,14 +538,13 @@ fn normal_for_head(p: &mut Parser) {
 pub fn for_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![for]);
+    // FIXME: This should emit an error for non-for-of
     p.eat(T![await]);
 
     p.expect(T!['(']);
     let kind = for_head(p);
     p.expect(T![')']);
-    p.state.iteration_stmt(true);
-    stmt(p);
-    p.state.iteration_stmt(false);
+    stmt(&mut *p.with_state(ParserState { continue_allowed: true, break_allowed: true, ..p.state.clone() }));
     m.complete(p, kind)
 }
 

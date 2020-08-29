@@ -83,7 +83,7 @@ pub use crate::{
     syntax_node::*,
     token_set::TokenSet,
     token_source::TokenSource,
-    util::SyntaxNodeExt,
+    util::{SyntaxTokenExt, SyntaxNodeExt},
 };
 
 pub use rowan::{SmolStr, SyntaxText, TextRange, TextSize, WalkEvent};
@@ -128,4 +128,31 @@ pub trait TreeSink {
 
     /// Emit an error
     fn error(&mut self, error: ParserError);
+}
+
+/// Matches a `SyntaxNode` against an `ast` type.
+///
+/// # Example:
+///
+/// ```ignore
+/// match_ast! {
+///     match node {
+///         ast::CallExpr(it) => { ... },
+///         ast::BlockStmt(it) => { ... },
+///         ast::Script(it) => { ... },
+///         _ => None,
+///     }
+/// }
+/// ```
+#[macro_export]
+macro_rules! match_ast {
+    (match $node:ident { $($tt:tt)* }) => { match_ast!(match ($node) { $($tt)* }) };
+
+    (match ($node:expr) {
+        $( ast::$ast:ident($it:ident) => $res:expr, )*
+        _ => $catch_all:expr $(,)?
+    }) => {{
+        $( if let Some($it) = ast::$ast::cast($node.clone()) { $res } else )*
+        { $catch_all }
+    }};
 }

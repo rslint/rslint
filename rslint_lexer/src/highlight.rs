@@ -1,7 +1,7 @@
 use crate::*;
 
 #[cfg(feature = "highlight")]
-pub use ansi_term::{ANSIGenericString, Color};
+pub use ansi_term::{ANSIGenericString, Color, Style};
 #[cfg(feature = "highlight")]
 use atty::is;
 
@@ -25,6 +25,12 @@ pub struct Highlighter<'s> {
     cur: usize,
     /// Current byte index in source
     cur_idx: usize,
+}
+
+macro_rules! rgb {
+    ($r:expr, $g:expr, $b:expr) => {
+        Color::RGB($r, $g, $b)
+    };
 }
 
 #[cfg(feature = "highlight")]
@@ -66,13 +72,36 @@ impl<'s> Highlighter<'s> {
     }
 }
 
-macro_rules! rgb {
-    ($r:expr, $g:expr, $b:expr) => {
-        Color::RGB($r, $g, $b)
-    };
-}
-
-const PURPLE_IDENT: [&'static str; 4] = ["let", "class", "await", "yield"];
+const PURPLE_IDENT: [&str; 4] = ["let", "class", "await", "yield"];
+const BUILTINS: [&str; 27] = [
+    "Math",
+    "Promise",
+    "Number",
+    "String",
+    "Date",
+    "Infinity",
+    "NaN",
+    "undefined",
+    "globalThis",
+    "Object",
+    "Function",
+    "Symbol",
+    "Boolean",
+    "Error",
+    "EvalError",
+    "InternalError",
+    "RangeError",
+    "ReferenceError",
+    "SyntaxError",
+    "TypeError",
+    "Number",
+    "BigInt",
+    "RegExp",
+    "Array",
+    "Map",
+    "Set",
+    "JSON",
+];
 
 #[cfg(feature = "highlight")]
 impl<'s> Iterator for Highlighter<'s> {
@@ -89,8 +118,8 @@ impl<'s> Iterator for Highlighter<'s> {
             T![import] => rgb![97, 175, 239],
             T![ident] if PURPLE_IDENT.contains(&self.src()) => rgb![198, 120, 221],
             T![ident] if self.src() == "from" => rgb![97, 175, 239],
-            T![ident] if self.src() == "Math" => rgb![229, 192, 123],
-            T![ident] => rgb![224, 108, 117],
+            T![ident] if BUILTINS.contains(&self.src()) => rgb![229, 192, 123],
+            T![ident] => Color::White,
             T![instanceof] | T![new] | T![?] | T![delete] | T![:] | T![const] => {
                 rgb![198, 120, 221]
             }

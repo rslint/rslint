@@ -53,6 +53,7 @@ pub const STARTS_EXPR: TokenSet = token_set![
     T![...],
     T![this],
     T![yield],
+    T![await],
     BACKTICK,
 ]
 .union(LITERAL);
@@ -73,6 +74,12 @@ pub fn literal(p: &mut Parser) -> Option<CompletedMarker> {
 pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
     if p.state.in_generator && p.at(T![yield]) {
         return Some(yield_expr(p));
+    }
+    if p.state.in_async && p.at(T![await]) {
+        let m = p.start();
+        p.bump_any();
+        unary_expr(p);
+        return Some(m.complete(p, AWAIT_EXPR));
     }
 
     p.state.potential_arrow_start = matches!(p.cur(), T![ident] | T!['('] | T![yield]);

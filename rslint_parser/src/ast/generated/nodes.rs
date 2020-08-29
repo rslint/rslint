@@ -190,10 +190,24 @@ impl ForStmt {
     pub fn await_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![await]) }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
     pub fn init(&self) -> Option<ForHead> { support::child(&self.syntax) }
-    pub fn test(&self) -> Option<Expr> { support::child(&self.syntax) }
-    pub fn update(&self) -> Option<Expr> { support::child(&self.syntax) }
+    pub fn test(&self) -> Option<ForStmtTest> { support::child(&self.syntax) }
+    pub fn update(&self) -> Option<ForStmtUpdate> { support::child(&self.syntax) }
     pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
     pub fn cons(&self) -> Option<Stmt> { support::child(&self.syntax) }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ForStmtTest {
+    pub(crate) syntax: SyntaxNode,
+}
+impl ForStmtTest {
+    pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ForStmtUpdate {
+    pub(crate) syntax: SyntaxNode,
+}
+impl ForStmtUpdate {
+    pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ForInStmt {
@@ -736,6 +750,14 @@ impl ClassBody {
     pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct AwaitExpr {
+    pub(crate) syntax: SyntaxNode,
+}
+impl AwaitExpr {
+    pub fn await_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![await]) }
+    pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ObjectProp {
     LiteralProp(LiteralProp),
     Getter(Getter),
@@ -833,6 +855,8 @@ pub enum Expr {
     ImportMeta(ImportMeta),
     SuperCall(SuperCall),
     ImportCall(ImportCall),
+    YieldExpr(YieldExpr),
+    AwaitExpr(AwaitExpr),
 }
 impl AstNode for Script {
     fn can_cast(kind: SyntaxKind) -> bool { kind == SCRIPT }
@@ -1067,6 +1091,28 @@ impl AstNode for WhileStmt {
 }
 impl AstNode for ForStmt {
     fn can_cast(kind: SyntaxKind) -> bool { kind == FOR_STMT }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for ForStmtTest {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == FOR_STMT_TEST }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for ForStmtUpdate {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == FOR_STMT_UPDATE }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -1747,6 +1793,17 @@ impl AstNode for ClassBody {
     }
     fn syntax(&self) -> &SyntaxNode { &self.syntax }
 }
+impl AstNode for AwaitExpr {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == AWAIT_EXPR }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
 impl From<LiteralProp> for ObjectProp {
     fn from(node: LiteralProp) -> ObjectProp { ObjectProp::LiteralProp(node) }
 }
@@ -2191,6 +2248,12 @@ impl From<SuperCall> for Expr {
 impl From<ImportCall> for Expr {
     fn from(node: ImportCall) -> Expr { Expr::ImportCall(node) }
 }
+impl From<YieldExpr> for Expr {
+    fn from(node: YieldExpr) -> Expr { Expr::YieldExpr(node) }
+}
+impl From<AwaitExpr> for Expr {
+    fn from(node: AwaitExpr) -> Expr { Expr::AwaitExpr(node) }
+}
 impl AstNode for Expr {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -2217,6 +2280,8 @@ impl AstNode for Expr {
                 | IMPORT_META
                 | SUPER_CALL
                 | IMPORT_CALL
+                | YIELD_EXPR
+                | AWAIT_EXPR
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -2243,6 +2308,8 @@ impl AstNode for Expr {
             IMPORT_META => Expr::ImportMeta(ImportMeta { syntax }),
             SUPER_CALL => Expr::SuperCall(SuperCall { syntax }),
             IMPORT_CALL => Expr::ImportCall(ImportCall { syntax }),
+            YIELD_EXPR => Expr::YieldExpr(YieldExpr { syntax }),
+            AWAIT_EXPR => Expr::AwaitExpr(AwaitExpr { syntax }),
             _ => return None,
         };
         Some(res)
@@ -2271,6 +2338,8 @@ impl AstNode for Expr {
             Expr::ImportMeta(it) => &it.syntax,
             Expr::SuperCall(it) => &it.syntax,
             Expr::ImportCall(it) => &it.syntax,
+            Expr::YieldExpr(it) => &it.syntax,
+            Expr::AwaitExpr(it) => &it.syntax,
         }
     }
 }
@@ -2440,6 +2509,16 @@ impl std::fmt::Display for WhileStmt {
     }
 }
 impl std::fmt::Display for ForStmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for ForStmtTest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for ForStmtUpdate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
@@ -2745,6 +2824,11 @@ impl std::fmt::Display for ClassExpr {
     }
 }
 impl std::fmt::Display for ClassBody {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for AwaitExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

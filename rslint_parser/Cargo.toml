@@ -6,7 +6,7 @@ authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
 license = "MIT"
 
 [dependencies]
-codespan-reporting = "0.9.5"
+codespan-reporting = { git = "https://github.com/brendanzab/codespan.git" }
 rslint_syntax = { path = "../rslint_syntax", version = "0.1" }
 rslint_lexer = { path = "../rslint_lexer", version = "0.1", features = ["highlight"] }
 rowan = "0.10.0"

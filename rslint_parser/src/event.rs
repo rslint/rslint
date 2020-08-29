@@ -54,6 +54,7 @@ impl Event {
 }
 
 /// Generate the syntax tree with the control of events.
+#[inline]
 pub fn process(sink: &mut dyn TreeSink, mut events: Vec<Event>) {
     let mut forward_parents = Vec::new();
 
