@@ -266,7 +266,7 @@ pub trait SyntaxNodeExt {
         string
     }
 
-    /// Whether this node is an iteration statement. 
+    /// Whether this node is an iteration statement.
     #[inline]
     fn is_loop(&self) -> bool {
         const ITERATION_STMT: [SyntaxKind; 5] = [
@@ -277,6 +277,31 @@ pub trait SyntaxNodeExt {
             SyntaxKind::DO_WHILE_STMT,
         ];
         ITERATION_STMT.contains(&self.to_node().kind())
+    }
+
+    /// Go over the descendants of this node, at every descendant call `func`, and keep traversing
+    /// the descendants of that node if the function's return is `true`. If the function returns false
+    /// then stop traversing the descendants of that node go on to the next child.
+    ///
+    /// For example:
+    /// ```ignore
+    /// ROOT
+    ///     CHILD // <-- Call `F` with CHILD, `F` returns `false` so go on to the next child...
+    ///         SUBCHILD
+    ///     CHILD // <-- Call `F` with CHILD, `F` return `true` so go on to the children of CHILD
+    ///         SUBCHILD // <-- Same thing
+    ///             SUBSUBCHILD
+    ///     CHILD // Go on to the next child and do the same thing
+    /// ```
+    fn descendants_with<F>(&self, func: &mut F)
+    where
+        F: FnMut(&SyntaxNode) -> bool,
+    {
+        for node in self.to_node().children() {
+            if func(&node) {
+                node.descendants_with(func);
+            }
+        }
     }
 }
 

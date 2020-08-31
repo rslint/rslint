@@ -6,6 +6,7 @@ members = [
   "rslint_lexer",
   "rslint_parser",
   "rslint_core",
+  "rslint_scope",
   "xtask",
 ]
 

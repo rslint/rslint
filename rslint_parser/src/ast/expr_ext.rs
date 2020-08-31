@@ -327,14 +327,6 @@ impl AssignExpr {
     pub fn op_token(&self) -> Option<SyntaxToken> {
         self.op_details().map(|t| t.0)
     }
-
-    pub fn lhs(&self) -> Option<Expr> {
-        support::children(self.syntax()).next()
-    }
-
-    pub fn rhs(&self) -> Option<Expr> {
-        support::children(self.syntax()).nth(1)
-    }
 }
 
 impl ArrayExpr {
@@ -475,5 +467,42 @@ impl Literal {
         };
 
         Some(self.syntax().text().slice(start..end))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ExprOrBlock {
+    Expr(Expr),
+    Block(BlockStmt)
+}
+
+impl AstNode for ExprOrBlock {
+    fn can_cast(kind: SyntaxKind) -> bool {
+        if kind == BLOCK_STMT {
+            true
+        } else {
+            Expr::can_cast(kind)
+        }
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if syntax.kind() == BLOCK_STMT {
+            Some(ExprOrBlock::Block(BlockStmt::cast(syntax).unwrap()))
+        } else {
+            Some(ExprOrBlock::Expr(Expr::cast(syntax)?))
+        }
+    }
+
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            ExprOrBlock::Expr(it) => it.syntax(),
+            ExprOrBlock::Block(it) => it.syntax()
+        }
+    }
+}
+
+impl ArrowExpr {
+    pub fn body(&self) -> Option<ExprOrBlock> {
+        ExprOrBlock::cast(self.syntax().children().last()?)
     }
 }

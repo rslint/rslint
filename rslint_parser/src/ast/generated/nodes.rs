@@ -34,7 +34,6 @@ pub struct WildcardImport {
 }
 impl WildcardImport {
     pub fn star_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![*]) }
-    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NamedImports {
@@ -187,7 +186,6 @@ pub struct ForStmt {
 }
 impl ForStmt {
     pub fn for_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![for]) }
-    pub fn await_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![await]) }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
     pub fn init(&self) -> Option<ForHead> { support::child(&self.syntax) }
     pub fn test(&self) -> Option<ForStmtTest> { support::child(&self.syntax) }
@@ -215,7 +213,6 @@ pub struct ForInStmt {
 }
 impl ForInStmt {
     pub fn for_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![for]) }
-    pub fn await_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![await]) }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
     pub fn left(&self) -> Option<ForHead> { support::child(&self.syntax) }
     pub fn in_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![in]) }
@@ -428,7 +425,7 @@ pub struct InitializedProp {
     pub(crate) syntax: SyntaxNode,
 }
 impl InitializedProp {
-    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn key(&self) -> Option<Name> { support::child(&self.syntax) }
     pub fn eq_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![=]) }
     pub fn value(&self) -> Option<Expr> { support::child(&self.syntax) }
 }
@@ -437,7 +434,7 @@ pub struct IdentProp {
     pub(crate) syntax: SyntaxNode,
 }
 impl IdentProp {
-    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LiteralProp {
@@ -451,7 +448,7 @@ pub struct Getter {
     pub(crate) syntax: SyntaxNode,
 }
 impl Getter {
-    pub fn key(&self) -> Option<Literal> { support::child(&self.syntax) }
+    pub fn key(&self) -> Option<PropName> { support::child(&self.syntax) }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
     pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
     pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
@@ -461,6 +458,7 @@ pub struct Setter {
     pub(crate) syntax: SyntaxNode,
 }
 impl Setter {
+    pub fn key(&self) -> Option<PropName> { support::child(&self.syntax) }
     pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
 }
@@ -583,7 +581,10 @@ impl CondExpr {
 pub struct AssignExpr {
     pub(crate) syntax: SyntaxNode,
 }
-impl AssignExpr {}
+impl AssignExpr {
+    pub fn lhs(&self) -> Option<Pattern> { support::child(&self.syntax) }
+    pub fn rhs(&self) -> Option<Expr> { support::child(&self.syntax) }
+}
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SequenceExpr {
     pub(crate) syntax: SyntaxNode,
@@ -646,7 +647,7 @@ pub struct AssignPattern {
     pub(crate) syntax: SyntaxNode,
 }
 impl AssignPattern {
-    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn key(&self) -> Option<Pattern> { support::child(&self.syntax) }
     pub fn eq_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![=]) }
     pub fn value(&self) -> Option<Expr> { support::child(&self.syntax) }
 }
@@ -772,7 +773,6 @@ pub enum Pattern {
     SinglePattern(SinglePattern),
     RestPattern(RestPattern),
     AssignPattern(AssignPattern),
-    KeyValuePattern(KeyValuePattern),
     ObjectPattern(ObjectPattern),
     ArrayPattern(ArrayPattern),
 }
@@ -1866,9 +1866,6 @@ impl From<RestPattern> for Pattern {
 impl From<AssignPattern> for Pattern {
     fn from(node: AssignPattern) -> Pattern { Pattern::AssignPattern(node) }
 }
-impl From<KeyValuePattern> for Pattern {
-    fn from(node: KeyValuePattern) -> Pattern { Pattern::KeyValuePattern(node) }
-}
 impl From<ObjectPattern> for Pattern {
     fn from(node: ObjectPattern) -> Pattern { Pattern::ObjectPattern(node) }
 }
@@ -1879,12 +1876,7 @@ impl AstNode for Pattern {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
             kind,
-            SINGLE_PATTERN
-                | REST_PATTERN
-                | ASSIGN_PATTERN
-                | KEY_VALUE_PATTERN
-                | OBJECT_PATTERN
-                | ARRAY_PATTERN
+            SINGLE_PATTERN | REST_PATTERN | ASSIGN_PATTERN | OBJECT_PATTERN | ARRAY_PATTERN
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -1892,7 +1884,6 @@ impl AstNode for Pattern {
             SINGLE_PATTERN => Pattern::SinglePattern(SinglePattern { syntax }),
             REST_PATTERN => Pattern::RestPattern(RestPattern { syntax }),
             ASSIGN_PATTERN => Pattern::AssignPattern(AssignPattern { syntax }),
-            KEY_VALUE_PATTERN => Pattern::KeyValuePattern(KeyValuePattern { syntax }),
             OBJECT_PATTERN => Pattern::ObjectPattern(ObjectPattern { syntax }),
             ARRAY_PATTERN => Pattern::ArrayPattern(ArrayPattern { syntax }),
             _ => return None,
@@ -1904,7 +1895,6 @@ impl AstNode for Pattern {
             Pattern::SinglePattern(it) => &it.syntax,
             Pattern::RestPattern(it) => &it.syntax,
             Pattern::AssignPattern(it) => &it.syntax,
-            Pattern::KeyValuePattern(it) => &it.syntax,
             Pattern::ObjectPattern(it) => &it.syntax,
             Pattern::ArrayPattern(it) => &it.syntax,
         }

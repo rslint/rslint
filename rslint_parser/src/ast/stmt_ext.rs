@@ -1,6 +1,6 @@
 //! Extended AST node definitions for statements which are unique and special enough to generate code for manually
 
-use crate::{ast::*, syntax_node::SyntaxNode, SyntaxKind, SyntaxKind::*, T};
+use crate::{ast::*, syntax_node::SyntaxNode, SyntaxKind, SyntaxKind::*, SyntaxNodeExt, T};
 
 /// Either a statement or a declaration such as a function
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -249,5 +249,45 @@ impl VarDecl {
     /// Whether the declaration is a let declaration
     pub fn is_var(&self) -> bool {
         self.var_token().is_some()
+    }
+}
+
+impl ImportDecl {
+    /// The source of the import, such as `import a from "a"` ("a"), or `import "foo"` ("foo")
+    pub fn source(&self) -> Option<Literal> {
+        self.syntax()
+            .children()
+            .filter_map(|x| x.try_to::<Literal>().filter(|x| x.is_string()))
+            .next()
+    }
+}
+
+impl Specifier {
+    pub fn as_token(&self) -> Option<SyntaxToken> {
+        self.syntax()
+            .children_with_tokens()
+            .filter_map(|x| x.into_token())
+            .nth(1)
+    }
+
+    pub fn alias(&self) -> Option<Name> {
+        self.syntax().children().nth(1).and_then(|x| x.try_to())
+    }
+
+    pub fn name(&self) -> Option<SyntaxNode> {
+        self.syntax().first_child()
+    }
+}
+
+impl WildcardImport {
+    pub fn as_token(&self) -> Option<SyntaxToken> {
+        self.syntax()
+            .children_with_tokens()
+            .filter_map(|x| x.into_token())
+            .nth(1)
+    }
+
+    pub fn alias(&self) -> Option<Name> {
+        self.syntax().children().find_map(|x| x.try_to())
     }
 }

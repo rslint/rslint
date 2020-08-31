@@ -128,10 +128,12 @@ fn object_binding_prop(p: &mut Parser) -> Option<CompletedMarker> {
             .primary(name.unwrap().range(p), "");
 
         p.error(err);
+        return None;
     }
 
     if p.eat(T![=]) {
         assign_expr(p);
+        name.unwrap().change_kind(p, SINGLE_PATTERN);
         Some(m.complete(p, ASSIGN_PATTERN))
     } else {
         Some(name?.precede(p).complete(p, SINGLE_PATTERN))

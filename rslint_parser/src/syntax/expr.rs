@@ -84,13 +84,24 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
 
     p.state.potential_arrow_start = matches!(p.cur(), T![ident] | T!['('] | T![yield]);
 
+    let token_cur = p.token_pos();
+    let event_cur = p.cur_event_pos();
     let target = conditional_expr(p)?;
-    assign_expr_recursive(p, target)
+    assign_expr_recursive(p, target, token_cur, event_cur)
 }
 
-fn assign_expr_recursive(p: &mut Parser, target: CompletedMarker) -> Option<CompletedMarker> {
+fn assign_expr_recursive(p: &mut Parser, mut target: CompletedMarker, token_cur: usize, event_cur: usize) -> Option<CompletedMarker> {
     if p.at_ts(ASSIGN_TOKENS) {
-        check_simple_assign_target(p, &p.parse_marker(&target), target.range(p));
+        if p.at(T![=]) {
+            p.rewind(token_cur);
+            p.drain_events(p.cur_event_pos() - event_cur);
+            target = pattern(p)?;
+        } else {
+            check_simple_assign_target(p, &p.parse_marker(&target), target.range(p));
+        }
+        if target.kind() == NAME {
+            target.change_kind(p, SINGLE_PATTERN);
+        }
         let m = target.precede(p);
         p.bump_any();
         assign_expr(p);
@@ -788,8 +799,10 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
                 if prop?.kind() != NAME || p.at(T![:]) {
                     p.expect(T![:]);
                     assign_expr(p);
+                    Some(m.complete(p, LITERAL_PROP))
+                } else {
+                    Some(m.complete(p, IDENT_PROP))
                 }
-                Some(m.complete(p, LITERAL_PROP))
             }
         }
     }

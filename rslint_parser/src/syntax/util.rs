@@ -130,7 +130,13 @@ fn check_pat(
             for subpat in obj.elements() {
                 let pat = match subpat {
                     ast::ObjectPatternProp::AssignPattern(pat) => pat.into(),
-                    ast::ObjectPatternProp::KeyValuePattern(pat) => pat.into(),
+                    ast::ObjectPatternProp::KeyValuePattern(pat) => {
+                        if let Some(val) = pat.value() {
+                            val
+                        } else {
+                            return;
+                        }
+                    }
                     ast::ObjectPatternProp::RestPattern(pat) => pat.into(),
                     ast::ObjectPatternProp::SinglePattern(pat) => pat.into(),
                 };
@@ -144,11 +150,6 @@ fn check_pat(
         }
         ast::Pattern::RestPattern(pat) => {
             if let Some(subpat) = pat.pat() {
-                check_pat(p, subpat, map, marker);
-            }
-        }
-        ast::Pattern::KeyValuePattern(pat) => {
-            if let Some(subpat) = pat.value() {
                 check_pat(p, subpat, map, marker);
             }
         }

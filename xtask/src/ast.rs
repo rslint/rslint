@@ -326,7 +326,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct WildcardImport {
             T![*],
             /* as */
-            T![ident]
+            /* alias */
         }
 
         struct NamedImports {
@@ -594,13 +594,13 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct InitializedProp {
-            T![ident],
+            key: Name,
             T![=],
             value: Expr,
         }
 
         struct IdentProp {
-            T![ident]
+            name: Name
         }
 
         struct LiteralProp {
@@ -611,14 +611,15 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct Getter {
             /* get */
-            key: Literal,
+            key: PropName,
             T!['('],
             T![')'],
             body: BlockStmt,
         }
 
         struct Setter {
-            /* get */
+            /* set */
+            key: PropName,
             parameters: ParameterList,
             body: BlockStmt,
         }
@@ -714,7 +715,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         // Perhaps we should merge this into binexpr?
         struct AssignExpr {
+            lhs: Pattern,
             /* AssignOp */
+            rhs: Expr
         }
 
         struct SequenceExpr {
@@ -758,7 +761,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct AssignPattern {
-            T![ident],
+            key: Pattern,
             T![=],
             value: Expr
         }
@@ -856,7 +859,6 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             SinglePattern,
             RestPattern,
             AssignPattern,
-            KeyValuePattern,
             ObjectPattern,
             ArrayPattern
         }

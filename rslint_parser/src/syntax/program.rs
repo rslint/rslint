@@ -37,11 +37,13 @@ pub fn import_decl(p: &mut Parser) -> CompletedMarker {
     match p.cur() {
         STRING => p.bump_any(),
         T![*] => {
+            let inner = p.start();
             p.bump_any();
             if p.cur_src() == "as" {
                 p.bump_any();
                 binding_identifier(p);
             }
+            inner.complete(p, WILDCARD_IMPORT);
             from_clause(p);
         },
         T!['{'] => {
