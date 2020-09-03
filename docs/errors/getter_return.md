@@ -3,4 +3,4 @@
 -->
 
 
-[Source](../../rslint_core/src/groups/errors/getter-return.rs)
+[Source](../../rslint_core/src/groups/errors/getter_return.rs)

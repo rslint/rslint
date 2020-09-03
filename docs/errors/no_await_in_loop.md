@@ -23,4 +23,4 @@ async () => {
 ```
 </details>
 
-[Source](../../rslint_core/src/groups/errors/no-await-in-loop.rs)
+[Source](../../rslint_core/src/groups/errors/no_await_in_loop.rs)

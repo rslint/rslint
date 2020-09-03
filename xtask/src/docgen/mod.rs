@@ -54,8 +54,8 @@ pub fn group_markdown(data: &HashMap<String, RuleFile>, group: &Group) -> String
     for (name, rule) in data {
         let source_file = rule_src(&group.name, &name.replace("-", "_"));
         ret.push_str(&format!(
-            "| [`{}`]({}) | {} |\n",
-            name,
+            "| [{}]({}) | {} |\n",
+            &name.replace("_", "-")[..name.len() - 3],
             source_file,
             first_sentence(&rule.lint_declaration.docstring.clone().unwrap_or_default())
                 .unwrap_or_default()
@@ -137,7 +137,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
 
     ret.push_str(&format!(
         "\n\n[Source]({}.rs)",
-        rule_src(&group.name, &rule.lint_declaration.name)
+        rule_src(&group.name, &rule.lint_declaration.name.replace("-", "_"))
     ));
     ret
 }
