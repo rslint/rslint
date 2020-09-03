@@ -30,7 +30,7 @@ pub fn run() {
             write(dir.join("README.md"), data).expect("Failed to write group md");
             for (name, rule) in res {
                 write(
-                    dir.join(name).with_extension("md"),
+                    dir.join(name.replace("_", "-")).with_extension("md"),
                     rule_markdown(rule, &meta),
                 )
                 .expect("Failed to write rule markdown");
