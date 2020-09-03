@@ -40,5 +40,6 @@ key in bar
 ```js
 bar instanceof bar
 ```
-</details><br> 
+</details>
+
 [Source](../../rslint_core/src/groups/errors/no_unsafe_negation.rs)

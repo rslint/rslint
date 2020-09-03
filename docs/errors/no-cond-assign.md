@@ -58,5 +58,6 @@ for(;foo = 4; bar) {}
 ```js
 if (bar = 5 ? foo : bar) {}
 ```
-</details><br> 
+</details>
+
 [Source](../../rslint_core/src/groups/errors/no_cond_assign.rs)
