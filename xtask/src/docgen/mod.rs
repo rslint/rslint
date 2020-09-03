@@ -105,14 +105,14 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
                 "| `{}` | {} | {} |\n",
                 config.field.ident.as_ref().unwrap(),
                 config.field.ty.to_token_stream().to_string(),
-                config.docstring.clone().unwrap_or_default()
+                config.docstring.clone().unwrap_or_default().replace("\n", "<br>")
             ));
         }
     }
 
     if let Some(tests) = rule.tests {
         if !tests.err_examples.is_empty() {
-            ret.push_str("\n<details>\n <summary> More incorrect examples </summary>\n");
+            ret.push_str("\n<br><details>\n <summary> More incorrect examples </summary>\n");
             for example in tests.err_examples {
                 ret.push_str(&format!(
                     "{}\n```js\n{}\n```\n",
@@ -123,7 +123,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
             ret.push_str("</details>");
         }
         if !tests.ok_examples.is_empty() {
-            ret.push_str("\n<details>\n <summary> More correct examples </summary>\n");
+            ret.push_str("<br>\n<details>\n <summary> More correct examples </summary>\n");
             for example in tests.ok_examples {
                 ret.push_str(&format!(
                     "{}\n```js\n{}\n```\n",
@@ -136,7 +136,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
     }
 
     ret.push_str(&format!(
-        "\n\n[Source]({}.rs)",
+        "<br>[Source]({}.rs)",
         rule_src(&group.name, &rule.lint_declaration.name.replace("-", "_"))
     ));
     ret

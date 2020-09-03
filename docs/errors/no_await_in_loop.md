@@ -2,7 +2,7 @@
  generated docs file, do not edit by hand, see xtask/docgen 
 -->
 
-<details>
+<br><details>
  <summary> More incorrect examples </summary>
 
 ```js
@@ -21,6 +21,4 @@ async () => {
     }
 }
 ```
-</details>
-
-[Source](../../rslint_core/src/groups/errors/no_await_in_loop.rs)
+</details><br>[Source](../../rslint_core/src/groups/errors/no_await_in_loop.rs)

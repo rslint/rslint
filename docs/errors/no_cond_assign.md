@@ -34,10 +34,9 @@ foo // 6
 ## Config
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `allow_parens` | bool |  Allow an assignment if they are enclosed in parentheses to allow
-things like reassigning a variable. |
+| `allow_parens` | bool |  Allow an assignment if they are enclosed in parentheses to allow<br>things like reassigning a variable. |
 
-<details>
+<br><details>
  <summary> More incorrect examples </summary>
 
 ```js
@@ -59,6 +58,4 @@ for(;foo = 4; bar) {}
 ```js
 if (bar = 5 ? foo : bar) {}
 ```
-</details>
-
-[Source](../../rslint_core/src/groups/errors/no_cond_assign.rs)
+</details><br>[Source](../../rslint_core/src/groups/errors/no_cond_assign.rs)

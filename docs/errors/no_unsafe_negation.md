@@ -14,7 +14,7 @@ the expression to check if `foo` is not an instance of `bar` however.
 
 ```
 
-<details>
+<br><details>
  <summary> More incorrect examples </summary>
 
 ```js
@@ -24,7 +24,7 @@ the expression to check if `foo` is not an instance of `bar` however.
 ```js
 ![5] instanceof !4
 ```
-</details>
+</details><br>
 <details>
  <summary> More correct examples </summary>
  If this is intended behavior, you can wrap the expression
@@ -40,6 +40,4 @@ key in bar
 ```js
 bar instanceof bar
 ```
-</details>
-
-[Source](../../rslint_core/src/groups/errors/no_unsafe_negation.rs)
+</details><br>[Source](../../rslint_core/src/groups/errors/no_unsafe_negation.rs)
