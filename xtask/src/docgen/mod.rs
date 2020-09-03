@@ -65,7 +65,7 @@ pub fn group_markdown(data: &HashMap<String, RuleFile>, group: &Group) -> String
 }
 
 pub fn rule_src(group_name: &str, rule_name: &str) -> String {
-    format!("{}/{}/{}", GROUPS_ROOT, group_name, rule_name)
+    format!("../../{}/{}/{}", GROUPS_ROOT, group_name, rule_name)
 }
 
 pub fn first_sentence(string: &str) -> Option<&str> {
