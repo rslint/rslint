@@ -52,11 +52,11 @@ pub fn group_markdown(data: &HashMap<String, RuleFile>, group: &Group) -> String
     ret.push_str("| ---- | ----------- |\n");
 
     for (name, rule) in data {
-        let source_file = rule_src(&group.name, &name.replace("-", "_"));
+        let user_facing_name = &name.replace("_", "-")[..name.len() - 3];
         ret.push_str(&format!(
-            "| [{}]({}) | {} |\n",
-            &name.replace("_", "-")[..name.len() - 3],
-            source_file,
+            "| [{}](./{}.md) | {} |\n",
+            user_facing_name,
+            user_facing_name,
             first_sentence(&rule.lint_declaration.docstring.clone().unwrap_or_default())
                 .unwrap_or_default()
         ));
