@@ -1,6 +1,8 @@
 <!--
  generated docs file, do not edit by hand, see xtask/docgen 
 -->
+# no-await-in-loop
+
 
 <details>
  <summary> More incorrect examples </summary>

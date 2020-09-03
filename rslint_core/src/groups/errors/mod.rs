@@ -2,6 +2,7 @@ use crate::group;
 
 group! {
     /// Rules which relate to productions which are almost always erroneous or cause
+    /// unexpected behavior.
     errors,
     no_unsafe_finally::NoUnsafeFinally,
     no_cond_assign::NoCondAssign,

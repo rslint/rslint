@@ -1,6 +1,8 @@
 <!--
  generated docs file, do not edit by hand, see xtask/docgen 
 -->
+# no-unsafe-negation
+
 Deny the use of `!` on the left hand side of an `instanceof` or `in` expression where it is ambiguous.
 
 JavaScript precedence is higher for logical not than it is for in or instanceof. Oftentimes you see
@@ -8,7 +10,7 @@ expressions such as `!foo instanceof bar`, which most of the times produces unex
 precedence will group the expressions like `(!foo) instanceof bar`. Most of the times the developer expects
 the expression to check if `foo` is not an instance of `bar` however.
 
-# Incorrect Code Examples
+## Incorrect Code Examples
 
 ```js
 

@@ -12,7 +12,7 @@ declare_lint! {
     precedence will group the expressions like `(!foo) instanceof bar`. Most of the times the developer expects
     the expression to check if `foo` is not an instance of `bar` however.
     
-    # Incorrect Code Examples
+    ## Incorrect Code Examples
 
     ```ignore
     

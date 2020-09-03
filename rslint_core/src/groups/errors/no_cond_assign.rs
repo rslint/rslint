@@ -19,7 +19,7 @@ declare_lint! {
     like `if`, `while`, `do_while`, and `for`. This is erroneous and is most likely unwanted behavior
     since the condition used will actually be the value assigned.
 
-    # Incorrect Code Examples
+    ## Incorrect Code Examples
 
     ```ignore
     let foo = 5;

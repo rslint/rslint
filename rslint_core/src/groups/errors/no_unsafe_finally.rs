@@ -10,7 +10,7 @@ declare_lint! {
     and `continue` which are used inside of a `finally` will override any control statements in `try` and `catch`.
     This is almost always unexpected behavior.
 
-    # Incorrect Code Examples
+    ## Incorrect Code Examples
 
     ```ignore
     // We expect 10 to be returned, but 5 is actually returned

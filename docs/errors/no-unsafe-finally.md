@@ -1,6 +1,8 @@
 <!--
  generated docs file, do not edit by hand, see xtask/docgen 
 -->
+# no-unsafe-finally
+
 Forbid the use of unsafe control flow statements in try and catch blocks.
 
 JavaScript suspends any running control flow statements inside of `try` and `catch` blocks until
@@ -8,7 +10,7 @@ JavaScript suspends any running control flow statements inside of `try` and `cat
 and `continue` which are used inside of a `finally` will override any control statements in `try` and `catch`.
 This is almost always unexpected behavior.
 
-# Incorrect Code Examples
+## Incorrect Code Examples
 
 ```js
 // We expect 10 to be returned, but 5 is actually returned

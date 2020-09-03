@@ -93,7 +93,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
         .replace("```ignore", "```js");
     ret.insert_str(
         0,
-        "<!--\n generated docs file, do not edit by hand, see xtask/docgen \n-->\n",
+        &format!("<!--\n generated docs file, do not edit by hand, see xtask/docgen \n-->\n# {}\n\n", rule.lint_declaration.name),
     );
 
     if !rule.lint_declaration.config_fields.is_empty() {

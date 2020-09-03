@@ -1,6 +1,8 @@
 <!--
  generated docs file, do not edit by hand, see xtask/docgen 
 -->
+# no-cond-assign
+
 Forbid the use of assignment expressions in conditions which may yield unwanted behavior. 
 
 Assignment expressions return the value assigned: 
@@ -16,7 +18,7 @@ Users often make a typo and end up using `=` instead of `==` or `===` in conditi
 like `if`, `while`, `do_while`, and `for`. This is erroneous and is most likely unwanted behavior
 since the condition used will actually be the value assigned.
 
-# Incorrect Code Examples
+## Incorrect Code Examples
 
 ```js
 let foo = 5;
