@@ -42,4 +42,4 @@ bar instanceof bar
 ```
 </details>
 
-[`Source`](../../rslint_core/src/groups/errors/no-unsafe-negation)
+[Source](../../rslint_core/src/groups/errors/no-unsafe-negation.rs)

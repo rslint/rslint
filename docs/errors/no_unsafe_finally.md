@@ -76,4 +76,4 @@ try {
 ```
 </details>
 
-[`Source`](../../rslint_core/src/groups/errors/no-unsafe-finally)
+[Source](../../rslint_core/src/groups/errors/no-unsafe-finally.rs)

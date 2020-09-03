@@ -136,7 +136,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
     }
 
     ret.push_str(&format!(
-        "\n\n[`Source`]({})",
+        "\n\n[Source]({}.rs)",
         rule_src(&group.name, &rule.lint_declaration.name)
     ));
     ret
