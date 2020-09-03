@@ -113,7 +113,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
 
     if let Some(tests) = rule.tests {
         if !tests.err_examples.is_empty() {
-            ret.push_str("\n<br><details>\n <summary> More incorrect examples </summary>\n");
+            ret.push_str("\n<details>\n <summary> More incorrect examples </summary>\n");
             for example in tests.err_examples {
                 ret.push_str(&format!(
                     "{}\n```js\n{}\n```\n",
@@ -137,7 +137,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
     }
 
     ret.push_str(&format!(
-        "<br>[Source]({}.rs)",
+        "<br> \n[Source]({}.rs)",
         rule_src(&group.name, &rule.lint_declaration.name.replace("-", "_"))
     ));
     ret

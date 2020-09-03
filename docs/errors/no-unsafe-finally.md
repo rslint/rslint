@@ -41,7 +41,7 @@ function foo() {
 foo() // 5
 ```
 
-<br><details>
+<details>
  <summary> More incorrect examples </summary>
 
 ```js
@@ -74,4 +74,5 @@ try {
     }
 }
 ```
-</details><br>[Source](../../rslint_core/src/groups/errors/no_unsafe_finally.rs)
+</details><br> 
+[Source](../../rslint_core/src/groups/errors/no_unsafe_finally.rs)
