@@ -771,7 +771,7 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
 
     match p.cur() {
-        T![ident] if p.cur_src() == "get" || p.cur_src() == "set" => method(p, None),
+        T![ident] if (p.cur_src() == "get" || p.cur_src() == "set") && !p.nth_at(1, T![:]) => method(p, None),
         T![ident]
             if p.cur_src() == "async"
                 && p.has_linebreak_before_n(1)

@@ -42,7 +42,7 @@ pub fn simple_bool_coerce(condition: Expr) -> Option<bool> {
             };
             Some(coerced)
         },
-        Expr::ObjectExpr(_) | Expr::ArrayExpr(_) | Expr::FnDecl(_) => Some(true),
+        Expr::ObjectExpr(_) | Expr::ArrayExpr(_) | Expr::FnExpr(_) => Some(true),
         Expr::AssignExpr(assign) if assign.op().map(|op| op == AssignOp::Assign).unwrap_or_default() => simple_bool_coerce(assign.rhs()?),
         Expr::SequenceExpr(seqexpr) => simple_bool_coerce(seqexpr.exprs().last()?),
         Expr::Name(name) => {

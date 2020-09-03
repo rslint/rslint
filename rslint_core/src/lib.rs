@@ -86,11 +86,16 @@ pub fn run_rule(rule: &Box<dyn CstRule>, file_id: usize, root: SyntaxNode, verbo
 #[test]
 fn placeholder() {
     let src = r#"
-    async () => {
-        while(true) {
-            await i;
+    Object.defineProperty(a, "key", {
+        get: function() {
+            switch (a > 5) {
+                default:
+                if (foo) {
+                    return 5;
+                }
+            }
         }
-    }
+    })
     "#;
 
     lint_file(0, src);

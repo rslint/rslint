@@ -149,7 +149,6 @@ impl IfStmt {
     pub fn condition(&self) -> Option<Condition> { support::child(&self.syntax) }
     pub fn cons(&self) -> Option<Stmt> { support::child(&self.syntax) }
     pub fn else_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![else]) }
-    pub fn alt(&self) -> Option<Stmt> { support::child(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Condition {
@@ -833,6 +832,7 @@ pub enum Decl {
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
+    ArrowExpr(ArrowExpr),
     Literal(Literal),
     Template(Template),
     Name(Name),
@@ -850,7 +850,8 @@ pub enum Expr {
     CondExpr(CondExpr),
     AssignExpr(AssignExpr),
     SequenceExpr(SequenceExpr),
-    FnDecl(FnDecl),
+    FnExpr(FnExpr),
+    ClassExpr(ClassExpr),
     NewTarget(NewTarget),
     ImportMeta(ImportMeta),
     SuperCall(SuperCall),
@@ -2172,6 +2173,9 @@ impl AstNode for Decl {
         }
     }
 }
+impl From<ArrowExpr> for Expr {
+    fn from(node: ArrowExpr) -> Expr { Expr::ArrowExpr(node) }
+}
 impl From<Literal> for Expr {
     fn from(node: Literal) -> Expr { Expr::Literal(node) }
 }
@@ -2223,8 +2227,11 @@ impl From<AssignExpr> for Expr {
 impl From<SequenceExpr> for Expr {
     fn from(node: SequenceExpr) -> Expr { Expr::SequenceExpr(node) }
 }
-impl From<FnDecl> for Expr {
-    fn from(node: FnDecl) -> Expr { Expr::FnDecl(node) }
+impl From<FnExpr> for Expr {
+    fn from(node: FnExpr) -> Expr { Expr::FnExpr(node) }
+}
+impl From<ClassExpr> for Expr {
+    fn from(node: ClassExpr) -> Expr { Expr::ClassExpr(node) }
 }
 impl From<NewTarget> for Expr {
     fn from(node: NewTarget) -> Expr { Expr::NewTarget(node) }
@@ -2248,7 +2255,8 @@ impl AstNode for Expr {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
             kind,
-            LITERAL
+            ARROW_EXPR
+                | LITERAL
                 | TEMPLATE
                 | NAME
                 | THIS_EXPR
@@ -2265,7 +2273,8 @@ impl AstNode for Expr {
                 | COND_EXPR
                 | ASSIGN_EXPR
                 | SEQUENCE_EXPR
-                | FN_DECL
+                | FN_EXPR
+                | CLASS_EXPR
                 | NEW_TARGET
                 | IMPORT_META
                 | SUPER_CALL
@@ -2276,6 +2285,7 @@ impl AstNode for Expr {
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
+            ARROW_EXPR => Expr::ArrowExpr(ArrowExpr { syntax }),
             LITERAL => Expr::Literal(Literal { syntax }),
             TEMPLATE => Expr::Template(Template { syntax }),
             NAME => Expr::Name(Name { syntax }),
@@ -2293,7 +2303,8 @@ impl AstNode for Expr {
             COND_EXPR => Expr::CondExpr(CondExpr { syntax }),
             ASSIGN_EXPR => Expr::AssignExpr(AssignExpr { syntax }),
             SEQUENCE_EXPR => Expr::SequenceExpr(SequenceExpr { syntax }),
-            FN_DECL => Expr::FnDecl(FnDecl { syntax }),
+            FN_EXPR => Expr::FnExpr(FnExpr { syntax }),
+            CLASS_EXPR => Expr::ClassExpr(ClassExpr { syntax }),
             NEW_TARGET => Expr::NewTarget(NewTarget { syntax }),
             IMPORT_META => Expr::ImportMeta(ImportMeta { syntax }),
             SUPER_CALL => Expr::SuperCall(SuperCall { syntax }),
@@ -2306,6 +2317,7 @@ impl AstNode for Expr {
     }
     fn syntax(&self) -> &SyntaxNode {
         match self {
+            Expr::ArrowExpr(it) => &it.syntax,
             Expr::Literal(it) => &it.syntax,
             Expr::Template(it) => &it.syntax,
             Expr::Name(it) => &it.syntax,
@@ -2323,7 +2335,8 @@ impl AstNode for Expr {
             Expr::CondExpr(it) => &it.syntax,
             Expr::AssignExpr(it) => &it.syntax,
             Expr::SequenceExpr(it) => &it.syntax,
-            Expr::FnDecl(it) => &it.syntax,
+            Expr::FnExpr(it) => &it.syntax,
+            Expr::ClassExpr(it) => &it.syntax,
             Expr::NewTarget(it) => &it.syntax,
             Expr::ImportMeta(it) => &it.syntax,
             Expr::SuperCall(it) => &it.syntax,

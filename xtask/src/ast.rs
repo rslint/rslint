@@ -409,7 +409,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             condition: Condition,
             cons: Stmt,
             T![else],
-            alt: Stmt,
+            /* alt */
         }
 
         struct Condition {
@@ -948,6 +948,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         */
 
         enum Expr {
+            ArrowExpr,
             Literal,
             Template,
             Name,
@@ -965,7 +966,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             CondExpr,
             AssignExpr,
             SequenceExpr,
-            FnDecl,
+            FnExpr,
+            ClassExpr,
             NewTarget,
             ImportMeta,
             SuperCall,

@@ -53,7 +53,6 @@ const COND_CHECKED: [SyntaxKind; 5] = [IF_STMT, WHILE_STMT, DO_WHILE_STMT, FOR_S
 impl CstRule for NoCondAssign {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         let cond = condition(node)?;
-        println!("{:?}", cond);
         if COND_CHECKED.contains(&node.kind()) && check(&cond, self.allow_parens) {
             let err = ctx
                 .err(self.name(), format!("Unexpected assignment inside a {} condition", node.readable_stmt_name()))

@@ -551,6 +551,7 @@ pub fn for_stmt(p: &mut Parser) -> CompletedMarker {
 // We return the range in case its a default clause so we can report multiple default clauses in a better way
 fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
     let start = p.cur_tok().range.start;
+    let m = p.start();
     match p.cur() {
         T![default] => {
             p.bump_any();
@@ -561,6 +562,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
             while !p.at_ts(token_set![T![default], T![case], T!['}'], EOF]) {
                 stmt(p);
             }
+            m.complete(p, DEFAULT_CLAUSE);
             return Some(start..end);
         }
         T![case] => {
@@ -570,6 +572,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
             while !p.at_ts(token_set![T![default], T![case], T!['}'], EOF]) {
                 stmt(p);
             }
+            m.complete(p, CASE_CLAUSE);
         }
         _ => {
             let err = p
@@ -581,7 +584,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
                     "Expected the start to a case or default clause here",
                 );
 
-            p.error(err);
+            p.err_recover(err, STMT_RECOVERY_SET);
         }
     }
     None

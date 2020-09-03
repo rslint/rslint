@@ -291,3 +291,13 @@ impl WildcardImport {
         self.syntax().children().find_map(|x| x.try_to())
     }
 }
+
+impl IfStmt {
+    pub fn alt(&self) -> Option<Stmt> {
+        self.syntax()
+            .children()
+            .filter(|child| child.is::<Stmt>())
+            .nth(1)
+            .map(|it| it.to())
+    }
+}

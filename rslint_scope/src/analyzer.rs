@@ -612,12 +612,17 @@ impl Analyzer {
     }
 
     #[instrument]
-    pub(crate) fn shadow(&self, name: &Name) -> Option<Weak<VariableBinding>> {
+    pub(crate) fn shadow(&self, name: &Name) -> Vec<Weak<VariableBinding>> {
         self.scope
             .variables
             .iter()
             .find(|var| var.name == name.to_string())
-            .map(|this| Rc::downgrade(this))
+            .map(|this| {
+                let mut shadow = this.clone().shadows.clone();
+                shadow.push(Rc::downgrade(this));
+                shadow
+            })
+            .unwrap_or_default()
     }
 
     /// Bind an identifier as a variable.
@@ -626,13 +631,13 @@ impl Analyzer {
         &mut self,
         kind: BindingKind,
         name: &Name,
-        shadow: impl Into<Option<Weak<VariableBinding>>>,
+        shadow: impl Into<Vec<Weak<VariableBinding>>>,
     ) {
         let var = VariableBinding {
             node: Some(name.syntax().clone()),
             name: name.ident_token().unwrap().text().clone(),
             references: vec![],
-            shadow: shadow.into(),
+            shadows: shadow.into(),
             kind: kind.clone(),
             inherited: false,
         };

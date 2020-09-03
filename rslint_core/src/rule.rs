@@ -232,7 +232,7 @@ macro_rules! declare_lint {
         use serde::{Deserialize, Serialize};
 
         $(#[$outer])*
-        #[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+        #[derive(Debug, Clone, Deserialize, Serialize)]
         pub struct $name {
             $(
                 $(

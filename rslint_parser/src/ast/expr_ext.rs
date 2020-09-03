@@ -143,6 +143,10 @@ pub enum BinOp {
     LogicalOr,
     /// `&&`
     LogicalAnd,
+    /// `in`
+    In,
+    /// `instanceof`
+    Instanceof
 }
 
 impl BinExpr {
@@ -175,6 +179,8 @@ impl BinExpr {
                     T![??] => BinOp::NullishCoalescing,
                     T![||] => BinOp::LogicalOr,
                     T![&&] => BinOp::LogicalAnd,
+                    T![in] => BinOp::In,
+                    T![instanceof] => BinOp::Instanceof,
                     _ => return None,
                 };
                 Some((t, op))

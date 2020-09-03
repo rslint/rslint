@@ -303,6 +303,20 @@ pub trait SyntaxNodeExt {
             }
         }
     }
+
+    /// Separate all the lossy tokens of this node, then compare each token's text with the corresponding
+    /// text in `tokens`. 
+    fn structural_lossy_token_eq(&self, tokens: &[impl AsRef<str>]) -> bool {
+        let node_tokens = self.to_node().lossy_tokens();
+        if node_tokens.len() == tokens.len() {
+            node_tokens
+                .iter()
+                .zip(tokens.iter())
+                .all(|(l, r)| l.text() == r.as_ref())
+        } else {
+            false
+        }
+    }
 }
 
 impl SyntaxNodeExt for SyntaxNode {

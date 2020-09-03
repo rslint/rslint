@@ -15,8 +15,8 @@ pub struct VariableBinding {
     pub name: SmolStr,
     /// All the references to this variable
     pub references: Vec<Weak<VariableRef>>,
-    /// The variable definition shadowed by this definition
-    pub shadow: Option<Weak<VariableBinding>>,
+    /// A stack of the variable definitions this definition shadows
+    pub shadows: Vec<Weak<VariableBinding>>,
     pub kind: BindingKind,
     /// Whether this variable is not defined in this scope but is instead passed down
     /// from a parent scope
@@ -127,4 +127,26 @@ pub enum ScopeKind {
     Global,
     Getter,
     Setter,
+}
+
+#[test]
+fn it_works() {
+    let src = r#"
+    let foo = bar;
+
+    let ee = {
+        foo,
+        get baz() {
+            if (foo > 5) {
+                bar();
+            }
+        }
+    }
+    var bar = 5;
+    "#;
+    let mut analyzer = Analyzer::new_root(parse_module(src, 0).syntax());
+    analyzer.analyze(None);
+    let global = analyzer.end();
+    assert!(!global.children[0].children[0].var_refs[0].undefined());
+    assert_eq!(global.children[0].children[0].var_refs[0].usage, VariableUsageKind::Call);
 }
