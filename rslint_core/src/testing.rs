@@ -17,7 +17,7 @@ macro_rules! rule_tests {
     err: {
         $(
             // An optional tag to give to docgen
-            $(;#[$_:meta])*
+            $(;#[$err_meta:meta])*
             $code:expr
         ),*
     },
@@ -28,7 +28,7 @@ macro_rules! rule_tests {
     ok: {
         $(
             // An optional tag to give to docgen
-            $(;#[_:meta])*
+            $(;#[$ok_meta:meta])*
             $ok_code:expr
         ),*
     }) => {

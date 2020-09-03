@@ -46,7 +46,7 @@ impl Eq for CstRuleGroup {}
 /// This will call `::new()` on each rule.  
 #[macro_export]
 macro_rules! group {
-    ($groupname:ident, $($path:ident::$rule:ident),*) => {
+    ($(#[$description:meta])* $groupname:ident, $($path:ident::$rule:ident),*) => {
         use $crate::{CstRule, CstRuleGroup};
         $(
             mod $path;

@@ -1,6 +1,7 @@
 use pico_args::Arguments;
 use xtask::{
     codegen::{self, Mode},
+    docgen,
     glue::pushd,
     run_rustfmt, project_root, Result
 };
@@ -21,6 +22,11 @@ fn main() -> Result<()> {
             args.finish()?;
             run_rustfmt(Mode::Overwrite)
         }
+        "docgen" => {
+            args.finish()?;
+            docgen::run();
+            Ok(())
+        }
         _ => {
             eprintln!(
                 "\
@@ -30,7 +36,8 @@ USAGE:
     cargo xtask <SUBCOMMAND>
 SUBCOMMANDS:
     format
-    codegen"
+    codegen
+    docgen"
             );
             Ok(())
         }

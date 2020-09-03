@@ -3,6 +3,7 @@
 pub mod ast;
 pub mod codegen;
 pub mod glue;
+pub mod docgen;
 
 use std::{
     env,
