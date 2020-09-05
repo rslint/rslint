@@ -12,10 +12,34 @@ cd RSLint
 cargo run --release -- ./glob/pattern.js
 ```
 
+# Differences from other linters 
+
+## Implemented 
+
+- Unbeatably fast 
+- Highly parallelized (files linted in parallel, rules run in parallel, nodes could be traversed in parallel in the future) 
+- Rich, cross-platform, colored diagnostics with secondary labels, primary labels, and notes 
+- Untyped node and token driven linting allowing easy traversal of the syntax tree from any node 
+- Automatic docgen for rule documentation removing the need for writing rustdoc docs and user facing docs 
+- Distinctly grouped rules 
+- Rule examples generated from tests 
+- Easy macros for generating rule declarations and config fields 
+- No need for dealing with script/module or ecma versions, linter deduces source type and assumes latest syntax 
+- No need for a configuration file 
+- Completely error tolerant and fast parser 
+
+## Planned 
+
+- Global config 
+- TOML config (json will be allowed too) 
+- SSR-like templates for node matching and autofix  
+- Autofix without requiring reruns of all rules 
+- WASM builds 
+
 # Limitations
 
 The project is in very early development, there will be bugs and weird productions. If you find any bugs feel free to submit an issue 👍.
-**RSLint currently only works on ECMAScript 5 due to the parser (rslint-parse) being still in development**, however, support for further ES versions and JSX plus TypeScript is planned in the future.
+~~RSLint currently only works on ECMAScript 5 due to the parser (rslint-parse) being still in development~~ Rslint-core and rslint-parser, however, support for further ES versions and JSX plus TypeScript is planned in the future.
 
 # Speed
 
@@ -61,16 +85,6 @@ This is evidenced by crude benchmarks (these will be updated with proper benchma
 If you would like to generate these tables for your run, set the `TIMING` env var to `1`  
 **Note that these benchmarks are highly inaccurate, the linting process will end up being a lot faster if benchmarked over thousands of iterations**  
 Furthermore, rule times are measured as the average over all files, so the total time is closer to the avg duration than `duration * files`.
-
-# Caching 
-
-RSLint will cache results by default, this is done through a `.rslintcache` binary file. The file is protected in various ways to avoid erroneous runs: 
-  - The file is in a binary format which will easily fail serialization on random edits  
-  - The file stores the time it was created at, and checks it at runtime, if it does not match then the cache is rejected as "poisoned"
-
-# Implementing new rules
-
-If you would like to implement a new rule there are a few steps you must go through. You can either use the `cst_rule` macro then implement visit for the visitor structure generated (see rules like `no_empty.rs` for examples), or you can make a struct and impl `CstRule` manually. Don't forget to add the rule to the mod file of the group you chose!
 
 # Roadmap
 

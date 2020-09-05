@@ -78,6 +78,6 @@ rule_tests! {
         "key in bar",
         "bar instanceof bar",
         ;/// ignore
-        "1 in [1, 1, 1, (!1 in [1111111111, 111])]"
+        "1 in [1, 1, 1, ((!1) in [1111111111, 111])]"
     }
 }

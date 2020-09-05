@@ -2,7 +2,6 @@ mod extract;
 
 use crate::project_root;
 use extract::*;
-use proc_macro2::Span;
 use quote::ToTokens;
 use std::collections::HashMap;
 use std::error::Error;
@@ -12,6 +11,7 @@ use convert_case::{Case, Casing};
 const GROUPS_ROOT: &str = "rslint_core/src/groups";
 
 pub fn run() {
+    let mut groups = vec![];
     for file in read_dir(project_root().join(GROUPS_ROOT))
         .expect("Unreadable groups dir")
         .filter_map(Result::ok)
@@ -22,7 +22,7 @@ pub fn run() {
             );
             let meta = res.expect("No group! declaration in group");
 
-            let dir = project_root().join("docs").join(&meta.name);
+            let dir = project_root().join("docs/rules").join(&meta.name);
 
             let res = extract_group(&meta.name).expect("Failed to extract group rule data");
             let data = group_markdown(&res, &meta);
@@ -35,8 +35,67 @@ pub fn run() {
                 )
                 .expect("Failed to write rule markdown");
             }
+            groups.push(meta);
         }
     }
+    write(project_root().join("docs/rules/README.md"), rules_markdown(groups)).expect("Failed to write rules readme");
+}
+
+const RULES_PRELUDE: &str = 
+"
+<!--
+generated docs file, do not edit by hand, see xtask/docgen 
+-->
+
+User documentation for RSLint rules. RSLint groups rules by their scope, each group 
+has a specific scope. Grouping rules allows RSLint to distinctly group rules for a better project structure, 
+as well as allowing users to disable a whole group of rules.  
+
+";
+
+const RULES_CONCLUSION: &str =
+"
+
+# Docgen
+
+Documentation in this folder is not manually written, documentation is written as rust doc comments
+in source files (in the lint declaration). And a [docgen script](../xtask/src/docgen/mod.rs) is used to generate the user facing docs.
+The docgen script allows us to make rustdoc documentation, as well as user facing documentation automatically. 
+
+Docgen goes through a few steps to collect docs:  
+* The script crawls the [groups directory](../rslint_core/src/groups), for every group it will:  
+    * Collect the group name by looking at the `group!` invocation in `mod.rs`  
+    * For each rule file it will then:  
+        * Collect the `declare_lint!` invocation, from this it grabs the main documentation, replacing all `ignore` code blocks with `js`. 
+        it will also collect any public config fields and their corresponding documentation.  
+        * Collect the possible `rule_tests!` invocation, for each err and ok test, if it is not marked with `;/// ignore` then it  
+        will be used in `More invalid examples` and `More valid examples` sections.  
+        * Append the rule name to the top of the file.  
+        * Append the main documentation.  
+        * Build a table of config fields (if any).  
+        * Append any `More invalid examples` and `More valid examples` sections built from tests.  
+        * Append a hyperlink to the source code  
+        * Generate a README for the group, with a table of all the rules, including the first sentence of each rule's doc as a description.  
+    it also links each rule's markdown file as a hyperlink.  
+    * The script collects all groups which have been collected and generates this top level document with a table of the groups 
+which you might have seen right above ^^ 
+
+You can run the docgen with either `cargo docgen` or `cargo xtask codegen`.
+";
+
+pub fn rules_markdown(groups: Vec<Group>) -> String {
+    let mut ret = RULES_PRELUDE.to_string();
+
+    ret.push_str("\n## Groups \n");
+    ret.push_str("| Name | Description |\n");
+    ret.push_str("| ---- | ----------- |\n");
+
+    for group in groups.into_iter() {
+        ret.push_str(&format!("| [{}](./{}) | {} |\n", group.name, group.name, group.docstring.replace("\n", "<br>")));
+    }
+    
+    ret.push_str(RULES_CONCLUSION);
+    ret
 }
 
 pub fn group_markdown(data: &HashMap<String, RuleFile>, group: &Group) -> String {
@@ -62,15 +121,16 @@ pub fn group_markdown(data: &HashMap<String, RuleFile>, group: &Group) -> String
                 .unwrap_or_default()
         ));
     }
+    ret.push_str(&format!("\n[Source](../../../rslint_core/src/groups/{}", group.name));
     ret
 }
 
 pub fn rule_src(group_name: &str, rule_name: &str) -> String {
-    format!("../../{}/{}/{}", GROUPS_ROOT, group_name, rule_name)
+    format!("../../../{}/{}/{}", GROUPS_ROOT, group_name, rule_name)
 }
 
 pub fn first_sentence(string: &str) -> Option<&str> {
-    string.split("\n").next().map(|x| x.trim())
+    string.trim().split("\n").next().map(|x| x.trim())
 }
 
 pub fn extract_group(group_name: &str) -> Result<HashMap<String, RuleFile>, Box<dyn Error>> {
