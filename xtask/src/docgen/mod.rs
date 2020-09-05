@@ -93,7 +93,7 @@ pub fn rules_markdown(groups: Vec<Group>) -> String {
     for group in groups.into_iter() {
         ret.push_str(&format!("| [{}](./{}) | {} |\n", group.name, group.name, group.docstring.replace("\n", "<br>")));
     }
-    
+
     ret.push_str(RULES_CONCLUSION);
     ret
 }
@@ -121,7 +121,7 @@ pub fn group_markdown(data: &HashMap<String, RuleFile>, group: &Group) -> String
                 .unwrap_or_default()
         ));
     }
-    ret.push_str(&format!("\n[Source](../../../rslint_core/src/groups/{}", group.name));
+    ret.push_str(&format!("\n[Source](../../../rslint_core/src/groups/{})", group.name));
     ret
 }
 
