@@ -49,7 +49,7 @@ impl<'a> Files<'a> for FileWalker {
     }
 
     fn line_index(&self, id: Self::FileId, byte_index: usize) -> Option<usize> {
-        self.files.get(&id)?.line_start(byte_index)
+        self.files.get(&id)?.line_index(byte_index)
     }
 
     fn line_range(&self, id: Self::FileId, line_index: usize) -> Option<Range<usize>> {
@@ -105,7 +105,7 @@ impl FileWalker {
     }
 
     pub fn line_start(&self, id: usize, line_index: usize) -> Option<usize> {
-        self.files.get(&id)?.line_starts.get(line_index).copied()
+        self.files.get(&id)?.line_start(line_index)
     }
 }
 
@@ -155,7 +155,17 @@ impl JsFile {
         std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
     }
 
-    pub fn line_start(&self, byte_index: usize) -> Option<usize> {
+    pub fn line_start(&self, line_index: usize) -> Option<usize> {
+        use std::cmp::Ordering;
+
+        match line_index.cmp(&self.line_starts.len()) {
+            Ordering::Less => self.line_starts.get(line_index).cloned(),
+            Ordering::Equal => Some(self.source.len()),
+            Ordering::Greater => None,
+        }
+    }
+
+    pub fn line_index(&self, byte_index: usize) -> Option<usize> {
         match self.line_starts.binary_search(&byte_index) {
             Ok(line) => Some(line),
             Err(next_line) => Some(next_line - 1),

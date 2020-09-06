@@ -12,7 +12,7 @@ declare_lint! {
 
     ```ignore
     if (x === -0) {
-           // ^^ this comparison works for both `-0` and `+0`
+           // ^^ this comparison works for both -0 and +0
     }
     ```
 
@@ -41,10 +41,10 @@ impl CstRule for NoCompareNegZero {
         if node.try_to::<ast::BinExpr>()?.comparison() {
             let bin = node.to::<ast::BinExpr>();
             let op = bin.op_token().unwrap();
-            if let Some(expr) = bin.lhs().filter(|e| unsafe_comparison(e)) {
+            if let Some(expr) = bin.lhs().filter(|e| unsafe_comparison(e)).and_then(|_| bin.rhs()) {
                 issue_err(expr, ctx, op.clone());
             }
-            if let Some(expr) = bin.rhs().filter(|e| unsafe_comparison(e)) {
+            if let Some(expr) = bin.rhs().filter(|e| unsafe_comparison(e)).and_then(|_| bin.lhs()) {
                 issue_err(expr, ctx, op)
             }
         }

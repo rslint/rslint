@@ -118,7 +118,7 @@ macro_rules! lint_err {
     }};
 }
 
-/// Construct a simple linter error and immediately throw it to stderr
+/// Construct a simple linter warning and immediately throw it to stderr
 #[macro_export]
 macro_rules! lint_warn {
     ($($format_args:tt)*) => {{
@@ -126,7 +126,7 @@ macro_rules! lint_warn {
     }};
 }
 
-/// Construct a simple linter error and immediately throw it to stderr
+/// Construct a simple linter note and immediately throw it to stderr
 #[macro_export]
 macro_rules! lint_note {
     ($($format_args:tt)*) => {{
