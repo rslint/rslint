@@ -2,7 +2,6 @@ use codespan_reporting::term::{
     emit,
     termcolor::{ColorChoice, StandardStream},
 };
-use codespan_reporting::files::Files;
 use rayon::prelude::*;
 use rslint_cli::{
     codespan_config, lint_err, ExplanationRunner, FileWalker, JsFileKind, panic_hook
@@ -35,7 +34,7 @@ pub(crate) enum SubCommand {
 
 fn main() {
     set_hook(Box::new(panic_hook));
-    
+
     let opt = Options::from_args();
 
     if let Some(SubCommand::Explain { rules }) = opt.cmd {
