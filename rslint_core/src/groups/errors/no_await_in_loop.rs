@@ -4,6 +4,7 @@ use SyntaxKind::*;
 declare_lint! {
     #[derive(Default)]
     NoAwaitInLoop,
+    errors,
     "no-await-in-loop"
 }
 

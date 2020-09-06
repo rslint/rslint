@@ -7,6 +7,7 @@ use crate::{Diagnostic, DiagnosticBuilder};
 use codespan_reporting::diagnostic::Severity;
 use rslint_parser::{SyntaxNode, SyntaxToken, SyntaxNodeExt};
 use serde::{Deserialize, Serialize};
+use dyn_clone::DynClone;
 use std::marker::{Send, Sync};
 use std::rc::Rc;
 use std::fmt::Debug;
@@ -81,9 +82,11 @@ pub trait CstRule: Send + Sync + Rule {
 /// for the purposes of allowing more complex rules to instantiate themselves in a different way. 
 /// However the rules must be easily instantiated because of rule groups. 
 #[typetag::serde]
-pub trait Rule: Debug {
+pub trait Rule: Debug + DynClone {
     /// A unique, kebab-case name for the rule. 
     fn name(&self) -> &'static str;
+    /// The name of the group this rule belongs to.
+    fn group(&self) -> &'static str;
 }
 
 /// Context given to a rule when running it.
@@ -218,6 +221,7 @@ macro_rules! declare_lint {
         $(#[$outer:meta])*
         // The rule struct name
         $name:ident,
+        $group:ident,
         // A unique kebab-case name for the rule
         $code:expr
         $(,
@@ -252,6 +256,10 @@ macro_rules! declare_lint {
         impl Rule for $name {
             fn name(&self) -> &'static str {
                 $code
+            }
+            
+            fn group(&self) -> &'static str {
+                stringify!($group)
             }
         }
     }

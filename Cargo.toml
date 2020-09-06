@@ -7,8 +7,10 @@ members = [
   "rslint_parser",
   "rslint_core",
   "rslint_scope",
+  "rslint_cli",
   "xtask",
 ]
+default-members = ["rslint_cli"]
 
 [profile]
 release = { lto = true, codegen-units = 1 }

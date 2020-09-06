@@ -20,6 +20,7 @@ declare_lint! {
     */
     #[derive(Default)]
     NoUnsafeNegation,
+    errors,
     "no-unsafe-negation"
 }
 

@@ -10,7 +10,7 @@ pub struct DiagnosticBuilder(Diagnostic, usize);
 
 impl DiagnosticBuilder {
     /// Create a new builder with a severity of error
-    pub fn error<T: Into<String>>(file_id: usize, code: T, message: T) -> Self {
+    pub fn error(file_id: usize, code: impl Into<String>, message: impl Into<String>) -> Self {
         Self(Diagnostic {
             code: Some(code.into()),
             message: message.into(),
@@ -21,11 +21,22 @@ impl DiagnosticBuilder {
     }
 
     /// Create a new builder with a severity of warning
-    pub fn warning<T: Into<String>>(file_id: usize, code: T, message: T) -> Self {
+    pub fn warning(file_id: usize, code: impl Into<String>, message: impl Into<String>) -> Self {
         Self(Diagnostic {
             code: Some(code.into()),
             message: message.into(),
             severity: Severity::Warning,
+            labels: vec![],
+            notes: vec![],
+        }, file_id)
+    }
+
+    /// Create a new builder with a severity of note
+    pub fn note_diagnostic(file_id: usize, code: impl Into<String>, message: impl Into<String>) -> Self {
+        Self(Diagnostic {
+            code: Some(code.into()),
+            message: message.into(),
+            severity: Severity::Note,
             labels: vec![],
             notes: vec![],
         }, file_id)

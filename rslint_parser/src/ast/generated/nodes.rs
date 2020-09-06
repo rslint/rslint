@@ -580,10 +580,7 @@ impl CondExpr {
 pub struct AssignExpr {
     pub(crate) syntax: SyntaxNode,
 }
-impl AssignExpr {
-    pub fn lhs(&self) -> Option<Pattern> { support::child(&self.syntax) }
-    pub fn rhs(&self) -> Option<Expr> { support::child(&self.syntax) }
-}
+impl AssignExpr {}
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SequenceExpr {
     pub(crate) syntax: SyntaxNode,

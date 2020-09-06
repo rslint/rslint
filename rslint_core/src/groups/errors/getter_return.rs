@@ -1,5 +1,4 @@
 use crate::rule_prelude::*;
-use rslint_parser::TextRange;
 use SyntaxKind::*;
 
 declare_lint! {
@@ -59,6 +58,7 @@ declare_lint! {
     */
     #[derive(Default)]
     GetterReturn,
+    errors,
     "getter-return",
     /// Whether to allow implicitly returning undefined with `return;`. 
     /// `true` by default. 

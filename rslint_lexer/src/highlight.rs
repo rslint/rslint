@@ -1,7 +1,7 @@
 use crate::*;
 
 #[cfg(feature = "highlight")]
-pub use ansi_term::{ANSIGenericString, Color, Style};
+pub use ansi_term::{ANSIGenericString, Color, Style, self};
 #[cfg(feature = "highlight")]
 use atty::is;
 
@@ -119,7 +119,7 @@ impl<'s> Iterator for Highlighter<'s> {
             T![ident] if PURPLE_IDENT.contains(&self.src()) => rgb![198, 120, 221],
             T![ident] if self.src() == "from" => rgb![97, 175, 239],
             T![ident] if BUILTINS.contains(&self.src()) => rgb![229, 192, 123],
-            T![ident] => Color::White,
+            T![ident] => rgb![224, 108, 117],
             T![instanceof] | T![new] | T![?] | T![delete] | T![:] | T![const] => {
                 rgb![198, 120, 221]
             }

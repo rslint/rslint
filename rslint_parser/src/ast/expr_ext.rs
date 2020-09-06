@@ -333,6 +333,14 @@ impl AssignExpr {
     pub fn op_token(&self) -> Option<SyntaxToken> {
         self.op_details().map(|t| t.0)
     }
+
+    pub fn lhs(&self) -> Option<PatternOrExpr> {
+        self.syntax.children().next().and_then(|n| n.try_to())
+    }
+
+    pub fn rhs(&self) -> Option<Expr> {
+        self.syntax.children().nth(1).and_then(|n| n.try_to())
+    }
 }
 
 impl ArrayExpr {
@@ -510,5 +518,32 @@ impl AstNode for ExprOrBlock {
 impl ArrowExpr {
     pub fn body(&self) -> Option<ExprOrBlock> {
         ExprOrBlock::cast(self.syntax().children().last()?)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum PatternOrExpr {
+    Pattern(Pattern),
+    Expr(Expr),
+}
+
+impl AstNode for PatternOrExpr {
+    fn can_cast(kind: SyntaxKind) -> bool {
+        Expr::can_cast(kind) || Pattern::can_cast(kind)
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        Some(if Pattern::can_cast(syntax.kind()) {
+            PatternOrExpr::Pattern(Pattern::cast(syntax).unwrap())
+        } else {
+            PatternOrExpr::Expr(Expr::cast(syntax).unwrap())
+        })
+    }
+
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            PatternOrExpr::Pattern(it) => it.syntax(),
+            PatternOrExpr::Expr(it) => it.syntax()
+        }
     }
 }

@@ -27,7 +27,8 @@ pub const STMT_RECOVERY_SET: TokenSet = token_set![
     THROW_KW,
     TRY_KW,
     DEBUGGER_KW,
-    FUNCTION_KW
+    FUNCTION_KW,
+    CLASS_KW
 ];
 
 pub const FOLLOWS_LET: TokenSet = token_set![T!['{'], T!['['], T![ident], T![yield], T![await]];

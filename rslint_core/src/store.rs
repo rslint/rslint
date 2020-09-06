@@ -34,4 +34,9 @@ impl CstRuleStore {
     pub fn par_rules(&self) -> impl ParallelIterator<Item = &Box<dyn CstRule>> {
         self.groups.par_iter().map(|g| g.rules.par_iter()).flatten()
     }
+    
+    /// An iterator over every rule in ever group of the store. 
+    pub fn rules(&self) -> impl Iterator<Item = &Box<dyn CstRule>> {
+        self.groups.iter().map(|g| g.rules.iter()).flatten()
+    }
 }

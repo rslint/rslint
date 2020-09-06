@@ -54,6 +54,8 @@ pub const STARTS_EXPR: TokenSet = token_set![
     T![this],
     T![yield],
     T![await],
+    T![function],
+    T![class],
     BACKTICK,
 ]
 .union(LITERAL);
@@ -93,9 +95,11 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
 fn assign_expr_recursive(p: &mut Parser, mut target: CompletedMarker, token_cur: usize, event_cur: usize) -> Option<CompletedMarker> {
     if p.at_ts(ASSIGN_TOKENS) {
         if p.at(T![=]) {
-            p.rewind(token_cur);
-            p.drain_events(p.cur_event_pos() - event_cur);
-            target = pattern(p)?;
+            if ![DOT_EXPR, BRACKET_EXPR, IDENT].contains(&target.kind()) {
+                p.rewind(token_cur);
+                p.drain_events(p.cur_event_pos() - event_cur);
+                target = pattern(p)?;
+            }
         } else {
             check_simple_assign_target(p, &p.parse_marker(&target), target.range(p));
         }

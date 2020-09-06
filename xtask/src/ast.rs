@@ -713,11 +713,10 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             /* alt */
         }
 
-        // Perhaps we should merge this into binexpr?
         struct AssignExpr {
-            lhs: Pattern,
+            /* lhs: PatternOrExpr, */
             /* AssignOp */
-            rhs: Expr
+            /* rhs: Expr */
         }
 
         struct SequenceExpr {

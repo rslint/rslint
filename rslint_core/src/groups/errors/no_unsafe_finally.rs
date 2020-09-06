@@ -45,6 +45,7 @@ declare_lint! {
     */
     #[derive(Default)]
     NoUnsafeFinally,
+    errors,
     "no-unsafe-finally"
 }
 
