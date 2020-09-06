@@ -98,6 +98,8 @@ impl Parse for LintDeclaration {
         let docstring = parse_docstring(input);
         input.parse::<Ident>()?;
         input.parse::<Token!(,)>()?;
+        input.parse::<Ident>()?;
+        input.parse::<Token!(,)>()?;
         let name = input.parse::<LitStr>()?.value();
         let _ = input.parse::<Token!(,)>();
         let mut config_fields = Vec::new();

@@ -5,13 +5,14 @@
 
 use crate::{Diagnostic, DiagnosticBuilder};
 use codespan_reporting::diagnostic::Severity;
-use rslint_parser::{SyntaxNode, SyntaxToken, SyntaxNodeExt};
-use serde::{Deserialize, Serialize};
 use dyn_clone::DynClone;
-use std::marker::{Send, Sync};
-use std::rc::Rc;
+use rslint_parser::{SyntaxNode, SyntaxNodeExt, SyntaxToken};
+use serde::{Deserialize, Serialize};
+use std::borrow::Borrow;
 use std::fmt::Debug;
-use std::ops::{Drop, DerefMut, Deref};
+use std::marker::{Send, Sync};
+use std::ops::{Deref, DerefMut, Drop};
+use std::rc::Rc;
 
 /// The main type of rule run by the runner. The rule takes individual
 /// nodes inside of a Concrete Syntax Tree and checks them.
@@ -36,30 +37,22 @@ use std::ops::{Drop, DerefMut, Deref};
 /// - Do not rely on file data of different files. There is a separate rule type for this.
 /// - Do not unwrap pieces of an AST node (sometimes it is ok because they are guaranteed to be there), since that will cause panics
 /// with error recovery.
-/// - Do not use node or string coloring outside of diagnostic nodes, it messes with termcolor and ends up looking horrible. 
+/// - Do not use node or string coloring outside of diagnostic nodes, it messes with termcolor and ends up looking horrible.
 pub trait CstRule: Send + Sync + Rule {
     /// Check an individual node in the syntax tree.
     /// You can use the `match_ast` macro to make matching a node to an ast node easier.
     /// The reason this uses nodes and not a visitor is because nodes are more flexible,
     /// converting them to an AST node has zero cost and you can easily traverse surrounding nodes.
     /// Defaults to doing nothing.
-    /// 
+    ///
     /// The return type is `Option<()>` to allow usage of `?` on the properties of AST nodes which are all optional.
-    fn check_node(
-        &self,
-        node: &SyntaxNode,
-        ctx: &mut RuleCtx
-    ) -> Option<()> {
+    fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         None
     }
 
     /// Check an individual token in the syntax tree.
     /// Defaults to doing nothing.
-    fn check_token(
-        &self,
-        token: &SyntaxToken,
-        ctx: &mut RuleCtx
-    ) -> Option<()> {
+    fn check_token(&self, token: &SyntaxToken, ctx: &mut RuleCtx) -> Option<()> {
         None
     }
 
@@ -67,23 +60,19 @@ pub trait CstRule: Send + Sync + Rule {
     /// This method is guaranteed to only be called once.
     /// The root's kind will be either `SCRIPT` or `MODULE`.
     /// Defaults to doing nothing.
-    fn check_root(
-        &self,
-        root: &SyntaxNode,
-        ctx: &mut RuleCtx
-    ) -> Option<()> {
+    fn check_root(&self, root: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         None
     }
 }
 
-/// A generic trait which describes things common to a rule regardless on what they run on. 
-/// 
+/// A generic trait which describes things common to a rule regardless on what they run on.
+///
 /// Each rule should have a `new` function for easy instantiation. We however do not require this
-/// for the purposes of allowing more complex rules to instantiate themselves in a different way. 
-/// However the rules must be easily instantiated because of rule groups. 
+/// for the purposes of allowing more complex rules to instantiate themselves in a different way.
+/// However the rules must be easily instantiated because of rule groups.
 #[typetag::serde]
 pub trait Rule: Debug + DynClone {
-    /// A unique, kebab-case name for the rule. 
+    /// A unique, kebab-case name for the rule.
     fn name(&self) -> &'static str;
     /// The name of the group this rule belongs to.
     fn group(&self) -> &'static str;
@@ -97,15 +86,15 @@ pub trait Rule: Debug + DynClone {
 pub struct RuleCtx {
     /// The file id of the file being linted.
     pub file_id: usize,
-    /// Whether the linter is run with the `--verbose` option. 
-    /// Which dictates whether the linter should include more (potentially spammy) context in diagnostics. 
+    /// Whether the linter is run with the `--verbose` option.
+    /// Which dictates whether the linter should include more (potentially spammy) context in diagnostics.
     pub verbose: bool,
     pub diagnostics: Vec<Diagnostic>,
 }
 
 impl RuleCtx {
-    /// Make a new diagnostic builder. The diagnostic will automatically be added to the context 
-    /// once the guard is dropped. 
+    /// Make a new diagnostic builder. The diagnostic will automatically be added to the context
+    /// once the guard is dropped.
     pub fn err(&mut self, code: impl AsRef<str>, message: impl AsRef<str>) -> DiagnosticBuilder {
         DiagnosticBuilder::error(self.file_id, code.as_ref(), message.as_ref())
     }
@@ -147,12 +136,15 @@ pub enum Outcome {
     Success,
 }
 
-// Merge diagnostic severities into an outcome
-impl From<&Vec<Diagnostic>> for Outcome {
-    fn from(diagnostics: &Vec<Diagnostic>) -> Self {
+impl<T> From<T> for Outcome
+where
+    T: IntoIterator,
+    T::Item: Borrow<Diagnostic>,
+{
+    fn from(diagnostics: T) -> Self {
         let mut outcome = Outcome::Success;
-        for diagnostic in diagnostics.iter() {
-            match diagnostic.severity {
+        for diagnostic in diagnostics {
+            match diagnostic.borrow().severity {
                 Severity::Error | Severity::Bug => outcome = Outcome::Failure,
                 Severity::Warning if outcome != Outcome::Failure => outcome = Outcome::Warning,
                 _ => {}
@@ -162,18 +154,17 @@ impl From<&Vec<Diagnostic>> for Outcome {
     }
 }
 
-// Merge outcomes of different severities into an outcome
-impl From<&Vec<Outcome>> for Outcome {
-    fn from(outcomes: &Vec<Outcome>) -> Self {
-        let mut res = Outcome::Success;
-        for outcome in outcomes.iter() {
-            match outcome {
-                Outcome::Failure => res = Outcome::Failure,
-                Outcome::Warning if res != Outcome::Failure => res = Outcome::Warning,
+impl Outcome {
+    pub fn merge(outcomes: impl IntoIterator<Item = impl Borrow<Outcome>>) -> Outcome {
+        let mut overall = Outcome::Success;
+        for outcome in outcomes {
+            match outcome.borrow() {
+                Outcome::Failure => overall = Outcome::Failure,
+                Outcome::Warning if overall != Outcome::Failure => overall = Outcome::Warning,
                 _ => {}
             }
         }
-        res
+        overall
     }
 }
 
@@ -184,7 +175,7 @@ impl From<&Vec<Outcome>> for Outcome {
 ///     /// A description of the rule here
 ///     /// This will be used as the doc for the rule struct
 ///     RuleName,
-///     // Make sure this is kebab-case and unique. 
+///     // Make sure this is kebab-case and unique.
 ///     "rule-name",
 ///     /// A description of the attribute here, used for config docs.
 ///     pub config_attr: u8,
@@ -193,25 +184,25 @@ impl From<&Vec<Outcome>> for Outcome {
 /// ```
 ///
 /// # Rule name and docs
-/// 
-/// The macro's first argument is an identifier for the rule structure. 
+///
+/// The macro's first argument is an identifier for the rule structure.
 /// This should always be a PascalCase name. You will have to either derive Default for the struct
-/// or implement it manually. 
-/// 
+/// or implement it manually.
+///
 /// The macro also accepts any doc comments for the rule name. These comments
-/// are then used by an xtask script to generate markdown files for user facing docs. 
+/// are then used by an xtask script to generate markdown files for user facing docs.
 /// Each rule doc should include an `Incorrect Code Examples` header. It may also optionally
-/// include a `Correct Code Examples`. Do not include a `Config` header, it is autogenerated 
+/// include a `Correct Code Examples`. Do not include a `Config` header, it is autogenerated
 /// from config field docs.
-/// 
-/// # Config 
-/// 
+///
+/// # Config
+///
 /// After the rule code, the macro accepts fields for the struct. Any field which is
 /// public will be used for config, you can however disable this by using `#[serde(skip)]`.
-/// Every public (config) field should have a doc comment, the doc comments will be used for 
+/// Every public (config) field should have a doc comment, the doc comments will be used for
 /// user facing documentation. Therefore try to be non technical and non rust specific with the doc comments.
-/// 
-/// 
+///
+///
 /// This will generate a rule struct with `RuleName`,
 /// and use the optional config attributes defined for the config of the rule.
 /// You must make sure each config field is Deserializable.
@@ -257,7 +248,7 @@ macro_rules! declare_lint {
             fn name(&self) -> &'static str {
                 $code
             }
-            
+
             fn group(&self) -> &'static str {
                 stringify!($group)
             }

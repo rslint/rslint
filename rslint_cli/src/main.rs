@@ -1,12 +1,4 @@
-use codespan_reporting::term::{
-    emit,
-    termcolor::{ColorChoice, StandardStream},
-};
-use rayon::prelude::*;
-use rslint_cli::{
-    codespan_config, lint_err, ExplanationRunner, FileWalker, JsFileKind, panic_hook
-};
-use rslint_core::{lint_file, CstRuleStore};
+use rslint_cli::{ExplanationRunner, panic_hook};
 use structopt::StructOpt;
 use std::panic::set_hook;
 
@@ -40,35 +32,6 @@ fn main() {
     if let Some(SubCommand::Explain { rules }) = opt.cmd {
         ExplanationRunner::new(rules).print();
     } else {
-        let res = glob::glob(&opt.files);
-        if let Err(err) = res {
-            lint_err!("Invalid glob pattern: {}", err);
-            return;
-        }
-        let walker = FileWalker::from_glob(res.unwrap());
-        let diagnostics = walker
-            .files
-            .par_iter()
-            .map(|(id, file)| {
-                lint_file(
-                    *id,
-                    &file.source,
-                    file.kind == JsFileKind::Module,
-                    CstRuleStore::new().builtins(),
-                    opt.verbose,
-                )
-            })
-            .flatten()
-            .collect::<Vec<_>>();
-
-        for diagnostic in &diagnostics {
-            emit(
-                &mut StandardStream::stderr(ColorChoice::Always),
-                &codespan_config(),
-                &walker,
-                diagnostic,
-            )
-            .expect("Failed to throw diagnostic");
-        }
+        rslint_cli::run(opt.files, opt.verbose);
     }
 }

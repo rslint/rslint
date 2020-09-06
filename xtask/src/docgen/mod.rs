@@ -25,10 +25,13 @@ pub fn run() {
             let dir = project_root().join("docs/rules").join(&meta.name);
 
             let res = extract_group(&meta.name).expect("Failed to extract group rule data");
-            let data = group_markdown(&res, &meta);
+            let mut v: Vec<_> = res.into_iter().collect();
+            v.sort_by(|x,y| x.0.cmp(&y.0));
+
+            let data = group_markdown(&v, &meta);
 
             write(dir.join("README.md"), data).expect("Failed to write group md");
-            for (name, rule) in res {
+            for (name, rule) in v {
                 write(
                     dir.join(name.replace("_", "-")).with_extension("md"),
                     rule_markdown(rule, &meta),
@@ -98,7 +101,7 @@ pub fn rules_markdown(groups: Vec<Group>) -> String {
     ret
 }
 
-pub fn group_markdown(data: &HashMap<String, RuleFile>, group: &Group) -> String {
+pub fn group_markdown(data: &[(String, RuleFile)], group: &Group) -> String {
     let mut ret = String::new();
     ret.insert_str(
         0,

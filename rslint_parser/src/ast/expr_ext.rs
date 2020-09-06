@@ -207,6 +207,12 @@ impl BinExpr {
     pub fn conditional(&self) -> bool {
         token_set![T![||], T![&&]].contains(self.op_token().map(|x| x.kind()).unwrap_or(T![&]))
     }
+
+    /// Whether this is a comparison operation, such as `>`, `<`, `==`, `!=`, `===`, etc.
+    pub fn comparison(&self) -> bool {
+        const SET: TokenSet = token_set![T![>], T![<], T![>=], T![<=], T![==], T![===], T![!=], T![!==]];
+        SET.contains(self.op_token().map(|x| x.kind()).unwrap_or(T![&]))
+    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]

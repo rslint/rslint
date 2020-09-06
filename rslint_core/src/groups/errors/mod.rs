@@ -8,5 +8,6 @@ group! {
     no_cond_assign::NoCondAssign,
     no_await_in_loop::NoAwaitInLoop,
     getter_return::GetterReturn,
-    no_unsafe_negation::NoUnsafeNegation
+    no_unsafe_negation::NoUnsafeNegation,
+    no_compare_neg_zero::NoCompareNegZero
 }
