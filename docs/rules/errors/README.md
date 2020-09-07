@@ -10,6 +10,7 @@ unexpected behavior.
 | Name | Description |
 | ---- | ----------- |
 | [getter-return](./getter-return.md) | Disallow getter properties which do not always return a value. |
+| [no-async-promise-executor](./no-async-promise-executor.md) | Disallow async functions as promise executors. |
 | [no-await-in-loop](./no-await-in-loop.md) |  |
 | [no-compare-neg-zero](./no-compare-neg-zero.md) | Disallow comparison against `-0` which yields unexpected behavior. |
 | [no-cond-assign](./no-cond-assign.md) | Forbid the use of assignment expressions in conditions which may yield unwanted behavior. |

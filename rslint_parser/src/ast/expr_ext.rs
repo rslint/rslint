@@ -553,3 +553,21 @@ impl AstNode for PatternOrExpr {
         }
     }
 }
+
+impl FnDecl {
+    pub fn async_token(&self) -> Option<SyntaxToken> {
+        self.syntax().first_lossy_token().filter(|token| token.text() == "async")
+    }
+}
+
+impl FnExpr {
+    pub fn async_token(&self) -> Option<SyntaxToken> {
+        self.syntax().first_lossy_token().filter(|token| token.text() == "async")
+    }
+}
+
+impl ArrowExpr {
+    pub fn async_token(&self) -> Option<SyntaxToken> {
+        self.syntax().first_lossy_token().filter(|token| token.text() == "async")
+    }
+}

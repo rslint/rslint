@@ -9,5 +9,6 @@ group! {
     no_await_in_loop::NoAwaitInLoop,
     getter_return::GetterReturn,
     no_unsafe_negation::NoUnsafeNegation,
-    no_compare_neg_zero::NoCompareNegZero
+    no_compare_neg_zero::NoCompareNegZero,
+    no_async_promise_executor::NoAsyncPromiseExecutor
 }

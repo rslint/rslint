@@ -14,7 +14,7 @@ to compare against `-0` they should use `Object.is(x, -0)`.
 
 ```js
 if (x === -0) {
-       // ^^ this comparison works for both `-0` and `+0`
+       // ^^ this comparison works for both -0 and +0
 }
 ```
 

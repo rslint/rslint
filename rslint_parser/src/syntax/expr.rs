@@ -571,13 +571,15 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             if p.nth_at(1, T![function]) {
                 let m = p.start();
                 p.bump_any();
-                function_decl(
+                let mut complete = function_decl(
                     &mut *p.with_state(ParserState {
                         in_async: true,
                         ..p.state.clone()
                     }),
                     m,
-                )
+                );
+                complete.change_kind(p, FN_EXPR);
+                complete
             } else {
                 // `async a => {}` and `async (a) => {}`
                 if p.state.potential_arrow_start
