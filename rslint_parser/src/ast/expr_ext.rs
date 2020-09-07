@@ -571,3 +571,12 @@ impl ArrowExpr {
         self.syntax().first_lossy_token().filter(|token| token.text() == "async")
     }
 }
+
+impl Template {
+    /// The string chunks of the template. aka:
+    /// `foo ${bar} foo` breaks down into:
+    /// `QUASIS ELEMENT{EXPR} QUASIS`
+    pub fn quasis(&self) -> impl Iterator<Item = SyntaxToken> {
+        self.syntax().children_with_tokens().filter_map(NodeOrToken::into_token)
+    }
+}

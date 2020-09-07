@@ -10,5 +10,6 @@ group! {
     getter_return::GetterReturn,
     no_unsafe_negation::NoUnsafeNegation,
     no_compare_neg_zero::NoCompareNegZero,
-    no_async_promise_executor::NoAsyncPromiseExecutor
+    no_async_promise_executor::NoAsyncPromiseExecutor,
+    no_constant_condition::NoConstantCondition
 }

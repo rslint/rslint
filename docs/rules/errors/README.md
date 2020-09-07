@@ -14,6 +14,7 @@ unexpected behavior.
 | [no-await-in-loop](./no-await-in-loop.md) |  |
 | [no-compare-neg-zero](./no-compare-neg-zero.md) | Disallow comparison against `-0` which yields unexpected behavior. |
 | [no-cond-assign](./no-cond-assign.md) | Forbid the use of assignment expressions in conditions which may yield unwanted behavior. |
+| [no-constant-condition](./no-constant-condition.md) | Disallow constant conditions which always yield one result. |
 | [no-unsafe-finally](./no-unsafe-finally.md) | Forbid the use of unsafe control flow statements in try and catch blocks. |
 | [no-unsafe-negation](./no-unsafe-negation.md) | Deny the use of `!` on the left hand side of an `instanceof` or `in` expression where it is ambiguous. |
 

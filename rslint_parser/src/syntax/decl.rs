@@ -117,7 +117,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
     let complete = match p.cur() {
         T![ident] if p.cur_src() == "get" => {
             p.bump_any();
-            object_prop_name(p, true);
+            object_prop_name(p, false);
             p.expect(T!['(']);
             p.expect(T![')']);
             block_stmt(p, true);
@@ -125,7 +125,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
         },
         T![ident] if p.cur_src() == "set" => {
             p.bump_any();
-            object_prop_name(p, true);
+            object_prop_name(p, false);
             formal_parameters(p);
             block_stmt(p, true);
             m.complete(p, SETTER)
@@ -148,6 +148,15 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             drop(guard);
             m.complete(p, METHOD)
         },
+        t if t.is_keyword() => {
+            let in_generator = p.eat(T![*]);
+            let mut guard = p.with_state(ParserState { in_generator, ..p.state.clone() });
+            object_prop_name(&mut *guard, false);
+            formal_parameters(&mut *guard);
+            block_stmt(&mut *guard, true);
+            drop(guard);
+            m.complete(p, METHOD)
+        }
         _ => {
             let err = p.err_builder("Expected a method definition, but found none")
                 .primary(p.cur_tok(), "");
