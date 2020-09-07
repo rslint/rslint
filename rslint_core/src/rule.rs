@@ -104,6 +104,7 @@ impl RuleCtx {
     }
 }
 
+/// The result of running a single rule on a syntax tree. 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RuleResult {
     pub diagnostics: Vec<Diagnostic>,
@@ -175,6 +176,8 @@ impl Outcome {
 ///     /// A description of the rule here
 ///     /// This will be used as the doc for the rule struct
 ///     RuleName,
+///     // The name of the group this rule belongs to. 
+///     groupname,
 ///     // Make sure this is kebab-case and unique.
 ///     "rule-name",
 ///     /// A description of the attribute here, used for config docs.

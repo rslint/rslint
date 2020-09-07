@@ -102,7 +102,7 @@ pub fn run_rule(
     ctx.diagnostics
 }
 
-/// Get a rule by its kebab-case name, this will return the rule and the group name it belongs to.
+/// Get a rule by its kebab-case name. 
 pub fn get_rule_by_name(name: &str) -> Option<Box<dyn CstRule>> {
     CstRuleStore::new()
         .builtins()
