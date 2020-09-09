@@ -1,7 +1,7 @@
 //! CLI options
 
-use crate::{lint_err, DOCS_LINK_BASE};
-use ansi_term::Color::{White, RGB};
+use crate::{lint_err, DOCS_LINK_BASE, REPO_LINK};
+use ansi_term::Color::{White, RGB, Green};
 use regex::{Captures, Regex};
 use rslint_lexer::{ansi_term, color};
 use ureq::get;
@@ -10,12 +10,14 @@ use ureq::get;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExplanationRunner {
     pub rules: Vec<String>,
+    pub rule_names: Vec<String>,
 }
 
 impl ExplanationRunner {
     /// Make a new runner and try to fetch the remote docs files for each rule.
     /// This automatically issues any linter errors for invalid rules.
     pub fn new(mut rules: Vec<String>) -> Self {
+        let rule_names = rules.clone();
         rules = rules
             .into_iter()
             .filter_map(|rule| {
@@ -27,7 +29,7 @@ impl ExplanationRunner {
             })
             .collect();
 
-        Self { rules }
+        Self { rules, rule_names }
     }
 
     pub fn strip_rule_preludes(&mut self) {
@@ -79,12 +81,21 @@ impl ExplanationRunner {
         }
     }
 
+    pub fn append_link_to_docs(&mut self) {
+        for (docs, name) in self.rules.iter_mut().zip(self.rule_names.iter()) {
+            let group = rslint_core::get_rule_by_name(&name).unwrap().group();
+            let link = format!("{}/docs/rules/{}/{}.md", REPO_LINK, group, name);
+            docs.push_str(&format!("{}: {}\n", Green.paint("Docs").to_string(), link));
+        }
+    }
+
     pub fn render(&mut self) {
         self.strip_rule_preludes();
         self.strip_config_or_extra_examples();
         self.replace_headers();
         self.replace_code_blocks();
         self.replace_inline_code_blocks();
+        self.append_link_to_docs();
     }
 
     pub fn print(mut self) {

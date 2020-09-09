@@ -18,6 +18,7 @@ use rayon::prelude::*;
 use rslint_core::{lint_file, CstRuleStore};
 
 pub(crate) const DOCS_LINK_BASE: &str = "https://raw.githubusercontent.com/RDambrosio016/RSLint/dev/docs/rules";
+pub(crate) const REPO_LINK: &str = "https://github.com/RDambrosio016/RSLint/tree/dev";
 
 pub fn codespan_config() -> Config {
     let mut base = Config::default();
