@@ -12,5 +12,6 @@ group! {
     no_compare_neg_zero::NoCompareNegZero,
     no_async_promise_executor::NoAsyncPromiseExecutor,
     no_constant_condition::NoConstantCondition,
-    for_direction::ForDirection
+    for_direction::ForDirection,
+    no_debugger::NoDebugger
 }

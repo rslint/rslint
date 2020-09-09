@@ -13,7 +13,15 @@ the expression to check if `foo` is not an instance of `bar` however.
 ## Incorrect Code Examples
 
 ```js
+if (!foo instanceof String) {
 
+}
+```
+
+```js
+if (!bar in {}) {
+
+}
 ```
 
 <details>

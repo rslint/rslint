@@ -15,7 +15,15 @@ declare_lint! {
     ## Incorrect Code Examples
 
     ```ignore
-    
+    if (!foo instanceof String) {
+
+    }
+    ```
+
+    ```ignore
+    if (!bar in {}) {
+
+    }
     ```
     */
     #[derive(Default)]

@@ -1,7 +1,7 @@
 //! Class and function declarations.
 
-use super::expr::{object_prop_name, expr, EXPR_RECOVERY_SET};
-use super::pat::{binding_element, opt_binding_identifier, pattern, binding_identifier};
+use super::expr::{assign_expr, object_prop_name, EXPR_RECOVERY_SET};
+use super::pat::{binding_element, binding_identifier, opt_binding_identifier, pattern};
 use super::stmt::block_stmt;
 use crate::{SyntaxKind::*, *};
 use std::collections::HashMap;
@@ -22,11 +22,14 @@ pub fn function_decl(p: &mut Parser, m: Marker) -> CompletedMarker {
     opt_binding_identifier(p);
     formal_parameters(p);
 
-    block_stmt(&mut *p.with_state(ParserState {
-        labels: HashMap::new(),
-        in_function: true,
-        ..p.state.clone()
-    }), true);
+    block_stmt(
+        &mut *p.with_state(ParserState {
+            labels: HashMap::new(),
+            in_function: true,
+            ..p.state.clone()
+        }),
+        true,
+    );
     m.complete(p, FN_DECL)
 }
 
@@ -62,10 +65,14 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
 }
 
 pub fn arrow_body(p: &mut Parser) -> Option<CompletedMarker> {
-    if p.at(T!['{']) {
-        Some(block_stmt(p, true))
+    let mut guard = p.with_state(ParserState {
+        in_function: true,
+        ..p.state.clone()
+    });
+    if guard.at(T!['{']) {
+        Some(block_stmt(&mut *guard, true))
     } else {
-        expr(p)
+        assign_expr(&mut *guard)
     }
 }
 
@@ -93,16 +100,16 @@ fn class_body(p: &mut Parser) -> CompletedMarker {
                 let inner = p.start();
                 p.bump_any();
                 inner.complete(p, EMPTY_STMT);
-            },
+            }
             T![static] => {
                 let inner = p.start();
                 p.bump_any();
                 method(p, None);
                 inner.complete(p, STATIC_METHOD);
-            },
+            }
             _ => {
                 method(p, None);
-            },
+            }
         }
     }
     p.expect(T!['}']);
@@ -122,35 +129,45 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             p.expect(T![')']);
             block_stmt(p, true);
             m.complete(p, GETTER)
-        },
+        }
         T![ident] if p.cur_src() == "set" => {
             p.bump_any();
             object_prop_name(p, false);
             formal_parameters(p);
             block_stmt(p, true);
             m.complete(p, SETTER)
-        },
+        }
         T![ident] if p.cur_src() == "async" && !p.has_linebreak_before_n(1) => {
             let in_generator = p.eat(T![*]);
-            let mut guard = p.with_state(ParserState { in_async: true, in_generator, ..p.state.clone() });
+            let mut guard = p.with_state(ParserState {
+                in_async: true,
+                in_generator,
+                ..p.state.clone()
+            });
             object_prop_name(&mut *guard, true);
             formal_parameters(&mut *guard);
             block_stmt(&mut *guard, true);
             drop(guard);
             m.complete(p, METHOD)
-        },
+        }
         T![*] | STRING | NUMBER | T![await] | T![ident] | T![yield] | T!['['] => {
             let in_generator = p.eat(T![*]);
-            let mut guard = p.with_state(ParserState { in_generator, ..p.state.clone() });
+            let mut guard = p.with_state(ParserState {
+                in_generator,
+                ..p.state.clone()
+            });
             object_prop_name(&mut *guard, true);
             formal_parameters(&mut *guard);
             block_stmt(&mut *guard, true);
             drop(guard);
             m.complete(p, METHOD)
-        },
+        }
         t if t.is_keyword() => {
             let in_generator = p.eat(T![*]);
-            let mut guard = p.with_state(ParserState { in_generator, ..p.state.clone() });
+            let mut guard = p.with_state(ParserState {
+                in_generator,
+                ..p.state.clone()
+            });
             object_prop_name(&mut *guard, false);
             formal_parameters(&mut *guard);
             block_stmt(&mut *guard, true);
@@ -158,7 +175,8 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             m.complete(p, METHOD)
         }
         _ => {
-            let err = p.err_builder("Expected a method definition, but found none")
+            let err = p
+                .err_builder("Expected a method definition, but found none")
                 .primary(p.cur_tok(), "");
 
             p.err_recover(err, EXPR_RECOVERY_SET);
