@@ -66,6 +66,7 @@ mod state;
 mod syntax_node;
 mod token_source;
 mod event;
+mod numbers;
 
 pub mod ast;
 pub mod syntax;
@@ -84,6 +85,7 @@ pub use crate::{
     token_set::TokenSet,
     token_source::TokenSource,
     util::{SyntaxTokenExt, SyntaxNodeExt},
+    numbers::{JsNum, BigInt}
 };
 
 pub use rowan::{SmolStr, SyntaxText, TextRange, TextSize, WalkEvent};

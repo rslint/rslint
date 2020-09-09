@@ -1,7 +1,7 @@
 //! General utility functions for parsing and error checking.
 
 use crate::{
-    ast::{Expr, GroupingExpr, Name, UnaryExpr, UnaryOp},
+    ast::{Expr, GroupingExpr, Name, UnaryExpr},
     SyntaxKind::*,
     *,
 };
@@ -75,11 +75,7 @@ pub fn get_precedence(tok: SyntaxKind) -> Option<u8> {
 
 pub fn is_update_expr(p: &Parser, marker: &CompletedMarker) -> bool {
     match marker.kind() {
-        POSTFIX_EXPR => true,
-        UNARY_EXPR => matches!(
-            p.parse_marker::<UnaryExpr>(marker).op(),
-            Some(UnaryOp::Increment) | Some(UnaryOp::Decrement)
-        ),
+        UNARY_EXPR => p.parse_marker::<UnaryExpr>(marker).is_update(),
         _ => false,
     }
 }

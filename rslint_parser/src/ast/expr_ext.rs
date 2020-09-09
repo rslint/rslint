@@ -1,6 +1,6 @@
 //! Extensions for things which are not easily generated in ast expr nodes
 
-use crate::{ast::*, util::*, SyntaxText, TextSize, TokenSet, T};
+use crate::{ast::*, numbers::*, util::*, SyntaxText, TextSize, TokenSet, T};
 use SyntaxKind::*;
 
 impl BracketExpr {
@@ -146,7 +146,7 @@ pub enum BinOp {
     /// `in`
     In,
     /// `instanceof`
-    Instanceof
+    Instanceof,
 }
 
 impl BinExpr {
@@ -203,14 +203,23 @@ impl BinExpr {
         support::children(self.syntax()).nth(1)
     }
 
-    /// Whether this binary expr is a `||` or `&&` expression. 
+    /// Whether this binary expr is a `||` or `&&` expression.
     pub fn conditional(&self) -> bool {
         token_set![T![||], T![&&]].contains(self.op_token().map(|x| x.kind()).unwrap_or(T![&]))
     }
 
     /// Whether this is a comparison operation, such as `>`, `<`, `==`, `!=`, `===`, etc.
     pub fn comparison(&self) -> bool {
-        const SET: TokenSet = token_set![T![>], T![<], T![>=], T![<=], T![==], T![===], T![!=], T![!==]];
+        const SET: TokenSet = token_set![
+            T![>],
+            T![<],
+            T![>=],
+            T![<=],
+            T![==],
+            T![===],
+            T![!=],
+            T![!==]
+        ];
         SET.contains(self.op_token().map(|x| x.kind()).unwrap_or(T![&]))
     }
 }
@@ -268,6 +277,22 @@ impl UnaryExpr {
 
     pub fn op_token(&self) -> Option<SyntaxToken> {
         self.op_details().map(|t| t.0)
+    }
+
+    /// Whether this is an update expression.
+    pub fn is_update(&self) -> bool {
+        self.op().map_or(false, |op| {
+            op == UnaryOp::Increment || op == UnaryOp::Decrement
+        })
+    }
+
+    /// Whether this is an update expression and it is a prefix update expression
+    pub fn is_prefix(&self) -> Option<bool> {
+        if !self.is_update() {
+            return None;
+        }
+
+        Some(self.op_token()?.text_range().start() > self.expr()?.syntax().text_range().end())
     }
 }
 
@@ -423,9 +448,10 @@ impl ObjectExpr {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum LiteralKind {
-    Number,
+    Number(f64),
+    BigInt(BigInt),
     String,
     Null,
     Bool(bool),
@@ -444,7 +470,12 @@ impl Literal {
     pub fn kind(&self) -> LiteralKind {
         match self.token().kind() {
             T![null] => LiteralKind::Null,
-            NUMBER => LiteralKind::Number,
+            NUMBER => {
+                match parse_js_num(self.to_string()).unwrap() {
+                    JsNum::BigInt(bigint) => LiteralKind::BigInt(bigint),
+                    JsNum::Float(float) => LiteralKind::Number(float)
+                }
+            },
             STRING => LiteralKind::String,
             TRUE_KW => LiteralKind::Bool(true),
             FALSE_KW => LiteralKind::Bool(false),
@@ -452,18 +483,30 @@ impl Literal {
         }
     }
 
-    pub fn is_number(&self) -> bool {
-        self.kind() == LiteralKind::Number
+    pub fn into_number(&self) -> Option<f64> {
+        if let LiteralKind::Number(num) = self.kind() {
+            Some(num)
+        } else {
+            None
+        }
     }
+
+    pub fn is_number(&self) -> bool {
+        matches!(self.kind(), LiteralKind::Number(_))
+    }
+
     pub fn is_string(&self) -> bool {
         self.kind() == LiteralKind::String
     }
+
     pub fn is_null(&self) -> bool {
         self.kind() == LiteralKind::Null
     }
+
     pub fn is_bool(&self) -> bool {
         matches!(self.kind(), LiteralKind::Bool(_))
     }
+
     pub fn is_regex(&self) -> bool {
         self.kind() == LiteralKind::Regex
     }
@@ -493,7 +536,7 @@ impl Literal {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ExprOrBlock {
     Expr(Expr),
-    Block(BlockStmt)
+    Block(BlockStmt),
 }
 
 impl AstNode for ExprOrBlock {
@@ -516,7 +559,7 @@ impl AstNode for ExprOrBlock {
     fn syntax(&self) -> &SyntaxNode {
         match self {
             ExprOrBlock::Expr(it) => it.syntax(),
-            ExprOrBlock::Block(it) => it.syntax()
+            ExprOrBlock::Block(it) => it.syntax(),
         }
     }
 }
@@ -549,26 +592,32 @@ impl AstNode for PatternOrExpr {
     fn syntax(&self) -> &SyntaxNode {
         match self {
             PatternOrExpr::Pattern(it) => it.syntax(),
-            PatternOrExpr::Expr(it) => it.syntax()
+            PatternOrExpr::Expr(it) => it.syntax(),
         }
     }
 }
 
 impl FnDecl {
     pub fn async_token(&self) -> Option<SyntaxToken> {
-        self.syntax().first_lossy_token().filter(|token| token.text() == "async")
+        self.syntax()
+            .first_lossy_token()
+            .filter(|token| token.text() == "async")
     }
 }
 
 impl FnExpr {
     pub fn async_token(&self) -> Option<SyntaxToken> {
-        self.syntax().first_lossy_token().filter(|token| token.text() == "async")
+        self.syntax()
+            .first_lossy_token()
+            .filter(|token| token.text() == "async")
     }
 }
 
 impl ArrowExpr {
     pub fn async_token(&self) -> Option<SyntaxToken> {
-        self.syntax().first_lossy_token().filter(|token| token.text() == "async")
+        self.syntax()
+            .first_lossy_token()
+            .filter(|token| token.text() == "async")
     }
 }
 
@@ -577,6 +626,8 @@ impl Template {
     /// `foo ${bar} foo` breaks down into:
     /// `QUASIS ELEMENT{EXPR} QUASIS`
     pub fn quasis(&self) -> impl Iterator<Item = SyntaxToken> {
-        self.syntax().children_with_tokens().filter_map(NodeOrToken::into_token)
+        self.syntax()
+            .children_with_tokens()
+            .filter_map(NodeOrToken::into_token)
     }
 }

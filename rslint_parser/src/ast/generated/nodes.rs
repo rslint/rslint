@@ -550,13 +550,6 @@ impl ImportMeta {
     pub fn dot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![.]) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct PostfixExpr {
-    pub(crate) syntax: SyntaxNode,
-}
-impl PostfixExpr {
-    pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
-}
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnaryExpr {
     pub(crate) syntax: SyntaxNode,
 }
@@ -841,7 +834,6 @@ pub enum Expr {
     DotExpr(DotExpr),
     NewExpr(NewExpr),
     CallExpr(CallExpr),
-    PostfixExpr(PostfixExpr),
     UnaryExpr(UnaryExpr),
     BinExpr(BinExpr),
     CondExpr(CondExpr),
@@ -1527,17 +1519,6 @@ impl AstNode for ImportMeta {
     }
     fn syntax(&self) -> &SyntaxNode { &self.syntax }
 }
-impl AstNode for PostfixExpr {
-    fn can_cast(kind: SyntaxKind) -> bool { kind == POSTFIX_EXPR }
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
-        if Self::can_cast(syntax.kind()) {
-            Some(Self { syntax })
-        } else {
-            None
-        }
-    }
-    fn syntax(&self) -> &SyntaxNode { &self.syntax }
-}
 impl AstNode for UnaryExpr {
     fn can_cast(kind: SyntaxKind) -> bool { kind == UNARY_EXPR }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -2206,9 +2187,6 @@ impl From<NewExpr> for Expr {
 impl From<CallExpr> for Expr {
     fn from(node: CallExpr) -> Expr { Expr::CallExpr(node) }
 }
-impl From<PostfixExpr> for Expr {
-    fn from(node: PostfixExpr) -> Expr { Expr::PostfixExpr(node) }
-}
 impl From<UnaryExpr> for Expr {
     fn from(node: UnaryExpr) -> Expr { Expr::UnaryExpr(node) }
 }
@@ -2264,7 +2242,6 @@ impl AstNode for Expr {
                 | DOT_EXPR
                 | NEW_EXPR
                 | CALL_EXPR
-                | POSTFIX_EXPR
                 | UNARY_EXPR
                 | BIN_EXPR
                 | COND_EXPR
@@ -2294,7 +2271,6 @@ impl AstNode for Expr {
             DOT_EXPR => Expr::DotExpr(DotExpr { syntax }),
             NEW_EXPR => Expr::NewExpr(NewExpr { syntax }),
             CALL_EXPR => Expr::CallExpr(CallExpr { syntax }),
-            POSTFIX_EXPR => Expr::PostfixExpr(PostfixExpr { syntax }),
             UNARY_EXPR => Expr::UnaryExpr(UnaryExpr { syntax }),
             BIN_EXPR => Expr::BinExpr(BinExpr { syntax }),
             COND_EXPR => Expr::CondExpr(CondExpr { syntax }),
@@ -2326,7 +2302,6 @@ impl AstNode for Expr {
             Expr::DotExpr(it) => &it.syntax,
             Expr::NewExpr(it) => &it.syntax,
             Expr::CallExpr(it) => &it.syntax,
-            Expr::PostfixExpr(it) => &it.syntax,
             Expr::UnaryExpr(it) => &it.syntax,
             Expr::BinExpr(it) => &it.syntax,
             Expr::CondExpr(it) => &it.syntax,
@@ -2704,11 +2679,6 @@ impl std::fmt::Display for NewTarget {
     }
 }
 impl std::fmt::Display for ImportMeta {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self.syntax(), f)
-    }
-}
-impl std::fmt::Display for PostfixExpr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

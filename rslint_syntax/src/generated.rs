@@ -163,7 +163,6 @@ pub enum SyntaxKind {
     BRACKET_EXPR,
     DOT_EXPR,
     CALL_EXPR,
-    POSTFIX_EXPR,
     UNARY_EXPR,
     BIN_EXPR,
     COND_EXPR,

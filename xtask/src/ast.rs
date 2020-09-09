@@ -175,7 +175,6 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "BRACKET_EXPR",
         "DOT_EXPR",
         "CALL_EXPR",
-        "POSTFIX_EXPR",
         "UNARY_EXPR",
         "BIN_EXPR",
         "COND_EXPR",
@@ -691,11 +690,6 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             /* meta */
         }
 
-        struct PostfixExpr {
-            Expr,
-            /* Postfix op */
-        }
-
         struct UnaryExpr {
             /* Prefix op */
             Expr,
@@ -959,7 +953,6 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             DotExpr,
             NewExpr,
             CallExpr,
-            PostfixExpr,
             UnaryExpr,
             BinExpr,
             CondExpr,

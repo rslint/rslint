@@ -19,7 +19,7 @@ cargo run --release -- ./glob/pattern.js
 - Unbeatably fast 
 - Highly parallelized (files linted in parallel, rules run in parallel, nodes could be traversed in parallel in the future) 
 - Rich, cross-platform, colored diagnostics with secondary labels, primary labels, and notes 
-- Untyped node and token driven linting allowing easy traversal of the syntax tree from any node 
+- Lossless untyped node and token driven linting allowing easy traversal of the syntax tree from any node 
 - Automatic docgen for rule documentation removing the need for writing rustdoc docs and user facing docs 
 - Distinctly grouped rules 
 - Rule examples generated from tests 
@@ -27,6 +27,7 @@ cargo run --release -- ./glob/pattern.js
 - No need for dealing with script/module or ecma versions, linter deduces source type and assumes latest syntax 
 - No need for a configuration file 
 - Completely error tolerant and fast parser 
+- Lossless tree used for stylistic linting 
 
 ## Planned 
 

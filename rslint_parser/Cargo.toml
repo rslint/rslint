@@ -10,6 +10,8 @@ codespan-reporting = { git = "https://github.com/brendanzab/codespan.git" }
 rslint_syntax = { path = "../rslint_syntax", version = "0.1" }
 rslint_lexer = { path = "../rslint_lexer", version = "0.1", features = ["highlight"] }
 rowan = "0.10.0"
+num-bigint = "0.3.0"
+lexical = { version = "5.2.0", features = ["radix"] }
 
 [dev-dependencies]
 criterion = "0.3"

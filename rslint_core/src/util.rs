@@ -43,8 +43,8 @@ pub fn simple_bool_coerce(condition: Expr) -> Option<bool> {
             let coerced = match lit.kind() {
                 LiteralKind::Bool(val) => val,
                 LiteralKind::Null => false,
-                // TODO: Handle this better once we can parse the number value
-                LiteralKind::Number => return None,
+                LiteralKind::Number(num) => num != 0.0,
+                LiteralKind::BigInt(bigint) => bigint != 0.into(),
                 LiteralKind::String => !lit.inner_string_text().unwrap().is_empty(),
                 LiteralKind::Regex => true,
             };

@@ -856,14 +856,14 @@ pub fn postfix_expr(p: &mut Parser) -> Option<CompletedMarker> {
                 check_simple_assign_target(p, &p.parse_marker(&lhs?), lhs?.range(p));
                 let m = lhs?.precede(p);
                 p.bump(T![++]);
-                let complete = m.complete(p, POSTFIX_EXPR);
+                let complete = m.complete(p, UNARY_EXPR);
                 Some(complete)
             }
             T![--] => {
                 check_simple_assign_target(p, &p.parse_marker(&lhs?), lhs?.range(p));
                 let m = lhs?.precede(p);
                 p.bump(T![--]);
-                let complete = m.complete(p, POSTFIX_EXPR);
+                let complete = m.complete(p, UNARY_EXPR);
                 Some(complete)
             }
             _ => lhs,

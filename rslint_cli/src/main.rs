@@ -25,6 +25,7 @@ pub(crate) enum SubCommand {
 }
 
 fn main() {
+    #[cfg(not(debug_assertions))]
     set_hook(Box::new(panic_hook));
 
     let opt = Options::from_args();
