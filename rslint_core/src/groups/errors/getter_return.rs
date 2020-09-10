@@ -62,7 +62,7 @@ declare_lint! {
     "getter-return",
     /// Whether to allow implicitly returning undefined with `return;`. 
     /// `true` by default. 
-    allow_implicit: bool
+    pub allow_implicit: bool
 }
 
 impl CstRule for GetterReturn {

@@ -317,6 +317,11 @@ pub trait SyntaxNodeExt {
             false
         }
     }
+
+    /// Whether the node contains any comments. 
+    fn contains_comments(&self) -> bool {
+        self.tokens().iter().any(|tok| tok.kind() == SyntaxKind::COMMENT)
+    }
 }
 
 impl SyntaxNodeExt for SyntaxNode {

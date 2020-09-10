@@ -1,8 +1,8 @@
+use proc_macro2::TokenStream;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::*;
 use unindent::unindent;
-use proc_macro2::TokenStream;
 
 pub fn parse_group_mod(file: &str) -> Result<Group> {
     let file = parse_file(file)?;
@@ -19,13 +19,16 @@ pub fn parse_group_mod(file: &str) -> Result<Group> {
             }
         }
     }
-    Err(Error::new_spanned(file, "Expected a group! declaration in group mod file"))
+    Err(Error::new_spanned(
+        file,
+        "Expected a group! declaration in group mod file",
+    ))
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Group {
     pub name: String,
-    pub docstring: String
+    pub docstring: String,
 }
 
 impl Parse for Group {
@@ -102,13 +105,12 @@ impl Parse for LintDeclaration {
         input.parse::<Token!(,)>()?;
         let name = input.parse::<LitStr>()?.value();
         let _ = input.parse::<Token!(,)>();
-        let mut config_fields = Vec::new();
 
-        while let Ok(field) = input.parse::<ConfigField>() {
-            if let Visibility::Public(_) = field.field.vis {
-                config_fields.push(field);
-            }
-        }
+        let config_fields = Punctuated::<ConfigField, Token![,]>::parse_terminated(input)?
+            .into_iter()
+            .filter(|field| matches!(field.field.vis, Visibility::Public(_)))
+            .collect();
+            
         Ok(Self {
             name,
             docstring,
@@ -130,7 +132,11 @@ fn parse_docstring(input: ParseStream) -> Option<String> {
     while input.peek(Token!(#)) {
         if let Ok(attr) = input.call(Attribute::parse_outer) {
             for attribute in attr {
-                if attribute.path.get_ident().map_or(false, |ident| ident == "doc") {
+                if attribute
+                    .path
+                    .get_ident()
+                    .map_or(false, |ident| ident == "doc")
+                {
                     let tokens = attribute.tokens.clone().into_iter().skip(1).collect();
                     let string = parse2::<LitStr>(tokens).expect("Invalid docstring").value();
                     res.push_str(&string);
@@ -205,9 +211,22 @@ impl Parse for Example {
         let mut docstring = String::new();
         while input.peek(Token![;]) {
             let _ = input.parse::<Token!(;)>();
-            docstring.push_str(&parse_docstring(&input).map(|string| format!("{}\n", string)).unwrap_or_default());
+            docstring.push_str(
+                &parse_docstring(&input)
+                    .map(|string| format!("{}\n", string))
+                    .unwrap_or_default(),
+            );
         }
-        let source = unindent(&input.parse::<LitStr>()?.value()).trim().to_string();
-        Ok(Example { docstring: if docstring.is_empty() { None } else { Some(docstring) }, source })
+        let source = unindent(&input.parse::<LitStr>()?.value())
+            .trim()
+            .to_string();
+        Ok(Example {
+            docstring: if docstring.is_empty() {
+                None
+            } else {
+                Some(docstring)
+            },
+            source,
+        })
     }
 }

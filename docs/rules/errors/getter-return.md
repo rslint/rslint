@@ -57,6 +57,11 @@ let obj = {
 }
 ```
 
+## Config
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| `allow_implicit` | bool |  Whether to allow implicitly returning undefined with `return;`. <br>`true` by default.  |
+
 <details>
  <summary> More incorrect examples </summary>
 
