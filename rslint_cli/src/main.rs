@@ -1,6 +1,5 @@
-use rslint_cli::{ExplanationRunner, panic_hook};
+use rslint_cli::ExplanationRunner;
 use structopt::StructOpt;
-use std::panic::set_hook;
 
 #[derive(Debug, StructOpt)]
 #[structopt(

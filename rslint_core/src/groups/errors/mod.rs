@@ -14,5 +14,6 @@ group! {
     no_constant_condition::NoConstantCondition,
     for_direction::ForDirection,
     no_debugger::NoDebugger,
-    no_dupe_keys::NoDupeKeys
+    no_dupe_keys::NoDupeKeys,
+    no_duplicate_cases::NoDuplicateCases
 }

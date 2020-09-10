@@ -301,3 +301,13 @@ impl IfStmt {
             .map(|it| it.to())
     }
 }
+
+impl SwitchCase {
+    pub fn into_case(self) -> Option<CaseClause> {
+        if let SwitchCase::CaseClause(clause) = self {
+            Some(clause)
+        } else {
+            None
+        }
+    }
+}

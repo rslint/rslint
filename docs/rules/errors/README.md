@@ -18,6 +18,7 @@ unexpected behavior.
 | [no-constant-condition](./no-constant-condition.md) | Disallow constant conditions which always yield one result. |
 | [no-debugger](./no-debugger.md) | Disallow the use of debugger statements. |
 | [no-dupe-keys](./no-dupe-keys.md) | Disallow duplicate keys in object literals. |
+| [no-duplicate-cases](./no-duplicate-cases.md) | Disallow duplicate test cases in `switch` statements. |
 | [no-unsafe-finally](./no-unsafe-finally.md) | Forbid the use of unsafe control flow statements in try and catch blocks. |
 | [no-unsafe-negation](./no-unsafe-negation.md) | Deny the use of `!` on the left hand side of an `instanceof` or `in` expression where it is ambiguous. |
 
