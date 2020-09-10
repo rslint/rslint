@@ -3,6 +3,7 @@
 use crate::rule_prelude::*;
 use ast::*;
 use rslint_parser::TextRange;
+use std::borrow::Borrow;
 use SyntaxKind::*;
 
 /// Expands an assignment to the returned value, e.g. `foo += 5` -> `foo + 5`, `foo = 6` -> `6`
@@ -272,17 +273,16 @@ pub fn simple_const_condition_context(
                 } else {
                     if let Some(alt) = stmt.alt() {
                         diagnostic = diagnostic
-                        .primary(
-                            stmt.condition().unwrap().syntax().trimmed_range(),
-                            "this condition is always truthy...",
-                        )
-                        .secondary(
-                            alt.syntax().trimmed_range(),
-                            "...which makes this always run",
-                        );
+                            .primary(
+                                stmt.condition().unwrap().syntax().trimmed_range(),
+                                "this condition is always truthy...",
+                            )
+                            .secondary(
+                                alt.syntax().trimmed_range(),
+                                "...which makes this always run",
+                            );
                     } else {
-                        diagnostic = diagnostic
-                        .primary(
+                        diagnostic = diagnostic.primary(
                             stmt.condition().unwrap().syntax().trimmed_range(),
                             "this condition consistently yields one result",
                         )
@@ -366,4 +366,38 @@ pub fn simple_const_condition_context(
         _ => {}
     }
     diagnostic
+}
+
+/// Get the range represented by a list of tokens. 
+/// 
+/// # Panics 
+/// 
+/// Panics if the items is an empty iterator. 
+pub fn token_list_range<I>(items: I) -> TextRange
+where
+    I: IntoIterator,
+    I::Item: Borrow<SyntaxToken>,
+{
+    let collection = items.into_iter().map(|x| x.borrow().clone()).collect::<Vec<_>>();
+    let start = collection.first().expect("Empty token list").text_range().start();
+    let end = collection.last().expect("Empty token list").text_range().end();
+    TextRange::new(start, end)
+}
+
+/// Compare two lists of tokens by comparing their underlying string value. 
+// Note: two generics is so right is not constrained to be the same type as left
+pub fn string_token_eq<L, R>(left: L, right: R) -> bool 
+where
+    L: IntoIterator,
+    R: IntoIterator,
+    L::Item: Borrow<SyntaxToken>,
+    R::Item: Borrow<SyntaxToken> 
+{
+    let left_vec: Vec<L::Item> = left.into_iter().collect();
+    let right_vec: Vec<R::Item> = right.into_iter().collect();
+
+    if left_vec.len() != right_vec.len() {
+        return false;
+    }
+    left_vec.into_iter().zip(right_vec.into_iter()).all(|(l, r)| l.borrow().to_string() == r.borrow().to_string())
 }

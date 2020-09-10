@@ -72,13 +72,13 @@ impl PropName {
 impl LiteralProp {
     pub fn key(&self) -> Option<PropName> {
         if PropName::can_cast(
-            support::children::<Expr>(self.syntax())
+            support::children::<PropName>(self.syntax())
                 .next()?
                 .syntax()
                 .kind(),
         ) {
             PropName::cast(
-                support::children::<Expr>(self.syntax())
+                support::children::<PropName>(self.syntax())
                     .next()
                     .unwrap()
                     .syntax()
@@ -90,7 +90,7 @@ impl LiteralProp {
     }
 
     pub fn value(&self) -> Option<Expr> {
-        support::children(self.syntax()).nth(1)
+        self.syntax().children().nth(1)?.try_to()
     }
 }
 
@@ -630,4 +630,30 @@ impl Template {
             .children_with_tokens()
             .filter_map(NodeOrToken::into_token)
     }
+}
+
+impl ObjectProp {
+    pub fn key(&self) -> Option<std::string::String> {
+        Some(self.key_element()?.to_string())
+    }
+   
+    pub fn key_element(&self) -> Option<SyntaxElement> {
+        Some(match self {
+            ObjectProp::IdentProp(idt) => idt.syntax().clone(),
+            ObjectProp::LiteralProp(litprop) => prop_name_syntax(litprop.key()?)?,
+            ObjectProp::Getter(getter) => prop_name_syntax(getter.key()?)?,
+            ObjectProp::Setter(setter) => prop_name_syntax(setter.key()?)?,
+            ObjectProp::Method(method) => prop_name_syntax(method.name()?)?,
+            ObjectProp::InitializedProp(init) => init.key()?.syntax().clone(),
+            ObjectProp::SpreadProp(_) => return None
+        }.into())
+    }
+}
+
+fn prop_name_syntax(name: PropName) -> Option<SyntaxNode> {
+    Some(match name {
+        PropName::Ident(idt) => idt.syntax().clone(),
+        PropName::Literal(lit) => lit.syntax().clone(),
+        PropName::Computed(_) => return None
+    })
 }

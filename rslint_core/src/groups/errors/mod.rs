@@ -13,5 +13,6 @@ group! {
     no_async_promise_executor::NoAsyncPromiseExecutor,
     no_constant_condition::NoConstantCondition,
     for_direction::ForDirection,
-    no_debugger::NoDebugger
+    no_debugger::NoDebugger,
+    no_dupe_keys::NoDupeKeys
 }
