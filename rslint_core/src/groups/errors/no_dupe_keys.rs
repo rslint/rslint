@@ -26,6 +26,7 @@ declare_lint! {
 }
 
 // FIXME: this should consider the value of a number key, aka 1 and 0x1
+#[typetag::serde]
 impl CstRule for NoDupeKeys {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if let Expr::ObjectExpr(obj) = node.try_to()? {

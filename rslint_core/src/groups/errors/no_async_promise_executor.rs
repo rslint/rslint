@@ -44,6 +44,7 @@ declare_lint! {
     "no-async-promise-executor"
 }
 
+#[typetag::serde]
 impl CstRule for NoAsyncPromiseExecutor {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == NEW_EXPR && node.to::<ast::NewExpr>().object()?.syntax().text() == "Promise" {

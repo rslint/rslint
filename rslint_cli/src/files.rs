@@ -61,6 +61,12 @@ impl<'a> Files<'a> for FileWalker {
 }
 
 impl FileWalker {
+    pub fn empty() -> Self {
+        Self {
+            files: HashMap::new()
+        }
+    }
+
     /// Make a new file walker from a compiled glob pattern. This also
     /// skips any unreadable files/dirs
     pub fn from_glob(paths: Paths) -> Self {
@@ -170,5 +176,10 @@ impl JsFile {
             Ok(line) => Some(line),
             Err(next_line) => Some(next_line - 1),
         }
+    }
+
+    pub fn line_col_to_index(&self, line: usize, column: usize) -> Option<usize> {
+        let start = self.line_start(line)?;
+        Some(start + column)
     }
 }

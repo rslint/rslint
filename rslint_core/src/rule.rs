@@ -38,7 +38,8 @@ use std::rc::Rc;
 /// - Do not unwrap pieces of an AST node (sometimes it is ok because they are guaranteed to be there), since that will cause panics
 /// with error recovery.
 /// - Do not use node or string coloring outside of diagnostic nodes, it messes with termcolor and ends up looking horrible.
-pub trait CstRule: Send + Sync + Rule {
+#[typetag::serde]
+pub trait CstRule: Rule {
     /// Check an individual node in the syntax tree.
     /// You can use the `match_ast` macro to make matching a node to an ast node easier.
     /// The reason this uses nodes and not a visitor is because nodes are more flexible,
@@ -70,12 +71,21 @@ pub trait CstRule: Send + Sync + Rule {
 /// Each rule should have a `new` function for easy instantiation. We however do not require this
 /// for the purposes of allowing more complex rules to instantiate themselves in a different way.
 /// However the rules must be easily instantiated because of rule groups.
-#[typetag::serde]
-pub trait Rule: Debug + DynClone {
+pub trait Rule: Debug + DynClone + Send + Sync {
     /// A unique, kebab-case name for the rule.
     fn name(&self) -> &'static str;
     /// The name of the group this rule belongs to.
     fn group(&self) -> &'static str;
+}
+
+dyn_clone::clone_trait_object!(Rule);
+dyn_clone::clone_trait_object!(CstRule);
+
+/// The level configured for a rule. 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum RuleLevel {
+    Warning,
+    Error
 }
 
 /// Context given to a rule when running it.
@@ -204,6 +214,7 @@ impl Outcome {
 /// public will be used for config, you can however disable this by using `#[serde(skip)]`.
 /// Every public (config) field should have a doc comment, the doc comments will be used for
 /// user facing documentation. Therefore try to be non technical and non rust specific with the doc comments.
+/// **All config fields will be renamed to camelCase**
 ///
 ///
 /// This will generate a rule struct with `RuleName`,
@@ -230,6 +241,7 @@ macro_rules! declare_lint {
         use serde::{Deserialize, Serialize};
 
         $(#[$outer])*
+        #[serde(rename_all = "camelCase")]
         #[derive(Debug, Clone, Deserialize, Serialize)]
         pub struct $name {
             $(
@@ -246,7 +258,6 @@ macro_rules! declare_lint {
             }
         }
 
-        #[typetag::serde(name = $code)]
         impl Rule for $name {
             fn name(&self) -> &'static str {
                 $code

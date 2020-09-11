@@ -36,7 +36,7 @@ foo // 6
 ## Config
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `allow_parens` | bool |  Allow an assignment if they are enclosed in parentheses to allow<br>things like reassigning a variable. |
+| `allowParens` | bool |  Allow an assignment if they are enclosed in parentheses to allow<br>things like reassigning a variable. |
 
 <details>
  <summary> More incorrect examples </summary>

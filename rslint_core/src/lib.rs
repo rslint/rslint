@@ -9,8 +9,7 @@ pub mod util;
 
 pub use self::{
     diagnostic::DiagnosticBuilder,
-    groups::CstRuleGroup,
-    rule::{CstRule, Outcome, Rule, RuleCtx, RuleResult},
+    rule::{CstRule, Outcome, Rule, RuleCtx, RuleResult, RuleLevel},
     store::CstRuleStore,
 };
 pub use codespan_reporting::diagnostic::{Label, Severity};
@@ -18,20 +17,20 @@ pub use codespan_reporting::diagnostic::{Label, Severity};
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, SyntaxNode};
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeSet};
 
 /// The type of errors, warnings, and notes emitted by the linter.
 pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
 
 /// The result of linting a file.
 #[derive(Debug)]
-pub struct LintResult {
+pub struct LintResult<'s> {
     pub parser_diagnostics: Vec<Diagnostic>,
-    pub store: CstRuleStore,
+    pub store: &'s CstRuleStore,
     pub rule_diagnostics: HashMap<&'static str, Vec<Diagnostic>>,
 }
 
-impl LintResult {
+impl LintResult<'_> {
     /// Get all of the diagnostics thrown during linting, in the order of parser diagnostics, then
     /// the diagnostics of each rule sequentially.
     pub fn diagnostics(&self) -> impl Iterator<Item = &Diagnostic> {
@@ -51,7 +50,7 @@ pub fn lint_file(
     file_id: usize,
     file_source: impl AsRef<str>,
     module: bool,
-    store: CstRuleStore,
+    store: &CstRuleStore,
     verbose: bool,
 ) -> LintResult {
     let (parser_diagnostics, green) = if module {
@@ -63,7 +62,8 @@ pub fn lint_file(
     };
 
     let rule_diagnostics = store
-        .par_rules()
+        .rules
+        .par_iter()
         .map(|rule| {
             let root = SyntaxNode::new_root(green.clone());
 
@@ -106,7 +106,25 @@ pub fn run_rule(
 pub fn get_rule_by_name(name: &str) -> Option<Box<dyn CstRule>> {
     CstRuleStore::new()
         .builtins()
-        .rules()
+        .rules
+        .iter()
         .find(|rule| rule.name() == name)
         .map(|rule| clone_box(&**rule))
+}
+
+/// Get a group's rules by the group name. 
+// TODO: there should be a good way to not have to hardcode all of this
+pub fn get_group_rules_by_name(group_name: &str) -> Option<Vec<Box<dyn CstRule>>> {
+    use groups::*;
+
+    Some(match group_name {
+        "errors" => errors(),
+        _ => return None
+    })
+}
+
+/// Get a suggestion for an incorrect rule name for things such as "did you mean ...?"
+pub fn get_rule_suggestion(incorrect_rule_name: &str) -> Option<&str> {
+    let rules = CstRuleStore::new().builtins().rules.into_iter().map(|rule| rule.name());
+    util::find_best_match_for_name(rules, incorrect_rule_name, None)
 }

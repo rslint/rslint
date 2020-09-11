@@ -51,6 +51,7 @@ declare_lint! {
 
 pub const CONTROL_FLOW_STMT: [SyntaxKind; 4] = [BREAK_STMT, CONTINUE_STMT, THROW_STMT, RETURN_STMT];
 
+#[typetag::serde]
 impl CstRule for NoUnsafeFinally {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if CONTROL_FLOW_STMT.contains(&node.kind()) && node.parent()?.parent()?.is::<ast::Finalizer>() {

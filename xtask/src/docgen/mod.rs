@@ -167,7 +167,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
         for config in rule.lint_declaration.config_fields.iter() {
             ret.push_str(&format!(
                 "| `{}` | {} | {} |\n",
-                config.field.ident.as_ref().unwrap(),
+                config.field.ident.as_ref().unwrap().to_string().to_case(Case::Camel),
                 config.field.ty.to_token_stream().to_string(),
                 config.docstring.clone().unwrap_or_default().replace("\n", "<br>")
             ));

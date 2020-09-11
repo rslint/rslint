@@ -122,6 +122,11 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
     let old = p.state.to_owned();
     p.state.in_function = true;
     let complete = match p.cur() {
+        T!['('] => {
+            formal_parameters(p);
+            block_stmt(p, true);
+            m.complete(p, METHOD)
+        }
         T![ident] if p.cur_src() == "get" => {
             p.bump_any();
             object_prop_name(p, false);
@@ -138,6 +143,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             m.complete(p, SETTER)
         }
         T![ident] if p.cur_src() == "async" && !p.has_linebreak_before_n(1) => {
+            p.bump_any();
             let in_generator = p.eat(T![*]);
             let mut guard = p.with_state(ParserState {
                 in_async: true,

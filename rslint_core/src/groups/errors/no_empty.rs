@@ -30,25 +30,27 @@ declare_lint! {
     ```
     */
     #[derive(Default)]
+    #[serde(default)]
     NoEmpty,
     errors,
     "no-empty",
     /// Whether to disallow empty block statements in function declarations, arrow functions,
     /// getters, setters, and methods.
-    pub disallow_empty_function: bool,
+    pub disallow_empty_functions: bool,
     /// Whether to allow empty `catch` clauses without a comment.
     pub allow_empty_catch: bool
 }
 
 const IGNORED: [SyntaxKind; 6] = [FN_DECL, FN_EXPR, ARROW_EXPR, GETTER, SETTER, METHOD];
 
+#[typetag::serde]
 impl CstRule for NoEmpty {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == BLOCK_STMT
             && (node
                 .parent()
                 .map_or(true, |parent| !IGNORED.contains(&parent.kind()))
-                || self.disallow_empty_function)
+                || self.disallow_empty_functions)
         {
             if node
                 .parent()

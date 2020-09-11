@@ -541,7 +541,7 @@ pub fn expr(p: &mut Parser) -> Option<CompletedMarker> {
 
         while p.at(T![,]) {
             p.bump_any();
-            binary_expr(p)?;
+            assign_expr(p)?;
         }
 
         return Some(m.complete(p, SEQUENCE_EXPR));
@@ -780,7 +780,7 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
         T![ident] if (p.cur_src() == "get" || p.cur_src() == "set") && !p.nth_at(1, T![:]) => method(p, None),
         T![ident]
             if p.cur_src() == "async"
-                && p.has_linebreak_before_n(1)
+                && !p.has_linebreak_before_n(1)
                 && STARTS_OBJ_PROP.contains(p.nth(1)) =>
         {
             method(p, None)

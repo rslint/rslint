@@ -39,6 +39,7 @@ declare_lint! {
     "no-duplicate-cases"
 }
 
+#[typetag::serde]
 impl CstRule for NoDuplicateCases {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if let Some(switch) = node.try_to::<SwitchStmt>() {

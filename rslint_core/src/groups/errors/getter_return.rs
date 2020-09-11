@@ -65,6 +65,7 @@ declare_lint! {
     pub allow_implicit: bool
 }
 
+#[typetag::serde]
 impl CstRule for GetterReturn {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         match node.kind() {

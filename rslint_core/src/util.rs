@@ -5,6 +5,7 @@ use ast::*;
 use rslint_parser::TextRange;
 use std::borrow::Borrow;
 use SyntaxKind::*;
+use std::cmp;
 
 /// Expands an assignment to the returned value, e.g. `foo += 5` -> `foo + 5`, `foo = 6` -> `6`
 ///
@@ -400,4 +401,97 @@ where
         return false;
     }
     left_vec.into_iter().zip(right_vec.into_iter()).all(|(l, r)| l.borrow().to_string() == r.borrow().to_string())
+}
+
+/// Find the Levenshtein distance between two strings
+pub fn levenshtein_distance(a: &str, b: &str) -> usize {
+    if a.is_empty() {
+        return b.chars().count();
+    } else if b.is_empty() {
+        return a.chars().count();
+    }
+
+    let mut dcol: Vec<_> = (0..=b.len()).collect();
+    let mut t_last = 0;
+
+    for (i, sc) in a.chars().enumerate() {
+        let mut current = i;
+        dcol[0] = current + 1;
+
+        for (j, tc) in b.chars().enumerate() {
+            let next = dcol[j + 1];
+            if sc == tc {
+                dcol[j + 1] = current;
+            } else {
+                dcol[j + 1] = cmp::min(current, next);
+                dcol[j + 1] = cmp::min(dcol[j + 1], dcol[j]) + 1;
+            }
+            current = next;
+            t_last = j;
+        }
+    }
+    dcol[t_last + 1]
+}
+
+/// Find the best match for a string in an iterator of strings based on levenshtein distance. 
+/// 
+/// This considers a case insensitive match and the levenshtein distance with a cutoff. 
+/// This is taken from [rustc's implementation](https://github.com/rust-lang/rust/blob/master/compiler/rustc_ast/src/util/lev_distance.rs)
+pub fn find_best_match_for_name<'a>(
+    iter_names: impl Iterator<Item = &'a str>,
+    lookup: &str,
+    dist: impl Into<Option<usize>>,
+) -> Option<&'a str> {
+    let max_dist = dist.into().map_or_else(|| cmp::max(lookup.len(), 3) / 3, |d| d);
+    let name_vec = iter_names.collect::<Vec<_>>();
+
+    let (case_insensitive_match, levenshtein_match) = name_vec
+        .iter()
+        .filter_map(|&name| {
+            let dist = levenshtein_distance(lookup, name);
+            if dist <= max_dist { Some((name, dist)) } else { None }
+        })
+        // Here we are collecting the next structure:
+        // (case_insensitive_match, (levenshtein_match, levenshtein_distance))
+        .fold((None, None), |result, (candidate, dist)| {
+            (
+                if candidate.to_uppercase() == lookup.to_uppercase() {
+                    Some(candidate)
+                } else {
+                    result.0
+                },
+                match result.1 {
+                    None => Some((candidate, dist)),
+                    Some((c, d)) => Some(if dist < d { (candidate, dist) } else { (c, d) }),
+                },
+            )
+        });
+
+    // Priority of matches:
+    // 1. Exact case insensitive match
+    // 2. Levenshtein distance match
+    // 3. Sorted word match
+    if let Some(candidate) = case_insensitive_match {
+        Some(candidate.as_ref())
+    } else if levenshtein_match.is_some() {
+        levenshtein_match.map(|x| x.0)
+    } else {
+        find_match_by_sorted_words(name_vec, lookup)
+    }
+}
+
+fn find_match_by_sorted_words<'a>(iter_names: Vec<&'a str>, lookup: &str) -> Option<&'a str> {
+    iter_names.iter().fold(None, |result, candidate| {
+        if sort_by_words(&candidate) == sort_by_words(lookup) {
+            Some(candidate)
+        } else {
+            result
+        }
+    })
+}
+
+fn sort_by_words(name: &str) -> std::string::String {
+    let mut split_words: Vec<&str> = name.split('_').collect();
+    split_words.sort();
+    split_words.join("_")
 }

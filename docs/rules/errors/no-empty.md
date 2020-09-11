@@ -32,8 +32,8 @@ if (foo) {
 ## Config
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `disallow_empty_function` | bool |  Whether to disallow empty block statements in function declarations, arrow functions,<br>getters, setters, and methods. |
-| `allow_empty_catch` | bool |  Whether to allow empty `catch` clauses without a comment. |
+| `disallowEmptyFunctions` | bool |  Whether to disallow empty block statements in function declarations, arrow functions,<br>getters, setters, and methods. |
+| `allowEmptyCatch` | bool |  Whether to allow empty `catch` clauses without a comment. |
 
 <details>
  <summary> More incorrect examples </summary>

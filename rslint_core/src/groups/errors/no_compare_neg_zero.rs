@@ -36,6 +36,7 @@ declare_lint! {
     "no-compare-neg-zero"
 }
 
+#[typetag::serde]
 impl CstRule for NoCompareNegZero {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.try_to::<ast::BinExpr>()?.comparison() {

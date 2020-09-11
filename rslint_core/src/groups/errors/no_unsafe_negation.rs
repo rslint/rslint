@@ -32,6 +32,7 @@ declare_lint! {
     "no-unsafe-negation"
 }
 
+#[typetag::serde]
 impl CstRule for NoUnsafeNegation {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == BIN_EXPR

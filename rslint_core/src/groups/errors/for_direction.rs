@@ -40,6 +40,7 @@ declare_lint! {
     "for-direction"
 }
 
+#[typetag::serde]
 impl CstRule for ForDirection {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if let Some(test) = node

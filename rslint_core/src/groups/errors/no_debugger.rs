@@ -23,6 +23,7 @@ declare_lint! {
     "no-debugger"
 }
 
+#[typetag::serde]
 impl CstRule for NoDebugger {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == SyntaxKind::DEBUGGER_STMT {

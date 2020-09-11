@@ -844,4 +844,14 @@ mod tests {
             NUMBER:1
         }
     }
+
+    #[test]
+    fn template_escape() {
+        assert_lex! {
+            r"`foo \` bar`",
+            BACKTICK:1,
+            TEMPLATE_CHUNK:10,
+            BACKTICK:1
+        }
+    }
 }

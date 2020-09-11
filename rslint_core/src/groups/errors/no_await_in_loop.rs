@@ -8,6 +8,7 @@ declare_lint! {
     "no-await-in-loop"
 }
 
+#[typetag::serde]
 impl CstRule for NoAwaitInLoop {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if let Some(err_node) = node.children().find(|node| node.kind() == AWAIT_EXPR) {

@@ -1235,6 +1235,7 @@ impl<'src> Lexer<'src> {
                     if let Some(err) = self.validate_escape_sequence() {
                         diagnostic = Some(err);
                     }
+                    self.next_bounded();
                 }
                 '$' if self.bytes.get(self.cur + 1) == Some(&b'{') && self.cur == start => {
                     self.advance(2);

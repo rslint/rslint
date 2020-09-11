@@ -28,11 +28,11 @@ cargo run --release -- ./glob/pattern.js
 - No need for a configuration file 
 - Completely error tolerant and fast parser 
 - Lossless tree used for stylistic linting 
+- TOML config (json will be allowed too), (TOML implemented, json not yet)
 
 ## Planned 
 
 - Global config 
-- TOML config (json will be allowed too) 
 - SSR-like templates for node matching and autofix  
 - Autofix without requiring reruns of all rules 
 - WASM builds 

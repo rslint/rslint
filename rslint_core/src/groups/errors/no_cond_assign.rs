@@ -51,6 +51,7 @@ impl Default for NoCondAssign {
 
 const COND_CHECKED: [SyntaxKind; 5] = [IF_STMT, WHILE_STMT, DO_WHILE_STMT, FOR_STMT, COND_EXPR];
 
+#[typetag::serde]
 impl CstRule for NoCondAssign {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         let cond = condition(node)?;

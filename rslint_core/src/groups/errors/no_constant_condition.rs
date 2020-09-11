@@ -42,6 +42,7 @@ declare_lint! {
     "no-constant-condition"
 }
 
+#[typetag::serde]
 impl CstRule for NoConstantCondition {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         let mut notes = vec![];
