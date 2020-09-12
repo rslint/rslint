@@ -12,6 +12,14 @@ cd RSLint
 cargo run --release -- ./glob/pattern.js
 ```
 
+# Configuration 
+
+Please see the [docs](./docs/config.md) for linter configuration details. 
+
+# Rules 
+
+You can find rule documentation [here](./docs/rules).
+
 # Differences from other linters 
 
 ## Implemented 
@@ -50,60 +58,24 @@ RSLint is designed to be the fastest JavaScript linter ever made, it accomplishe
   - Using separate distinct threads for splitting up IO bound tasks such as loading files
   - Linting each file in parallel
   - Running each rule from every group in parallel over the concrete syntax tree
-  - Caching lint results by default
-
-This is evidenced by crude benchmarks (these will be updated with proper benchmarks later) outlining the major operations and top 10 slowest rules
-```
-╒═══════════════════════╤════════════════════╤═══════════════╕
-│ Rule                  │ Avg duration (μs)  │ Percent total │
-╞═══════════════════════╪════════════════════╪═══════════════╡
-│ no-constant-condition │ 27                 │ 3             │
-├───────────────────────┼────────────────────┼───────────────┤
-│ no-empty              │ 20                 │ 2             │
-├───────────────────────┼────────────────────┼───────────────┤
-│ no-duplicate-case     │ 11                 │ 1             │
-├───────────────────────┼────────────────────┼───────────────┤
-│ no-compare-neg-zero   │ 10                 │ 1             │
-├───────────────────────┼────────────────────┼───────────────┤
-│ no-cond-assign        │ 6                  │ 1             │
-├───────────────────────┼────────────────────┼───────────────┤
-│ no-unsafe-finally     │ 5                  │ 1             │
-└───────────────────────┴────────────────────┴───────────────┘
-
-╒═══════════════╤════════════════╤═══════════════╕
-│ Operation     │ Duration (μs)  │ Percent total │
-╞═══════════════╪════════════════╪═══════════════╡
-│ Loading cache │ 289            │ 33            │
-├───────────────┼────────────────┼───────────────┤
-│ Loading files │ 277            │ 31            │
-├───────────────┼────────────────┼───────────────┤
-│ Linting files │ 314            │ 35            │
-├───────────────┼────────────────┼───────────────┤
-│ Overall       │ 888            │               │
-└───────────────┴────────────────┴───────────────┘
-```
-
-If you would like to generate these tables for your run, set the `TIMING` env var to `1`  
-**Note that these benchmarks are highly inaccurate, the linting process will end up being a lot faster if benchmarked over thousands of iterations**  
-Furthermore, rule times are measured as the average over all files, so the total time is closer to the avg duration than `duration * files`.
+  - (WIP) linting each untyped node in parallel
 
 # Roadmap
 
 RSLint's goal is to provide extremely fast and user friendly linting for the whole js ecosystem. There are tons of things to do to bring it up to par with existing linters. This is a list of planned features and things to do ranked in order of highest to lowest priority (this is by no definition final, things will change):
 
-- [ ] Refine caching system to include rules run and automatically adding to .gitignore  
-- [ ] More tests for rslint-parse statement subparsers  
-- [ ] Scope analysis  
+- [ ] Scope analysis (WIP)  
+- [ ] Tests for parser, including test262
 - [ ] Implementation of ESLint reccomended rules  
-- [ ] ES6+ Support (mostly just parser work)  
 - [ ] Benchmarks  
 - [ ] Markdown support  
-- [ ] Config files  
-- [ ] Rule options  
+- [x] Config files (partially done)
+- [x] Rule options  
 - [ ] Prebuilt binary generation  
-- [ ] Neon bindings to allow for installation via npm with a build script  
+- [ ] ~~Neon bindings to allow for installation via npm with a build script~~ we can do this with prebuilt binaries only
 - [ ] JSX Support  
 - [ ] TS Support  
+- [ ] Autofix
 - [ ] JS Plugins  
 - [ ] WASM Plugins  
 - [ ] Documentation website  
