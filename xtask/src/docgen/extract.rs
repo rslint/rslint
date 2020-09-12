@@ -208,24 +208,12 @@ impl Parse for RuleTests {
 
 impl Parse for Example {
     fn parse(input: ParseStream) -> Result<Self> {
-        let mut docstring = String::new();
-        while input.peek(Token![;]) {
-            let _ = input.parse::<Token!(;)>();
-            docstring.push_str(
-                &parse_docstring(&input)
-                    .map(|string| format!("{}\n", string))
-                    .unwrap_or_default(),
-            );
-        }
+        let docstring = parse_docstring(&input);
         let source = unindent(&input.parse::<LitStr>()?.value())
             .trim()
             .to_string();
         Ok(Example {
-            docstring: if docstring.is_empty() {
-                None
-            } else {
-                Some(docstring)
-            },
+            docstring,
             source,
         })
     }

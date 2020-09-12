@@ -134,7 +134,7 @@ rule_tests! {
             continue;
         }
         ",
-        ;/// ignore
+        /// ignore
         "
         try {
             {}

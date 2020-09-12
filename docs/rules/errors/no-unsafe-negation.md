@@ -38,7 +38,6 @@ if (!bar in {}) {
 <details>
  <summary> More correct examples </summary>
  If this is intended behavior, you can wrap the expression
-
 ```js
 (!foo) instanceof bar
 ```

@@ -94,7 +94,7 @@ rule_tests! {
     NoEmpty::default(),
     err: {
         "{}",
-        ;/// ignore
+        /// ignore
         "{  }",
         "if (foo) {}",
         "do { } while (scoot)",

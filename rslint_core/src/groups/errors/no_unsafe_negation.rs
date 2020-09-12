@@ -79,15 +79,15 @@ rule_tests! {
     err: {
         "!foo in bar",
         "![5] instanceof !4",
-        ;/// ignore
+        /// ignore
         "!!!!!instanceof !!foo instanceof !!bar"
     },
     ok: {
-        ;/// If this is intended behavior, you can wrap the expression
+        /// If this is intended behavior, you can wrap the expression
         "(!foo) instanceof bar",
         "key in bar",
         "bar instanceof bar",
-        ;/// ignore
+        /// ignore
         "1 in [1, 1, 1, ((!1) in [1111111111, 111])]"
     }
 }

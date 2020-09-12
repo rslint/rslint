@@ -17,8 +17,8 @@ macro_rules! rule_tests {
     err: {
         $(
             // An optional tag to give to docgen
-            $(;#[$err_meta:meta])*
-            $code:expr
+            $(#[$err_meta:meta])*
+            $code:literal
         ),*
     },
 
@@ -28,8 +28,8 @@ macro_rules! rule_tests {
     ok: {
         $(
             // An optional tag to give to docgen
-            $(;#[$ok_meta:meta])*
-            $ok_code:expr
+            $(#[$ok_meta:meta])*
+            $ok_code:literal
         ),*
     }) => {
         #[allow(unused_imports)]
