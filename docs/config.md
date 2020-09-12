@@ -1,5 +1,7 @@
 # Linter Configuration 
 
+RSLint is fully configurable, you can configure the linter through a `rslintrc.toml` file in the linting directory. 
+
 ## Table of Contents 
 
 1. [Syntax](##Syntax)
