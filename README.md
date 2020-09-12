@@ -2,6 +2,8 @@
 
 A  (WIP) JavaScript linter written in Rust designed to be as fast as possible, customizable, and easy to use.
 
+The project is in early development, there will be bugs and weird productions. If you find any bugs feel free to submit an issue 👍.
+
 # Installation
 
 You must have cargo installed on your machine, then git clone the repository, and either build the binary and run it, or use cargo run directly.
@@ -44,11 +46,6 @@ You can find rule documentation [here](./docs/rules).
 - SSR-like templates for node matching and autofix  
 - Autofix without requiring reruns of all rules 
 - WASM builds 
-
-# Limitations
-
-The project is in very early development, there will be bugs and weird productions. If you find any bugs feel free to submit an issue 👍.
-~~RSLint currently only works on ECMAScript 5 due to the parser (rslint-parse) being still in development~~ Rslint-core and rslint-parser, however, support for further ES versions and JSX plus TypeScript is planned in the future.
 
 # Speed
 
