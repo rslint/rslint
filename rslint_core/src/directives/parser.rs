@@ -138,7 +138,7 @@ impl<'store> DirectiveParser<'store> {
         for Token { range, raw } in command.tokens.iter() {
             if let Some(prev_range) = unique.get(raw) {
                 let warn = self
-                    .err("dedundant duplicate rules in `ignore` directive")
+                    .err("redundant duplicate rules in `ignore` directive")
                     .severity(Severity::Warning)
                     .secondary(
                         prev_range.to_owned().to_owned(),
