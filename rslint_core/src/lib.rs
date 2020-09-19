@@ -1,11 +1,12 @@
 mod diagnostic;
 mod rule;
 mod store;
+mod testing;
 
 pub mod groups;
 pub mod rule_prelude;
-pub mod testing;
 pub mod util;
+pub mod directives;
 
 pub use self::{
     diagnostic::DiagnosticBuilder,
@@ -17,7 +18,8 @@ pub use codespan_reporting::diagnostic::{Label, Severity};
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, SyntaxNode};
-use std::collections::{HashMap, BTreeSet};
+use std::collections::HashMap;
+use crate::directives::{DirectiveParser, apply_top_level_directives, Directive, skip_node};
 
 /// The type of errors, warnings, and notes emitted by the linter.
 pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
@@ -28,6 +30,7 @@ pub struct LintResult<'s> {
     pub parser_diagnostics: Vec<Diagnostic>,
     pub store: &'s CstRuleStore,
     pub rule_diagnostics: HashMap<&'static str, Vec<Diagnostic>>,
+    pub directive_diagnostics: Vec<Diagnostic>
 }
 
 impl LintResult<'_> {
@@ -37,6 +40,7 @@ impl LintResult<'_> {
         self.parser_diagnostics
             .iter()
             .chain(self.rule_diagnostics.values().map(|x| x.iter()).flatten())
+            .chain(self.directive_diagnostics.iter())
     }
 
     /// The overall outcome of linting this file (failure, warning, success, etc)
@@ -52,7 +56,7 @@ pub fn lint_file(
     module: bool,
     store: &CstRuleStore,
     verbose: bool,
-) -> LintResult {
+) -> Result<LintResult, Diagnostic> {
     let (parser_diagnostics, green) = if module {
         let parse = parse_module(file_source.as_ref(), file_id);
         (parse.errors().to_owned(), parse.green())
@@ -61,21 +65,33 @@ pub fn lint_file(
         (parse.errors().to_owned(), parse.green())
     };
 
-    let rule_diagnostics = store
+    let mut new_store = store.clone();
+    let results = DirectiveParser::new(SyntaxNode::new_root(green.clone()), file_id, store).get_file_directives()?;
+    let mut directive_diagnostics = vec![];
+
+    let directives = results.into_iter().map(|res| {
+        directive_diagnostics.extend(res.diagnostics);
+        res.directive
+    }).collect::<Vec<_>>();
+
+    apply_top_level_directives(directives.as_slice(), &mut new_store, &mut directive_diagnostics, file_id);
+
+    let rule_diagnostics = new_store
         .rules
         .par_iter()
         .map(|rule| {
             let root = SyntaxNode::new_root(green.clone());
 
-            (rule.name(), run_rule(rule, file_id, root, verbose))
+            (rule.name(), run_rule(rule, file_id, root, verbose, &directives))
         })
         .collect();
 
-    LintResult {
+    Ok(LintResult {
         parser_diagnostics,
         store,
-        rule_diagnostics
-    }
+        rule_diagnostics,
+        directive_diagnostics
+    })
 }
 
 pub fn run_rule(
@@ -83,6 +99,7 @@ pub fn run_rule(
     file_id: usize,
     root: SyntaxNode,
     verbose: bool,
+    directives: &[Directive]
 ) -> Vec<Diagnostic> {
     let mut ctx = RuleCtx {
         file_id,
@@ -94,8 +111,12 @@ pub fn run_rule(
 
     root.descendants_with_tokens().for_each(|elem| {
         match elem {
-            rslint_parser::NodeOrToken::Node(node) => rule.check_node(&node, &mut ctx),
-            rslint_parser::NodeOrToken::Token(tok) => rule.check_token(&tok, &mut ctx),
+            rslint_parser::NodeOrToken::Node(node) => {
+                if !skip_node(directives, &node, rule) {
+                    rule.check_node(&node, &mut ctx);
+                }
+            },
+            rslint_parser::NodeOrToken::Token(tok) => drop(rule.check_token(&tok, &mut ctx)),
         };
     });
 

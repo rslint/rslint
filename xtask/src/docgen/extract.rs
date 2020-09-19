@@ -185,6 +185,9 @@ impl Parse for RuleTests {
             .into_iter()
             .filter(|elem| elem.docstring.as_ref().map(|x| x.trim()) != Some("ignore"))
             .collect();
+
+        err_examples.truncate(30);
+
         input.parse::<Token!(,)>()?;
         input.parse::<kw::ok>()?;
         input.parse::<Token!(:)>()?;
@@ -198,6 +201,8 @@ impl Parse for RuleTests {
             .into_iter()
             .filter(|elem| elem.docstring.as_ref().map(|x| x.trim()) != Some("ignore"))
             .collect();
+
+        ok_examples.truncate(30);
 
         Ok(Self {
             ok_examples,

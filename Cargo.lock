@@ -322,6 +322,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "erasable"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f11890ce181d47a64e5d1eb4b6caba0e7bae911a356723740d058a5d0340b7d"
+dependencies = [
+ "autocfg",
+ "scopeguard",
+]
+
+[[package]]
 name = "erased-serde"
 version = "0.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -546,9 +556,9 @@ dependencies = [
 
 [[package]]
 name = "num_cpus"
-version = "1.12.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46203554f085ff89c235cd12f7075f3233af9b11ed7c9e16dfe2560d03313ce6"
+checksum = "05499f3756671c15885fee9034446956fff3f243d6077b91e5767df161f766b3"
 dependencies = [
  "hermit-abi",
  "libc",
@@ -797,6 +807,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rowan"
+version = "0.10.0"
+source = "git+https://github.com/RDambrosio016/rowan#0f950ff8a12ef0a34952d8bf056e91339702147b"
+dependencies = [
+ "erasable",
+ "rustc-hash",
+ "slice-dst",
+ "smol_str",
+ "text-size",
+]
+
+[[package]]
 name = "rslint_cli"
 version = "0.1.0"
 dependencies = [
@@ -822,6 +844,7 @@ dependencies = [
  "codespan-reporting",
  "dyn-clone",
  "rayon",
+ "rslint_lexer",
  "rslint_parser",
  "serde",
  "typetag",
@@ -848,7 +871,7 @@ dependencies = [
  "criterion",
  "lexical",
  "num-bigint",
- "rowan",
+ "rowan 0.10.0 (git+https://github.com/RDambrosio016/rowan)",
  "rslint_lexer",
  "rslint_syntax",
 ]
@@ -865,7 +888,7 @@ dependencies = [
 name = "rslint_syntax"
 version = "0.1.0"
 dependencies = [
- "rowan",
+ "rowan 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -978,6 +1001,16 @@ name = "sha1"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2579985fda508104f7587689507983eadd6a6e84dd35d6d115361f530916fa0d"
+
+[[package]]
+name = "slice-dst"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec1a6721a6d7c2997cea654e3eda6a827432c5dd0a0ed923ddd9b1d691203412"
+dependencies = [
+ "autocfg",
+ "erasable",
+]
 
 [[package]]
 name = "smol_str"

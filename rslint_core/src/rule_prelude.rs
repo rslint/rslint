@@ -9,5 +9,5 @@ pub use crate::{
 #[doc(no_inline)]
 pub use rslint_parser::{
     ast, token_set, util as parseutil, AstNode, AstToken, SyntaxElement, SyntaxKind, SyntaxNode,
-    SyntaxNodeExt, SyntaxToken, SyntaxTokenExt, TokenSet, T, util::color, JsNum, BigInt
+    SyntaxNodeExt, SyntaxToken, SyntaxTokenExt, TokenSet, T, util::color, JsNum, BigInt, op
 };

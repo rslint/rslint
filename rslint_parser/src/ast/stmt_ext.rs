@@ -311,3 +311,51 @@ impl SwitchCase {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ModuleItem {
+    ImportDecl(ImportDecl),
+    ExportNamed(ExportNamed),
+    ExportDefaultDecl(ExportDefaultDecl),
+    ExportDefaultExpr(ExportDefaultExpr),
+    ExportWildcard(ExportWildcard),
+    ExportDecl(ExportDecl),
+    Stmt(Stmt)
+}
+
+impl AstNode for ModuleItem {
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            IMPORT_DECL
+                | EXPORT_NAMED
+                | EXPORT_DEFAULT_DECL
+                | EXPORT_DEFAULT_EXPR
+                | EXPORT_WILDCARD
+                | EXPORT_DECL
+        ) || Stmt::can_cast(kind)
+    }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        let res = match syntax.kind() {
+            IMPORT_DECL => ModuleItem::ImportDecl(ImportDecl { syntax }),
+            EXPORT_NAMED => ModuleItem::ExportNamed(ExportNamed { syntax }),
+            EXPORT_DEFAULT_DECL => ModuleItem::ExportDefaultDecl(ExportDefaultDecl { syntax }),
+            EXPORT_DEFAULT_EXPR => ModuleItem::ExportDefaultExpr(ExportDefaultExpr { syntax }),
+            EXPORT_WILDCARD => ModuleItem::ExportWildcard(ExportWildcard { syntax }),
+            EXPORT_DECL => ModuleItem::ExportDecl(ExportDecl { syntax }),
+            _ => ModuleItem::Stmt(Stmt::cast(syntax)?),
+        };
+        Some(res)
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            ModuleItem::ImportDecl(it) => &it.syntax,
+            ModuleItem::ExportNamed(it) => &it.syntax,
+            ModuleItem::ExportDefaultDecl(it) => &it.syntax,
+            ModuleItem::ExportDefaultExpr(it) => &it.syntax,
+            ModuleItem::ExportWildcard(it) => &it.syntax,
+            ModuleItem::ExportDecl(it) => &it.syntax,
+            ModuleItem::Stmt(it) => &it.syntax()
+        }
+    }
+}

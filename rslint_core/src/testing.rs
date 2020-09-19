@@ -41,7 +41,7 @@ macro_rules! rule_tests {
         fn invalid() {
             $(
                 let res = parse_module($code, 0);
-                let errs = run_rule(&(Box::new($rule) as Box<dyn CstRule>), 0, res.syntax(), true);
+                let errs = run_rule(&(Box::new($rule) as Box<dyn CstRule>), 0, res.syntax(), true, &[]);
                 if errs.is_empty() {
                     panic!("\nExpected:\n```\n{}\n```\nto fail linting, but instead it passed (with {} parsing errors)", $code, res.errors().len());
                 }
@@ -52,7 +52,7 @@ macro_rules! rule_tests {
         fn valid() {
             $(
                 let res = parse_module($ok_code, 0);
-                let errs = run_rule(&(Box::new($rule) as Box<dyn CstRule>), 0, res.syntax(), true);
+                let errs = run_rule(&(Box::new($rule) as Box<dyn CstRule>), 0, res.syntax(), true, &[]);
     
                 if !errs.is_empty() {
                     panic!("\nExpected:\n```\n{}\n```\nto pass linting, but instead it threw errors (along with {} parsing errors):\n\n", $ok_code, res.errors().len());

@@ -13,6 +13,7 @@ macro_rules! group {
             pub use $path::$rule;
         )*
 
+        $(#[$description])*
         pub fn $groupname() -> Vec<Box<dyn CstRule>> {
             vec![$(Box::new($rule::new()) as Box<dyn CstRule>),*]
         }

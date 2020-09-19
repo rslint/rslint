@@ -186,7 +186,7 @@ fn try_offer_context(
 ) -> Option<()> {
     let init = for_stmt.init()?;
 
-    let initial_value = match init.clone() {
+    let initial_value = match init.clone().inner().unwrap() {
         ForHead::Decl(decl) => {
             let decl = decl.declared().find(|declarator| {
                 declarator.pattern().map_or(false, |pat| {

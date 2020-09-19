@@ -261,25 +261,25 @@ pub fn simple_const_condition_context(
         IF_STMT => {
             let stmt = parent.to::<IfStmt>();
             if condition_value {
-                if let Some(cons) = stmt.cons() {
+                if let Some(alt) = stmt.alt() {
                     diagnostic = diagnostic
                         .primary(
                             stmt.condition().unwrap().syntax().trimmed_range(),
                             "this condition is always truthy...",
                         )
                         .secondary(
-                            cons.syntax().trimmed_range(),
+                            alt.syntax().trimmed_range(),
                             "...which makes this unreachable",
                         );
                 } else {
-                    if let Some(alt) = stmt.alt() {
+                    if let Some(cons) = stmt.cons() {
                         diagnostic = diagnostic
                             .primary(
                                 stmt.condition().unwrap().syntax().trimmed_range(),
                                 "this condition is always truthy...",
                             )
                             .secondary(
-                                alt.syntax().trimmed_range(),
+                                cons.syntax().trimmed_range(),
                                 "...which makes this always run",
                             );
                     } else {
@@ -494,4 +494,17 @@ fn sort_by_words(name: &str) -> std::string::String {
     let mut split_words: Vec<&str> = name.split('_').collect();
     split_words.sort();
     split_words.join("_")
+}
+
+/// Check if this is either a Call expression with the callee of `name`,
+/// or if this is a New expression with a callee of `name`. 
+/// e.g. `Boolean()` or `new Boolean()`
+pub fn constructor_or_call_with_callee(node: impl Borrow<SyntaxNode>, name: impl AsRef<str>) -> bool {
+    let node = node.borrow();
+    match node.kind() {
+        NEW_EXPR | CALL_EXPR => {
+            node.children().any(|child| child.text() == name.as_ref())
+        },
+        _ => false
+    }
 }

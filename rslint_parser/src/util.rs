@@ -322,6 +322,26 @@ pub trait SyntaxNodeExt {
     fn contains_comments(&self) -> bool {
         self.tokens().iter().any(|tok| tok.kind() == SyntaxKind::COMMENT)
     }
+
+    /// Get the first child with a specific kind. 
+    fn child_with_kind(&self, kind: SyntaxKind) -> Option<SyntaxNode> {
+        self.to_node().children().find(|child| child.kind() == kind)
+    }
+
+    /// Get the parent of this node, recursing through any grouping expressions
+    fn expr_parent(&self) -> Option<SyntaxNode> {
+        let parent = self.to_node().parent()?;
+        if parent.kind() == SyntaxKind::GROUPING_EXPR {
+            parent.parent()
+        } else {
+            Some(parent)
+        }
+    }
+
+    /// Get the first child in this node that can be casted to an AST node
+    fn child_with_ast<T: AstNode>(&self) -> Option<T> {
+        self.to_node().children().find_map(|child| child.try_to())
+    }
 }
 
 impl SyntaxNodeExt for SyntaxNode {
@@ -383,7 +403,7 @@ pub trait SyntaxTokenExt {
             }
             _ => return None,
         };
-        Some(Comment { kind, content })
+        Some(Comment { kind, content, token: self.to_token().clone() })
     }
 
     /// Check whether this token's kind is contained in a token set.
@@ -402,6 +422,7 @@ impl SyntaxTokenExt for SyntaxToken {
 pub struct Comment {
     pub kind: CommentKind,
     pub content: String,
+    pub token: SyntaxToken
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

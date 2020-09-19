@@ -4,6 +4,7 @@
 //! from any error and produce an ast from any source code. If you don't want to account for
 //! optionals for everything, you can use ...
 
+#[macro_use]
 mod expr_ext;
 mod generated;
 mod stmt_ext;

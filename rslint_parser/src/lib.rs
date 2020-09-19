@@ -68,6 +68,7 @@ mod token_source;
 mod event;
 mod numbers;
 
+#[macro_use]
 pub mod ast;
 pub mod syntax;
 pub mod util;

@@ -208,6 +208,7 @@ pub enum SyntaxKind {
     AWAIT_EXPR,
     FOR_STMT_TEST,
     FOR_STMT_UPDATE,
+    FOR_STMT_INIT,
     #[doc(hidden)]
     __LAST,
 }

@@ -218,11 +218,12 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "NAMED_IMPORTS",
         "SPECIFIER",
         "AWAIT_EXPR",
-        // These two are just hacks for converting to ast node without
+        // These three are just hacks for converting to ast node without
         // having to handle every error recovery case.
         // in the future we might just tag the underlying rowan nodes
         "FOR_STMT_TEST",
-        "FOR_STMT_UPDATE"
+        "FOR_STMT_UPDATE",
+        "FOR_STMT_INIT"
     ]
 };
 
@@ -434,13 +435,17 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct ForStmt {
             T![for],
             T!['('],
-            init: ForHead,
+            init: ForStmtInit,
             /* semicolon */
             test: ForStmtTest,
             /* semicolon */
             update: ForStmtUpdate,
             T![')'],
             cons: Stmt,
+        }
+
+        struct ForStmtInit {
+            inner: ForHead
         }
 
         struct ForStmtTest {
@@ -454,7 +459,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct ForInStmt {
             T![for],
             T!['('],
-            left: ForHead,
+            left: ForStmtInit,
             T![in],
             right: Expr,
             T![')'],
@@ -465,7 +470,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![for],
             T![await],
             T!['('],
-            left: ForHead,
+            left: ForStmtInit,
             /* of */
             right: Expr,
             T![')'],
@@ -894,15 +899,6 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         enum DefaultDecl {
             FnDecl,
             ClassDecl
-        }
-
-        enum ModuleItem {
-            ImportDecl,
-            ExportNamed,
-            ExportDefaultDecl,
-            ExportDefaultExpr,
-            ExportWildcard,
-            ExportDecl
         }
 
         /* 

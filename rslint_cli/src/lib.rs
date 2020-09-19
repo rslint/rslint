@@ -80,6 +80,14 @@ pub fn run(glob: String, verbose: bool) {
                 verbose,
             )
         })
+        .filter_map(|res| {
+            if let Err(diagnostic) = res {
+                emit_diagnostic(diagnostic, &walker);
+                None
+            } else {
+                res.ok()
+            }
+        })
         .collect::<Vec<_>>();
 
     // Map each diagnostic to the correct level according to configured rule level

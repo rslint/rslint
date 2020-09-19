@@ -1,6 +1,6 @@
 //! Extensions for things which are not easily generated in ast expr nodes
 
-use crate::{ast::*, numbers::*, util::*, SyntaxText, TextSize, TokenSet, T};
+use crate::{ast::*, numbers::*, util::*, SyntaxText, TextRange, TextSize, TokenSet, T};
 use SyntaxKind::*;
 
 impl BracketExpr {
@@ -470,11 +470,9 @@ impl Literal {
     pub fn kind(&self) -> LiteralKind {
         match self.token().kind() {
             T![null] => LiteralKind::Null,
-            NUMBER => {
-                match parse_js_num(self.to_string()).unwrap() {
-                    JsNum::BigInt(bigint) => LiteralKind::BigInt(bigint),
-                    JsNum::Float(float) => LiteralKind::Number(float)
-                }
+            NUMBER => match parse_js_num(self.to_string()).unwrap() {
+                JsNum::BigInt(bigint) => LiteralKind::BigInt(bigint),
+                JsNum::Float(float) => LiteralKind::Number(float),
             },
             STRING => LiteralKind::String,
             TRUE_KW => LiteralKind::Bool(true),
@@ -529,7 +527,13 @@ impl Literal {
             self.syntax().text_range().end()
         };
 
-        Some(self.syntax().text().slice(start..end))
+        let offset = self.syntax().text_range().start();
+
+        Some(
+            self.syntax()
+                .text()
+                .slice(TextRange::new(start - offset, end - offset)),
+        )
     }
 }
 
@@ -636,17 +640,20 @@ impl ObjectProp {
     pub fn key(&self) -> Option<std::string::String> {
         Some(self.key_element()?.to_string())
     }
-   
+
     pub fn key_element(&self) -> Option<SyntaxElement> {
-        Some(match self {
-            ObjectProp::IdentProp(idt) => idt.syntax().clone(),
-            ObjectProp::LiteralProp(litprop) => prop_name_syntax(litprop.key()?)?,
-            ObjectProp::Getter(getter) => prop_name_syntax(getter.key()?)?,
-            ObjectProp::Setter(setter) => prop_name_syntax(setter.key()?)?,
-            ObjectProp::Method(method) => prop_name_syntax(method.name()?)?,
-            ObjectProp::InitializedProp(init) => init.key()?.syntax().clone(),
-            ObjectProp::SpreadProp(_) => return None
-        }.into())
+        Some(
+            match self {
+                ObjectProp::IdentProp(idt) => idt.syntax().clone(),
+                ObjectProp::LiteralProp(litprop) => prop_name_syntax(litprop.key()?)?,
+                ObjectProp::Getter(getter) => prop_name_syntax(getter.key()?)?,
+                ObjectProp::Setter(setter) => prop_name_syntax(setter.key()?)?,
+                ObjectProp::Method(method) => prop_name_syntax(method.name()?)?,
+                ObjectProp::InitializedProp(init) => init.key()?.syntax().clone(),
+                ObjectProp::SpreadProp(_) => return None,
+            }
+            .into(),
+        )
     }
 }
 
@@ -654,6 +661,202 @@ fn prop_name_syntax(name: PropName) -> Option<SyntaxNode> {
     Some(match name {
         PropName::Ident(idt) => idt.syntax().clone(),
         PropName::Literal(lit) => lit.syntax().clone(),
-        PropName::Computed(_) => return None
+        PropName::Computed(_) => return None,
     })
+}
+
+impl Expr {
+    /// Whether this is an optional chain expression. 
+    pub fn opt_chain(&self) -> bool {
+        match self {
+            Expr::DotExpr(dotexpr) => dotexpr.opt_chain_token(),
+            Expr::CallExpr(callexpr) => callexpr.opt_chain_token(),
+            Expr::BracketExpr(bracketexpr) => bracketexpr.opt_chain_token(),
+            _ => return false,
+        }.is_some()
+    }
+}
+
+impl DotExpr {
+    pub fn opt_chain_token(&self) -> Option<SyntaxToken> {
+        self.syntax()
+            .children_with_tokens()
+            .filter_map(|child| child.into_token())
+            .find(|tok| tok.kind() == QUESTIONDOT)
+    }
+}
+
+impl CallExpr {
+    pub fn opt_chain_token(&self) -> Option<SyntaxToken> {
+        self.syntax()
+            .children_with_tokens()
+            .filter_map(|child| child.into_token())
+            .find(|tok| tok.kind() == QUESTIONDOT)
+    }
+}
+
+impl BracketExpr {
+    pub fn opt_chain_token(&self) -> Option<SyntaxToken> {
+        self.syntax()
+            .children_with_tokens()
+            .filter_map(|child| child.into_token())
+            .find(|tok| tok.kind() == QUESTIONDOT)
+    }
+}
+
+/// A simple macro for making assign, binop, or unary operators
+#[macro_export]
+macro_rules! op {
+    (<) => {
+        $crate::ast::BinOp::LessThan
+    };
+    (>) => {
+        $crate::ast::BinOp::GreaterThan
+    };
+    (<=) => {
+        $crate::ast::BinOp::LessThanOrEqual
+    };
+    (>=) => {
+        $crate::ast::BinOp::GreaterThanOrEqual
+    };
+    (==) => {
+        $crate::ast::BinOp::Equality
+    };
+    (===) => {
+        $crate::ast::BinOp::StrictEquality
+    };
+    (!=) => {
+        $crate::ast::BinOp::Inequality
+    };
+    (!==) => {
+        $crate::ast::BinOp::StrictInequality
+    };
+    (+) => {
+        $crate::ast::BinOp::Plus
+    };
+    (-) => {
+        $crate::ast::BinOp::Minus
+    };
+    (*) => {
+        $crate::ast::BinOp::Times
+    };
+    (/) => {
+        $crate::ast::BinOp::Divide
+    };
+    (%) => {
+        $crate::ast::BinOp::Remainder
+    };
+    (**) => {
+        $crate::ast::BinOp::Exponent
+    };
+    (<<) => {
+        $crate::ast::BinOp::LeftShift
+    };
+    (>>) => {
+        $crate::ast::BinOp::RightShift
+    };
+    (>>>) => {
+        $crate::ast::BinOp::UnsignedRightShift
+    };
+    (&) => {
+        $crate::ast::BinOp::BitwiseAnd
+    };
+    (|) => {
+        $crate::ast::BinOp::BitwiseOr
+    };
+    (^) => {
+        $crate::ast::BinOp::BitwiseXor
+    };
+    (??) => {
+        $crate::ast::BinOp::NullishCoalescing
+    };
+    (||) => {
+        $crate::ast::BinOp::LogicalOr
+    };
+    (&&) => {
+        $crate::ast::BinOp::LogicalAnd
+    };
+    (in) => {
+        $crate::ast::BinOp::In
+    };
+    (instanceof) => {
+        $crate::ast::BinOp::Instanceof
+    };
+
+    (=) => {
+        $crate::ast::AssignOp::Assign
+    };
+    (+=) => {
+        $crate::ast::AssignOp::AddAssign
+    };
+    (-=) => {
+        $crate::ast::AssignOp::SubtractAssign
+    };
+    (*=) => {
+        $crate::ast::AssignOp::TimesAssign
+    };
+    (%=) => {
+        $crate::ast::AssignOp::RemainderAssign
+    };
+    (**=) => {
+        $crate::ast::AssignOp::ExponentAssign
+    };
+    (>>=) => {
+        $crate::ast::AssignOp::LeftShiftAssign
+    };
+    (<<=) => {
+        $crate::ast::AssignOp::RightShiftAssign
+    };
+    (>>>=) => {
+        $crate::ast::AssignOp::UnsignedRightShiftAssign
+    };
+    (&=) => {
+        $crate::ast::AssignOp::BitwiseAndAssign
+    };
+    (|=) => {
+        $crate::ast::AssignOp::BitwiseOrAssign
+    };
+    (^=) => {
+        $crate::ast::AssignOp::BitwiseXorAssign
+    };
+    (&&=) => {
+        $crate::ast::AssignOp::LogicalAndAssign
+    };
+    (||=) => {
+        $crate::ast::AssignOp::LogicalOrAssign
+    };
+    (??=) => {
+        $crate::ast::AssignOp::NullishCoalescingAssign
+    };
+
+    (++) => {
+        $crate::ast::UnaryOp::Increment
+    };
+    (--) => {
+        $crate::ast::UnaryOp::Decrement
+    };
+    (delete) => {
+        $crate::ast::UnaryOp::Delete
+    };
+    (void) => {
+        $crate::ast::UnaryOp::Void
+    };
+    (typeof) => {
+        $crate::ast::UnaryOp::Typeof
+    };
+    (+) => {
+        $crate::ast::UnaryOp::Plus
+    };
+    (-) => {
+        $crate::ast::UnaryOp::Minus
+    };
+    (~) => {
+        $crate::ast::UnaryOp::BitwiseNot
+    };
+    (!) => {
+        $crate::ast::UnaryOp::LogicalNot
+    };
+    (await) => {
+        $crate::ast::UnaryOp::Await
+    };
 }

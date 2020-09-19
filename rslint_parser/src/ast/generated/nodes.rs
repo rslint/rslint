@@ -186,11 +186,18 @@ pub struct ForStmt {
 impl ForStmt {
     pub fn for_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![for]) }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
-    pub fn init(&self) -> Option<ForHead> { support::child(&self.syntax) }
+    pub fn init(&self) -> Option<ForStmtInit> { support::child(&self.syntax) }
     pub fn test(&self) -> Option<ForStmtTest> { support::child(&self.syntax) }
     pub fn update(&self) -> Option<ForStmtUpdate> { support::child(&self.syntax) }
     pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
     pub fn cons(&self) -> Option<Stmt> { support::child(&self.syntax) }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ForStmtInit {
+    pub(crate) syntax: SyntaxNode,
+}
+impl ForStmtInit {
+    pub fn inner(&self) -> Option<ForHead> { support::child(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ForStmtTest {
@@ -213,7 +220,7 @@ pub struct ForInStmt {
 impl ForInStmt {
     pub fn for_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![for]) }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
-    pub fn left(&self) -> Option<ForHead> { support::child(&self.syntax) }
+    pub fn left(&self) -> Option<ForStmtInit> { support::child(&self.syntax) }
     pub fn in_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![in]) }
     pub fn right(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
@@ -227,7 +234,7 @@ impl ForOfStmt {
     pub fn for_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![for]) }
     pub fn await_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![await]) }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
-    pub fn left(&self) -> Option<ForHead> { support::child(&self.syntax) }
+    pub fn left(&self) -> Option<ForStmtInit> { support::child(&self.syntax) }
     pub fn right(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
     pub fn cons(&self) -> Option<Stmt> { support::child(&self.syntax) }
@@ -806,15 +813,6 @@ pub enum DefaultDecl {
     ClassDecl(ClassDecl),
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ModuleItem {
-    ImportDecl(ImportDecl),
-    ExportNamed(ExportNamed),
-    ExportDefaultDecl(ExportDefaultDecl),
-    ExportDefaultExpr(ExportDefaultExpr),
-    ExportWildcard(ExportWildcard),
-    ExportDecl(ExportDecl),
-}
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Decl {
     FnDecl(FnDecl),
     ClassDecl(ClassDecl),
@@ -1081,6 +1079,17 @@ impl AstNode for WhileStmt {
 }
 impl AstNode for ForStmt {
     fn can_cast(kind: SyntaxKind) -> bool { kind == FOR_STMT }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for ForStmtInit {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == FOR_STMT_INIT }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -2070,59 +2079,6 @@ impl AstNode for DefaultDecl {
         }
     }
 }
-impl From<ImportDecl> for ModuleItem {
-    fn from(node: ImportDecl) -> ModuleItem { ModuleItem::ImportDecl(node) }
-}
-impl From<ExportNamed> for ModuleItem {
-    fn from(node: ExportNamed) -> ModuleItem { ModuleItem::ExportNamed(node) }
-}
-impl From<ExportDefaultDecl> for ModuleItem {
-    fn from(node: ExportDefaultDecl) -> ModuleItem { ModuleItem::ExportDefaultDecl(node) }
-}
-impl From<ExportDefaultExpr> for ModuleItem {
-    fn from(node: ExportDefaultExpr) -> ModuleItem { ModuleItem::ExportDefaultExpr(node) }
-}
-impl From<ExportWildcard> for ModuleItem {
-    fn from(node: ExportWildcard) -> ModuleItem { ModuleItem::ExportWildcard(node) }
-}
-impl From<ExportDecl> for ModuleItem {
-    fn from(node: ExportDecl) -> ModuleItem { ModuleItem::ExportDecl(node) }
-}
-impl AstNode for ModuleItem {
-    fn can_cast(kind: SyntaxKind) -> bool {
-        matches!(
-            kind,
-            IMPORT_DECL
-                | EXPORT_NAMED
-                | EXPORT_DEFAULT_DECL
-                | EXPORT_DEFAULT_EXPR
-                | EXPORT_WILDCARD
-                | EXPORT_DECL
-        )
-    }
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
-        let res = match syntax.kind() {
-            IMPORT_DECL => ModuleItem::ImportDecl(ImportDecl { syntax }),
-            EXPORT_NAMED => ModuleItem::ExportNamed(ExportNamed { syntax }),
-            EXPORT_DEFAULT_DECL => ModuleItem::ExportDefaultDecl(ExportDefaultDecl { syntax }),
-            EXPORT_DEFAULT_EXPR => ModuleItem::ExportDefaultExpr(ExportDefaultExpr { syntax }),
-            EXPORT_WILDCARD => ModuleItem::ExportWildcard(ExportWildcard { syntax }),
-            EXPORT_DECL => ModuleItem::ExportDecl(ExportDecl { syntax }),
-            _ => return None,
-        };
-        Some(res)
-    }
-    fn syntax(&self) -> &SyntaxNode {
-        match self {
-            ModuleItem::ImportDecl(it) => &it.syntax,
-            ModuleItem::ExportNamed(it) => &it.syntax,
-            ModuleItem::ExportDefaultDecl(it) => &it.syntax,
-            ModuleItem::ExportDefaultExpr(it) => &it.syntax,
-            ModuleItem::ExportWildcard(it) => &it.syntax,
-            ModuleItem::ExportDecl(it) => &it.syntax,
-        }
-    }
-}
 impl From<FnDecl> for Decl {
     fn from(node: FnDecl) -> Decl { Decl::FnDecl(node) }
 }
@@ -2363,11 +2319,6 @@ impl std::fmt::Display for DefaultDecl {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for ModuleItem {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self.syntax(), f)
-    }
-}
 impl std::fmt::Display for Decl {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
@@ -2484,6 +2435,11 @@ impl std::fmt::Display for WhileStmt {
     }
 }
 impl std::fmt::Display for ForStmt {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for ForStmtInit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

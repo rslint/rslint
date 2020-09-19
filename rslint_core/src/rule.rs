@@ -37,7 +37,7 @@ use std::rc::Rc;
 /// - Do not rely on file data of different files. There is a separate rule type for this.
 /// - Do not unwrap pieces of an AST node (sometimes it is ok because they are guaranteed to be there), since that will cause panics
 /// with error recovery.
-/// - Do not use node or string coloring outside of diagnostic nodes, it messes with termcolor and ends up looking horrible.
+/// - Do not use node or string coloring outside of diagnostic notes, it messes with termcolor and ends up looking horrible.
 #[typetag::serde]
 pub trait CstRule: Rule {
     /// Check an individual node in the syntax tree.
@@ -99,12 +99,12 @@ pub struct RuleCtx {
     /// Whether the linter is run with the `--verbose` option.
     /// Which dictates whether the linter should include more (potentially spammy) context in diagnostics.
     pub verbose: bool,
+    /// An empty vector of diagnostics which the rule adds to. 
     pub diagnostics: Vec<Diagnostic>,
 }
 
 impl RuleCtx {
-    /// Make a new diagnostic builder. The diagnostic will automatically be added to the context
-    /// once the guard is dropped.
+    /// Make a new diagnostic builder.
     pub fn err(&mut self, code: impl AsRef<str>, message: impl AsRef<str>) -> DiagnosticBuilder {
         DiagnosticBuilder::error(self.file_id, code.as_ref(), message.as_ref())
     }

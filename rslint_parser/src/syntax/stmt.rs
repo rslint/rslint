@@ -460,19 +460,23 @@ fn declarator(p: &mut Parser, is_const: &Option<Range<usize>>, for_stmt: bool) -
 // A do.. while statement, such as `do {} while (true)`
 pub fn do_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
+    let start = p.cur_tok().range.start;
     p.expect(T![do]);
     p.state.iteration_stmt(true);
     stmt(p);
     p.state.iteration_stmt(false);
     p.expect(T![while]);
     condition(p);
+    semi(p, start..p.cur_tok().range.end);
     m.complete(p, DO_WHILE_STMT)
 }
 
 fn for_head(p: &mut Parser) -> SyntaxKind {
+    let m = p.start();
     if p.at(T![const]) || p.at(T![var]) || (p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)))
     {
         let decl = var_decl(p, true);
+        m.complete(p, FOR_STMT_INIT);
 
         if p.at(T![in]) || p.cur_src() == "of" {
             let is_in = p.at(T![in]);
@@ -488,10 +492,12 @@ fn for_head(p: &mut Parser) -> SyntaxKind {
         }
     } else {
         if p.eat(T![;]) {
+            m.abandon(p);
             normal_for_head(p);
             return FOR_STMT;
         }
         let complete = expr(p);
+        m.complete(p, FOR_STMT_INIT);
 
         if p.at(T![in]) || p.cur_src() == "of" {
             let is_in = p.at(T![in]);
