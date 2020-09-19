@@ -25,7 +25,7 @@ impl CstRule for NoAwaitInLoop {
                     let err = ctx.err(self.name(), "Unexpected `await` in loop")
                         .primary(err_node.trimmed_range(), "this expression causes the loop to wait for the promise to resolve before continuing")
                         .note("note: the promises are resolved one after the other, not at the same time")
-                        .note(format!("help: try adding the promises to an array, then resolving them all outside the loop with `{}`", color("Promise.all(/* promises */)")));
+                        .note(format!("help: try adding the promises to an array, then resolving them all outside the loop using `{}`", color("Promise.all(/* promises */)")));
 
                     ctx.add_err(err);
                     return None;

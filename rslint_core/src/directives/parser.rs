@@ -222,7 +222,6 @@ impl<'store> DirectiveParser<'store> {
         comment: SyntaxToken,
         node: Option<SyntaxNode>,
     ) -> Result<Vec<RawCommand>, Diagnostic> {
-        println!("{:#?}", node);
         let inner_text = comment.comment().unwrap().content;
         let stripped_text = inner_text
             .trim_start()

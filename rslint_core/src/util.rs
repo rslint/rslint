@@ -16,7 +16,6 @@ pub fn get_assignment_expr_value(expr: AssignExpr) -> std::string::String {
 
     let tok = expr.syntax().first_lossy_token().unwrap();
     let op_str = tok.text();
-    println!("{:#?}", op_str[..op_str.len() - 1].to_string());
 
     if op_str == "=" {
         expr.rhs()

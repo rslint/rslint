@@ -32,7 +32,6 @@ pub fn apply_top_level_directives(
     diagnostics: &mut Vec<Diagnostic>,
     file_id: usize
 ) {
-    println!("{:#?}", directives);
     let mut ignored = Vec::new();
     let mut cleared = None;
 
