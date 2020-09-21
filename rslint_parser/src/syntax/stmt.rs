@@ -138,9 +138,15 @@ pub fn stmt(p: &mut Parser) -> Option<CompletedMarker> {
         }
         _ => {
             let err = p
-                .err_builder("Expected a statement, but found none")
-                .primary(p.cur_tok().range, "Expected a statement here");
+                .err_builder("Expected a statement or declaration, but found none")
+                .primary(p.cur_tok().range, "Expected a statement or declaration here");
 
+            // We must explicitly handle this case or else infinite recursion can happen
+            if p.at(T!['}']) {
+                p.error(err);
+                p.bump_any();
+                return None;
+            }
             p.err_recover(err, STMT_RECOVERY_SET);
             return None;
         }
@@ -284,7 +290,11 @@ pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool) {
 
     let mut could_be_directive = directives;
 
-    while !p.at(EOF) && !p.at(T!['}']) {
+    while !p.at(EOF) {
+        if !top_level && p.at(T!['}']) {
+            break;
+        }
+
         let complete = match p.cur() {
             T![import] => {
                 let mut m = import_decl(p);

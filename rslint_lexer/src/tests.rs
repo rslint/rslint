@@ -44,10 +44,6 @@ mod tests {
         let mut idx = 0;
 
         for token in tokens {
-            if string.get(idx..(idx + token.len)).is_none() {
-                println!("{}", string);
-            }
-
             new_str.push_str(string.get(idx..(idx + token.len)).unwrap());
             idx += token.len;
         }

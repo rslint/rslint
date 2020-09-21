@@ -17,5 +17,6 @@ group! {
     no_dupe_keys::NoDupeKeys,
     no_duplicate_cases::NoDuplicateCases,
     no_empty::NoEmpty,
-    no_extra_semi::NoExtraSemi
+    no_extra_semi::NoExtraSemi,
+    no_inner_declarations::NoInnerDeclarations
 }

@@ -235,7 +235,7 @@ fn try_offer_context(
                 .secondary(
                     for_stmt.test().unwrap().syntax().trimmed_range(),
                     format!(
-                        "...but this test is unreachable because `{}` is not {} `{}`...",
+                        "...which makes this test unreachable because `{}` is not {} `{}`...",
                         initial_value.syntax().text(),
                         lt_gt_name(op),
                         checked_value.syntax().text()
@@ -258,7 +258,7 @@ fn try_offer_context(
                 .secondary(
                     for_stmt.test().unwrap().syntax().trimmed_range(),
                     format!(
-                        "...but this test is always true because `{}` is always {} `{}`...",
+                        "...which makes this test always true because `{}` is always {} `{}`...",
                         initial_value.syntax().text(),
                         lt_gt_name(op),
                         checked_value.syntax().text()

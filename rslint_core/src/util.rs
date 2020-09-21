@@ -507,3 +507,8 @@ pub fn constructor_or_call_with_callee(node: impl Borrow<SyntaxNode>, name: impl
         _ => false
     }
 }
+
+/// Get the first enclosing function of a node, this does not consider if the node itself is a function. 
+pub fn outer_function(node: impl Borrow<SyntaxNode>) -> Option<SyntaxNode> {
+    node.borrow().ancestors().skip(1).find(|ancestor| matches!(ancestor.kind(), ARROW_EXPR | FN_DECL | FN_EXPR))
+}
