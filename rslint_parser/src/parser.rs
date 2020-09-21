@@ -361,6 +361,14 @@ impl<'t> Parser<'t> {
     pub fn warning_builder(&self, message: &str) -> ErrorBuilder {
         ErrorBuilder::warning(self.file_id, message)
     }
+
+    /// Bump and add an error event
+    pub fn err_and_bump(&mut self, err: impl Into<ParserError>) {
+        let m = self.start();
+        self.bump_any();
+        m.complete(self, SyntaxKind::ERROR);
+        self.error(err);
+    }
 }
 
 /// A structure signifying the start of parsing of a syntax tree node

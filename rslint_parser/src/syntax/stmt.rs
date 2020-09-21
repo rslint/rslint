@@ -143,10 +143,10 @@ pub fn stmt(p: &mut Parser) -> Option<CompletedMarker> {
 
             // We must explicitly handle this case or else infinite recursion can happen
             if p.at(T!['}']) {
-                p.error(err);
-                p.bump_any();
+                p.err_and_bump(err);
                 return None;
             }
+            
             p.err_recover(err, STMT_RECOVERY_SET);
             return None;
         }
