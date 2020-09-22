@@ -223,7 +223,11 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         // in the future we might just tag the underlying rowan nodes
         "FOR_STMT_TEST",
         "FOR_STMT_UPDATE",
-        "FOR_STMT_INIT"
+        "FOR_STMT_INIT",
+
+        // Regex, rslint_syntax includes those defs too so we dont have a weird
+        // interface between rslint_regex syntax kinds and rslint_syntax syntax kinds
+        
     ]
 };
 
@@ -407,7 +411,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct IfStmt {
             T![if],
             condition: Condition,
-            cons: Stmt,
+            /* cons */
             T![else],
             /* alt */
         }

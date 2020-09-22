@@ -38,14 +38,14 @@ MODULE@0..40
   WHITESPACE@39..40 "\n"
 --
 error[SyntaxError]: Expected token `COLON` but instead found `IDENT`
-  ┌─ 0002_conditional_expr_err.js:1:11
+  ┌─ 0006_conditional_expr_err.js:1:11
   │
 1 │ foo ? bar baz
   │           ^^^ Unexpected
 
 --
 error[SyntaxError]: Expected token `COLON` but instead found `IDENT`
-  ┌─ 0002_conditional_expr_err.js:2:11
+  ┌─ 0006_conditional_expr_err.js:2:11
   │
 2 │ foo ? bar baz ? foo : bar
   │           ^^^ Unexpected

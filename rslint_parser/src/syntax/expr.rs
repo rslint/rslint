@@ -16,7 +16,7 @@ pub const LITERAL: TokenSet = token_set![TRUE_KW, FALSE_KW, NUMBER, STRING, NULL
 
 // TODO: We might want to add semicolon to this
 pub const EXPR_RECOVERY_SET: TokenSet =
-    token_set![VAR_KW, SEMICOLON, R_PAREN, L_PAREN, L_BRACK, R_BRACK];
+    token_set![VAR_KW, SEMICOLON, R_PAREN, L_PAREN, L_BRACK, R_BRACK, SEMICOLON];
 
 pub const ASSIGN_TOKENS: TokenSet = token_set![
     T![=],
@@ -407,7 +407,7 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
     // test_err subscripts_err
     // foo()?.baz[].
     // BAR`b
-    let mut lhs = lhs;
+    let mut lhs = optional_chain(p, lhs);
     while !p.at(EOF) {
         match p.cur() {
             T!['('] if !no_call => {
@@ -417,7 +417,6 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
                     m.complete(p, CALL_EXPR)
                 }
             }
-            T![?.] => return optional_chain(p, lhs),
             T!['['] => lhs = bracket_expr(p, lhs, false),
             T![.] => lhs = dot_expr(p, lhs, false),
             BACKTICK => lhs = template(p, Some(lhs)),
@@ -452,8 +451,8 @@ pub fn optional_chain(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
                     template(p, None);
                     m.complete(p, ERROR);
 
-                    let err = p.err_builder("Optional chains may not be followed by template literals")
-                            .primary(range, "A bracket, identifier, or arguments was expected for this optional chain");
+                    let err = p.err_builder("optional chains may not be followed by template literals")
+                            .primary(range, "a bracket, identifier, or arguments was expected for this optional chain");
 
                     p.error(err);
                     return lhs;
@@ -774,7 +773,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                         ))
                         .primary(p.cur_tok(), "");
 
-                    p.error(err);
+                    p.err_and_bump(err);
                     m.complete(p, ERROR)
                 } else {
                     let err = p
@@ -809,7 +808,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             let err = p
                 .err_builder("Expected an expression, but found none")
                 .primary(p.cur_tok().range, "Expected an expression here");
-            p.err_recover(err, EXPR_RECOVERY_SET);
+            p.err_recover(err, p.state.expr_recovery_set);
             return None;
         }
     };
@@ -829,7 +828,7 @@ pub fn identifier_reference(p: &mut Parser) -> Option<CompletedMarker> {
                 .err_builder("Expected an identifier, but found none")
                 .primary(p.cur_tok(), "");
 
-            p.err_recover(err, token_set![]);
+            p.err_recover(err, p.state.expr_recovery_set);
             None
         }
     }

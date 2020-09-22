@@ -3,7 +3,7 @@
 //! See the [ECMAScript spec](https://www.ecma-international.org/ecma-262/5.1/#sec-12).
 
 use super::decl::{class_decl, function_decl};
-use super::expr::{assign_expr, expr, primary_expr, STARTS_EXPR};
+use super::expr::{assign_expr, expr, primary_expr, STARTS_EXPR, EXPR_RECOVERY_SET};
 use super::pat::*;
 use super::util::{
     check_for_stmt_declarators, check_label_use, check_lhs, check_var_decl_bound_names,
@@ -28,14 +28,24 @@ pub const STMT_RECOVERY_SET: TokenSet = token_set![
     TRY_KW,
     DEBUGGER_KW,
     FUNCTION_KW,
-    CLASS_KW
+    CLASS_KW,
+    IMPORT_KW,
+    EXPORT_KW
 ];
 
 pub const FOLLOWS_LET: TokenSet = token_set![T!['{'], T!['['], T![ident], T![yield], T![await]];
 
 /// Consume an explicit semicolon, or try to automatically insert one,
 /// or add an error to the parser if there was none and it could not be inserted
+// test semicolons
+// let foo = bar;
+// let foo = b;
+// let foo;
+// let foo
+// let foo
 pub fn semi(p: &mut Parser, err_range: Range<usize>) {
+    // test_err semicolons_err
+    // let foo = bar throw foo
     if p.eat(T![;]) || p.at(EOF) {
         return;
     }
@@ -55,10 +65,10 @@ pub fn semi(p: &mut Parser, err_range: Range<usize>) {
 }
 
 /// A generic statement such as a block, if, while, with, etc
-pub fn stmt(p: &mut Parser) -> Option<CompletedMarker> {
+pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option<CompletedMarker> {
     Some(match p.cur() {
         T![;] => empty_stmt(p),
-        T!['{'] => block_stmt(p, false),
+        T!['{'] => block_stmt(p, false, recovery_set),
         T![if] => if_stmt(p),
         T![with] => with_stmt(p),
         T![while] => while_stmt(p),
@@ -128,7 +138,7 @@ pub fn stmt(p: &mut Parser) -> Option<CompletedMarker> {
 
                 let m = expr.precede(p);
                 p.bump_any();
-                stmt(p);
+                stmt(p, None);
                 m.complete(p, LABELLED_STMT)
             } else {
                 let m = expr.precede(p);
@@ -147,13 +157,15 @@ pub fn stmt(p: &mut Parser) -> Option<CompletedMarker> {
                 return None;
             }
             
-            p.err_recover(err, STMT_RECOVERY_SET);
+            p.err_recover(err, recovery_set.into().unwrap_or(STMT_RECOVERY_SET));
             return None;
         }
     })
 }
 
 /// A debugger statement such as `debugger;`
+// test debugger_stmt
+// debugger;
 pub fn debugger_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     let range = p.cur_tok().range;
@@ -163,7 +175,13 @@ pub fn debugger_stmt(p: &mut Parser) -> CompletedMarker {
 }
 
 /// A throw statement such as `throw new Error("uh oh");`
+// test throw_stmt
+// throw new Error("foo");
+// throw "foo"
 pub fn throw_stmt(p: &mut Parser) -> CompletedMarker {
+    // test_err throw_stmt_err
+    // throw
+    // new Error("oh no :(")
     let m = p.start();
     let start = p.cur_tok().range.start;
     p.expect(T![throw]);
@@ -187,6 +205,12 @@ pub fn throw_stmt(p: &mut Parser) -> CompletedMarker {
 }
 
 /// A break statement with an optional label such as `break a;`
+// test break_stmt
+// foo: {}
+// rust: {}
+// break;
+// break foo;
+// break rust
 pub fn break_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     let start = p.cur_tok().range;
@@ -217,6 +241,13 @@ pub fn break_stmt(p: &mut Parser) -> CompletedMarker {
 }
 
 /// A continue statement with an optional label such as `continue a;`
+// test continue_stmt
+// foo: {}
+// while (true) {
+//   continue;
+//   continue foo;
+//   continue
+// }
 pub fn continue_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     let start = p.cur_tok().range;
@@ -247,7 +278,16 @@ pub fn continue_stmt(p: &mut Parser) -> CompletedMarker {
 }
 
 /// A return statement with an optional value such as `return a;`
+// test return_stmt
+// () => {
+//   return;
+//   return foo;
+//   return
+// }
 pub fn return_stmt(p: &mut Parser) -> CompletedMarker {
+    // test_err return_stmt_err
+    // return;
+    // return foo;
     let m = p.start();
     let start = p.cur_tok().range.start;
     p.expect(T![return]);
@@ -268,6 +308,8 @@ pub fn return_stmt(p: &mut Parser) -> CompletedMarker {
 }
 
 /// An empty statement denoted by a single semicolon.
+// test empty_stmt
+// ;
 pub fn empty_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![;]);
@@ -275,18 +317,23 @@ pub fn empty_stmt(p: &mut Parser) -> CompletedMarker {
 }
 
 /// A block statement consisting of statements wrapped in curly brackets.
-pub fn block_stmt(p: &mut Parser, function_body: bool) -> CompletedMarker {
+// test block_stmt
+// {}
+// {{{{}}}}
+// { foo = bar; }
+pub fn block_stmt(p: &mut Parser, function_body: bool, recovery_set: impl Into<Option<TokenSet>>) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['{']);
-    block_items(p, function_body, false);
+    block_items(p, function_body, false, recovery_set);
     p.expect(T!['}']);
     m.complete(p, BLOCK_STMT)
 }
 
 /// Top level items or items inside of a block statement, this also handles module items so we can
 /// easily recover from erroneous module declarations in scripts
-pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool) {
+pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool, recovery_set: impl Into<Option<TokenSet>>) {
     let old = p.state.clone();
+    let recovery_set = recovery_set.into();
 
     let mut could_be_directive = directives;
 
@@ -296,32 +343,53 @@ pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool) {
         }
 
         let complete = match p.cur() {
+            // test_err import_decl_not_top_level
+            // {
+            //  import foo from "bar";
+            // }
+
             // make sure we dont try parsing import.meta or import() as declarations
             T![import] if !token_set![T![.], T!['(']].contains(p.nth(1)) => {
                 let mut m = import_decl(p);
                 if !p.state.is_module {
                     let err = p.err_builder("Illegal use of an import declaration outside of a module")
-                        .primary(m.range(p), "not allowed inside scripts")
-                        .help("Note: the parser is configured for scripts, not modules");
+                        .primary(m.range(p), "not allowed inside scripts");
+
+                    p.error(err);
+                    m.change_kind(p, ERROR);
+                }
+                if !top_level {
+                    let err = p.err_builder("Illegal use of an import declaration not at the top level")
+                        .primary(m.range(p), "move this declaration to the top level");
 
                     p.error(err);
                     m.change_kind(p, ERROR);
                 }
                 Some(m)
             },
+            // test_err export_decl_not_top_level
+            // {
+            //  export { pain } from "life";
+            // }
             T![export] => {
                 let mut m = export_decl(p);
                 if !p.state.is_module {
                     let err = p.err_builder("Illegal use of an export declaration outside of a module")
-                        .primary(m.range(p), "not allowed inside scripts")
-                        .help("Note: the parser is configured for scripts, not modules");
+                        .primary(m.range(p), "not allowed inside scripts");
+
+                    p.error(err);
+                    m.change_kind(p, ERROR);
+                }
+                if !top_level {
+                    let err = p.err_builder("Illegal use of an import declaration not at the top level")
+                        .primary(m.range(p), "move this declaration to the top level");
 
                     p.error(err);
                     m.change_kind(p, ERROR);
                 }
                 Some(m)
             }
-            _ => stmt(p),
+            _ => stmt(p, recovery_set.clone()),
         };
         
         // Directives are the longest sequence of string literals, so
@@ -369,13 +437,24 @@ pub fn condition(p: &mut Parser) -> CompletedMarker {
 }
 
 /// An if statement such as `if (foo) { bar(); }`
+// test if_stmt
+// if (true) {} else {}
+// if (true) {}
+// if (true) false
+// if (bar) {} else if (true) {} else {}
 pub fn if_stmt(p: &mut Parser) -> CompletedMarker {
+    // test_err if_stmt_err
+    // if (true) else {}
+    // if (true) else
+    // if else {}
+    // if () {} else {}
     let m = p.start();
     p.expect(T![if]);
-    condition(p);
-    stmt(p);
+    condition(&mut *p.with_state(ParserState { expr_recovery_set: EXPR_RECOVERY_SET.union(token_set![T![else]]), ..p.state.clone()}));
+    // allows us to recover from `if (true) else {}`
+    stmt(p, STMT_RECOVERY_SET.union(token_set![T![else]]));
     if p.eat(T![else]) {
-        stmt(p);
+        stmt(p, None);
     }
     m.complete(p, IF_STMT)
 }
@@ -385,21 +464,48 @@ pub fn with_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![with]);
     condition(p);
-    stmt(p);
-    m.complete(p, WITH_STMT)
+    stmt(p, None);
+    
+    let mut complete = m.complete(p, WITH_STMT);
+    if p.state.strict.is_some() {
+        let err = p.err_builder("`with` statements are not allowed in strict mode")
+            .primary(complete.range(p), "");
+
+        p.error(err);
+        complete.change_kind(p, ERROR);
+    }
+
+    complete
 }
 
 /// A while statement such as `while(true) { do_something() }`
+// test while_stmt
+// while (true) {}
+// while (5) {}
 pub fn while_stmt(p: &mut Parser) -> CompletedMarker {
+    // test_err while_stmt_err
+    // while true {}
+    // while {}
+    // while (true {}
+    // while true) }
     let m = p.start();
     p.expect(T![while]);
     condition(p);
-    stmt(&mut *p.with_state(ParserState { break_allowed: true, continue_allowed: true, ..p.state.clone() }));
+    stmt(&mut *p.with_state(ParserState { break_allowed: true, continue_allowed: true, ..p.state.clone() }), None);
     m.complete(p, WHILE_STMT)
 }
 
 /// A var, const, or let declaration such as `var a = 5, b;` or `let {a, b} = foo;`
+// test var_decl
+// var a = 5;
+// let { foo, bar } = 5;
+// let bar, foo;
+// const a = 5;
+// const { foo: [bar], baz } = {};
 pub fn var_decl(p: &mut Parser, no_semi: bool) -> CompletedMarker {
+    // test_err var_decl_err
+    // var a =;
+    // const a = 5 let b = 5;
     let m = p.start();
     let start = p.cur_tok().range.start;
     let mut is_const = None;
@@ -447,7 +553,7 @@ fn declarator(p: &mut Parser, is_const: &Option<Range<usize>>, for_stmt: bool) -
     if p.eat(T![=]) {
         assign_expr(p);
     } else if let Some(ref marker) = pat {
-        if marker.kind() != SINGLE_PATTERN {
+        if marker.kind() != SINGLE_PATTERN && !for_stmt {
             let err = p
                 .err_builder("Object and Array patterns require initializers")
                 .primary(
@@ -469,12 +575,19 @@ fn declarator(p: &mut Parser, is_const: &Option<Range<usize>>, for_stmt: bool) -
 }
 
 // A do.. while statement, such as `do {} while (true)`
+// test do_while_stmt
+// do { } while (true)
+// do throw Error("foo") while (true)
 pub fn do_stmt(p: &mut Parser) -> CompletedMarker {
+    // test_err do_while_stmt_err
+    // do while (true)
+    // do while ()
+    // do while true
     let m = p.start();
     let start = p.cur_tok().range.start;
     p.expect(T![do]);
     p.state.iteration_stmt(true);
-    stmt(p);
+    stmt(p, None);
     p.state.iteration_stmt(false);
     p.expect(T![while]);
     condition(p);
@@ -486,7 +599,9 @@ fn for_head(p: &mut Parser) -> SyntaxKind {
     let m = p.start();
     if p.at(T![const]) || p.at(T![var]) || (p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)))
     {
-        let decl = var_decl(p, true);
+        let mut guard = p.with_state(ParserState { include_in: false, ..p.state.clone() });
+        let decl = var_decl(&mut *guard, true);
+        drop(guard);
         m.complete(p, FOR_STMT_INIT);
 
         if p.at(T![in]) || p.cur_src() == "of" {
@@ -507,7 +622,9 @@ fn for_head(p: &mut Parser) -> SyntaxKind {
             normal_for_head(p);
             return FOR_STMT;
         }
-        let complete = expr(p);
+        let mut guard = p.with_state(ParserState { include_in: false, ..p.state.clone() });
+        let complete = expr(&mut *guard);
+        drop(guard);
         m.complete(p, FOR_STMT_INIT);
 
         if p.at(T![in]) || p.cur_src() == "of" {
@@ -553,7 +670,15 @@ fn normal_for_head(p: &mut Parser) {
 }
 
 /// Either a traditional for statement or a for.. in statement
+// test for_stmt
+// for (let i = 5; i < 10; i++) {}
+// for (let { foo, bar } of {}) {}
+// for (foo in {}) {}
+// for (;;) {}
 pub fn for_stmt(p: &mut Parser) -> CompletedMarker {
+    // test_err for_stmt_err
+    // for ;; {}
+    // for let i = 5; i < 10; i++ {}
     let m = p.start();
     p.expect(T![for]);
     // FIXME: This should emit an error for non-for-of
@@ -562,7 +687,7 @@ pub fn for_stmt(p: &mut Parser) -> CompletedMarker {
     p.expect(T!['(']);
     let kind = for_head(p);
     p.expect(T![')']);
-    stmt(&mut *p.with_state(ParserState { continue_allowed: true, break_allowed: true, ..p.state.clone() }));
+    stmt(&mut *p.with_state(ParserState { continue_allowed: true, break_allowed: true, ..p.state.clone() }), None);
     m.complete(p, kind)
 }
 
@@ -578,7 +703,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
             // including the statement list following it
             let end = p.cur_tok().range.end;
             while !p.at_ts(token_set![T![default], T![case], T!['}'], EOF]) {
-                stmt(p);
+                stmt(p, None);
             }
             m.complete(p, DEFAULT_CLAUSE);
             return Some(start..end);
@@ -588,7 +713,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
             expr(p);
             p.expect(T![:]);
             while !p.at_ts(token_set![T![default], T![case], T!['}'], EOF]) {
-                stmt(p);
+                stmt(p, None);
             }
             m.complete(p, CASE_CLAUSE);
         }
@@ -616,7 +741,15 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
 ///         bar();
 /// }
 /// ```
+// test switch_stmt
+// switch (foo) {
+//  case bar:
+//  default:
+// }
 pub fn switch_stmt(p: &mut Parser) -> CompletedMarker {
+    // test_err switch_stmt_err
+    // switch foo {}
+    // switch {}
     let m = p.start();
     p.expect(T![switch]);
     condition(p);
@@ -670,7 +803,7 @@ fn catch_clause(p: &mut Parser) {
         p.expect(T![')']);
     }
 
-    block_stmt(p, false);
+    block_stmt(p, false, STMT_RECOVERY_SET.union(token_set!(T![finally])));
     m.complete(p, CATCH_CLAUSE);
 }
 
@@ -683,17 +816,24 @@ fn catch_clause(p: &mut Parser) {
 ///
 /// }
 /// ```
+// test try_stmt
+// try {} catch (e) {}
+// try {} catch {} finally {}
 pub fn try_stmt(p: &mut Parser) -> CompletedMarker {
+    // TODO: recover from `try catch` and `try finally`. The issue is block_items
+    // will cause infinite recursion because parsing a stmt would not consume the catch token
+    // and block_items would not exit, and if we exited on any error that would greatly limit
+    // block_items error recovery
     let m = p.start();
     p.expect(T![try]);
-    block_stmt(p, false);
+    block_stmt(p, false, None);
     if p.at(T![catch]) {
         catch_clause(p);
     }
     if p.at(T![finally]) {
         let finalizer = p.start();
         p.bump_any();
-        block_stmt(p, false);
+        block_stmt(p, false, None);
         finalizer.complete(p, FINALIZER);
     }
     m.complete(p, TRY_STMT)

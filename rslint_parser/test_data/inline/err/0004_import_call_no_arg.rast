@@ -26,7 +26,7 @@ MODULE@0..25
   WHITESPACE@24..25 "\n"
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ 0011_import_call_no_arg.js:1:16
+  ┌─ 0004_import_call_no_arg.js:1:16
   │
 1 │ let a = import();
   │                ^ Expected an expression here

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut, Range};
 
-use crate::{CompletedMarker, Parser, SyntaxKind};
+use crate::{CompletedMarker, Parser, SyntaxKind, TokenSet};
+use crate::syntax::expr::EXPR_RECOVERY_SET;
 
 /// State kept by the parser while parsing. 
 /// It is required for things such as strict mode or async functions
@@ -32,6 +33,8 @@ pub struct ParserState {
     pub is_module: bool,
     /// The exported default item, used for checking duplicate defaults
     pub default_item: Option<Range<usize>>,
+    /// The recovery set primary_expr will use 
+    pub expr_recovery_set: TokenSet,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,7 +57,8 @@ impl Default for ParserState {
             in_async: false,
             strict: None,
             is_module: false,
-            default_item: None
+            default_item: None,
+            expr_recovery_set: EXPR_RECOVERY_SET
         }
     }
 }
@@ -72,7 +76,8 @@ impl ParserState {
             in_async: false,
             strict: Some(StrictMode::Module),
             is_module: true,
-            default_item: None
+            default_item: None,
+            expr_recovery_set: EXPR_RECOVERY_SET
         }
     }
 

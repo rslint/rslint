@@ -13,7 +13,7 @@ use super::expr::assign_expr;
 pub fn script(p: &mut Parser) -> CompletedMarker {
     assert!(!p.state.is_module, "Using the script parsing function for modules is erroneous");
     let m = p.start();
-    block_items(p, true, true);
+    block_items(p, true, true, None);
     m.complete(p, SyntaxKind::SCRIPT)
 }
 
@@ -24,7 +24,7 @@ pub fn script(p: &mut Parser) -> CompletedMarker {
 pub fn module(p: &mut Parser) -> CompletedMarker {
     assert!(p.state.is_module, "Using the module parsing function for scripts is erroneous");
     let m = p.start();
-    block_items(p, true, true);
+    block_items(p, true, true, None);
     m.complete(p, SyntaxKind::MODULE)
 }
 

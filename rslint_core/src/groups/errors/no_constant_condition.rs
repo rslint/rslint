@@ -65,7 +65,7 @@ impl CstRule for NoConstantCondition {
                 cond
             },
             FOR_STMT => {
-                let cond = node.to::<ForStmt>().test()?.expr().unwrap();
+                let cond = node.to::<ForStmt>().test()?.expr()?;
                 if !util::is_const(cond.clone(), true, &mut notes) {
                     return None;
                 }

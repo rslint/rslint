@@ -147,7 +147,6 @@ pub struct IfStmt {
 impl IfStmt {
     pub fn if_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![if]) }
     pub fn condition(&self) -> Option<Condition> { support::child(&self.syntax) }
-    pub fn cons(&self) -> Option<Stmt> { support::child(&self.syntax) }
     pub fn else_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![else]) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

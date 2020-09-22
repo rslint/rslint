@@ -293,12 +293,36 @@ impl WildcardImport {
 }
 
 impl IfStmt {
-    pub fn alt(&self) -> Option<Stmt> {
+    pub fn cons(&self) -> Option<Stmt> {
         self.syntax()
+            .child_with_ast::<Stmt>()
+            .filter(|cons| {
+                cons.syntax().text_range().start()
+                    < self
+                        .else_token()
+                        .map(|x| x.text_range().start())
+                        .unwrap_or(cons.syntax().text_range().start())
+            })
+    }
+
+    pub fn alt(&self) -> Option<Stmt> {
+        let possible_blocks = self.syntax()
             .children()
             .filter(|child| child.is::<Stmt>())
-            .nth(1)
-            .map(|it| it.to())
+            .collect::<Vec<_>>();
+        
+        // handle if (true) else {}
+        if let Some(else_block) = possible_blocks.get(1) {
+            Some(else_block.to())
+        } else {
+            possible_blocks.first().filter(|node| {
+                node.text_range().start()
+                    > self
+                        .else_token()
+                        .map(|x| x.text_range().start())
+                        .unwrap_or(node.text_range().start())
+            }).map(|x| x.to())
+        }
     }
 }
 
@@ -320,7 +344,7 @@ pub enum ModuleItem {
     ExportDefaultExpr(ExportDefaultExpr),
     ExportWildcard(ExportWildcard),
     ExportDecl(ExportDecl),
-    Stmt(Stmt)
+    Stmt(Stmt),
 }
 
 impl AstNode for ModuleItem {
@@ -355,7 +379,7 @@ impl AstNode for ModuleItem {
             ModuleItem::ExportDefaultExpr(it) => &it.syntax,
             ModuleItem::ExportWildcard(it) => &it.syntax,
             ModuleItem::ExportDecl(it) => &it.syntax,
-            ModuleItem::Stmt(it) => &it.syntax()
+            ModuleItem::Stmt(it) => &it.syntax(),
         }
     }
 }

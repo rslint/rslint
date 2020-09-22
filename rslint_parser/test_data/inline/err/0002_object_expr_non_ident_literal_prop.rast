@@ -18,14 +18,14 @@ MODULE@0..12
   WHITESPACE@11..12 "\n"
 --
 error[SyntaxError]: Expected token `COLON` but instead found `R_CURLY`
-  ┌─ 0006_object_expr_non_ident_literal_prop.js:1:11
+  ┌─ 0002_object_expr_non_ident_literal_prop.js:1:11
   │
 1 │ let b = {5}
   │           ^ Unexpected
 
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ 0006_object_expr_non_ident_literal_prop.js:1:11
+  ┌─ 0002_object_expr_non_ident_literal_prop.js:1:11
   │
 1 │ let b = {5}
   │           ^ Expected an expression here

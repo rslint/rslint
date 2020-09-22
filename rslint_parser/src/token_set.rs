@@ -3,7 +3,7 @@
 use crate::SyntaxKind;
 
 /// A bit-set of `SyntaxKind`s
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TokenSet(u128);
 
 impl TokenSet {

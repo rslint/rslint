@@ -23,28 +23,28 @@ MODULE@0..19
       ERROR@19..19
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ 0001_bracket_expr_err.js:1:5
+  ┌─ 0014_bracket_expr_err.js:1:5
   │
 1 │ foo[]
   │     ^ Expected an expression here
 
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ 0001_bracket_expr_err.js:2:7
+  ┌─ 0014_bracket_expr_err.js:2:7
   │
 2 │ foo?.[]
   │       ^ Expected an expression here
 
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ 0001_bracket_expr_err.js:4:1
+  ┌─ 0014_bracket_expr_err.js:4:1
   │
 4 │ 
   │ ^ Expected an expression here
 
 --
 error[SyntaxError]: Expected token `R_BRACK` but instead the file ends
-  ┌─ 0001_bracket_expr_err.js:4:1
+  ┌─ 0014_bracket_expr_err.js:4:1
   │
 4 │ 
   │ ^ The file ends here

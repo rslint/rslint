@@ -29,6 +29,7 @@ pub fn function_decl(p: &mut Parser, m: Marker) -> CompletedMarker {
             ..p.state.clone()
         }),
         true,
+        None
     );
     m.complete(p, FN_DECL)
 }
@@ -70,7 +71,7 @@ pub fn arrow_body(p: &mut Parser) -> Option<CompletedMarker> {
         ..p.state.clone()
     });
     if guard.at(T!['{']) {
-        Some(block_stmt(&mut *guard, true))
+        Some(block_stmt(&mut *guard, true, None))
     } else {
         assign_expr(&mut *guard)
     }
@@ -137,7 +138,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
     let complete = match p.cur() {
         T!['('] => {
             formal_parameters(p);
-            block_stmt(p, true);
+            block_stmt(p, true, None);
             m.complete(p, METHOD)
         }
         T![ident] if p.cur_src() == "get" => {
@@ -145,14 +146,14 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             object_prop_name(p, false);
             p.expect(T!['(']);
             p.expect(T![')']);
-            block_stmt(p, true);
+            block_stmt(p, true, None);
             m.complete(p, GETTER)
         }
         T![ident] if p.cur_src() == "set" => {
             p.bump_any();
             object_prop_name(p, false);
             formal_parameters(p);
-            block_stmt(p, true);
+            block_stmt(p, true, None);
             m.complete(p, SETTER)
         }
         T![ident] if p.cur_src() == "async" && !p.has_linebreak_before_n(1) => {
@@ -165,7 +166,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             });
             object_prop_name(&mut *guard, true);
             formal_parameters(&mut *guard);
-            block_stmt(&mut *guard, true);
+            block_stmt(&mut *guard, true, None);
             drop(guard);
             m.complete(p, METHOD)
         }
@@ -177,7 +178,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             });
             object_prop_name(&mut *guard, true);
             formal_parameters(&mut *guard);
-            block_stmt(&mut *guard, true);
+            block_stmt(&mut *guard, true, None);
             drop(guard);
             m.complete(p, METHOD)
         }
@@ -189,7 +190,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             });
             object_prop_name(&mut *guard, false);
             formal_parameters(&mut *guard);
-            block_stmt(&mut *guard, true);
+            block_stmt(&mut *guard, true, None);
             drop(guard);
             m.complete(p, METHOD)
         }
