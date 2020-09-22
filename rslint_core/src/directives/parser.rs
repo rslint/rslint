@@ -192,8 +192,9 @@ impl<'store> DirectiveParser<'store> {
         let comments: Vec<Comment> = self
             .root_node
             .children_with_tokens()
-            .filter_map(|x| x.into_token())
-            .take_while(|t| t.kind().is_trivia())
+            .scan((), |_, item| {
+                item.into_token().filter(|tok| tok.kind().is_trivia())
+            })
             .filter(|t| {
                 t.kind() == SyntaxKind::COMMENT
                     && t.comment()

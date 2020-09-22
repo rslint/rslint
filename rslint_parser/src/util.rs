@@ -342,6 +342,23 @@ pub trait SyntaxNodeExt {
     fn child_with_ast<T: AstNode>(&self) -> Option<T> {
         self.to_node().children().find_map(|child| child.try_to())
     }
+
+    /// Same as [`descendants_with`] but considers tokens too. 
+    fn descendants_with_tokens_with<F>(&self, func: &mut F)
+    where
+        F: FnMut(&SyntaxElement) -> bool,
+    {
+        for elem in self.to_node().children_with_tokens() {
+            match &elem {
+                NodeOrToken::Node(node) => {
+                    if func(&elem) {
+                        node.descendants_with_tokens_with(func)
+                    }
+                }
+                NodeOrToken::Token(_) => drop(func(&elem))
+            }
+        }
+    }
 }
 
 impl SyntaxNodeExt for SyntaxNode {

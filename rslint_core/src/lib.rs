@@ -17,7 +17,7 @@ pub use codespan_reporting::diagnostic::{Label, Severity};
 
 use dyn_clone::clone_box;
 use rayon::prelude::*;
-use rslint_parser::{parse_module, parse_text, SyntaxNode};
+use rslint_parser::{parse_module, parse_text, SyntaxNode, util::SyntaxNodeExt};
 use std::collections::HashMap;
 use crate::directives::{DirectiveParser, apply_top_level_directives, Directive, skip_node};
 
@@ -109,15 +109,17 @@ pub fn run_rule(
 
     rule.check_root(&root, &mut ctx);
 
-    root.descendants_with_tokens().for_each(|elem| {
+    root.descendants_with_tokens_with(&mut |elem| {
         match elem {
             rslint_parser::NodeOrToken::Node(node) => {
-                if !skip_node(directives, &node, rule) {
-                    rule.check_node(&node, &mut ctx);
+                if skip_node(directives, &node, rule) {
+                    return false;
                 }
+                rule.check_node(&node, &mut ctx);
             },
             rslint_parser::NodeOrToken::Token(tok) => drop(rule.check_token(&tok, &mut ctx)),
         };
+        true
     });
 
     ctx.diagnostics
