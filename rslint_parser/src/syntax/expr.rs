@@ -15,7 +15,8 @@ use crate::{
 pub const LITERAL: TokenSet = token_set![TRUE_KW, FALSE_KW, NUMBER, STRING, NULL_KW, REGEX];
 
 // TODO: We might want to add semicolon to this
-pub const EXPR_RECOVERY_SET: TokenSet = token_set![VAR_KW, SEMICOLON, R_PAREN, L_PAREN];
+pub const EXPR_RECOVERY_SET: TokenSet =
+    token_set![VAR_KW, SEMICOLON, R_PAREN, L_PAREN, L_BRACK, R_BRACK];
 
 pub const ASSIGN_TOKENS: TokenSet = token_set![
     T![=],
@@ -56,6 +57,7 @@ pub const STARTS_EXPR: TokenSet = token_set![
     T![await],
     T![function],
     T![class],
+    T![import],
     BACKTICK,
 ]
 .union(LITERAL);
@@ -63,6 +65,14 @@ pub const STARTS_EXPR: TokenSet = token_set![
 /// A literal expression.
 ///
 /// `TRUE | FALSE | NUMBER | STRING | NULL`
+// test literals
+// 5
+// true
+// false
+// 5n
+// "foo"
+// 'bar'
+// null
 pub fn literal(p: &mut Parser) -> Option<CompletedMarker> {
     if !p.at_ts(LITERAL) {
         return None;
@@ -84,7 +94,7 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
         return Some(m.complete(p, AWAIT_EXPR));
     }
 
-    p.state.potential_arrow_start = matches!(p.cur(), T![ident] | T!['('] | T![yield]);
+    p.state.potential_arrow_start = matches!(p.cur(), T![ident] | T!['('] | T![yield] | T![await]);
 
     let token_cur = p.token_pos();
     let event_cur = p.cur_event_pos();
@@ -92,7 +102,18 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
     assign_expr_recursive(p, target, token_cur, event_cur)
 }
 
-fn assign_expr_recursive(p: &mut Parser, mut target: CompletedMarker, token_cur: usize, event_cur: usize) -> Option<CompletedMarker> {
+// test assign_expr
+// foo += bar = b ??= 3;
+// foo -= bar;
+// [foo, bar] = baz;
+// ({ bar, baz } = {});
+// ({ bar: [baz], foo } = {});
+fn assign_expr_recursive(
+    p: &mut Parser,
+    mut target: CompletedMarker,
+    token_cur: usize,
+    event_cur: usize,
+) -> Option<CompletedMarker> {
     if p.at_ts(ASSIGN_TOKENS) {
         if p.at(T![=]) {
             if ![DOT_EXPR, BRACKET_EXPR, IDENT].contains(&target.kind()) {
@@ -115,6 +136,11 @@ fn assign_expr_recursive(p: &mut Parser, mut target: CompletedMarker, token_cur:
     }
 }
 
+// test yield_expr
+// function *foo() {
+//  yield foo;
+//  yield* foo;
+// }
 pub fn yield_expr(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![yield]);
@@ -127,15 +153,21 @@ pub fn yield_expr(p: &mut Parser) -> CompletedMarker {
 }
 
 /// A conditional expression such as `foo ? bar : baz`
+// test conditional_expr
+// foo ? bar : baz
+// foo ? bar : baz ? bar : baz
 pub fn conditional_expr(p: &mut Parser) -> Option<CompletedMarker> {
+    // test_err conditional_expr_err
+    // foo ? bar baz
+    // foo ? bar baz ? foo : bar
     let lhs = binary_expr(p);
 
     if p.at(T![?]) {
         let m = lhs?.precede(p);
         p.bump_any();
-        binary_expr(p);
+        assign_expr(p);
         p.expect(T![:]);
-        binary_expr(p);
+        assign_expr(p);
         return Some(m.complete(p, COND_EXPR));
     }
     lhs
@@ -147,6 +179,22 @@ pub fn binary_expr(p: &mut Parser) -> Option<CompletedMarker> {
     binary_expr_recursive(p, left, 0)
 }
 
+// test binary_expressions
+// 5 * 5
+// 6 ** 6 ** 7
+// 1 + 2 * 3
+// (1 + 2) * 3
+// 1 / 2
+// 74 in foo
+// foo instanceof Array
+// foo ?? bar
+// 1 + 1 + 1 + 1
+// 5 + 6 - 1 * 2 / 1 ** 6
+
+// test_err binary_expressions_err
+// foo(foo +);
+// foo + * 2;
+// !foo * bar;
 fn binary_expr_recursive(
     p: &mut Parser,
     left: Option<CompletedMarker>,
@@ -291,6 +339,12 @@ pub fn paren_expr(p: &mut Parser) -> CompletedMarker {
 }
 
 /// A member or new expression with subscripts. e.g. `new foo`, `new Foo()`, `foo`, or `foo().bar[5]`
+// test new_exprs
+// new Foo()
+// new foo;
+// new.target
+// new new new new Foo();
+// new Foo(bar, baz, 6 + 6, foo[bar] + (foo) => {} * foo?.bar)
 pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMarker> {
     if p.at(T![new]) {
         // We must start the marker here and not outside or else we make
@@ -317,6 +371,10 @@ pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMar
     }
 
     // super.foo and super[bar]
+    // test super_property_access
+    // super.foo
+    // super[bar]
+    // super[foo][bar]
     if p.at(T![super]) && token_set!(T![.], T!['[']).contains(p.nth(1)) {
         let m = p.start();
         p.bump_any();
@@ -342,7 +400,13 @@ pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMar
 }
 
 /// Dot, Array, or Call expr subscripts. Including optional chaining.
+// test subscripts
+// foo`bar`
+// foo(bar)(baz)(baz)[bar]
 pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> CompletedMarker {
+    // test_err subscripts_err
+    // foo()?.baz[].
+    // BAR`b
     let mut lhs = lhs;
     while !p.at(EOF) {
         match p.cur() {
@@ -364,6 +428,10 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
 }
 
 // An optional chain such as `foo?.bar?.(baz)?.[foo]`
+// test optional_chain
+// foo?.bar?.(baz)?.[foo]
+// foo.bar?.(f).baz
+// foo[bar]?.baz
 pub fn optional_chain(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
     let mut lhs = lhs;
     while !p.at(EOF) {
@@ -400,6 +468,13 @@ pub fn optional_chain(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
 }
 
 /// A dot expression for accessing a property
+// test dot_expr
+// foo.bar
+// foo.await
+// foo.yield
+// foo.for
+// foo?.for
+// foo?.bar
 pub fn dot_expr(p: &mut Parser, lhs: CompletedMarker, optional_chain: bool) -> CompletedMarker {
     let m = lhs.precede(p);
     if optional_chain {
@@ -412,7 +487,17 @@ pub fn dot_expr(p: &mut Parser, lhs: CompletedMarker, optional_chain: bool) -> C
 }
 
 /// An array expression for property access or indexing, such as `foo[0]` or `foo?.["bar"]`
+// test bracket_expr
+// foo[bar]
+// foo[5 + 5]
+// foo["bar"]
+// foo[bar][baz]
+// foo?.[bar]
 pub fn bracket_expr(p: &mut Parser, lhs: CompletedMarker, optional_chain: bool) -> CompletedMarker {
+    // test_err bracket_expr_err
+    // foo[]
+    // foo?.[]
+    // foo[
     let m = lhs.precede(p);
     if optional_chain {
         p.expect(T![?.]);
@@ -462,6 +547,14 @@ pub fn args(p: &mut Parser) -> CompletedMarker {
     m.complete(p, ARG_LIST)
 }
 
+// test paren_or_arrow_expr
+// (foo);
+// (foo) => {};
+// (5 + 5);
+// ({foo, bar, b: [f, ...baz]}) => {};
+
+// test_err paren_or_arrow_expr_invalid_params
+// (5 + 5) => {}
 pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarker {
     let m = p.start();
     let token_cur = p.token_pos();
@@ -530,7 +623,9 @@ pub fn expr_or_spread(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
-/// An general expression.
+/// A general expression.
+// test sequence_expr
+// 1, 2, 3, 4, 5
 pub fn expr(p: &mut Parser) -> Option<CompletedMarker> {
     let first = assign_expr(p)?;
 
@@ -558,16 +653,30 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
 
     let complete = match p.cur() {
         T![this] => {
+            // test this_expr
+            // this
+            // this.foo
             let m = p.start();
             p.bump_any();
             m.complete(p, THIS_EXPR)
         }
         T![class] => {
-            let mut m = class_decl(p);
+            // test class_expr
+            // let a = class {};
+            // let a = class foo {
+            //  constructor() {}
+            // }
+            // foo[class {}]
+            let mut m = class_decl(p, true);
             m.change_kind(p, CLASS_EXPR);
             m
         }
+        // test async_ident
+        // let a = async;
         T![ident] if p.cur_src() == "async" => {
+            // test async_function_expr
+            // let a = async function() {};
+            // let b = async function foo() {};
             if p.nth_at(1, T![function]) {
                 let m = p.start();
                 p.bump_any();
@@ -585,11 +694,18 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                 if p.state.potential_arrow_start
                     && token_set![T![ident], T![yield], T!['(']].contains(p.nth(1))
                 {
+                    // test async_arrow_expr
+                    // let a = async foo => {}
+                    // let b = async (bar) => {}
+                    // async (foo, bar, ...baz) => foo
+                    // async (yield) => {}
                     let m = p.start();
                     p.bump_any();
                     if p.at(T!['(']) {
                         formal_parameters(p);
                     } else {
+                        // test_err async_arrow_expr_await_parameter
+                        // let a = async await => {}
                         p.bump_remap(T![ident]);
                     }
                     p.expect(T![=>]);
@@ -604,14 +720,25 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             }
         }
         T![function] => {
+            // test function_expr
+            // let a = function() {}
+            // let b = function foo() {}
             let m = p.start();
             let mut complete = function_decl(p, m);
             complete.change_kind(p, FN_EXPR);
             complete
         }
         T![ident] | T![yield] | T![await] => {
+            // test identifier_reference
+            // foo;
+            // yield;
+            // await;
             let ident = identifier_reference(p)?;
             if p.state.potential_arrow_start && p.at(T![=>]) && !p.has_linebreak_before_n(1) {
+                // test arrow_expr_single_param
+                // foo => {}
+                // yield => {}
+                // await => {}
                 let m = ident.precede(p);
                 p.bump_any();
                 arrow_body(p);
@@ -620,6 +747,9 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                 ident
             }
         }
+        // test grouping_expr
+        // ((foo))
+        // (foo)
         T!['('] => paren_or_arrow_expr(p, p.state.potential_arrow_start),
         T!['['] => array_expr(p),
         T!['{'] => object_expr(p),
@@ -627,7 +757,12 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             let m = p.start();
             p.bump_any();
 
-            if p.at(T![.]) {
+            // test import_meta
+            // import.meta
+            if p.eat(T![.]) {
+                // test_err import_no_meta
+                // import.foo
+                // import.metaa
                 if p.at(T![ident]) && p.token_src(&p.cur_tok()) == "meta" {
                     p.bump_any();
                     m.complete(p, IMPORT_META)
@@ -650,6 +785,12 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                     m.complete(p, ERROR)
                 }
             } else {
+                // test_err import_call_no_arg
+                // let a = import();
+                // foo();
+
+                // test import_call
+                // import("foo")
                 p.expect(T!['(']);
                 assign_expr(p);
                 p.expect(T![')']);
@@ -662,6 +803,8 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             p.bump_any();
             m.complete(p, ERROR)
         }
+        // test_err primary_expr_invalid_recovery
+        // let a = \; foo();
         _ => {
             let err = p
                 .err_builder("Expected an expression, but found none")
@@ -693,6 +836,11 @@ pub fn identifier_reference(p: &mut Parser) -> Option<CompletedMarker> {
 }
 
 /// A template literal such as "`abcd ${efg}`"
+// test template_literal
+// let a = `foo ${bar}`;
+// let a = ``;
+// let a = `${foo}`;
+// let a = `foo`;
 pub fn template(p: &mut Parser, tag: Option<CompletedMarker>) -> CompletedMarker {
     let m = tag.map(|m| m.precede(p)).unwrap_or_else(|| p.start());
     p.expect(BACKTICK);
@@ -711,28 +859,44 @@ pub fn template(p: &mut Parser, tag: Option<CompletedMarker>) -> CompletedMarker
         }
     }
 
+    // test_err template_literal_unterminated
+    // let a = `${foo} bar
+
     // The lexer already should throw an error for unterminated template literal
     p.eat(BACKTICK);
     m.complete(p, TEMPLATE)
 }
 
 /// An array literal such as `[foo, bar, ...baz]`.
+// test array_expr
+// [foo, bar];
+// [foo];
+// [,foo];
+// [foo,];
+// [,,,,,foo,,,,];
+// [...a, ...b];
 pub fn array_expr(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['[']);
 
-    while !p.at(EOF) && !p.at(T![']']) {
-        if p.eat(T![,]) {
-            continue;
+    while !p.at(EOF) {
+        while p.eat(T![,]) {}
+
+        if p.at(T![']']) {
+            break;
         }
+
         if p.at(T![...]) {
             spread_element(p);
         } else {
             assign_expr(p);
         }
-        if !p.at(T![']']) {
-            p.expect(T![,]);
+
+        if p.at(T![']']) {
+            break;
         }
+
+        p.expect(T![,]);
     }
 
     p.expect(T![']']);
@@ -748,6 +912,9 @@ pub fn spread_element(p: &mut Parser) -> CompletedMarker {
 }
 
 /// An object literal such as `{ a: b, "b": 5 + 5 }`.
+// test object_expr
+// let a = {};
+// let b = {foo,}
 pub fn object_expr(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['{']);
@@ -777,21 +944,50 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
 
     match p.cur() {
-        T![ident] if (p.cur_src() == "get" || p.cur_src() == "set") && !p.nth_at(1, T![:]) => method(p, None),
+        // test object_expr_getter_setter
+        // let a = {
+        //  get foo() {
+        //    return foo;
+        //  }
+        // }
+        //
+        // let b = {
+        //  set foo(bar) {
+        //     return 5;
+        //  }
+        // }
+        T![ident] if (p.cur_src() == "get" || p.cur_src() == "set") && !p.nth_at(1, T![:]) => {
+            method(p, None)
+        }
+        // test object_expr_async_method
+        // let a = {
+        //   async foo() {},
+        //   async *foo() {}
+        // }
         T![ident]
             if p.cur_src() == "async"
                 && !p.has_linebreak_before_n(1)
-                && STARTS_OBJ_PROP.contains(p.nth(1)) =>
+                && (STARTS_OBJ_PROP.contains(p.nth(1)) || p.nth_at(1, T![*])) =>
         {
             method(p, None)
         }
+        // test object_expr_spread_prop
+        // let a = {...foo}
         T![...] => {
             p.bump_any();
             assign_expr(p);
             Some(m.complete(p, SPREAD_PROP))
         }
+        T![*] => {
+            // test object_expr_generator_method
+            // let b = { *foo() {} }
+            let m = p.start();
+            method(p, m)
+        }
         _ => {
             let prop = object_prop_name(p, false);
+            // test object_expr_assign_prop
+            // let b = { foo = 4, foo = bar }
             if let Some(NAME) = prop.map(|m| m.kind()) {
                 if p.eat(T![=]) {
                     assign_expr(p);
@@ -799,14 +995,22 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
                 }
             }
 
-            if p.at(T!['(']) || p.at(T![*]) {
+            // test object_expr_method
+            // let b = {
+            //  foo() {},
+            // }
+            if p.at(T!['(']) {
                 method(p, m)
             } else {
+                // test_err object_expr_non_ident_literal_prop
+                // let b = {5}
                 if prop?.kind() != NAME || p.at(T![:]) {
                     p.expect(T![:]);
                     assign_expr(p);
                     Some(m.complete(p, LITERAL_PROP))
                 } else {
+                    // test object_expr_ident_prop
+                    // let b = {foo}
                     Some(m.complete(p, IDENT_PROP))
                 }
             }
@@ -814,6 +1018,8 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
+// test object_prop_name
+// let a = {"foo": foo, [6 + 6]: foo, bar: foo, 7: foo}
 pub fn object_prop_name(p: &mut Parser, binding: bool) -> Option<CompletedMarker> {
     match p.cur() {
         STRING | NUMBER => literal(p),
@@ -848,6 +1054,9 @@ pub fn lhs_expr(p: &mut Parser) -> Option<CompletedMarker> {
 }
 
 /// A postifx expression, either `LHSExpr [no linebreak] ++` or `LHSExpr [no linebreak] --`.
+// test postfix_expr
+// foo++
+// foo--
 pub fn postfix_expr(p: &mut Parser) -> Option<CompletedMarker> {
     let lhs = lhs_expr(p);
     if !p.has_linebreak_before_n(0) {

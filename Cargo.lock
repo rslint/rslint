@@ -294,6 +294,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "difference"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
+
+[[package]]
 name = "discard"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -338,6 +344,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ca8b296792113e1500fd935ae487be6e00ce318952a6880555554824d6ebf38"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "expect-test"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ceb96f3eaa0d4e8769c52dacfd4eb60183b817ed2f176171b3c691d5022b0f2e"
+dependencies = [
+ "difference",
+ "once_cell",
 ]
 
 [[package]]
@@ -869,11 +885,14 @@ version = "0.1.0"
 dependencies = [
  "codespan-reporting",
  "criterion",
+ "expect-test",
  "lexical",
  "num-bigint",
+ "rayon",
  "rowan 0.10.0 (git+https://github.com/RDambrosio016/rowan)",
  "rslint_lexer",
  "rslint_syntax",
+ "walkdir",
 ]
 
 [[package]]
@@ -1516,4 +1535,5 @@ dependencies = [
  "quote",
  "syn",
  "unindent",
+ "walkdir",
 ]

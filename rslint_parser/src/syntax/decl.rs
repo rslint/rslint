@@ -76,18 +76,31 @@ pub fn arrow_body(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
-pub fn class_decl(p: &mut Parser) -> CompletedMarker {
+pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
     let m = p.start();
     p.expect(T![class]);
-    binding_identifier(p);
+    // class bodies are implicitly strict
+    let mut guard = p.with_state(ParserState {
+        strict: Some(StrictMode::Class(p.cur_tok().range)),
+        ..p.state.clone()
+    });
 
-    if p.eat(T![extends]) {
-        binding_identifier(p);
+    if !guard.at(T!['{']) && !guard.at(T![extends]) {
+        binding_identifier(&mut *guard);
+    } else if !expr {
+        let err = guard.err_builder("class declarations must have a name")
+            .primary(guard.cur_tok(), "");
+
+        guard.error(err);
     }
 
-    class_body(p);
+    if guard.eat(T![extends]) {
+        binding_identifier(&mut *guard);
+    }
 
-    m.complete(p, CLASS_DECL)
+    class_body(&mut *guard);
+
+    m.complete(&mut *guard, CLASS_DECL)
 }
 
 fn class_body(p: &mut Parser) -> CompletedMarker {

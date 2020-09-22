@@ -13,3 +13,4 @@ pico-args = "0.3.1"
 syn = { version = "1.0.39", features = ["full", "parsing"] }
 unindent = "0.1.6"
 convert_case = "0.4.0"
+walkdir = "2.3.1"

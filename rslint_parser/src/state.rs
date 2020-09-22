@@ -26,12 +26,19 @@ pub struct ParserState {
     pub potential_arrow_start: bool,
     /// Whether we are in an async function
     pub in_async: bool,
-    /// Whether we are in strict mode code, this uses an option for error reporting and a bool for top level
-    pub strict: (Option<Range<usize>>, bool),
+    /// Whether we are in strict mode code
+    pub strict: Option<StrictMode>,
     /// Whether the code we are parsing is a module
     pub is_module: bool,
     /// The exported default item, used for checking duplicate defaults
     pub default_item: Option<Range<usize>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum StrictMode {
+    Module,
+    Explicit(Range<usize>),
+    Class(Range<usize>)
 }
 
 impl Default for ParserState {
@@ -45,7 +52,7 @@ impl Default for ParserState {
             in_function: false,
             potential_arrow_start: false,
             in_async: false,
-            strict: (None, true),
+            strict: None,
             is_module: false,
             default_item: None
         }
@@ -63,8 +70,7 @@ impl ParserState {
             in_function: false,
             potential_arrow_start: false,
             in_async: false,
-            // using a null range is fine because module is checked for first
-            strict: (Some(0..0), true),
+            strict: Some(StrictMode::Module),
             is_module: true,
             default_item: None
         }
@@ -92,31 +98,26 @@ impl ParserState {
     }
 
     /// Turn on strict mode and issue a warning for redundant strict mode declarations
-    pub fn strict(&mut self, p: &mut Parser, range: Range<usize>, top_level: bool) {
-        if self.is_module {
-            let err = p.warning_builder("Redundant strict mode declaration in module")
-                .primary(range, "")
-                .help("Note: modules are always in strict mode");
+    pub fn strict(&mut self, p: &mut Parser, range: Range<usize>) {
+        if let Some(strict) = self.strict.to_owned() {
+            let mut err = p.warning_builder("Redundant strict mode declaration");
 
-            p.error(err);
-            return;
-        }
+            match strict {
+                StrictMode::Explicit(prev_range) => {
+                    err = err.secondary(prev_range, "strict mode is previous declared here");
+                },
+                StrictMode::Module => {
+                    err = err.help("note: modules are always strict mode");
+                },
+                StrictMode::Class(prev_range) => {
+                    err = err.secondary(prev_range, "class bodies are always strict mode");
+                }
+            }
 
-        // Dont set strict mode if its already declared so we dont issue misleading errors
-        if let (Some(existing_range), top_level) = self.strict.to_owned() {
-            let warning_str = if top_level {
-                "strict mode is globally declared here"
-            } else {
-                "strict mode is first declared here"
-            };
-
-            let err = p.warning_builder("Redundant strict mode declaration")
-                .secondary(existing_range, warning_str)
-                .primary(range, "this declaration is redundant");
-
+            err = err.secondary(range, "this declaration is redundant");
             p.error(err);
         } else {
-            self.strict = (Some(range), top_level);
+            self.strict = Some(StrictMode::Explicit(range));
         }
     }
 }

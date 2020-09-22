@@ -68,6 +68,9 @@ mod token_source;
 mod event;
 mod numbers;
 
+#[cfg(test)]
+mod tests;
+
 #[macro_use]
 pub mod ast;
 pub mod syntax;
@@ -81,7 +84,7 @@ pub use crate::{
     lossy_tree_sink::LossyTreeSink,
     parse::*,
     parser::{CompletedMarker, Marker, Parser},
-    state::ParserState,
+    state::{ParserState, StrictMode},
     syntax_node::*,
     token_set::TokenSet,
     token_source::TokenSource,

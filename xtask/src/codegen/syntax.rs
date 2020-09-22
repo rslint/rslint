@@ -1,8 +1,6 @@
 //! Generate SyntaxKind definitions as well as typed AST definitions for nodes and tokens. 
 //! This is derived from rust-analyzer/xtask/codegen 
 
-use std::collections::HashSet;
-
 use proc_macro2::{Punct, Spacing};
 use quote::{format_ident, quote};
 
@@ -22,7 +20,7 @@ pub fn generate_syntax(mode: Mode) -> Result<()> {
     update(ast_tokens_file.as_path(), &contents, mode)?;
 
     let ast_nodes_file = project_root().join(codegen::AST_NODES);
-    let contents = generate_nodes(KINDS_SRC, AST_SRC)?;
+    let contents = generate_nodes(AST_SRC)?;
     update(ast_nodes_file.as_path(), &contents, mode)?;
 
     Ok(())
@@ -60,7 +58,7 @@ fn generate_tokens(grammar: AstSrc<'_>) -> Result<String> {
     Ok(pretty)
 }
 
-fn generate_nodes(kinds: KindsSrc<'_>, grammar: AstSrc<'_>) -> Result<String> {
+fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
     let (node_defs, node_boilerplate_impls): (Vec<_>, Vec<_>) = grammar
         .nodes
         .iter()
@@ -186,17 +184,6 @@ fn generate_nodes(kinds: KindsSrc<'_>, grammar: AstSrc<'_>) -> Result<String> {
                 }
             }
         });
-
-    let defined_nodes: HashSet<_> = node_names.collect();
-
-    for node in kinds
-        .nodes
-        .iter()
-        .map(|kind| to_pascal_case(kind))
-        .filter(|name| !defined_nodes.contains(name.as_str()))
-    {
-        eprintln!("Warning: node {} not defined in ast source", node);
-    }
 
     let ast = quote! {
         use crate::{
@@ -374,22 +361,6 @@ fn to_lower_snake_case(s: &str) -> String {
         prev = true;
 
         buf.push(c.to_ascii_lowercase());
-    }
-    buf
-}
-
-fn to_pascal_case(s: &str) -> String {
-    let mut buf = String::with_capacity(s.len());
-    let mut prev_is_underscore = true;
-    for c in s.chars() {
-        if c == '_' {
-            prev_is_underscore = true;
-        } else if prev_is_underscore {
-            buf.push(c.to_ascii_uppercase());
-            prev_is_underscore = false;
-        } else {
-            buf.push(c.to_ascii_lowercase());
-        }
     }
     buf
 }

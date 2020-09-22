@@ -78,7 +78,7 @@ pub fn stmt(p: &mut Parser) -> Option<CompletedMarker> {
             function_decl(p, m)
         },
         T![class] => {
-            class_decl(p)
+            class_decl(p, false)
         }
         T![ident]
             if p.cur_src() == "async"
@@ -296,7 +296,8 @@ pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool) {
         }
 
         let complete = match p.cur() {
-            T![import] => {
+            // make sure we dont try parsing import.meta or import() as declarations
+            T![import] if !token_set![T![.], T!['(']].contains(p.nth(1)) => {
                 let mut m = import_decl(p);
                 if !p.state.is_module {
                     let err = p.err_builder("Illegal use of an import declaration outside of a module")
@@ -342,7 +343,7 @@ pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool) {
                                 let range = complete.as_ref().unwrap().range(p).into();
                                 // We must do this because we cannot have multiple mutable borrows of p
                                 let mut new = p.state.clone();
-                                new.strict(p, range, top_level);
+                                new.strict(p, range);
                                 p.state = new;
                                 could_be_directive = false;
                             }

@@ -138,7 +138,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                 m.complete(p, EXPORT_DEFAULT_DECL)
             },
             T![class] => {
-                class_decl(p);
+                class_decl(p, false);
                 m.complete(p, EXPORT_DEFAULT_DECL)
             },
             _ => {
@@ -165,7 +165,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                 m.complete(p, EXPORT_DECL)
             }
             T![class] => {
-                class_decl(p);
+                class_decl(p, false);
                 m.complete(p, EXPORT_DECL)
             }
             T![function] => {
