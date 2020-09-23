@@ -1,7 +1,7 @@
 //! Generated file, do not edit by hand, see `xtask/src/codegen`
 
 #![allow(bad_style, missing_docs, unreachable_pub)]
-#[doc = r" The kind of syntax node, e.g. `IDENT`, `USE_KW`, or `STRUCT_DEF`."]
+#[doc = r" The kind of syntax node, e.g. `IDENT`, `FUNCTION_KW`, or `FOR_STMT`."]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[repr(u16)]
 pub enum SyntaxKind {
@@ -331,6 +331,69 @@ impl SyntaxKind {
             '=' => EQ,
             '!' => BANG,
             '-' => MINUS,
+            _ => return None,
+        };
+        Some(tok)
+    }
+    pub fn to_string(&self) -> Option<&str> {
+        let tok = match self {
+            SEMICOLON => ";",
+            COMMA => ",",
+            L_PAREN => "'('",
+            R_PAREN => "')'",
+            L_CURLY => "'{'",
+            R_CURLY => "'}'",
+            L_BRACK => "'['",
+            R_BRACK => "']'",
+            L_ANGLE => "<",
+            R_ANGLE => ">",
+            TILDE => "~",
+            QUESTION => "?",
+            QUESTION2 => "??",
+            QUESTIONDOT => "?.",
+            AMP => "&",
+            PIPE => "|",
+            PLUS => "+",
+            PLUS2 => "++",
+            STAR => "*",
+            STAR2 => "**",
+            SLASH => "/",
+            CARET => "^",
+            PERCENT => "%",
+            DOT => ".",
+            DOT2 => "...",
+            COLON => ":",
+            EQ => "=",
+            EQ2 => "==",
+            EQ3 => "===",
+            FAT_ARROW => "=>",
+            BANG => "!",
+            NEQ => "!=",
+            NEQ2 => "!==",
+            MINUS => "-",
+            MINUS2 => "--",
+            LTEQ => "<=",
+            GTEQ => ">=",
+            PLUSEQ => "+=",
+            MINUSEQ => "-=",
+            PIPEEQ => "|=",
+            AMPEQ => "&=",
+            CARETEQ => "^=",
+            SLASHEQ => "/=",
+            STAREQ => "*=",
+            PERCENTEQ => "%=",
+            AMP2 => "&&",
+            PIPE2 => "||",
+            SHL => "<<",
+            SHR => ">>",
+            USHR => ">>>",
+            SHLEQ => "<<=",
+            SHREQ => ">>=",
+            USHREQ => ">>>=",
+            AMP2EQ => "&&=",
+            PIPE2EQ => "||=",
+            STAR2EQ => "**=",
+            QUESTION2EQ => "??=",
             _ => return None,
         };
         Some(tok)

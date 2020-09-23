@@ -15,8 +15,12 @@ fn main() -> Result<()> {
     match subcommand.as_str() {
         "codegen" => {
             args.finish()?;
-            codegen::generate_syntax(Mode::Overwrite)?;
             codegen::generate_parser_tests(Mode::Overwrite)?;
+            Ok(())
+        },
+        "syntax" => {
+            args.finish()?;
+            codegen::generate_syntax(Mode::Overwrite)?;
             Ok(())
         }
         "format" => {
@@ -38,6 +42,7 @@ USAGE:
 SUBCOMMANDS:
     format
     codegen
+    syntax
     docgen"
             );
             Ok(())

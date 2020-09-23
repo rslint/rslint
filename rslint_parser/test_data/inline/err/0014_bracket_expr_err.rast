@@ -43,11 +43,11 @@ error[SyntaxError]: Expected an expression, but found none
   │ ^ Expected an expression here
 
 --
-error[SyntaxError]: Expected token `R_BRACK` but instead the file ends
+error[SyntaxError]: expected `']'` but instead the file ends
   ┌─ 0014_bracket_expr_err.js:4:1
   │
 4 │ 
-  │ ^ The file ends here
+  │ ^ the file ends here
 
 --
 foo[]

@@ -46,18 +46,18 @@ error[SyntaxError]: Expected an expression, but found none
   │           ^ Expected an expression here
 
 --
-error[SyntaxError]: Expected token `L_PAREN` but instead found `TRUE_KW`
+error[SyntaxError]: expected `'('` but instead found `true`
   ┌─ 0015_do_while_stmt_err.js:3:10
   │
 3 │ do while true
-  │          ^^^^ Unexpected
+  │          ^^^^ unexpected
 
 --
-error[SyntaxError]: Expected token `R_PAREN` but instead the file ends
+error[SyntaxError]: expected `')'` but instead the file ends
   ┌─ 0015_do_while_stmt_err.js:4:1
   │
 4 │ 
-  │ ^ The file ends here
+  │ ^ the file ends here
 
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
@@ -67,46 +67,18 @@ error[SyntaxError]: Expected a statement or declaration, but found none
   │ ^ Expected a statement or declaration here
 
 --
-error[SyntaxError]: Expected token `WHILE_KW` but instead the file ends
+error[SyntaxError]: expected `WHILE_KW` but instead the file ends
   ┌─ 0015_do_while_stmt_err.js:4:1
   │
 4 │ 
-  │ ^ The file ends here
+  │ ^ the file ends here
 
 --
-error[SyntaxError]: Expected token `L_PAREN` but instead the file ends
+error[SyntaxError]: expected `'('` but instead the file ends
   ┌─ 0015_do_while_stmt_err.js:4:1
   │
 4 │ 
-  │ ^ The file ends here
-
---
-error[SyntaxError]: Expected an expression, but found none
-  ┌─ 0015_do_while_stmt_err.js:4:1
-  │
-4 │ 
-  │ ^ Expected an expression here
-
---
-error[SyntaxError]: Expected token `R_PAREN` but instead the file ends
-  ┌─ 0015_do_while_stmt_err.js:4:1
-  │
-4 │ 
-  │ ^ The file ends here
-
---
-error[SyntaxError]: Expected token `WHILE_KW` but instead the file ends
-  ┌─ 0015_do_while_stmt_err.js:4:1
-  │
-4 │ 
-  │ ^ The file ends here
-
---
-error[SyntaxError]: Expected token `L_PAREN` but instead the file ends
-  ┌─ 0015_do_while_stmt_err.js:4:1
-  │
-4 │ 
-  │ ^ The file ends here
+  │ ^ the file ends here
 
 --
 error[SyntaxError]: Expected an expression, but found none
@@ -116,25 +88,25 @@ error[SyntaxError]: Expected an expression, but found none
   │ ^ Expected an expression here
 
 --
-error[SyntaxError]: Expected token `R_PAREN` but instead the file ends
+error[SyntaxError]: expected `')'` but instead the file ends
   ┌─ 0015_do_while_stmt_err.js:4:1
   │
 4 │ 
-  │ ^ The file ends here
+  │ ^ the file ends here
 
 --
-error[SyntaxError]: Expected token `WHILE_KW` but instead the file ends
+error[SyntaxError]: expected `WHILE_KW` but instead the file ends
   ┌─ 0015_do_while_stmt_err.js:4:1
   │
 4 │ 
-  │ ^ The file ends here
+  │ ^ the file ends here
 
 --
-error[SyntaxError]: Expected token `L_PAREN` but instead the file ends
+error[SyntaxError]: expected `'('` but instead the file ends
   ┌─ 0015_do_while_stmt_err.js:4:1
   │
 4 │ 
-  │ ^ The file ends here
+  │ ^ the file ends here
 
 --
 error[SyntaxError]: Expected an expression, but found none
@@ -144,11 +116,39 @@ error[SyntaxError]: Expected an expression, but found none
   │ ^ Expected an expression here
 
 --
-error[SyntaxError]: Expected token `R_PAREN` but instead the file ends
+error[SyntaxError]: expected `')'` but instead the file ends
   ┌─ 0015_do_while_stmt_err.js:4:1
   │
 4 │ 
-  │ ^ The file ends here
+  │ ^ the file ends here
+
+--
+error[SyntaxError]: expected `WHILE_KW` but instead the file ends
+  ┌─ 0015_do_while_stmt_err.js:4:1
+  │
+4 │ 
+  │ ^ the file ends here
+
+--
+error[SyntaxError]: expected `'('` but instead the file ends
+  ┌─ 0015_do_while_stmt_err.js:4:1
+  │
+4 │ 
+  │ ^ the file ends here
+
+--
+error[SyntaxError]: Expected an expression, but found none
+  ┌─ 0015_do_while_stmt_err.js:4:1
+  │
+4 │ 
+  │ ^ Expected an expression here
+
+--
+error[SyntaxError]: expected `')'` but instead the file ends
+  ┌─ 0015_do_while_stmt_err.js:4:1
+  │
+4 │ 
+  │ ^ the file ends here
 
 --
 do while (true)

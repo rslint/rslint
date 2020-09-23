@@ -28,11 +28,11 @@ error[SyntaxError]: Expected an identifier or pattern, but found none
   │  ^
 
 --
-error[SyntaxError]: Expected token `COMMA` but instead found `PLUS`
+error[SyntaxError]: expected `,` but instead found `+`
   ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:4
   │
 1 │ (5 + 5) => {}
-  │    ^ Unexpected
+  │    ^ unexpected
 
 --
 error[SyntaxError]: Expected an identifier or pattern, but found none
@@ -42,11 +42,11 @@ error[SyntaxError]: Expected an identifier or pattern, but found none
   │    ^
 
 --
-error[SyntaxError]: Expected token `R_PAREN` but instead found `NUMBER`
+error[SyntaxError]: expected `')'` but instead found `5`
   ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:6
   │
 1 │ (5 + 5) => {}
-  │      ^ Unexpected
+  │      ^ unexpected
 
 --
 error[SyntaxError]: Expected an expression, but found none

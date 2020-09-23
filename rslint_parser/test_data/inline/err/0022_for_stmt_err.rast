@@ -50,32 +50,32 @@ MODULE@0..40
         R_CURLY@38..39 "}"
   WHITESPACE@39..40 "\n"
 --
-error[SyntaxError]: Expected token `L_PAREN` but instead found `SEMICOLON`
+error[SyntaxError]: expected `'('` but instead found `;`
   ┌─ 0022_for_stmt_err.js:1:5
   │
 1 │ for ;; {}
-  │     ^ Unexpected
+  │     ^ unexpected
 
 --
-error[SyntaxError]: Expected token `R_PAREN` but instead found `FOR_KW`
+error[SyntaxError]: expected `')'` but instead found `for`
   ┌─ 0022_for_stmt_err.js:2:1
   │
 2 │ for let i = 5; i < 10; i++ {}
-  │ ^^^ Unexpected
+  │ ^^^ unexpected
 
 --
-error[SyntaxError]: Expected token `L_PAREN` but instead found `IDENT`
+error[SyntaxError]: expected `'('` but instead found `let`
   ┌─ 0022_for_stmt_err.js:2:5
   │
 2 │ for let i = 5; i < 10; i++ {}
-  │     ^^^ Unexpected
+  │     ^^^ unexpected
 
 --
-error[SyntaxError]: Expected token `R_PAREN` but instead found `L_CURLY`
+error[SyntaxError]: expected `')'` but instead found `{`
   ┌─ 0022_for_stmt_err.js:2:28
   │
 2 │ for let i = 5; i < 10; i++ {}
-  │                            ^ Unexpected
+  │                            ^ unexpected
 
 --
 for ;; {}

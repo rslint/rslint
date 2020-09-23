@@ -37,18 +37,18 @@ MODULE@0..40
           IDENT@36..39 "bar"
   WHITESPACE@39..40 "\n"
 --
-error[SyntaxError]: Expected token `COLON` but instead found `IDENT`
+error[SyntaxError]: expected `:` but instead found `baz`
   ┌─ 0006_conditional_expr_err.js:1:11
   │
 1 │ foo ? bar baz
-  │           ^^^ Unexpected
+  │           ^^^ unexpected
 
 --
-error[SyntaxError]: Expected token `COLON` but instead found `IDENT`
+error[SyntaxError]: expected `:` but instead found `baz`
   ┌─ 0006_conditional_expr_err.js:2:11
   │
 2 │ foo ? bar baz ? foo : bar
-  │           ^^^ Unexpected
+  │           ^^^ unexpected
 
 --
 foo ? bar baz

@@ -364,7 +364,7 @@ pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMar
         member_or_new_expr(p, new_expr)?;
 
         if !new_expr || p.at(T!['(']) {
-            args(p, false);
+            args(p);
             let complete = m.complete(p, NEW_EXPR);
             return Some(subscripts(p, complete, true));
         }
@@ -414,7 +414,7 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
             T!['('] if !no_call => {
                 lhs = {
                     let m = lhs.precede(p);
-                    args(p, false);
+                    args(p);
                     m.complete(p, CALL_EXPR)
                 }
             }
@@ -440,7 +440,7 @@ pub fn optional_chain(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
                 T!['('] => {
                     lhs = {
                         let m = lhs.precede(p);
-                        args(p, false);
+                        args(p);
                         m.complete(p, CALL_EXPR)
                     }
                 }
@@ -526,7 +526,7 @@ pub fn identifier_name(p: &mut Parser) -> CompletedMarker {
 /// Arguments to a function.
 ///
 /// `"(" (AssignExpr ",")* ")"`
-pub fn args(p: &mut Parser, is_dynamic_import: bool) -> CompletedMarker {
+pub fn args(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['(']);
     let mut first = true;
@@ -535,14 +535,7 @@ pub fn args(p: &mut Parser, is_dynamic_import: bool) -> CompletedMarker {
         if first {
             first = false;
         } else {
-            let range = p.cur_tok().range;
             if p.expect(T![,]) && p.at(T![')']) {
-                if is_dynamic_import {
-                    let err = p.err_builder("dynamic import arguments may not contain a trailing comma")
-                        .primary(range, "");
-
-                    p.error(err);
-                }
                 break;
             }
         }
@@ -1050,7 +1043,7 @@ pub fn lhs_expr(p: &mut Parser) -> Option<CompletedMarker> {
     if p.at(T![super]) && p.nth_at(1, T!['(']) {
         let m = p.start();
         p.bump_any();
-        args(p, false);
+        args(p);
         let lhs = m.complete(p, SUPER_CALL);
         return Some(subscripts(p, lhs, false));
     }

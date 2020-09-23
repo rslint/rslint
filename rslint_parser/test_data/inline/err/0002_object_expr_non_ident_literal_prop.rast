@@ -17,11 +17,11 @@ MODULE@0..12
         R_CURLY@10..11 "}"
   WHITESPACE@11..12 "\n"
 --
-error[SyntaxError]: Expected token `COLON` but instead found `R_CURLY`
+error[SyntaxError]: expected `:` but instead found `}`
   ┌─ 0002_object_expr_non_ident_literal_prop.js:1:11
   │
 1 │ let b = {5}
-  │           ^ Unexpected
+  │           ^ unexpected
 
 --
 error[SyntaxError]: Expected an expression, but found none

@@ -111,11 +111,11 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
   │              ...Which is required to end this statement
 
 --
-error[SyntaxError]: Expected token `L_CURLY` but instead found `IDENT`
+error[SyntaxError]: expected `'{'` but instead found `parsing`
   ┌─ 0020_import_decl_not_top_level.js:4:23
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
-  │                       ^^^^^^^ Unexpected
+  │                       ^^^^^^^ unexpected
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
@@ -175,11 +175,11 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
   │                                                       ...Which is required to end this statement
 
 --
-error[SyntaxError]: Expected token `R_CURLY` but instead the file ends
+error[SyntaxError]: expected `'}'` but instead the file ends
   ┌─ 0020_import_decl_not_top_level.js:5:1
   │
 5 │ 
-  │ ^ The file ends here
+  │ ^ the file ends here
 
 --
 {

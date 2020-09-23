@@ -228,6 +228,7 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
             quote! { #(#cs)* }
         }
     });
+    let punctuation_strings = punctuation_values.clone().map(|name| name.to_string());
 
     let punctuation =
         grammar.punct.iter().map(|(_token, name)| format_ident!("{}", name)).collect::<Vec<_>>();
@@ -252,7 +253,7 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
 
     let ast = quote! {
         #![allow(bad_style, missing_docs, unreachable_pub)]
-        /// The kind of syntax node, e.g. `IDENT`, `USE_KW`, or `STRUCT_DEF`.
+        /// The kind of syntax node, e.g. `IDENT`, `FUNCTION_KW`, or `FOR_STMT`.
         #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
         #[repr(u16)]
         pub enum SyntaxKind {
@@ -319,6 +320,14 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
             pub fn from_char(c: char) -> Option<SyntaxKind> {
                 let tok = match c {
                     #(#single_byte_tokens_values => #single_byte_tokens,)*
+                    _ => return None,
+                };
+                Some(tok)
+            }
+
+            pub fn to_string(&self) -> Option<&str> {
+                let tok = match self {
+                    #(#punctuation => #punctuation_strings,)*
                     _ => return None,
                 };
                 Some(tok)

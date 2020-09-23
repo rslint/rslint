@@ -67,11 +67,11 @@ error[SyntaxError]: Expected a statement or declaration, but found none
   │           ^^^^ Expected a statement or declaration here
 
 --
-error[SyntaxError]: Expected token `L_PAREN` but instead found `ELSE_KW`
+error[SyntaxError]: expected `'('` but instead found `else`
   ┌─ 0009_if_stmt_err.js:3:4
   │
 3 │ if else {}
-  │    ^^^^ Unexpected
+  │    ^^^^ unexpected
 
 --
 error[SyntaxError]: Expected an expression, but found none
@@ -81,11 +81,11 @@ error[SyntaxError]: Expected an expression, but found none
   │    ^^^^ Expected an expression here
 
 --
-error[SyntaxError]: Expected token `R_PAREN` but instead found `ELSE_KW`
+error[SyntaxError]: expected `')'` but instead found `else`
   ┌─ 0009_if_stmt_err.js:3:4
   │
 3 │ if else {}
-  │    ^^^^ Unexpected
+  │    ^^^^ unexpected
 
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
