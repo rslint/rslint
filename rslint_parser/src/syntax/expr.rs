@@ -58,6 +58,7 @@ pub const STARTS_EXPR: TokenSet = token_set![
     T![function],
     T![class],
     T![import],
+    T![super],
     BACKTICK,
 ]
 .union(LITERAL);
@@ -363,7 +364,7 @@ pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMar
         member_or_new_expr(p, new_expr)?;
 
         if !new_expr || p.at(T!['(']) {
-            args(p);
+            args(p, false);
             let complete = m.complete(p, NEW_EXPR);
             return Some(subscripts(p, complete, true));
         }
@@ -413,7 +414,7 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
             T!['('] if !no_call => {
                 lhs = {
                     let m = lhs.precede(p);
-                    args(p);
+                    args(p, false);
                     m.complete(p, CALL_EXPR)
                 }
             }
@@ -439,7 +440,7 @@ pub fn optional_chain(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
                 T!['('] => {
                     lhs = {
                         let m = lhs.precede(p);
-                        args(p);
+                        args(p, false);
                         m.complete(p, CALL_EXPR)
                     }
                 }
@@ -525,16 +526,25 @@ pub fn identifier_name(p: &mut Parser) -> CompletedMarker {
 /// Arguments to a function.
 ///
 /// `"(" (AssignExpr ",")* ")"`
-pub fn args(p: &mut Parser) -> CompletedMarker {
+pub fn args(p: &mut Parser, is_dynamic_import: bool) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['(']);
     let mut first = true;
 
-    while !p.at(EOF) && !p.eat(T![')']) {
+    while !p.at(EOF) && !p.at(T![')']) {
         if first {
             first = false;
         } else {
-            p.expect(T![,]);
+            let range = p.cur_tok().range;
+            if p.expect(T![,]) && p.at(T![')']) {
+                if is_dynamic_import {
+                    let err = p.err_builder("dynamic import arguments may not contain a trailing comma")
+                        .primary(range, "");
+
+                    p.error(err);
+                }
+                break;
+            }
         }
         if p.at(T![...]) {
             spread_element(p);
@@ -543,6 +553,7 @@ pub fn args(p: &mut Parser) -> CompletedMarker {
         }
     }
 
+    p.expect(T![')']);
     m.complete(p, ARG_LIST)
 }
 
@@ -581,7 +592,7 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
     // This is an arrow expr, so we rewind the parser and reparse as parameters
     // This is kind of inefficient but in the grand scheme of things it does not matter
     // since the parser is already crazy fast
-    if p.at(T![=>]) && !p.has_linebreak_before_n(1) {
+    if p.at(T![=>]) && !p.has_linebreak_before_n(0) {
         if !can_be_arrow {
             let err = p
                 .err_builder("Unexpected token `=>`")
@@ -1039,7 +1050,7 @@ pub fn lhs_expr(p: &mut Parser) -> Option<CompletedMarker> {
     if p.at(T![super]) && p.nth_at(1, T!['(']) {
         let m = p.start();
         p.bump_any();
-        args(p);
+        args(p, false);
         let lhs = m.complete(p, SUPER_CALL);
         return Some(subscripts(p, lhs, false));
     }

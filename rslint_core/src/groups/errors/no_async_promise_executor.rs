@@ -48,7 +48,6 @@ declare_lint! {
 impl CstRule for NoAsyncPromiseExecutor {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == NEW_EXPR && node.to::<ast::NewExpr>().object()?.syntax().text() == "Promise" {
-            dbg!(&node);
             if let Some(range) = check_arg(node.to::<ast::NewExpr>().arguments()?.args().next()?) {
                 let err = ctx.err(self.name(), "Don't use async functions for promise executors")
                     .primary(range, "")
@@ -62,7 +61,7 @@ impl CstRule for NoAsyncPromiseExecutor {
 }
 
 fn check_arg(arg: ast::Expr) -> Option<TextRange> {
-    Some(match dbg!(arg) {
+    Some(match arg {
         ast::Expr::FnExpr(func) if func.async_token().is_some() => func.syntax().trimmed_range(),
         ast::Expr::ArrowExpr(arrow) if arrow.async_token().is_some() => arrow.syntax().trimmed_range(),
         _ => return None,

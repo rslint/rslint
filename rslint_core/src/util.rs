@@ -4,8 +4,8 @@ use crate::rule_prelude::*;
 use ast::*;
 use rslint_parser::TextRange;
 use std::borrow::Borrow;
-use SyntaxKind::*;
 use std::cmp;
+use SyntaxKind::*;
 
 /// Expands an assignment to the returned value, e.g. `foo += 5` -> `foo + 5`, `foo = 6` -> `6`
 ///
@@ -157,21 +157,32 @@ pub fn is_const(expr: Expr, boolean_pos: bool, notes: &mut Vec<&str>) -> bool {
         }
         // TODO: Handle more cases which require knowing if the right value is const
         Expr::BinExpr(binexpr) => {
-            let lhs_const = binexpr
-                .lhs()
-                .map_or(false, |expr| is_const(expr, boolean_pos, notes));
-            let rhs_const = binexpr
-                .rhs()
-                .map_or(false, |expr| is_const(expr, boolean_pos, notes));
+            if binexpr.conditional() {
+                let lhs_const = binexpr
+                    .lhs()
+                    .map_or(false, |expr| is_const(expr, boolean_pos, notes));
+                let rhs_const = binexpr
+                    .rhs()
+                    .map_or(false, |expr| is_const(expr, boolean_pos, notes));
 
-            let lhs_short_circuits = binexpr.lhs().map_or(false, |expr| {
-                binexpr.op().map_or(false, |op| short_circuits(expr, op))
-            });
-            let rhs_short_circuits = binexpr.rhs().map_or(false, |expr| {
-                binexpr.op().map_or(false, |op| short_circuits(expr, op))
-            });
+                let lhs_short_circuits = binexpr.lhs().map_or(false, |expr| {
+                    binexpr.op().map_or(false, |op| short_circuits(expr, op))
+                });
+                let rhs_short_circuits = binexpr.rhs().map_or(false, |expr| {
+                    binexpr.op().map_or(false, |op| short_circuits(expr, op))
+                });
 
-            (lhs_const && rhs_const) || lhs_short_circuits || rhs_short_circuits
+                (lhs_const && rhs_const) || lhs_short_circuits || rhs_short_circuits
+            } else {
+                let lhs_const = binexpr
+                    .lhs()
+                    .map_or(false, |expr| is_const(expr, false, notes));
+                let rhs_const = binexpr
+                    .rhs()
+                    .map_or(false, |expr| is_const(expr, false, notes));
+                    
+                lhs_const && rhs_const && binexpr.op() != Some(op!(in))
+            }
         }
         Expr::AssignExpr(assignexpr) => {
             if assignexpr.op() == Some(AssignOp::Assign) && assignexpr.rhs().is_some() {
@@ -368,30 +379,41 @@ pub fn simple_const_condition_context(
     diagnostic
 }
 
-/// Get the range represented by a list of tokens. 
-/// 
-/// # Panics 
-/// 
-/// Panics if the items is an empty iterator. 
+/// Get the range represented by a list of tokens.
+///
+/// # Panics
+///
+/// Panics if the items is an empty iterator.
 pub fn token_list_range<I>(items: I) -> TextRange
 where
     I: IntoIterator,
     I::Item: Borrow<SyntaxToken>,
 {
-    let collection = items.into_iter().map(|x| x.borrow().clone()).collect::<Vec<_>>();
-    let start = collection.first().expect("Empty token list").text_range().start();
-    let end = collection.last().expect("Empty token list").text_range().end();
+    let collection = items
+        .into_iter()
+        .map(|x| x.borrow().clone())
+        .collect::<Vec<_>>();
+    let start = collection
+        .first()
+        .expect("Empty token list")
+        .text_range()
+        .start();
+    let end = collection
+        .last()
+        .expect("Empty token list")
+        .text_range()
+        .end();
     TextRange::new(start, end)
 }
 
-/// Compare two lists of tokens by comparing their underlying string value. 
+/// Compare two lists of tokens by comparing their underlying string value.
 // Note: two generics is so right is not constrained to be the same type as left
-pub fn string_token_eq<L, R>(left: L, right: R) -> bool 
+pub fn string_token_eq<L, R>(left: L, right: R) -> bool
 where
     L: IntoIterator,
     R: IntoIterator,
     L::Item: Borrow<SyntaxToken>,
-    R::Item: Borrow<SyntaxToken> 
+    R::Item: Borrow<SyntaxToken>,
 {
     let left_vec: Vec<L::Item> = left.into_iter().collect();
     let right_vec: Vec<R::Item> = right.into_iter().collect();
@@ -399,7 +421,10 @@ where
     if left_vec.len() != right_vec.len() {
         return false;
     }
-    left_vec.into_iter().zip(right_vec.into_iter()).all(|(l, r)| l.borrow().to_string() == r.borrow().to_string())
+    left_vec
+        .into_iter()
+        .zip(right_vec.into_iter())
+        .all(|(l, r)| l.borrow().to_string() == r.borrow().to_string())
 }
 
 /// Find the Levenshtein distance between two strings
@@ -432,23 +457,29 @@ pub fn levenshtein_distance(a: &str, b: &str) -> usize {
     dcol[t_last + 1]
 }
 
-/// Find the best match for a string in an iterator of strings based on levenshtein distance. 
-/// 
-/// This considers a case insensitive match and the levenshtein distance with a cutoff. 
+/// Find the best match for a string in an iterator of strings based on levenshtein distance.
+///
+/// This considers a case insensitive match and the levenshtein distance with a cutoff.
 /// This is taken from [rustc's implementation](https://github.com/rust-lang/rust/blob/master/compiler/rustc_ast/src/util/lev_distance.rs)
 pub fn find_best_match_for_name<'a>(
     iter_names: impl Iterator<Item = &'a str>,
     lookup: &str,
     dist: impl Into<Option<usize>>,
 ) -> Option<&'a str> {
-    let max_dist = dist.into().map_or_else(|| cmp::max(lookup.len(), 3) / 3, |d| d);
+    let max_dist = dist
+        .into()
+        .map_or_else(|| cmp::max(lookup.len(), 3) / 3, |d| d);
     let name_vec = iter_names.collect::<Vec<_>>();
 
     let (case_insensitive_match, levenshtein_match) = name_vec
         .iter()
         .filter_map(|&name| {
             let dist = levenshtein_distance(lookup, name);
-            if dist <= max_dist { Some((name, dist)) } else { None }
+            if dist <= max_dist {
+                Some((name, dist))
+            } else {
+                None
+            }
         })
         // Here we are collecting the next structure:
         // (case_insensitive_match, (levenshtein_match, levenshtein_distance))
@@ -496,19 +527,23 @@ fn sort_by_words(name: &str) -> std::string::String {
 }
 
 /// Check if this is either a Call expression with the callee of `name`,
-/// or if this is a New expression with a callee of `name`. 
+/// or if this is a New expression with a callee of `name`.
 /// e.g. `Boolean()` or `new Boolean()`
-pub fn constructor_or_call_with_callee(node: impl Borrow<SyntaxNode>, name: impl AsRef<str>) -> bool {
+pub fn constructor_or_call_with_callee(
+    node: impl Borrow<SyntaxNode>,
+    name: impl AsRef<str>,
+) -> bool {
     let node = node.borrow();
     match node.kind() {
-        NEW_EXPR | CALL_EXPR => {
-            node.children().any(|child| child.text() == name.as_ref())
-        },
-        _ => false
+        NEW_EXPR | CALL_EXPR => node.children().any(|child| child.text() == name.as_ref()),
+        _ => false,
     }
 }
 
-/// Get the first enclosing function of a node, this does not consider if the node itself is a function. 
+/// Get the first enclosing function of a node, this does not consider if the node itself is a function.
 pub fn outer_function(node: impl Borrow<SyntaxNode>) -> Option<SyntaxNode> {
-    node.borrow().ancestors().skip(1).find(|ancestor| matches!(ancestor.kind(), ARROW_EXPR | FN_DECL | FN_EXPR))
+    node.borrow()
+        .ancestors()
+        .skip(1)
+        .find(|ancestor| matches!(ancestor.kind(), ARROW_EXPR | FN_DECL | FN_EXPR))
 }

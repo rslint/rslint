@@ -46,7 +46,7 @@ impl CstRule for ForDirection {
         if let Some(test) = node
             .try_to::<ForStmt>()
             .and_then(|f| f.test())
-            .map(|test| test.expr().unwrap())
+            .and_then(|test| test.expr())
         {
             let for_stmt = node.to::<ForStmt>();
             if for_stmt.update().is_some()

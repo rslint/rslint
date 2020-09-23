@@ -135,13 +135,14 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
     let m = marker.into().unwrap_or_else(|| p.start());
     let old = p.state.to_owned();
     p.state.in_function = true;
+    // FIXME: handle get* which is a property + a generator
     let complete = match p.cur() {
         T!['('] => {
             formal_parameters(p);
             block_stmt(p, true, None);
             m.complete(p, METHOD)
         }
-        T![ident] if p.cur_src() == "get" => {
+        T![ident] if p.cur_src() == "get" && p.nth(1) != T!['('] => {
             p.bump_any();
             object_prop_name(p, false);
             p.expect(T!['(']);
@@ -149,7 +150,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             block_stmt(p, true, None);
             m.complete(p, GETTER)
         }
-        T![ident] if p.cur_src() == "set" => {
+        T![ident] if p.cur_src() == "set" && p.nth(1) != T!['('] => {
             p.bump_any();
             object_prop_name(p, false);
             formal_parameters(p);
