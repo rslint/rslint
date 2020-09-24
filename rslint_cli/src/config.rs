@@ -83,21 +83,29 @@ impl RulesConfig {
     }
 
     /// Remove any rules which are explicitly allowed by the `allowed` field
-    /// 
+    ///
     /// if `issue_warnings` is true, linter warnings will be emitted stating a rule's configuration
-    /// was ignore because its explicitly allowed. 
-    pub fn intersect_allowed<'a, T>(&'a self, rules: T, issue_warnings: bool) -> impl IntoIterator<Item = T::Item> + 'a
+    /// was ignore because its explicitly allowed.
+    pub fn intersect_allowed<'a, T>(
+        &'a self,
+        rules: T,
+        issue_warnings: bool,
+    ) -> impl IntoIterator<Item = T::Item> + 'a
     where
         T: IntoIterator + 'a,
         T::Item: Borrow<Box<dyn CstRule>>,
     {
         rules.into_iter().filter(move |rule| {
-            let res = self.allowed
+            let res = self
+                .allowed
                 .iter()
                 .any(|allowed| allowed == rule.borrow().name());
 
             if res && issue_warnings {
-                lint_warn!("ignoring configuration for '{}' because it is explicitly allowed", rule.borrow().name());
+                lint_warn!(
+                    "ignoring configuration for '{}' because it is explicitly allowed",
+                    rule.borrow().name()
+                );
             }
             !res
         })
@@ -107,18 +115,21 @@ impl RulesConfig {
         let mut store = CstRuleStore::new();
         let mut rules: Vec<_> = self
             .intersect_allowed(
-                self.errors
-                    .clone()
-                    .into_iter()
-                    .chain(self.warnings.clone().into_iter()),
-                    true
+                Self::unique_rules(self.errors.clone(), self.warnings.clone()),
+                true,
             )
             .into_iter()
             .collect();
 
         for group in &self.groups {
             if let Some(group_rules) = get_group_rules_by_name(&group) {
-                rules.extend(self.intersect_allowed(group_rules.into_iter(), false));
+                rules = Self::unique_rules(
+                    rules,
+                    self.intersect_allowed(group_rules.into_iter(), false)
+                        .into_iter()
+                        .collect(),
+                )
+                .collect();
             } else {
                 lint_warn!("Unknown rule group '{}'", group);
             }
@@ -126,6 +137,17 @@ impl RulesConfig {
 
         store.load_rules(rules);
         store
+    }
+
+    fn unique_rules(
+        first: Vec<Box<dyn CstRule>>,
+        second: Vec<Box<dyn CstRule>>,
+    ) -> impl Iterator<Item = Box<dyn CstRule>> {
+        let filtered = second
+            .into_iter()
+            .filter(|rule| !first.iter().any(|prev| prev.name() == rule.name()))
+            .collect::<Vec<_>>();
+        first.into_iter().chain(filtered.into_iter())
     }
 }
 
