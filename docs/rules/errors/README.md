@@ -12,7 +12,7 @@ unexpected behavior.
 | [for-direction](./for-direction.md) | Disallow for loops which update their counter in the wrong direction. |
 | [getter-return](./getter-return.md) | Disallow getter properties which do not always return a value. |
 | [no-async-promise-executor](./no-async-promise-executor.md) | Disallow async functions as promise executors. |
-| [no-await-in-loop](./no-await-in-loop.md) | Disallow await inside of loop. |
+| [no-await-in-loop](./no-await-in-loop.md) | Disallow await inside of loops. |
 | [no-compare-neg-zero](./no-compare-neg-zero.md) | Disallow comparison against `-0` which yields unexpected behavior. |
 | [no-cond-assign](./no-cond-assign.md) | Forbid the use of assignment expressions in conditions which may yield unwanted behavior. |
 | [no-constant-condition](./no-constant-condition.md) | Disallow constant conditions which always yield one result. |

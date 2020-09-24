@@ -3,11 +3,11 @@
 -->
 # no-await-in-loop
 
-Disallow await inside of loop.
+Disallow await inside of loops.
 
 You may want to `await` a promise until it is fulfilled or rejected, inside of loops. In such cases, to take
-performance advantages of concurrency with async operations, you should be careful __not__ to `await` in each
-iteration; otherwise your async operations would be executed in serial.
+full advantage of concurrency, you should __not__ `await` the promise in every iteration, otherwise your async
+operations will be executed serially.
 Generally it is recommended that you create all promises, then use `Promise.all` for them. This way your async
 operations will be performed concurrently.
 
