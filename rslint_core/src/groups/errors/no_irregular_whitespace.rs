@@ -100,13 +100,52 @@ const FIRST_BYTES: [u8; 9] = [0x0b, 0x0c, 0xA0, 0x85, 0xC2, 0xE1, 0xEF, 0xE2, 0x
 
 // violations of this rule are extraordinarily rare, so we first run an initial pass which compares the first
 // utf8 byte of each irregular whitespace with each byte in the string. This is extremely fast, since LLVM will
-// turn it into a lookup table which is 3 operations to check each byte. If this turns out slow we could also use SIMD for x86
-// but i know i will get weird looks for it so i did not do it initially
+// turn it into a lookup table which is 3 operations to check each byte, and for x86 avx2 we use SIMD intrinsics. 
 
-// very fast pass to quickly check if we should skip the file
-#[inline]
-fn short_circuit_pass(bytes: &[u8]) -> bool {
+// fallback for the short circuit pass
+fn short_circuit_pass_fallback(bytes: &[u8]) -> bool {
     bytes.iter().any(|b| FIRST_BYTES.contains(b))
+}
+
+// very fast short circuit pass using simd
+#[cfg(all(any(target_arch = "x86", target_arch = "x86_64")))]
+#[target_feature(enable = "avx2")]
+unsafe fn short_circuit_pass(bytes: &[u8]) -> bool {
+    #[cfg(target_arch = "x86")]
+    use std::arch::x86::*;
+    #[cfg(target_arch = "x86_64")]
+    use std::arch::x86_64::*;
+    use std::ptr::copy_nonoverlapping;
+
+    // buffer for chunks which are not 32 items, we need this because if there is a chunk
+    // that isnt 32 elements we cannot load a simd vector directly from it, because
+    // that is undefined behavior (it is reading out of bounds memory)
+    let mut buf = [0; 32];
+    for chunk in bytes.chunks(32) {
+        // if the chunk is 32 bits in length we can simply load a simd vector
+        // using from its pointer
+        let data = if chunk.len() == 32 {
+            _mm256_loadu_si256(chunk.as_ptr() as *const __m256i)
+        } else {
+            // if the chunk isnt 32 bits in length then we need to copy the data
+            // to the buffer or else that is undefined behavior
+            copy_nonoverlapping(chunk.as_ptr(), buf.as_mut_ptr(), chunk.len());
+            _mm256_loadu_si256(buf.as_ptr() as *const __m256i)
+        };
+
+        for byte in FIRST_BYTES.iter() {
+            // This makes a 32 byte vector all consisting of the same byte
+            let mask = _mm256_set1_epi8(*byte as i8);
+            // Then we compare the data vector with the mask, if any byte corresponds to the checked
+            // byte then it will become a `1` in the vector
+            let cmp = _mm256_cmpeq_epi8(data, mask);
+            // This will return `0` if there is no `1` in the vector
+            if _mm256_movemask_epi8(cmp) != 0 {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 // slower pass which checks references to bytes, we can then convert matched references
@@ -132,7 +171,18 @@ impl CstRule for NoIrregularWhitespace {
             return None;
         }
 
-        if !short_circuit_pass(bytes) {
+        let res = if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
+            if std::is_x86_feature_detected!("avx2") {
+               // SAFETY: Explanation of the implementation and edge cases is in the function body
+               unsafe { short_circuit_pass(bytes) }
+            } else {
+                short_circuit_pass_fallback(bytes)
+            }
+        } else {
+            short_circuit_pass_fallback(bytes)
+        };
+
+        if !res {
             return None;
         }
 
