@@ -5,13 +5,13 @@
 
 Disallow weird/irregular whitespace. 
 
-ECMAScript allows a wide selection of unicode whitespace, it is however known to
-cause issues with various parsers, therefore it should never be used.
+ECMAScript allows a wide selection of unicode whitespace, they are however known to
+cause issues with various parsers, therefore they should never be used.
 
 A lot of the whitespace is invisible, therefore is hard to detect, it may have been inserted
 by accident.
 
-Whitespace such as line separator causes issues, line separators are not valid JSON which
+Whitespace such as line separator causes issues since line separators are not valid JSON which
 may cause many issues. 
 
 This rule disallows the following whitespace: 

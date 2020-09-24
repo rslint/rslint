@@ -6,13 +6,13 @@ declare_lint! {
     /**
     Disallow weird/irregular whitespace. 
 
-    ECMAScript allows a wide selection of unicode whitespace, it is however known to
-    cause issues with various parsers, therefore it should never be used.
+    ECMAScript allows a wide selection of unicode whitespace, they are however known to
+    cause issues with various parsers, therefore they should never be used.
 
     A lot of the whitespace is invisible, therefore is hard to detect, it may have been inserted
     by accident.
 
-    Whitespace such as line separator causes issues, line separators are not valid JSON which
+    Whitespace such as line separator causes issues since line separators are not valid JSON which
     may cause many issues. 
 
     This rule disallows the following whitespace: 
@@ -98,7 +98,6 @@ const WHITESPACE_TABLE: [(char, &str); 24] = [
 
 const FIRST_BYTES: [u8; 9] = [0x0b, 0x0c, 0xA0, 0x85, 0xC2, 0xE1, 0xEF, 0xE2, 0xE3];
 
-
 // violations of this rule are extraordinarily rare, so we first run an initial pass which compares the first
 // utf8 byte of each irregular whitespace with each byte in the string. This is extremely fast, since LLVM will
 // turn it into a lookup table which is 3 operations to check each byte. If this turns out slow we could also use SIMD for x86
@@ -116,13 +115,11 @@ fn short_circuit_pass(bytes: &[u8]) -> bool {
 fn spanned_byte_matches(bytes: &[u8]) -> Vec<usize> {
     let offset = bytes.as_ptr() as usize;
 
-    let collected = bytes
+    bytes
         .into_iter()
         .filter(|byte| FIRST_BYTES.contains(byte))
         .map(|byte| byte as *const _ as usize - offset)
-        .collect();
-
-    collected
+        .collect()
 }
 
 #[typetag::serde]
