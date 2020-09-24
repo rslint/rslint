@@ -22,6 +22,7 @@ unexpected behavior.
 | [no-empty](./no-empty.md) | Disallow empty block statements. |
 | [no-extra-semi](./no-extra-semi.md) | Disallow unneeded semicolons. |
 | [no-inner-declarations](./no-inner-declarations.md) | Disallow variable and function declarations in nested blocks. |
+| [no-irregular-whitespace](./no-irregular-whitespace.md) | Disallow weird/irregular whitespace. |
 | [no-unsafe-finally](./no-unsafe-finally.md) | Forbid the use of unsafe control flow statements in try and catch blocks. |
 | [no-unsafe-negation](./no-unsafe-negation.md) | Deny the use of `!` on the left hand side of an `instanceof` or `in` expression where it is ambiguous. |
 

@@ -47,12 +47,14 @@ pub trait CstRule: Rule {
     /// Defaults to doing nothing.
     ///
     /// The return type is `Option<()>` to allow usage of `?` on the properties of AST nodes which are all optional.
+    #[inline]
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         None
     }
 
     /// Check an individual token in the syntax tree.
     /// Defaults to doing nothing.
+    #[inline]
     fn check_token(&self, token: &SyntaxToken, ctx: &mut RuleCtx) -> Option<()> {
         None
     }
@@ -61,6 +63,7 @@ pub trait CstRule: Rule {
     /// This method is guaranteed to only be called once.
     /// The root's kind will be either `SCRIPT` or `MODULE`.
     /// Defaults to doing nothing.
+    #[inline]
     fn check_root(&self, root: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         None
     }

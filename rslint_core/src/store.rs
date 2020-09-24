@@ -29,7 +29,7 @@ impl CstRuleStore {
     /// ```
     /// use rslint_core::CstRuleStore;
     /// 
-    /// assert!(CstRuleStore::builtins().get("no-empty").is_some())
+    /// assert!(CstRuleStore::new().builtins().get("no-empty").is_some())
     /// ```
     pub fn get(&self, rule_name: impl AsRef<str>) -> Option<Box<dyn CstRule>> {
         self.rules

@@ -18,5 +18,6 @@ group! {
     no_duplicate_cases::NoDuplicateCases,
     no_empty::NoEmpty,
     no_extra_semi::NoExtraSemi,
-    no_inner_declarations::NoInnerDeclarations
+    no_inner_declarations::NoInnerDeclarations,
+    no_irregular_whitespace::NoIrregularWhitespace
 }
