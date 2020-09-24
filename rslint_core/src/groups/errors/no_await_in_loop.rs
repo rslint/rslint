@@ -2,6 +2,42 @@ use crate::rule_prelude::*;
 use SyntaxKind::*;
 
 declare_lint! {
+    /**
+    Disallow await inside of loop.
+
+    You may want to `await` a promise until it is fulfilled or rejected, inside of loops. In such cases, to take
+    performance advantages of concurrency with async operations, you should be careful __not__ to `await` in each
+    iteration; otherwise your async operations would be executed in serial.
+    Generally it is recommended that you create all promises, then use `Promise.all` for them. This way your async
+    operations will be performed concurrently.
+
+    ## Incorrect Code Exapmles
+
+    ```ignore
+    async function foo(xs) {
+        const results = [];
+        for (const x of xs) {
+            // iteration does not proceed until `bar(x)` completes
+            results.push(await bar(x));
+        }
+        return baz(results);
+    }
+    ```
+
+    ## Correct Code Examples
+
+    ```ignore
+    async function foo(xs) {
+        const results = [];
+        for (const x of xs) {
+            // push a promise to the array; it does not prevent the iteration
+            results.push(bar(x));
+        }
+        // we wait for all the promises concurrently
+        return baz(await Promise.all(results));
+    }
+    ```
+    */
     #[derive(Default)]
     NoAwaitInLoop,
     errors,
