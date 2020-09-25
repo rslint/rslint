@@ -1,5 +1,5 @@
 use crate::rule_prelude::*;
-use ast::{CallExpr, DotExpr, NameRef};
+use ast::{CallExpr, DotExpr};
 
 declare_lint! {
     /**

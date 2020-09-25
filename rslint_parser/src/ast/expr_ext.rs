@@ -387,6 +387,19 @@ impl ArrayExpr {
         }
         false
     }
+
+    /// A list of all sparse elements as a vector of the comma tokens
+    pub fn sparse_elements(&self) -> Vec<SyntaxToken> {
+        let node = self.syntax();
+        let commas = node.children_with_tokens().filter_map(|x| x.into_token().filter(|tok| tok.kind() == COMMA));
+        commas.filter(|comma| {
+            let mut siblings = comma.siblings_with_tokens(crate::Direction::Prev).skip(1).skip_while(|item| {
+                item.as_token().filter(|tok| tok.kind().is_trivia()).is_some()
+            });
+
+            siblings.next().and_then(|x| x.into_node()?.try_to::<ExprOrSpread>()).is_none()
+        }).collect()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

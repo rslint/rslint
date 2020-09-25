@@ -24,6 +24,7 @@ unexpected behavior.
 | [no-inner-declarations](./no-inner-declarations.md) | Disallow variable and function declarations in nested blocks. |
 | [no-irregular-whitespace](./no-irregular-whitespace.md) | Disallow weird/irregular whitespace. |
 | [no-prototype-builtins](./no-prototype-builtins.md) | Disallow direct use of `Object.prototype` builtins directly. |
+| [no-sparse-arrays](./no-sparse-arrays.md) | Disallow sparse arrays. |
 | [no-unsafe-finally](./no-unsafe-finally.md) | Forbid the use of unsafe control flow statements in try and catch blocks. |
 | [no-unsafe-negation](./no-unsafe-negation.md) | Deny the use of `!` on the left hand side of an `instanceof` or `in` expression where it is ambiguous. |
 
