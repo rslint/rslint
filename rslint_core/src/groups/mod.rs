@@ -6,7 +6,7 @@ pub use errors::errors;
 /// This will call `::new()` on each rule.  
 #[macro_export]
 macro_rules! group {
-    ($(#[$description:meta])* $groupname:ident, $($path:ident::$rule:ident),*) => {
+    ($(#[$description:meta])* $groupname:ident, $($path:ident::$rule:ident),* $(,)?) => {
         use $crate::CstRule;
         $(
             mod $path;
