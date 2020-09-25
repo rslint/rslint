@@ -9,7 +9,7 @@ mod expr_ext;
 mod generated;
 mod stmt_ext;
 
-use crate::{syntax_node::*, SmolStr, SyntaxKind};
+use crate::{syntax_node::*, SmolStr, SyntaxKind, util::SyntaxNodeExt, TextRange};
 use std::marker::PhantomData;
 
 pub use self::{
@@ -32,6 +32,14 @@ pub trait AstNode {
         Self: Sized;
 
     fn syntax(&self) -> &SyntaxNode;
+
+    fn text(&self) -> std::string::String {
+        self.syntax().trimmed_text().to_string()
+    }
+
+    fn range(&self) -> TextRange {
+        self.syntax().trimmed_range()
+    }
 }
 
 /// Like `AstNode`, but wraps tokens rather than interior nodes.

@@ -49,7 +49,7 @@ MODULE@0..88
     WHITESPACE@52..53 " "
     CONDITION@53..58
       L_PAREN@53..54 "("
-      NAME@54..57
+      NAME_REF@54..57
         IDENT@54..57 "bar"
       R_PAREN@57..58 ")"
     WHITESPACE@58..59 " "

@@ -1,7 +1,7 @@
 MODULE@0..20
   EXPR_STMT@0..5
     CALL_EXPR@0..5
-      NAME@0..3
+      NAME_REF@0..3
         IDENT@0..3 "foo"
       ARG_LIST@3..5
         L_PAREN@3..4 "("
@@ -12,7 +12,7 @@ MODULE@0..20
     TEMPLATE@7..20
       DOT_EXPR@7..17
         BRACKET_EXPR@7..12
-          NAME@7..10
+          NAME_REF@7..10
             IDENT@7..10 "baz"
           L_BRACK@10..11 "["
           R_BRACK@11..12 "]"

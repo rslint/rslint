@@ -30,7 +30,7 @@ MODULE@0..40
       WHITESPACE@24..25 " "
       FOR_STMT_TEST@25..31
         BIN_EXPR@25..31
-          NAME@25..26
+          NAME_REF@25..26
             IDENT@25..26 "i"
           WHITESPACE@26..27 " "
           L_ANGLE@27..28 "<"
@@ -41,7 +41,7 @@ MODULE@0..40
       WHITESPACE@32..33 " "
       FOR_STMT_UPDATE@33..36
         UNARY_EXPR@33..36
-          NAME@33..34
+          NAME_REF@33..34
             IDENT@33..34 "i"
           PLUS2@34..36 "++"
       WHITESPACE@36..37 " "

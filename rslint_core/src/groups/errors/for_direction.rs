@@ -50,14 +50,14 @@ impl CstRule for ForDirection {
         {
             let for_stmt = node.to::<ForStmt>();
             if for_stmt.update().is_some()
-                && test.syntax().try_to::<BinExpr>()?.lhs()?.syntax().kind() == NAME
+                && test.syntax().try_to::<BinExpr>()?.lhs()?.syntax().kind() == NAME_REF
             {
                 let test_bin = test.syntax().to::<BinExpr>();
                 if test_bin.rhs().is_none() || for_stmt.init().is_none() {
                     return None;
                 }
 
-                let counter = test_bin.lhs().unwrap().syntax().to::<Name>();
+                let counter = test_bin.lhs().unwrap().syntax().to::<NameRef>();
                 let op = test_bin.op()?;
 
                 let wrong_direction = if op == BinOp::LessThan || op == BinOp::LessThanOrEqual {
@@ -79,12 +79,12 @@ impl CstRule for ForDirection {
     }
 }
 
-fn update_direction(for_stmt: &ForStmt, counter: &Name) -> Option<i8> {
+fn update_direction(for_stmt: &ForStmt, counter: &NameRef) -> Option<i8> {
     let update = for_stmt.update()?.syntax().first_child()?;
     match update.kind() {
         UNARY_EXPR => {
             let expr = update.to::<UnaryExpr>();
-            if expr.expr()?.syntax().try_to::<Name>()?.syntax().text() == counter.syntax().text() {
+            if expr.expr()?.syntax().try_to::<NameRef>()?.syntax().text() == counter.syntax().text() {
                 let op = expr.op().unwrap();
                 Some(if op == UnaryOp::Increment { 1 } else { -1 })
             } else {
@@ -96,7 +96,7 @@ fn update_direction(for_stmt: &ForStmt, counter: &Name) -> Option<i8> {
     }
 }
 
-fn assign_direction(assign: AssignExpr, counter: &Name) -> Option<i8> {
+fn assign_direction(assign: AssignExpr, counter: &NameRef) -> Option<i8> {
     if assign.lhs()?.syntax().text() == counter.syntax().text() {
         match assign.op()? {
             AssignOp::AddAssign => maybe_negate_direction(assign.rhs()?, 1),
@@ -109,7 +109,7 @@ fn assign_direction(assign: AssignExpr, counter: &Name) -> Option<i8> {
 }
 
 fn maybe_negate_direction(rhs: Expr, direction: i8) -> Option<i8> {
-    Some(match rhs {
+    Some(match dbg!(rhs) {
         Expr::UnaryExpr(unexpr) => {
             if unexpr.op()? == UnaryOp::Minus {
                 -direction
@@ -117,13 +117,13 @@ fn maybe_negate_direction(rhs: Expr, direction: i8) -> Option<i8> {
                 direction
             }
         }
-        Expr::Name(_) => 0,
+        Expr::NameRef(_) => 0,
         _ => direction,
     })
 }
 
 // TODO: we can say if the loop is unreachable once we have number parsing
-fn throw_err(for_stmt: ForStmt, counter: &Name, ctx: &mut RuleCtx) {
+fn throw_err(for_stmt: ForStmt, counter: &NameRef, ctx: &mut RuleCtx) {
     let bin = for_stmt
         .test()
         .unwrap()
@@ -179,7 +179,7 @@ fn lt_gt_name(op: BinOp) -> &'static str {
 /// try to offer even more context around the error if we know the initial numeric value of the counter
 fn try_offer_context(
     for_stmt: &ForStmt,
-    counter: &Name,
+    counter: &NameRef,
     op: BinOp,
     checked_value: Literal,
     ctx: &mut RuleCtx,
@@ -201,7 +201,7 @@ fn try_offer_context(
         }
         ForHead::Expr(Expr::AssignExpr(assign)) => {
             assign.lhs().and_then(|lhs| {
-                if let PatternOrExpr::Expr(Expr::Name(name)) = lhs {
+                if let PatternOrExpr::Expr(Expr::NameRef(name)) = lhs {
                     Some(name).filter(|name| name.syntax().text() == counter.syntax().text())
                 } else {
                     None

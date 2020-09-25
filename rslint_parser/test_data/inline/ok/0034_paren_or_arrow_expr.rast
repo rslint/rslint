@@ -2,7 +2,7 @@ MODULE@0..65
   EXPR_STMT@0..6
     GROUPING_EXPR@0..5
       L_PAREN@0..1 "("
-      NAME@1..4
+      NAME_REF@1..4
         IDENT@1..4 "foo"
       R_PAREN@4..5 ")"
     SEMICOLON@5..6 ";"

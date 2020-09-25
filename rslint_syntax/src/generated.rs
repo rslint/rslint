@@ -150,6 +150,7 @@ pub enum SyntaxKind {
     DEBUGGER_STMT,
     FN_DECL,
     NAME,
+    NAME_REF,
     PARAMETER_LIST,
     THIS_EXPR,
     ARRAY_EXPR,

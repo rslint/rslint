@@ -384,6 +384,13 @@ impl Name {
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct NameRef {
+    pub(crate) syntax: SyntaxNode,
+}
+impl NameRef {
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ParameterList {
     pub(crate) syntax: SyntaxNode,
 }
@@ -822,7 +829,7 @@ pub enum Expr {
     ArrowExpr(ArrowExpr),
     Literal(Literal),
     Template(Template),
-    Name(Name),
+    NameRef(NameRef),
     ThisExpr(ThisExpr),
     ArrayExpr(ArrayExpr),
     ObjectExpr(ObjectExpr),
@@ -1298,6 +1305,17 @@ impl AstNode for FnDecl {
 }
 impl AstNode for Name {
     fn can_cast(kind: SyntaxKind) -> bool { kind == NAME }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for NameRef {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == NAME_REF }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -2115,8 +2133,8 @@ impl From<Literal> for Expr {
 impl From<Template> for Expr {
     fn from(node: Template) -> Expr { Expr::Template(node) }
 }
-impl From<Name> for Expr {
-    fn from(node: Name) -> Expr { Expr::Name(node) }
+impl From<NameRef> for Expr {
+    fn from(node: NameRef) -> Expr { Expr::NameRef(node) }
 }
 impl From<ThisExpr> for Expr {
     fn from(node: ThisExpr) -> Expr { Expr::ThisExpr(node) }
@@ -2188,7 +2206,7 @@ impl AstNode for Expr {
             ARROW_EXPR
                 | LITERAL
                 | TEMPLATE
-                | NAME
+                | NAME_REF
                 | THIS_EXPR
                 | ARRAY_EXPR
                 | OBJECT_EXPR
@@ -2217,7 +2235,7 @@ impl AstNode for Expr {
             ARROW_EXPR => Expr::ArrowExpr(ArrowExpr { syntax }),
             LITERAL => Expr::Literal(Literal { syntax }),
             TEMPLATE => Expr::Template(Template { syntax }),
-            NAME => Expr::Name(Name { syntax }),
+            NAME_REF => Expr::NameRef(NameRef { syntax }),
             THIS_EXPR => Expr::ThisExpr(ThisExpr { syntax }),
             ARRAY_EXPR => Expr::ArrayExpr(ArrayExpr { syntax }),
             OBJECT_EXPR => Expr::ObjectExpr(ObjectExpr { syntax }),
@@ -2248,7 +2266,7 @@ impl AstNode for Expr {
             Expr::ArrowExpr(it) => &it.syntax,
             Expr::Literal(it) => &it.syntax,
             Expr::Template(it) => &it.syntax,
-            Expr::Name(it) => &it.syntax,
+            Expr::NameRef(it) => &it.syntax,
             Expr::ThisExpr(it) => &it.syntax,
             Expr::ArrayExpr(it) => &it.syntax,
             Expr::ObjectExpr(it) => &it.syntax,
@@ -2324,6 +2342,11 @@ impl std::fmt::Display for Decl {
     }
 }
 impl std::fmt::Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for Assertion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
@@ -2534,6 +2557,11 @@ impl std::fmt::Display for FnDecl {
     }
 }
 impl std::fmt::Display for Name {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for NameRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

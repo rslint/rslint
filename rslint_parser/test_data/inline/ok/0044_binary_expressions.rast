@@ -77,27 +77,27 @@ MODULE@0..125
       WHITESPACE@48..49 " "
       IN_KW@49..51 "in"
       WHITESPACE@51..52 " "
-      NAME@52..55
+      NAME_REF@52..55
         IDENT@52..55 "foo"
   WHITESPACE@55..56 "\n"
   EXPR_STMT@56..76
     BIN_EXPR@56..76
-      NAME@56..59
+      NAME_REF@56..59
         IDENT@56..59 "foo"
       WHITESPACE@59..60 " "
       INSTANCEOF_KW@60..70 "instanceof"
       WHITESPACE@70..71 " "
-      NAME@71..76
+      NAME_REF@71..76
         IDENT@71..76 "Array"
   WHITESPACE@76..77 "\n"
   EXPR_STMT@77..87
     BIN_EXPR@77..87
-      NAME@77..80
+      NAME_REF@77..80
         IDENT@77..80 "foo"
       WHITESPACE@80..81 " "
       QUESTION2@81..83 "??"
       WHITESPACE@83..84 " "
-      NAME@84..87
+      NAME_REF@84..87
         IDENT@84..87 "bar"
   WHITESPACE@87..88 "\n"
   EXPR_STMT@88..101

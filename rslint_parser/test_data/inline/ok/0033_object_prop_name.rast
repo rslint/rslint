@@ -16,7 +16,7 @@ MODULE@0..53
             STRING@9..14 "\"foo\""
           COLON@14..15 ":"
           WHITESPACE@15..16 " "
-          NAME@16..19
+          NAME_REF@16..19
             IDENT@16..19 "foo"
         COMMA@19..20 ","
         WHITESPACE@20..21 " "
@@ -34,7 +34,7 @@ MODULE@0..53
             R_BRACK@27..28 "]"
           COLON@28..29 ":"
           WHITESPACE@29..30 " "
-          NAME@30..33
+          NAME_REF@30..33
             IDENT@30..33 "foo"
         COMMA@33..34 ","
         WHITESPACE@34..35 " "
@@ -43,7 +43,7 @@ MODULE@0..53
             IDENT@35..38 "bar"
           COLON@38..39 ":"
           WHITESPACE@39..40 " "
-          NAME@40..43
+          NAME_REF@40..43
             IDENT@40..43 "foo"
         COMMA@43..44 ","
         WHITESPACE@44..45 " "
@@ -52,7 +52,7 @@ MODULE@0..53
             NUMBER@45..46 "7"
           COLON@46..47 ":"
           WHITESPACE@47..48 " "
-          NAME@48..51
+          NAME_REF@48..51
             IDENT@48..51 "foo"
         R_CURLY@51..52 "}"
   WHITESPACE@52..53 "\n"

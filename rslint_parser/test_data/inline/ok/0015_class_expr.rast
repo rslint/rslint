@@ -51,7 +51,7 @@ MODULE@0..72
   WHITESPACE@57..58 "\n"
   EXPR_STMT@58..71
     BRACKET_EXPR@58..71
-      NAME@58..61
+      NAME_REF@58..61
         IDENT@58..61 "foo"
       L_BRACK@61..62 "["
       CLASS_EXPR@62..70

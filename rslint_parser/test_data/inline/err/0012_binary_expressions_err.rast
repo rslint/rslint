@@ -1,12 +1,12 @@
 MODULE@0..35
   EXPR_STMT@0..11
     CALL_EXPR@0..10
-      NAME@0..3
+      NAME_REF@0..3
         IDENT@0..3 "foo"
       ARG_LIST@3..10
         L_PAREN@3..4 "("
         BIN_EXPR@4..9
-          NAME@4..7
+          NAME_REF@4..7
             IDENT@4..7 "foo"
           WHITESPACE@7..8 " "
           PLUS@8..9 "+"
@@ -15,7 +15,7 @@ MODULE@0..35
   WHITESPACE@11..12 "\n"
   EXPR_STMT@12..22
     BIN_EXPR@12..21
-      NAME@12..15
+      NAME_REF@12..15
         IDENT@12..15 "foo"
       WHITESPACE@15..16 " "
       PLUS@16..17 "+"
@@ -31,12 +31,12 @@ MODULE@0..35
     BIN_EXPR@23..33
       UNARY_EXPR@23..27
         BANG@23..24 "!"
-        NAME@24..27
+        NAME_REF@24..27
           IDENT@24..27 "foo"
       WHITESPACE@27..28 " "
       STAR@28..29 "*"
       WHITESPACE@29..30 " "
-      NAME@30..33
+      NAME_REF@30..33
         IDENT@30..33 "bar"
     SEMICOLON@33..34 ";"
   WHITESPACE@34..35 "\n"

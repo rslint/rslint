@@ -162,6 +162,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "DEBUGGER_STMT",
         "FN_DECL",
         "NAME",
+        "NAME_REF",
         "PARAMETER_LIST",
         "THIS_EXPR",
         "ARRAY_EXPR",
@@ -574,6 +575,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct Name { T![ident] }
 
+        struct NameRef { T![ident] }
+
         struct ParameterList {
             T!['('],
             parameters: [Pattern],
@@ -944,7 +947,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             ArrowExpr,
             Literal,
             Template,
-            Name,
+            NameRef,
             ThisExpr,
             ArrayExpr,
             ObjectExpr,

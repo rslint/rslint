@@ -108,9 +108,10 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
         T![ident] if p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)) => var_decl(p, false),
         _ if p.at_ts(STARTS_EXPR) => {
             let start = p.cur_tok().range.start;
-            let expr = expr(p)?;
+            let mut expr = expr(p)?;
             // Labelled stmt
-            if expr.kind() == NAME && p.at(T![:]) {
+            if expr.kind() == NAME_REF && p.at(T![:]) {
+                expr.change_kind(p, NAME);
                 // Its not possible to have a name without an inner ident token
                 let name = p.parse_marker::<ast::Name>(&expr).ident_token()
                     .expect("Tried to get the ident of a name node, but there was no ident. This is erroneous");

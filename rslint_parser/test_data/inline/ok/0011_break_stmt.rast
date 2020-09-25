@@ -24,13 +24,13 @@ MODULE@0..46
   BREAK_STMT@24..34
     BREAK_KW@24..29 "break"
     WHITESPACE@29..30 " "
-    NAME@30..33
+    NAME_REF@30..33
       IDENT@30..33 "foo"
     SEMICOLON@33..34 ";"
   WHITESPACE@34..35 "\n"
   BREAK_STMT@35..45
     BREAK_KW@35..40 "break"
     WHITESPACE@40..41 " "
-    NAME@41..45
+    NAME_REF@41..45
       IDENT@41..45 "rust"
   WHITESPACE@45..46 "\n"

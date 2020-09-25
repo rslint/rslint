@@ -16,19 +16,19 @@ MODULE@0..98
     R_CURLY@26..27 "}"
   WHITESPACE@27..28 "\n"
   EXPR_STMT@28..32
-    NAME@28..32
+    NAME_REF@28..32
       IDENT@28..32 "make"
   WHITESPACE@32..33 " "
   EXPR_STMT@33..37
-    NAME@33..37
+    NAME_REF@33..37
       IDENT@33..37 "sure"
   WHITESPACE@37..38 " "
   EXPR_STMT@38..40
-    NAME@38..40
+    NAME_REF@38..40
       IDENT@38..40 "we"
   WHITESPACE@40..41 " "
   EXPR_STMT@41..45
-    NAME@41..45
+    NAME_REF@41..45
       IDENT@41..45 "dont"
   WHITESPACE@45..46 " "
   TRY_STMT@46..97
@@ -36,7 +36,7 @@ MODULE@0..98
     WHITESPACE@49..50 " "
     BLOCK_STMT@50..97
       EXPR_STMT@50..57
-        NAME@50..57
+        NAME_REF@50..57
           IDENT@50..57 "parsing"
       WHITESPACE@57..58 " "
       EXPR_STMT@58..69
@@ -46,7 +46,7 @@ MODULE@0..98
           IDENT@65..69 "meta"
       WHITESPACE@69..70 " "
       EXPR_STMT@70..72
-        NAME@70..72
+        NAME_REF@70..72
           IDENT@70..72 "or"
       WHITESPACE@72..73 " "
       EXPR_STMT@73..81
@@ -56,11 +56,11 @@ MODULE@0..98
           R_PAREN@80..81 ")"
       WHITESPACE@81..82 " "
       EXPR_STMT@82..84
-        NAME@82..84
+        NAME_REF@82..84
           IDENT@82..84 "as"
       WHITESPACE@84..85 " "
       EXPR_STMT@85..97
-        NAME@85..97
+        NAME_REF@85..97
           IDENT@85..97 "declarations"
   WHITESPACE@97..98 "\n"
 --

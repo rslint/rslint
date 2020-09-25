@@ -125,7 +125,7 @@ fn assign_expr_recursive(
         } else {
             check_simple_assign_target(p, &p.parse_marker(&target), target.range(p));
         }
-        if target.kind() == NAME {
+        if target.kind() == NAME_REF {
             target.change_kind(p, SINGLE_PATTERN);
         }
         let m = target.precede(p);
@@ -825,7 +825,7 @@ pub fn identifier_reference(p: &mut Parser) -> Option<CompletedMarker> {
         T![ident] | T![yield] | T![await] => {
             let m = p.start();
             p.bump_remap(T![ident]);
-            Some(m.complete(p, NAME))
+            Some(m.complete(p, NAME_REF))
         }
         _ => {
             let err = p

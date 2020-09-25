@@ -13,7 +13,7 @@ MODULE@0..17
         L_CURLY@8..9 "{"
         SPREAD_PROP@9..15
           DOT2@9..12 "..."
-          NAME@12..15
+          NAME_REF@12..15
             IDENT@12..15 "foo"
         R_CURLY@15..16 "}"
   WHITESPACE@16..17 "\n"

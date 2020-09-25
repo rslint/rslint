@@ -26,7 +26,7 @@ MODULE@0..43
             RETURN_STMT@26..37
               RETURN_KW@26..32 "return"
               WHITESPACE@32..33 " "
-              NAME@33..36
+              NAME_REF@33..36
                 IDENT@33..36 "foo"
               SEMICOLON@36..37 ";"
             WHITESPACE@37..39 "\n "

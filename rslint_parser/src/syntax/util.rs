@@ -1,7 +1,7 @@
 //! General utility functions for parsing and error checking.
 
 use crate::{
-    ast::{Expr, GroupingExpr, Name, UnaryExpr},
+    ast::{Expr, GroupingExpr, NameRef, UnaryExpr},
     SyntaxKind::*,
     *,
 };
@@ -20,7 +20,7 @@ pub fn check_simple_assign_target(p: &mut Parser, target: &Expr, range: TextRang
         .primary(range, "This expression cannot be assigned to");
 
     match target.syntax().kind() {
-        NAME | BRACKET_EXPR | DOT_EXPR => {}
+        NAME_REF | BRACKET_EXPR | DOT_EXPR => {}
         GROUPING_EXPR => {
             let inner = GroupingExpr::cast(target.syntax().to_owned())
                 .unwrap()
@@ -39,7 +39,7 @@ pub fn check_simple_assign_target(p: &mut Parser, target: &Expr, range: TextRang
 /// Panics if the marker is not a name with an ident
 // FIXME: Labels should not cross function boundaries
 pub fn check_label_use(p: &mut Parser, label: &CompletedMarker) {
-    let name = p.parse_marker::<Name>(label).ident_token().unwrap();
+    let name = p.parse_marker::<NameRef>(label).ident_token().unwrap();
     if p.state.labels.get(name.text().as_str()).is_none() {
         let err = p
             .err_builder(&format!(
@@ -192,7 +192,7 @@ fn check_name_pat(
 /// Check the LHS expression inside of a for...in or for...of statement according to 
 pub fn check_for_stmt_lhs(p: &mut Parser, expr: Expr, marker: &CompletedMarker) {
     match expr {
-        Expr::Name(ident) => check_simple_assign_target(p, &Expr::from(ident), marker.range(p)),
+        Expr::NameRef(ident) => check_simple_assign_target(p, &Expr::from(ident), marker.range(p)),
         Expr::DotExpr(_) | Expr::BracketExpr(_) => {},
         Expr::AssignExpr(expr) => {
             if let Some(rhs) = expr.rhs() {

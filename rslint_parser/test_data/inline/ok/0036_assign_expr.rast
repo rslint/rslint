@@ -30,7 +30,7 @@ MODULE@0..101
       WHITESPACE@25..26 " "
       MINUSEQ@26..28 "-="
       WHITESPACE@28..29 " "
-      NAME@29..32
+      NAME_REF@29..32
         IDENT@29..32 "bar"
     SEMICOLON@32..33 ";"
   WHITESPACE@33..34 "\n"
@@ -50,7 +50,7 @@ MODULE@0..101
       WHITESPACE@44..45 " "
       EQ@45..46 "="
       WHITESPACE@46..47 " "
-      NAME@47..50
+      NAME_REF@47..50
         IDENT@47..50 "baz"
     SEMICOLON@50..51 ";"
   WHITESPACE@51..52 "\n"

@@ -13,7 +13,7 @@ MODULE@0..20
         BACKTICK@8..9 "`"
         TEMPLATE_ELEMENT@9..15
           DOLLARCURLY@9..11 "${"
-          NAME@11..14
+          NAME_REF@11..14
             IDENT@11..14 "foo"
           R_CURLY@14..15 "}"
         TEMPLATE_CHUNK@15..20 " bar\n"

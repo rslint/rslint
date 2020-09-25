@@ -213,11 +213,9 @@ impl Parse for RuleTests {
 
 impl Parse for Example {
     fn parse(input: ParseStream) -> Result<Self> {
-        use quote::ToTokens;
-
         let docstring = parse_docstring(&input);
-        let string = input.parse::<LitStr>()?.to_token_stream().to_string();
-        let source = unindent(&string[1..string.len() - 1])
+        let string = input.parse::<LitStr>()?.value();
+        let source = unindent(&string)
             .trim()
             .to_string();
         Ok(Example {

@@ -20,7 +20,7 @@ MODULE@0..95
     WHITESPACE@15..16 " "
     FOR_STMT_TEST@16..22
       BIN_EXPR@16..22
-        NAME@16..17
+        NAME_REF@16..17
           IDENT@16..17 "i"
         WHITESPACE@17..18 " "
         L_ANGLE@18..19 "<"
@@ -31,7 +31,7 @@ MODULE@0..95
     WHITESPACE@23..24 " "
     FOR_STMT_UPDATE@24..27
       UNARY_EXPR@24..27
-        NAME@24..25
+        NAME_REF@24..25
           IDENT@24..25 "i"
         PLUS2@25..27 "++"
     R_PAREN@27..28 ")"
@@ -79,7 +79,7 @@ MODULE@0..95
     WHITESPACE@67..68 " "
     L_PAREN@68..69 "("
     FOR_STMT_INIT@69..72
-      NAME@69..72
+      NAME_REF@69..72
         IDENT@69..72 "foo"
     WHITESPACE@72..73 " "
     IN_KW@73..75 "in"

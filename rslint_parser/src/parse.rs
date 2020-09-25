@@ -155,10 +155,10 @@ fn parse_common(
 /// println!("{:#?}", untyped_expr_node);
 ///
 /// // You can then cast syntax nodes into a typed AST node.
-/// let typed_ast_node = BracketExpr::cast(untyped_expr_node.to_owned()).unwrap();
+/// let typed_ast_node = BracketExpr::cast(untyped_expr_node.first_child().unwrap().to_owned()).unwrap();
 ///
 /// // Everything on every ast node is optional because of error recovery.
-/// let prop = typed_ast_node.prop().unwrap();
+/// let prop = dbg!(typed_ast_node.prop()).unwrap();
 ///
 /// // You can then go back to an untyped SyntaxNode and get its range, text, parents, children, etc.
 /// assert_eq!(prop.syntax().text(), "2");
@@ -196,7 +196,7 @@ pub fn parse_text(text: &str, file_id: usize) -> Parse<Script> {
 /// println!("{:#?}", untyped_expr_node);
 ///
 /// // You can then cast syntax nodes into a typed AST node.
-/// let typed_ast_node = BracketExpr::cast(untyped_expr_node.to_owned()).unwrap();
+/// let typed_ast_node = BracketExpr::cast(untyped_expr_node.first_child().unwrap()).unwrap();
 ///
 /// // Everything on every ast node is optional because of error recovery.
 /// let prop = typed_ast_node.prop().unwrap();

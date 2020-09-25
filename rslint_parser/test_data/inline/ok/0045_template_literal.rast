@@ -14,7 +14,7 @@ MODULE@0..67
         TEMPLATE_CHUNK@9..13 "foo "
         TEMPLATE_ELEMENT@13..19
           DOLLARCURLY@13..15 "${"
-          NAME@15..18
+          NAME_REF@15..18
             IDENT@15..18 "bar"
           R_CURLY@18..19 "}"
         BACKTICK@19..20 "`"
@@ -49,7 +49,7 @@ MODULE@0..67
         BACKTICK@42..43 "`"
         TEMPLATE_ELEMENT@43..49
           DOLLARCURLY@43..45 "${"
-          NAME@45..48
+          NAME_REF@45..48
             IDENT@45..48 "foo"
           R_CURLY@48..49 "}"
         BACKTICK@49..50 "`"

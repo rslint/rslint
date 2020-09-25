@@ -70,7 +70,7 @@ pub fn simple_bool_coerce(condition: Expr) -> Option<bool> {
             simple_bool_coerce(assign.rhs()?)
         }
         Expr::SequenceExpr(seqexpr) => simple_bool_coerce(seqexpr.exprs().last()?),
-        Expr::Name(name) => match name.ident_token()?.text().as_str() {
+        Expr::NameRef(name) => match name.ident_token()?.text().as_str() {
             "NaN" | "undefined" => Some(false),
             "Infinity" => Some(true),
             _ => None,
@@ -110,15 +110,15 @@ pub fn multi_node_range(mut nodes: impl Iterator<Item = SyntaxNode>) -> TextRang
 }
 
 /// Whether this is a predefined constant identifier such as NaN and undefined
-pub fn is_const_ident(ident: Name) -> bool {
-    ["NaN", "Infinity", "undefined"].contains(&&*ident.syntax().text().to_string())
+pub fn is_const_ident(ident: SyntaxToken) -> bool {
+    ["NaN", "Infinity", "undefined"].contains(&&*ident.text().to_string())
 }
 
 /// Check whether an expr is constant and is always falsey or truthy
 pub fn is_const(expr: Expr, boolean_pos: bool, notes: &mut Vec<&str>) -> bool {
     match expr {
         Expr::Literal(_) | Expr::ObjectExpr(_) | Expr::FnExpr(_) | Expr::ArrowExpr(_) => true,
-        Expr::Name(name) => util::is_const_ident(name),
+        Expr::NameRef(name) => util::is_const_ident(name.ident_token().unwrap()),
         Expr::Template(tpl) => {
             // If any of the template's string elements are not empty, then the template is always truthy like a non empty string
             (boolean_pos && tpl.quasis().any(|t| !t.text().is_empty()))

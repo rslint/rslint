@@ -61,7 +61,9 @@ pub fn binding_identifier(p: &mut Parser) -> Option<CompletedMarker> {
         }
     }
 
-    identifier_reference(p)
+    let mut m = identifier_reference(p)?;
+    m.change_kind(p, NAME);
+    Some(m)
 }
 
 pub fn binding_element(p: &mut Parser) -> Option<CompletedMarker> {

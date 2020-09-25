@@ -71,7 +71,7 @@ MODULE@0..102
       WHITESPACE@74..75 " "
       FAT_ARROW@75..77 "=>"
       WHITESPACE@77..78 " "
-      NAME@78..81
+      NAME_REF@78..81
         IDENT@78..81 "foo"
   WHITESPACE@81..82 "\n"
   EXPR_STMT@82..101

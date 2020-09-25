@@ -55,179 +55,87 @@ This rule disallows the following whitespace:
  <summary> More incorrect examples </summary>
 
 ```js
-var any \u{000B} = 'thing';
+var any  = 'thing';
 ```
 
 ```js
-var any \u{000C} = 'thing';
+var any  = 'thing';
 ```
 
 ```js
-var any \u{00A0} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{feff} = 'thing';
+var any ﻿ = 'thing';
 ```
 
 ```js
-var any \u{2000} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2001} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2002} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2003} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2004} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2005} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2006} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2007} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2008} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2009} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{200A} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2028} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{2029} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{202F} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{205f} = 'thing';
+var any   = 'thing';
 ```
 
 ```js
-var any \u{3000} = 'thing';
+var any 　 = 'thing';
 ```
 </details><br>
 <details>
  <summary> More correct examples </summary>
-
-```js
-'\\u{000B}';
-```
-
-```js
-'\\u{000C}';
-```
-
-```js
-'\\u{0085}';
-```
-
-```js
-'\\u{00A0}';
-```
-
-```js
-'\\u{180E}';
-```
-
-```js
-'\\u{feff}';
-```
-
-```js
-'\\u{2000}';
-```
-
-```js
-'\\u{2001}';
-```
-
-```js
-'\\u{2002}';
-```
-
-```js
-'\\u{2003}';
-```
-
-```js
-'\\u{2004}';
-```
-
-```js
-'\\u{2005}';
-```
-
-```js
-'\\u{2006}';
-```
-
-```js
-'\\u{2007}';
-```
-
-```js
-'\\u{2008}';
-```
-
-```js
-'\\u{2009}';
-```
-
-```js
-'\\u{200A}';
-```
-
-```js
-'\\u{200B}';
-```
-
-```js
-'\\u{2028}';
-```
-
-```js
-'\\u{2029}';
-```
-
-```js
-'\\u{202F}';
-```
-
-```js
-'\\u{205f}';
-```
-
-```js
-'\\u{3000}';
-```
 
 ```js
 '\u{000B}';
@@ -255,6 +163,98 @@ var any \u{3000} = 'thing';
 
 ```js
 '\u{2000}';
+```
+
+```js
+'\u{2001}';
+```
+
+```js
+'\u{2002}';
+```
+
+```js
+'\u{2003}';
+```
+
+```js
+'\u{2004}';
+```
+
+```js
+'\u{2005}';
+```
+
+```js
+'\u{2006}';
+```
+
+```js
+'\u{2007}';
+```
+
+```js
+'\u{2008}';
+```
+
+```js
+'\u{2009}';
+```
+
+```js
+'\u{200A}';
+```
+
+```js
+'\u{200B}';
+```
+
+```js
+'\u{2028}';
+```
+
+```js
+'\u{2029}';
+```
+
+```js
+'\u{202F}';
+```
+
+```js
+'\u{205f}';
+```
+
+```js
+'\u{3000}';
+```
+
+```js
+'';
+```
+
+```js
+'';
+```
+
+```js
+'';
+```
+
+```js
+' ';
+```
+
+```js
+'᠎';
+```
+
+```js
+'﻿';
+```
+
+```js
+' ';
 ```
 </details>
 
