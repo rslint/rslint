@@ -237,7 +237,7 @@ macro_rules! declare_lint {
             $(
                 $(#[$inner:meta])*
                 $visibility:vis $key:ident : $val:ty
-            ),*
+            ),* $(,)?
         )?
     ) => {
         use $crate::Rule;
@@ -270,5 +270,5 @@ macro_rules! declare_lint {
                 stringify!($group)
             }
         }
-    }
+    };
 }
