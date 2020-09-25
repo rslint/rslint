@@ -440,6 +440,7 @@ pub fn optional_chain(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
                 T!['('] => {
                     lhs = {
                         let m = lhs.precede(p);
+                        p.bump_any();
                         args(p);
                         m.complete(p, CALL_EXPR)
                     }
