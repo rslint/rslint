@@ -33,7 +33,7 @@ impl CstRule for NoSparseArrays {
         let elems = node.try_to::<ast::ArrayExpr>()?.sparse_elements();
         if !elems.is_empty() {
             let mut err = ctx.err(self.name(), "sparse arrays are not allowed");
-            for elem in node.try_to::<ast::ArrayExpr>()?.sparse_elements() {
+            for elem in elems {
                 err = err.primary(elem.text_range(), "");
             }
             err = err.note("note: the sparse elements will become elements with a value of `undefined`");
