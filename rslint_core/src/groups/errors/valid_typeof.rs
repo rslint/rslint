@@ -37,6 +37,10 @@ impl CstRule for ValidTypeof {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == BIN_EXPR {
             let expr = node.to::<BinExpr>();
+            if !expr.comparison() {
+                return None;
+            }
+
             let (literal, range) = get_type_literal(expr.lhs(), expr.rhs())?;
 
             if !VALID_TYPES.iter().any(|ty| *ty == literal) {
