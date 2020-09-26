@@ -24,4 +24,5 @@ group! {
     no_sparse_arrays::NoSparseArrays,
     no_unexpected_multiline::NoUnexpectedMultiline,
     no_setter_return::NoSetterReturn,
+    valid_typeof::ValidTypeof,
 }
