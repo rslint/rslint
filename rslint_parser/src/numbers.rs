@@ -13,9 +13,9 @@ pub enum JsNum {
 /// Parse a js number as a string into a number.  
 pub(crate) fn parse_js_num(num: String) -> Option<JsNum> {
     let (radix, mut raw) = match num.get(0..2) {
-        Some("0x") => (16, num.get(2..).unwrap()),
-        Some("0b") => (2, num.get(2..).unwrap()),
-        Some("0o") => (8, num.get(2..).unwrap()),
+        Some("0x") | Some("0X") => (16, num.get(2..).unwrap()),
+        Some("0b") | Some("0B") => (2, num.get(2..).unwrap()),
+        Some("0o") | Some("0O") => (8, num.get(2..).unwrap()),
         _ => (10, num.as_str())
     };
 
