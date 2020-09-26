@@ -298,7 +298,7 @@ impl IfStmt {
             .child_with_ast::<Stmt>()
             .filter(|cons| {
                 cons.syntax().text_range().start()
-                    < self
+                    <= self
                         .else_token()
                         .map(|x| x.text_range().start())
                         .unwrap_or(cons.syntax().text_range().start())
