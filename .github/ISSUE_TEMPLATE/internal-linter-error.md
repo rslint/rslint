@@ -2,7 +2,7 @@
 name: Internal Linter Error
 about: Create a report for an internal linter error in rslint
 title: ''
-labels: bug, ILE
+labels: ILE, bug
 assignees: ''
 
 ---
