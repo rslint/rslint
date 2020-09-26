@@ -391,14 +391,26 @@ impl ArrayExpr {
     /// A list of all sparse elements as a vector of the comma tokens
     pub fn sparse_elements(&self) -> Vec<SyntaxToken> {
         let node = self.syntax();
-        let commas = node.children_with_tokens().filter_map(|x| x.into_token().filter(|tok| tok.kind() == COMMA));
-        commas.filter(|comma| {
-            let mut siblings = comma.siblings_with_tokens(crate::Direction::Prev).skip(1).skip_while(|item| {
-                item.as_token().filter(|tok| tok.kind().is_trivia()).is_some()
-            });
+        let commas = node
+            .children_with_tokens()
+            .filter_map(|x| x.into_token().filter(|tok| tok.kind() == COMMA));
+        commas
+            .filter(|comma| {
+                let mut siblings = comma
+                    .siblings_with_tokens(crate::Direction::Prev)
+                    .skip(1)
+                    .skip_while(|item| {
+                        item.as_token()
+                            .filter(|tok| tok.kind().is_trivia())
+                            .is_some()
+                    });
 
-            siblings.next().and_then(|x| x.into_node()?.try_to::<ExprOrSpread>()).is_none()
-        }).collect()
+                siblings
+                    .next()
+                    .and_then(|x| x.into_node()?.try_to::<ExprOrSpread>())
+                    .is_none()
+            })
+            .collect()
     }
 }
 
@@ -646,6 +658,19 @@ impl Template {
         self.syntax()
             .children_with_tokens()
             .filter_map(NodeOrToken::into_token)
+            .filter(|t| t.kind() == TEMPLATE_CHUNK)
+    }
+
+    pub fn template_range(&self) -> Option<TextRange> {
+        let start = self
+            .syntax()
+            .children_with_tokens()
+            .filter_map(|x| x.into_token())
+            .find(|tok| tok.kind() == BACKTICK)?;
+        Some(TextRange::new(
+            start.text_range().start(),
+            self.syntax().text_range().end(),
+        ))
     }
 }
 
@@ -679,14 +704,15 @@ fn prop_name_syntax(name: PropName) -> Option<SyntaxNode> {
 }
 
 impl Expr {
-    /// Whether this is an optional chain expression. 
+    /// Whether this is an optional chain expression.
     pub fn opt_chain(&self) -> bool {
         match self {
             Expr::DotExpr(dotexpr) => dotexpr.opt_chain_token(),
             Expr::CallExpr(callexpr) => callexpr.opt_chain_token(),
             Expr::BracketExpr(bracketexpr) => bracketexpr.opt_chain_token(),
             _ => return false,
-        }.is_some()
+        }
+        .is_some()
     }
 }
 

@@ -599,7 +599,7 @@ pub struct Template {
     pub(crate) syntax: SyntaxNode,
 }
 impl Template {
-    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn tag(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn elements(&self) -> AstChildren<TemplateElement> { support::children(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

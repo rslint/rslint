@@ -22,5 +22,6 @@ group! {
     no_irregular_whitespace::NoIrregularWhitespace,
     no_prototype_builtins::NoPrototypeBuiltins,
     no_sparse_arrays::NoSparseArrays,
+    no_unexpected_multiline::NoUnexpectedMultiline,
     no_setter_return::NoSetterReturn,
 }

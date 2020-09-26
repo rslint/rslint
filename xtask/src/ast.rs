@@ -730,7 +730,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct Template {
-            T![ident],
+            tag: Expr,
             /* backtick */
             /* chunks */
             elements: [TemplateElement],
