@@ -188,7 +188,7 @@ impl NoSetterReturn {
     ) -> Option<()> {
         match prop {
             ObjectProp::LiteralProp(literal_prop) => {
-                if literal_prop.key()?.syntax().text() != "set" {
+                if literal_prop.key()?.text() != "set" {
                     return None;
                 }
                 match literal_prop.value()? {
@@ -207,7 +207,7 @@ impl NoSetterReturn {
                 self.check_stmts(key, setter.body()?.syntax(), setter.body()?.stmts(), ctx);
             }
             ObjectProp::Method(method) => {
-                if method.name()?.syntax().text() != "set" {
+                if method.name()?.text() != "set" {
                     return None;
                 }
                 self.check_stmts(key, method.body()?.syntax(), method.body()?.stmts(), ctx);
