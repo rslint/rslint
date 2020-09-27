@@ -109,13 +109,11 @@ impl FileWalker {
                 threads.push(thread);
             }
         }
-        let files = threads
+
+        let jsfiles = threads
             .into_iter()
             .map(|handle| handle.join())
             .filter_map(Result::ok)
-            .collect::<Vec<_>>();
-        let jsfiles = files
-            .into_iter()
             .map(|(src, path)| JsFile::new_concrete(src, path))
             .map(|file| (file.id, file))
             .collect();

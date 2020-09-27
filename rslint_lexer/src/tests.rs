@@ -861,3 +861,12 @@ fn template_escape() {
         BACKTICK:1
     }
 }
+
+#[test]
+fn fuzz_fail_1() {
+    assert_lex! {
+        "$\\u",
+        IDENT:1,
+        ERROR_TOKEN:2
+    }
+}

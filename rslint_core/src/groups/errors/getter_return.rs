@@ -1,6 +1,6 @@
 use crate::rule_prelude::*;
-use SyntaxKind::*;
 use ast::*;
+use SyntaxKind::*;
 
 declare_lint! {
     /**
@@ -68,6 +68,7 @@ declare_lint! {
 
 #[typetag::serde]
 impl CstRule for GetterReturn {
+    #[allow(clippy::blocks_in_if_conditions)]
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         match node.kind() {
             CALL_EXPR => {
@@ -79,8 +80,7 @@ impl CstRule for GetterReturn {
                 {
                     let args: Vec<Expr> = expr.arguments().unwrap().args().collect();
                     if let Some(obj) = args
-                        .iter()
-                        .nth(2)
+                        .get(2)
                         .and_then(|expr| expr.syntax().try_to::<ObjectExpr>())
                     {
                         for prop in obj.props() {
@@ -90,11 +90,21 @@ impl CstRule for GetterReturn {
                                 }
                                 match literal_prop.value()? {
                                     Expr::FnExpr(decl) => {
-                                        self.check_stmts(args[1].syntax(), decl.body()?.syntax(), decl.body()?.stmts(), ctx);
-                                    },
+                                        self.check_stmts(
+                                            args[1].syntax(),
+                                            decl.body()?.syntax(),
+                                            decl.body()?.stmts(),
+                                            ctx,
+                                        );
+                                    }
                                     Expr::ArrowExpr(arrow) => {
                                         if let ExprOrBlock::Block(block) = arrow.body()? {
-                                            self.check_stmts(args[1].syntax(), block.syntax(), block.stmts(), ctx);
+                                            self.check_stmts(
+                                                args[1].syntax(),
+                                                block.syntax(),
+                                                block.stmts(),
+                                                ctx,
+                                            );
                                         }
                                     }
                                     _ => {}
@@ -119,11 +129,30 @@ impl CstRule for GetterReturn {
 }
 
 impl GetterReturn {
-    fn check_stmts(&self, key: &SyntaxNode, body: &SyntaxNode, mut stmts: impl Iterator<Item = Stmt>, ctx: &mut RuleCtx) {
+    fn check_stmts(
+        &self,
+        key: &SyntaxNode,
+        body: &SyntaxNode,
+        mut stmts: impl Iterator<Item = Stmt>,
+        ctx: &mut RuleCtx,
+    ) {
         if !stmts.any(|stmt| self.check_stmt(&stmt)) {
-            let err = ctx.err(self.name(), format!("getter properties must always return a value, but `{}` does not.", key.trimmed_text()))
-                .secondary(key.trimmed_range(), "this key is sometimes or always undefined...")
-                .primary(body.trimmed_range(), "...because this getter does not always return a value");
+            let err = ctx
+                .err(
+                    self.name(),
+                    format!(
+                        "getter properties must always return a value, but `{}` does not.",
+                        key.trimmed_text()
+                    ),
+                )
+                .secondary(
+                    key.trimmed_range(),
+                    "this key is sometimes or always undefined...",
+                )
+                .primary(
+                    body.trimmed_range(),
+                    "...because this getter does not always return a value",
+                );
 
             ctx.add_err(err);
         }
@@ -134,13 +163,11 @@ impl GetterReturn {
             Stmt::IfStmt(if_stmt) => self.check_if(if_stmt),
             Stmt::BlockStmt(block) => block.stmts().any(|stmt| self.check_stmt(&stmt)),
             Stmt::ReturnStmt(stmt) => stmt.value().is_some() || self.allow_implicit,
-            Stmt::SwitchStmt(switch) => {
-                switch.cases().any(|case| match case {
-                    SwitchCase::CaseClause(clause) => clause.cons().any(|s| self.check_stmt(&s)),
-                    SwitchCase::DefaultClause(clause) => clause.cons().any(|s| self.check_stmt(&s))
-                })
-            }
-            _ => false
+            Stmt::SwitchStmt(switch) => switch.cases().any(|case| match case {
+                SwitchCase::CaseClause(clause) => clause.cons().any(|s| self.check_stmt(&s)),
+                SwitchCase::DefaultClause(clause) => clause.cons().any(|s| self.check_stmt(&s)),
+            }),
+            _ => false,
         }
     }
 

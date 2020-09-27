@@ -427,14 +427,17 @@ impl<'src> Lexer<'src> {
                 res
             }
             BSL if self.bytes.get(self.cur + 1) == Some(&b'u') => {
+                self.next();
                 if let Ok(c) = self.read_unicode_escape(false) {
                     if c.is_xid_continue() {
                         self.cur += c.len_utf8() - 1;
                         true
                     } else {
+                        self.cur -= 1;
                         false
                     }
                 } else {
+                    self.cur -= 1;
                     false
                 }
             }

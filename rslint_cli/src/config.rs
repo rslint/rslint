@@ -139,10 +139,12 @@ impl RulesConfig {
         store
     }
 
+    #[allow(clippy::needless_collect)]
     fn unique_rules(
         first: Vec<Box<dyn CstRule>>,
         second: Vec<Box<dyn CstRule>>,
     ) -> impl Iterator<Item = Box<dyn CstRule>> {
+        // collecting is necessary because otherwise, filter's closure might outlive the current function
         let filtered = second
             .into_iter()
             .filter(|rule| !first.iter().any(|prev| prev.name() == rule.name()))

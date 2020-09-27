@@ -522,7 +522,7 @@ fn find_match_by_sorted_words<'a>(iter_names: Vec<&'a str>, lookup: &str) -> Opt
 
 fn sort_by_words(name: &str) -> std::string::String {
     let mut split_words: Vec<&str> = name.split('_').collect();
-    split_words.sort();
+    split_words.sort_unstable();
     split_words.join("_")
 }
 
