@@ -121,7 +121,7 @@ impl CstRule for GetterReturn {
 impl GetterReturn {
     fn check_stmts(&self, key: &SyntaxNode, body: &SyntaxNode, mut stmts: impl Iterator<Item = Stmt>, ctx: &mut RuleCtx) {
         if !stmts.any(|stmt| self.check_stmt(&stmt)) {
-            let err = ctx.err(self.name(), format!("Getter properties must always return a value, but `{}` does not.", key.trimmed_text()))
+            let err = ctx.err(self.name(), format!("getter properties must always return a value, but `{}` does not.", key.trimmed_text()))
                 .secondary(key.trimmed_range(), "this key is sometimes or always undefined...")
                 .primary(body.trimmed_range(), "...because this getter does not always return a value");
 
