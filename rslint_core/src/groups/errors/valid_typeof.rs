@@ -5,6 +5,12 @@ declare_lint! {
     /**
     Enforce the use of valid string literals in a `typeof` comparison.
 
+    `typeof` can only return a small set of strings, `undefined`, `object`,
+    `boolean`, `number`, `string` or `function`, and if you provide
+    an invalid value, it's most likely a typo, and the comparison
+    will always return `false`.
+    This behaviour will be denied by this rule.
+
     ## Invalid Code Examples
     ```ignore
     typeof foo === "strnig"
@@ -14,11 +20,16 @@ declare_lint! {
     ```
     */
     #[derive(Default)]
+    #[serde(default)]
     ValidTypeof,
     errors,
     "valid-typeof",
 
-    #[serde(default)]
+    /**
+     * If this option is `true`, `typeof` expression can only be compared
+     * to valid string literals, or other `typeof` expressions, but
+     * can not be compared to any other value.
+     */
     pub require_string_literals: bool,
 }
 
@@ -32,6 +43,21 @@ const VALID_TYPES: [&str; 8] = [
     "symbol",
     "bigint",
 ];
+
+impl ValidTypeof {
+    fn error_from_value(&self, value: impl AsRef<str>, ctx: &mut RuleCtx) -> DiagnosticBuilder {
+        let value = value.as_ref();
+
+        if value.len() < 20 {
+            ctx.err(
+                self.name(),
+                format!("invalid typeof comparison value: `{}`", value),
+            )
+        } else {
+            ctx.err(self.name(), "invalid typeof comparison value")
+        }
+    }
+}
 
 #[typetag::serde]
 impl CstRule for ValidTypeof {
@@ -61,9 +87,11 @@ impl CstRule for ValidTypeof {
             } else if is_typeof_expr(&cmp_value) {
                 return None;
             } else {
-                let err = ctx
-                    .err(self.name(), "invalid typeof comparison value")
+                let repr = cmp_value.text();
+                let err = self
+                    .error_from_value(repr, ctx)
                     .primary(cmp_value.range(), "");
+
                 ctx.add_err(err);
                 return None;
             }
@@ -76,8 +104,8 @@ impl CstRule for ValidTypeof {
             let suggestion =
                 util::find_best_match_for_name(VALID_TYPES.iter().copied(), &literal, None);
 
-            let err = ctx
-                .err(self.name(), "invalid typeof comparison value")
+            let err = self
+                .error_from_value(literal, ctx)
                 .primary(literal_range, "");
 
             let err = if let Some(suggestion) = suggestion {
