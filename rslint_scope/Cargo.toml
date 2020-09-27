@@ -1,9 +1,0 @@
-[package]
-name = "rslint_scope"
-version = "0.1.0"
-authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-rslint_parser = { path = "../rslint_parser", version = "0.1.0" }
-tracing = { version = "0.1.19", features = ["attributes"] }

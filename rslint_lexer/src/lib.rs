@@ -773,6 +773,7 @@ impl<'src> Lexer<'src> {
     // TODO: Due to our return of (Token, Option<Error>) we cant issue more than one regex error
     // This is not a huge issue but it would be helpful to users
     #[inline]
+    #[allow(clippy::many_single_char_names)]
     fn read_regex(&mut self) -> LexerReturn {
         let start = self.cur;
         let mut in_class = false;

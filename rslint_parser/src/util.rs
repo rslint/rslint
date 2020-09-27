@@ -245,7 +245,7 @@ pub trait SyntaxNodeExt {
         self.to_node().children().find_map(|child| child.try_to())
     }
 
-    /// Same as [`descendants_with`] but considers tokens too.
+    /// Same as [`descendants_with`](Self::descendants_with) but considers tokens too.
     fn descendants_with_tokens_with<F>(&self, func: &mut F)
     where
         F: FnMut(&SyntaxElement) -> bool,

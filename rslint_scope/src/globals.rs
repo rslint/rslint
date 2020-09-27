@@ -1,3 +1,0 @@
-//! Predefined global object sets. 
-
-

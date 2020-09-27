@@ -134,14 +134,14 @@ pub(crate) enum Context {
 }
 
 fn ctx_is_expr(ctx: Context) -> bool {
-    match ctx {
+    matches!(
+        ctx,
         Context::BraceExpr
-        | Context::TplInternal
-        | Context::ParenExpr
-        | Context::Template
-        | Context::FnExpr => true,
-        _ => false,
-    }
+            | Context::TplInternal
+            | Context::ParenExpr
+            | Context::Template
+            | Context::FnExpr
+    )
 }
 
 fn ctx_is_brace_block(

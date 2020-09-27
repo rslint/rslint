@@ -896,14 +896,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rslint_scope"
-version = "0.1.0"
-dependencies = [
- "rslint_parser",
- "tracing",
-]
-
-[[package]]
 name = "rslint_syntax"
 version = "0.1.0"
 dependencies = [
@@ -1248,37 +1240,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffc92d160b1eef40665be3a05630d003936a3bc7da7421277846c2613e92c71a"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "tracing"
-version = "0.1.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d79ca061b032d6ce30c660fded31189ca0b9922bf483cd70759f13a2d86786c"
-dependencies = [
- "cfg-if",
- "tracing-attributes",
- "tracing-core",
-]
-
-[[package]]
-name = "tracing-attributes"
-version = "0.1.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80e0ccfc3378da0cce270c946b676a376943f5cd16aeba64568e7939806f4ada"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "tracing-core"
-version = "0.1.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f0e00789804e99b20f12bc7003ca416309d28a6f495d6af58d1e2c2842461b5"
-dependencies = [
- "lazy_static",
 ]
 
 [[package]]
