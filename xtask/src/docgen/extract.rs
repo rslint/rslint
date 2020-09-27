@@ -204,7 +204,7 @@ impl Parse for RuleTests {
 
         ok_examples.truncate(30);
 
-        // If there is a trailing comma, consumes it.
+        // if there is a trailing comma, consume it.
         let _ = input.parse::<Token!(,)>();
 
         Ok(Self {
