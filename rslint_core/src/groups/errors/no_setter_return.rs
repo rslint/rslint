@@ -226,13 +226,18 @@ impl NoSetterReturn {
         ctx: &mut RuleCtx,
     ) {
         if stmts.any(|stmt| self.stmt_returns_value(&stmt)) {
-            let err = ctx.err(
-                self.name(),
-                format!(
-                    "Setter properties are not allowed to return values, but `{}` does.",
-                    key.trimmed_text(),
-                ),
-            );
+            let err = ctx
+                .err(
+                    self.name(),
+                    format!(
+                        "setter properties are not allowed to return values, but `{}` does.",
+                        key.trimmed_text(),
+                    ),
+                )
+                .primary(
+                    body.trimmed_range(),
+                    "this setter somethimes or always returns a value",
+                );
             ctx.add_err(err);
         }
     }
