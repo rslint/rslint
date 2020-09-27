@@ -1,0 +1,77 @@
+name: Rust
+
+on:
+  push:
+  pull_request:
+  # Daily
+  schedule:
+    - cron: "0 0 * * *"
+
+env:
+  RUST_LOG: info
+  RUST_BACKTRACE: 1
+
+jobs:
+  test:
+    name: Test Rust ${{ matrix.rust }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rust: stable, os: ubuntu-latest }
+          - { rust: nightly, os: ubuntu-latest }
+          - { rust: stable, os: windows-latest }
+          - { rust: nightly, os: windows-latest }
+          - { rust: stable, os: macos-latest }
+          - { rust: nightly, os: macos-latest }
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: ${{ matrix.rust }}
+      - run: cargo test --verbose --workspace --all-features
+      - run: cargo test --verbose --workspace --no-default-features
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+
+    env:
+      RUSTFLAGS: -Dwarnings
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          components: clippy
+      - run: cargo clippy --workspace --all-targets --verbose --no-default-features
+      - run: cargo clippy --workspace --all-targets --verbose --all-features
+
+  rustfmt:
+    name: Formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          components: rustfmt
+      - run: cargo fmt --all -- --check
+
+  check-rustdoc-links:
+    name: Check doc links
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: hecrj/setup-rust-action@v1
+        with:
+          rust-version: nightly
+      # Check every crate in the workspace
+      - run: |
+          for package in $(cargo metadata --no-deps --format-version=1 | jq -r '.packages[] | .name'); do
+            cargo rustdoc -p "$package" --all-features -- -D warnings
+          done
