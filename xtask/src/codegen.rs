@@ -1,16 +1,13 @@
-//! Codegen tools for generating Syntax and AST definitions. Derived from Rust analyzer's codegen 
+//! Codegen tools for generating Syntax and AST definitions. Derived from Rust analyzer's codegen
 
-mod syntax;
 mod parser_tests;
+mod syntax;
 
 use std::path::Path;
 
 use crate::{glue::fs2, Result};
 
-pub use self::{
-    syntax::generate_syntax,
-    parser_tests::generate_parser_tests
-};
+pub use self::{parser_tests::generate_parser_tests, syntax::generate_syntax};
 
 // const GRAMMAR_DIR: &str = "crates/ra_parser/src/grammar";
 // const OK_INLINE_TESTS_DIR: &str = "crates/ra_syntax/test_data/parser/inline/ok";

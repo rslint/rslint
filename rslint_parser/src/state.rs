@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut, Range};
 
-use crate::{CompletedMarker, Parser, SyntaxKind, TokenSet};
 use crate::syntax::expr::EXPR_RECOVERY_SET;
+use crate::{CompletedMarker, Parser, SyntaxKind, TokenSet};
 
-/// State kept by the parser while parsing. 
+/// State kept by the parser while parsing.
 /// It is required for things such as strict mode or async functions
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParserState {
@@ -21,7 +21,7 @@ pub struct ParserState {
     pub labels: HashMap<String, Range<usize>>,
     /// Whether the parser is in a generator function like `function* a() {}`
     pub in_generator: bool,
-    /// Whether the parser is inside of a function 
+    /// Whether the parser is inside of a function
     pub in_function: bool,
     /// Whether we potentially are in a place to parse an arrow expression
     pub potential_arrow_start: bool,
@@ -33,7 +33,7 @@ pub struct ParserState {
     pub is_module: bool,
     /// The exported default item, used for checking duplicate defaults
     pub default_item: Option<Range<usize>>,
-    /// The recovery set primary_expr will use 
+    /// The recovery set primary_expr will use
     pub expr_recovery_set: TokenSet,
 }
 
@@ -41,7 +41,7 @@ pub struct ParserState {
 pub enum StrictMode {
     Module,
     Explicit(Range<usize>),
-    Class(Range<usize>)
+    Class(Range<usize>),
 }
 
 impl Default for ParserState {
@@ -58,7 +58,7 @@ impl Default for ParserState {
             strict: None,
             is_module: false,
             default_item: None,
-            expr_recovery_set: EXPR_RECOVERY_SET
+            expr_recovery_set: EXPR_RECOVERY_SET,
         }
     }
 }
@@ -77,18 +77,26 @@ impl ParserState {
             strict: Some(StrictMode::Module),
             is_module: true,
             default_item: None,
-            expr_recovery_set: EXPR_RECOVERY_SET
+            expr_recovery_set: EXPR_RECOVERY_SET,
         }
     }
 
     /// Check for duplicate defaults and update state
-    pub fn check_default(&mut self, p: &mut Parser, mut marker: CompletedMarker) -> CompletedMarker {
+    pub fn check_default(
+        &mut self,
+        p: &mut Parser,
+        mut marker: CompletedMarker,
+    ) -> CompletedMarker {
         // A default export is already present
         if let Some(range) = self.default_item.as_ref().filter(|_| self.is_module) {
-            let err = p.err_builder("Illegal duplicate default export declarations")
-                .secondary(range.to_owned(), "the module's default export is first defined here")
+            let err = p
+                .err_builder("Illegal duplicate default export declarations")
+                .secondary(
+                    range.to_owned(),
+                    "the module's default export is first defined here",
+                )
                 .primary(marker.range(p), "multiple default exports are erroneous");
-            
+
             p.error(err);
             marker.change_kind(p, SyntaxKind::ERROR);
         } else if self.is_module {
@@ -110,10 +118,10 @@ impl ParserState {
             match strict {
                 StrictMode::Explicit(prev_range) => {
                     err = err.secondary(prev_range, "strict mode is previous declared here");
-                },
+                }
                 StrictMode::Module => {
                     err = err.help("note: modules are always strict mode");
-                },
+                }
                 StrictMode::Class(prev_range) => {
                     err = err.secondary(prev_range, "class bodies are always strict mode");
                 }
@@ -133,14 +141,14 @@ impl<'t> Parser<'t> {
         self.state = state;
         StateGuard {
             original_state,
-            inner: self
+            inner: self,
         }
     }
 }
 
 pub struct StateGuard<'p, 't> {
     inner: &'p mut Parser<'t>,
-    original_state: ParserState
+    original_state: ParserState,
 }
 
 impl<'p, 't> Deref for StateGuard<'p, 't> {

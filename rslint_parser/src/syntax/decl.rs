@@ -29,7 +29,7 @@ pub fn function_decl(p: &mut Parser, m: Marker) -> CompletedMarker {
             ..p.state.clone()
         }),
         true,
-        None
+        None,
     );
     m.complete(p, FN_DECL)
 }
@@ -89,7 +89,8 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
     if !guard.at(T!['{']) && !guard.at(T![extends]) {
         binding_identifier(&mut *guard);
     } else if !expr {
-        let err = guard.err_builder("class declarations must have a name")
+        let err = guard
+            .err_builder("class declarations must have a name")
             .primary(guard.cur_tok(), "");
 
         guard.error(err);

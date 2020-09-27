@@ -129,7 +129,10 @@ fn run_process_inner(cmd: &str, echo: bool, stdin: Option<&[u8]>) -> Result<Stri
     }
 
     let mut command = Command::new(binary);
-    command.args(args).current_dir(current_dir).stderr(Stdio::inherit());
+    command
+        .args(args)
+        .current_dir(current_dir)
+        .stderr(Stdio::inherit());
     let output = match stdin {
         None => command.stdin(Stdio::null()).output(),
         Some(stdin) => {
@@ -158,7 +161,11 @@ fn shelx(cmd: &str) -> Vec<String> {
         if in_quotes {
             res.push(string_piece.to_string())
         } else if !string_piece.is_empty() {
-            res.extend(string_piece.split_ascii_whitespace().map(|it| it.to_string()))
+            res.extend(
+                string_piece
+                    .split_ascii_whitespace()
+                    .map(|it| it.to_string()),
+            )
         }
     }
     res

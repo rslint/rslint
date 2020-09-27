@@ -1,12 +1,10 @@
-//! Takes comments from rslint_parser and turns them into test data. 
+//! Takes comments from rslint_parser and turns them into test data.
 //! This code is derived from rust_analyzer/xtask/codegen/gen_parser_tests
-
 
 use std::{
     collections::HashMap,
-    fs, iter,
+    fs, iter, mem,
     path::{Path, PathBuf},
-    mem
 };
 
 use crate::{
@@ -157,7 +155,11 @@ fn existing_tests(dir: &Path, ok: bool) -> Result<HashMap<String, (PathBuf, Test
             file_name[5..file_name.len() - 3].to_string()
         };
         let text = fs::read_to_string(&path)?;
-        let test = Test { name: name.clone(), text, ok };
+        let test = Test {
+            name: name.clone(),
+            text,
+            ok,
+        };
         if let Some(old) = res.insert(name, (path, test)) {
             println!("Duplicate test: {:?}", old);
         }

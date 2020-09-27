@@ -2,12 +2,12 @@
 
 #[doc(no_inline)]
 pub use crate::{
-    declare_lint, CstRule, Diagnostic, DiagnosticBuilder, Label, Outcome, RuleCtx, RuleResult,
-    util, rule_tests
+    declare_lint, rule_tests, util, CstRule, Diagnostic, DiagnosticBuilder, Label, Outcome,
+    RuleCtx, RuleResult,
 };
 
 #[doc(no_inline)]
 pub use rslint_parser::{
-    ast, token_set, util as parseutil, AstNode, AstToken, SyntaxElement, SyntaxKind, SyntaxNode,
-    SyntaxNodeExt, SyntaxToken, SyntaxTokenExt, TokenSet, T, util::color, JsNum, BigInt, op
+    ast, op, token_set, util as parseutil, util::color, AstNode, AstToken, BigInt, JsNum,
+    SyntaxElement, SyntaxKind, SyntaxNode, SyntaxNodeExt, SyntaxToken, SyntaxTokenExt, TokenSet, T,
 };

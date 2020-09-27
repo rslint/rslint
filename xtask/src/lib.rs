@@ -2,8 +2,8 @@
 
 pub mod ast;
 pub mod codegen;
-pub mod glue;
 pub mod docgen;
+pub mod glue;
 
 use std::{
     env,

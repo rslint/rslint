@@ -10,6 +10,6 @@
 pub mod decl;
 pub mod expr;
 pub mod pat;
+pub mod program;
 pub mod stmt;
 pub mod util;
-pub mod program;

@@ -1,28 +1,34 @@
-//! Top level functions for parsing a script or module, also includes module specific items. 
+//! Top level functions for parsing a script or module, also includes module specific items.
 
-use crate::{SyntaxKind::*, *};
-use super::stmt::{block_items, STMT_RECOVERY_SET, var_decl, semi};
-use super::pat::binding_identifier;
 use super::decl::{class_decl, function_decl};
 use super::expr::assign_expr;
+use super::pat::binding_identifier;
+use super::stmt::{block_items, semi, var_decl, STMT_RECOVERY_SET};
+use crate::{SyntaxKind::*, *};
 
-/// Parse an ECMAScript script. 
-/// 
-/// # Panics 
-/// Panics if the parser is configured to parse a module. 
+/// Parse an ECMAScript script.
+///
+/// # Panics
+/// Panics if the parser is configured to parse a module.
 pub fn script(p: &mut Parser) -> CompletedMarker {
-    assert!(!p.state.is_module, "Using the script parsing function for modules is erroneous");
+    assert!(
+        !p.state.is_module,
+        "Using the script parsing function for modules is erroneous"
+    );
     let m = p.start();
     block_items(p, true, true, None);
     m.complete(p, SyntaxKind::SCRIPT)
 }
 
-/// Parse an ECMAScript module. 
-/// 
-/// # Panics 
-/// Panics if the parser is configured to parse a script. 
+/// Parse an ECMAScript module.
+///
+/// # Panics
+/// Panics if the parser is configured to parse a script.
 pub fn module(p: &mut Parser) -> CompletedMarker {
-    assert!(p.state.is_module, "Using the module parsing function for scripts is erroneous");
+    assert!(
+        p.state.is_module,
+        "Using the module parsing function for scripts is erroneous"
+    );
     let m = p.start();
     block_items(p, true, true, None);
     m.complete(p, SyntaxKind::MODULE)
@@ -45,11 +51,11 @@ pub fn import_decl(p: &mut Parser) -> CompletedMarker {
             }
             inner.complete(p, WILDCARD_IMPORT);
             from_clause(p);
-        },
+        }
         T!['{'] => {
             named_list(p, None).complete(p, NAMED_IMPORTS);
             from_clause(p);
-        },
+        }
         T![ident] | T![await] | T![yield] => {
             binding_identifier(p);
             if p.eat(T![,]) && p.at_ts(token_set![T![*], T!['{']]) {
@@ -59,9 +65,10 @@ pub fn import_decl(p: &mut Parser) -> CompletedMarker {
                 };
             }
             from_clause(p);
-        },
+        }
         _ => {
-            let err = p.err_builder("Expected an import clause, but found none")
+            let err = p
+                .err_builder("Expected an import clause, but found none")
                 .primary(p.cur_tok(), "");
 
             p.err_recover(err, STMT_RECOVERY_SET);
@@ -114,14 +121,15 @@ fn specifier(p: &mut Parser) -> CompletedMarker {
 
 fn from_clause(p: &mut Parser) {
     if p.cur_src() != "from" {
-        let err = p.err_builder("Expected a `from` clause, but found none")
+        let err = p
+            .err_builder("Expected a `from` clause, but found none")
             .primary(p.cur_tok(), "");
 
         p.err_recover(err, STMT_RECOVERY_SET);
     } else {
         p.bump_any();
     }
-    
+
     p.expect(STRING);
 }
 
@@ -136,20 +144,34 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                 let inner = p.start();
                 function_decl(p, inner);
                 m.complete(p, EXPORT_DEFAULT_DECL)
-            },
+            }
             T![class] => {
                 class_decl(p, false);
                 m.complete(p, EXPORT_DEFAULT_DECL)
-            },
+            }
             _ => {
-                if p.cur_src() == "async" && p.nth_at(1, T![function]) && !p.has_linebreak_before_n(1) {
+                if p.cur_src() == "async"
+                    && p.nth_at(1, T![function])
+                    && !p.has_linebreak_before_n(1)
+                {
                     let inner = p.start();
                     p.bump_any();
-                    function_decl(&mut *p.with_state(ParserState { in_async: true, ..p.state.clone() }), inner);
+                    function_decl(
+                        &mut *p.with_state(ParserState {
+                            in_async: true,
+                            ..p.state.clone()
+                        }),
+                        inner,
+                    );
                     m.complete(p, EXPORT_DEFAULT_DECL)
                 } else {
                     let range = assign_expr(p).map(|it| it.range(p));
-                    semi(p, range.map(|it| it.into()).unwrap_or_else(|| p.cur_tok().range));
+                    semi(
+                        p,
+                        range
+                            .map(|it| it.into())
+                            .unwrap_or_else(|| p.cur_tok().range),
+                    );
                     m.complete(p, EXPORT_DEFAULT_EXPR)
                 }
             }
@@ -172,7 +194,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                 let inner = p.start();
                 function_decl(p, inner);
                 m.complete(p, EXPORT_DECL)
-            },
+            }
             T!['{'] => {
                 let start_marker = p.start();
                 let inner = named_list(p, start_marker);
@@ -180,25 +202,35 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                     from_clause(p);
                 }
                 inner.complete(p, EXPORT_NAMED)
-            },
+            }
             T![*] => {
                 let start_marker = p.start();
                 let inner = wildcard(p, start_marker);
                 from_clause(p);
                 semi(p, start..p.cur_tok().range.start);
                 inner.complete(p, EXPORT_WILDCARD)
-            },
+            }
             _ => {
                 if p.cur_src() == "let" {
                     var_decl(p, false);
                     m.complete(p, EXPORT_DECL)
-                } else if p.cur_src() == "async" && p.nth_at(1, T![function]) && !p.has_linebreak_before_n(1) {
+                } else if p.cur_src() == "async"
+                    && p.nth_at(1, T![function])
+                    && !p.has_linebreak_before_n(1)
+                {
                     let inner = p.start();
                     p.bump_any();
-                    function_decl(&mut *p.with_state(ParserState { in_async: true, ..p.state.clone() }), inner);
+                    function_decl(
+                        &mut *p.with_state(ParserState {
+                            in_async: true,
+                            ..p.state.clone()
+                        }),
+                        inner,
+                    );
                     m.complete(p, EXPORT_DECL)
                 } else {
-                    let err = p.err_builder("Expected an item to export, but found none")
+                    let err = p
+                        .err_builder("Expected an item to export, but found none")
                         .primary(p.cur_tok(), "");
 
                     p.error(err);
