@@ -3,14 +3,14 @@
 -->
 # no-constant-condition
 
-Disallow constant conditions which always yield one result. 
+Disallow constant conditions which always yield one result.
 
-Constant conditions such as `if (true) {}` are almost always a mistake. Constant 
-conditions always yield a single result which almost always ends up in unwanted behavior. 
+Constant conditions such as `if (true) {}` are almost always a mistake. Constant
+conditions always yield a single result which almost always ends up in unwanted behavior.
 This rule is aimed at catching those conditions in `if`, `do while`, `while`, and `for` statements, as well as
 conditional expressions.
 
-## Incorrect Code Examples 
+## Incorrect Code Examples
 
 ```js
 if (true) {
@@ -27,12 +27,12 @@ for(foo = 5; 5; foo++) {
 }
 ```
 
-## Correct Code Examples 
+## Correct Code Examples
 
 ```js
 if (foo) {
     /* */
-} 
+}
 ```
 
 <details>

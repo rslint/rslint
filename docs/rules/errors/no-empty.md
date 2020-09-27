@@ -9,7 +9,7 @@ Block statements with nothing in them are very common when refactoring, however
 they can get confusing really quickly. This rule reports empty block statements and empty switch
 case blocks if they do not have a comment.
 
-## Invalid Code Examples 
+## Invalid Code Examples
 
 ```js
 {}
@@ -21,7 +21,7 @@ if (foo) {
 }
 ```
 
-## Correct Code Examples 
+## Correct Code Examples
 
 ```js
 if (foo) {

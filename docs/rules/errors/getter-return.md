@@ -3,8 +3,7 @@
 -->
 # getter-return
 
- 
-Disallow getter properties which do not always return a value. 
+Disallow getter properties which do not always return a value.
 
 Getters are special properties introduced in ES5 which call a function when a property is accessed.
 The value returned will be the value returned for the property access:
@@ -28,7 +27,7 @@ Object.defineProperty(obj, "foo", {
 Getters are expected to return a value, it is a bad practice to use getters to run some function
 without a return. This rule makes sure that does not happen and enforces a getter always returns a value.
 
-## Incorrect code examples 
+## Incorrect code examples
 
 ```js
 // The getter does not always return a value, it would not return anything
@@ -42,7 +41,7 @@ let obj = {
 }
 ```
 
-## Correct code examples 
+## Correct code examples
 
 ```js
 // The getter always returns a value
@@ -60,7 +59,7 @@ let obj = {
 ## Config
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `allowImplicit` | bool |  Whether to allow implicitly returning undefined with `return;`. <br>`true` by default.  |
+| `allowImplicit` | bool |  Whether to allow implicitly returning undefined with `return;`.<br>`true` by default. |
 
 <details>
  <summary> More incorrect examples </summary>
