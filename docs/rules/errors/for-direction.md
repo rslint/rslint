@@ -3,15 +3,15 @@
 -->
 # for-direction
 
-Disallow for loops which update their counter in the wrong direction. 
+Disallow for loops which update their counter in the wrong direction.
 
 A for loop with a counter may update its value in the wrong direction. that is to say, if i made
 a counter with a value of `0`, if the for statement checked if `counter < 10` and the update went `counter--`,
-that loop would be infinite. This is because `counter` will never be smaller than `10` because `counter--` always 
+that loop would be infinite. This is because `counter` will never be smaller than `10` because `counter--` always
 yields a value smaller than 10. A for loop which does this is almost always a bug because it is either
 unreachable or infinite.
 
-## Incorrect Code Examples 
+## Incorrect Code Examples
 
 ```js
 for (var i = 0; i < 10; i--) {
@@ -25,11 +25,11 @@ for (var i = 10; i >= 20; i++) {
 }
 ```
 
-## Correct Code Examples 
+## Correct Code Examples
 
 ```js
 for (var i = 0; i < 10; i++) {
-    
+
 }
 ```
 

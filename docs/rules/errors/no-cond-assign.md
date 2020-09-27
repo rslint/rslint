@@ -3,9 +3,9 @@
 -->
 # no-cond-assign
 
-Forbid the use of assignment expressions in conditions which may yield unwanted behavior. 
+Forbid the use of assignment expressions in conditions which may yield unwanted behavior.
 
-Assignment expressions return the value assigned: 
+Assignment expressions return the value assigned:
 
 ```js
 let foo = 5;
