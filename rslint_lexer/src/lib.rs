@@ -112,7 +112,7 @@ impl<'src> Lexer<'src> {
             }
 
             self.next();
-            while let Some(_) = self.next() {
+            while self.next().is_some() {
                 let chr = self.get_unicode_char();
                 self.cur += chr.len_utf8() - 1;
 
@@ -132,8 +132,7 @@ impl<'src> Lexer<'src> {
     // Consume all whitespace starting from the current byte
     fn consume_whitespace(&mut self) {
         unwind_loop! {
-            let next = self.next().map(|x| *x);
-            if let Some(byte) = next {
+            if let Some(byte) = self.next().copied() {
                 // This is the most likely scenario, unicode spaces are very uncommon
                 if DISPATCHER[byte as usize] != Dispatch::WHS {
                     // try to short circuit the branch by checking the first byte of the potential unicode space
@@ -238,20 +237,20 @@ impl<'src> Lexer<'src> {
 
             std::str::from_utf8_unchecked(self.bytes.get_unchecked(start..self.cur))
         };
-        let digits = u32::from_str_radix(digits_str, 16);
 
-        if digits.is_err() || digits.as_ref().unwrap() > &0x10FFFF {
-            let err = Diagnostic::error()
-                .with_message("Out of bounds codepoint for unicode codepoint escape sequence")
-                .with_labels(vec![Label::primary(self.file_id, start..self.cur)])
-                .with_notes(vec![
-                    "Note: Codepoints range from 0 to 0x10FFFF (1114111)".to_string()
-                ]);
+        match u32::from_str_radix(digits_str, 16) {
+            Ok(digits) if digits <= 0x10FFFF => Ok(std::char::from_u32(digits)),
 
-            return Err(err);
-        } else {
-            // Safety: we know for a fact this is in bounds because we check for it in the if statement above
-            Ok(std::char::from_u32(digits.unwrap()))
+            _ => {
+                let err = Diagnostic::error()
+                    .with_message("Out of bounds codepoint for unicode codepoint escape sequence")
+                    .with_labels(vec![Label::primary(self.file_id, start..self.cur)])
+                    .with_notes(vec![
+                        "Note: Codepoints range from 0 to 0x10FFFF (1114111)".to_string()
+                    ]);
+
+                Err(err)
+            }
         }
     }
 
@@ -296,7 +295,7 @@ impl<'src> Lexer<'src> {
                     self.cur -= 4;
                 }
                 // Safety: we make sure the 4 chars are hex digits beforehand, and 4 hex digits cannot make an invalid char
-                return Ok(std::char::from_u32_unchecked(digits));
+                Ok(std::char::from_u32_unchecked(digits))
             } else {
                 // Safety: we know this is unreachable because 4 hexdigits cannot make an out of bounds char,
                 // and we make sure that the chars are actually hex digits
@@ -473,9 +472,8 @@ impl<'src> Lexer<'src> {
                     false
                 }
             }
-            IDT | L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T | L_V | L_W | L_Y => {
-                true
-            }
+            IDT | L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T | L_V | L_W
+            | L_Y => true,
             _ => false,
         }
     }
@@ -503,7 +501,7 @@ impl<'src> Lexer<'src> {
         };
 
         if let Some(syntax_kind) = kind {
-            if let Some(_) = self.next_bounded() {
+            if self.next_bounded().is_some() {
                 if self.cur_is_ident_part() {
                     self.consume_ident();
                     (Token::new(T![ident], self.cur - start), None)
@@ -568,7 +566,7 @@ impl<'src> Lexer<'src> {
             }
             Some(b'.') => {
                 self.cur += 1;
-                return self.read_float();
+                self.read_float();
             }
             Some(b'e') | Some(b'E') => {
                 // At least one digit is required
@@ -576,18 +574,16 @@ impl<'src> Lexer<'src> {
                     Some(b'-') | Some(b'+') => {
                         if let Some(b'0'..=b'9') = self.bytes.get(self.cur + 3) {
                             self.next();
-                            return self.read_exponent();
-                        } else {
-                            return;
+                            self.read_exponent();
                         }
                     }
-                    Some(b'0'..=b'9') => return self.read_exponent(),
-                    _ => return,
+                    Some(b'0'..=b'9') => self.read_exponent(),
+                    _ => {}
                 }
             }
             // FIXME: many engines actually allow things like `09`, but by the spec, this is not allowed
             // maybe we should not allow it if we want to go fully by the spec
-            _ => return self.read_number(),
+            _ => self.read_number(),
         }
     }
 
@@ -728,7 +724,7 @@ impl<'src> Lexer<'src> {
         match self.bytes.get(self.cur + 1) {
             Some(b'*') => {
                 self.next();
-                while let Some(b) = self.next().map(|x| *x) {
+                while let Some(b) = self.next().copied() {
                     match b {
                         b'*' if self.bytes.get(self.cur + 1) == Some(&b'/') => {
                             self.advance(2);
@@ -751,7 +747,7 @@ impl<'src> Lexer<'src> {
             }
             Some(b'/') => {
                 self.next();
-                while let Some(_) = self.next() {
+                while self.next().is_some() {
                     let chr = self.get_unicode_char();
                     self.cur += chr.len_utf8() - 1;
 
@@ -1247,7 +1243,9 @@ impl<'src> Lexer<'src> {
                         diagnostic,
                     )
                 }
-                _ => drop(self.next()),
+                _ => {
+                    let _ = self.next();
+                }
             }
         }
 
@@ -1357,7 +1355,7 @@ use Dispatch::*;
 // This is taken from the ratel project lexer and modified
 // FIXME: Should we ignore the first ascii control chars which are nearly never seen instead of returning Err?
 static DISPATCHER: [Dispatch; 256] = [
-//   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F   //
+    //   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F   //
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, WHS, WHS, WHS, WHS, WHS, ERR, ERR, // 0
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
     WHS, EXL, QOT, ERR, IDT, PRC, AMP, QOT, PNO, PNC, MUL, PLS, COM, MIN, PRD, SLH, // 2

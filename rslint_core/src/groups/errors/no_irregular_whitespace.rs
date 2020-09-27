@@ -4,7 +4,7 @@ use SyntaxKind::*;
 
 declare_lint! {
     /**
-    Disallow weird/irregular whitespace. 
+    Disallow weird/irregular whitespace.
 
     ECMAScript allows a wide selection of unicode whitespace, they are however known to
     cause issues with various parsers, therefore they should never be used.
@@ -13,9 +13,9 @@ declare_lint! {
     by accident.
 
     Whitespace such as line separator causes issues since line separators are not valid JSON which
-    may cause many issues. 
+    may cause many issues.
 
-    This rule disallows the following whitespace: 
+    This rule disallows the following whitespace:
 
     ```text
     \u000B - Line Tabulation (\v) - <VT>
@@ -93,14 +93,14 @@ const WHITESPACE_TABLE: [(char, &str); 24] = [
     ('\u{2029}', "Paragraph Separator"),
     ('\u{202F}', "Narrow No-Break space"),
     ('\u{205f}', "Medium Mathematical Space"),
-    ('\u{3000}', "Ideographic Space")
+    ('\u{3000}', "Ideographic Space"),
 ];
 
 const FIRST_BYTES: [u8; 9] = [0x0b, 0x0c, 0xA0, 0x85, 0xC2, 0xE1, 0xEF, 0xE2, 0xE3];
 
 // violations of this rule are extraordinarily rare, so we first run an initial pass which compares the first
 // utf8 byte of each irregular whitespace with each byte in the string. This is extremely fast, since LLVM will
-// turn it into a lookup table which is 3 operations to check each byte, and for x86 avx2 we use SIMD intrinsics. 
+// turn it into a lookup table which is 3 operations to check each byte, and for x86 avx2 we use SIMD intrinsics.
 
 // fallback for the short circuit pass
 fn short_circuit_pass_fallback(bytes: &[u8]) -> bool {
@@ -155,7 +155,7 @@ fn spanned_byte_matches(bytes: &[u8]) -> Vec<usize> {
     let offset = bytes.as_ptr() as usize;
 
     bytes
-        .into_iter()
+        .iter()
         .filter(|byte| FIRST_BYTES.contains(byte))
         .map(|byte| byte as *const _ as usize - offset)
         .collect()
@@ -173,8 +173,8 @@ impl CstRule for NoIrregularWhitespace {
 
         let res = if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
             if std::is_x86_feature_detected!("avx2") {
-               // SAFETY: Explanation of the implementation and edge cases is in the function body
-               unsafe { short_circuit_pass(bytes) }
+                // SAFETY: Explanation of the implementation and edge cases is in the function body
+                unsafe { short_circuit_pass(bytes) }
             } else {
                 short_circuit_pass_fallback(bytes)
             }
@@ -193,10 +193,15 @@ impl CstRule for NoIrregularWhitespace {
         for byte_match in matches {
             // the byte may also be inside of a boundary, in which case, indexing into it is invalid so we need to handle this case
             if let Some(mut chars) = string.get(byte_match..).map(|x| x.chars()) {
-                let offending_char = chars.next().expect("Chars is an empty iterator even after a spanned byte match");
+                let offending_char = chars
+                    .next()
+                    .expect("Chars is an empty iterator even after a spanned byte match");
                 // E2 and E3 obviously cover chars which are not offending chars, therefore we need to check if the char is actually right.
-                let name = WHITESPACE_TABLE.iter().find(|(c, _)| *c == offending_char)?.1;
-                
+                let name = WHITESPACE_TABLE
+                    .iter()
+                    .find(|(c, _)| *c == offending_char)?
+                    .1;
+
                 self.maybe_throw_err(byte_match, name, offending_char, root, ctx);
             }
         }
@@ -205,8 +210,18 @@ impl CstRule for NoIrregularWhitespace {
 }
 
 impl NoIrregularWhitespace {
-    fn maybe_throw_err(&self, byte_match: usize, name: &str, offending_char: char, root: &SyntaxNode, ctx: &mut RuleCtx) {
-        let range = TextRange::new((byte_match as u32).into(), ((offending_char.len_utf8() + byte_match) as u32).into());
+    fn maybe_throw_err(
+        &self,
+        byte_match: usize,
+        name: &str,
+        offending_char: char,
+        root: &SyntaxNode,
+        ctx: &mut RuleCtx,
+    ) {
+        let range = TextRange::new(
+            (byte_match as u32).into(),
+            ((offending_char.len_utf8() + byte_match) as u32).into(),
+        );
 
         let cover = root.covering_element(range).into_token();
 
@@ -220,8 +235,15 @@ impl NoIrregularWhitespace {
             }
         }
 
-        let err = ctx.err(self.name(), format!("{} is not allowed to be used as whitespace", name))
-            .primary(range, format!("this character is a {}", name.to_ascii_lowercase()));
+        let err = ctx
+            .err(
+                self.name(),
+                format!("{} is not allowed to be used as whitespace", name),
+            )
+            .primary(
+                range,
+                format!("this character is a {}", name.to_ascii_lowercase()),
+            );
 
         ctx.add_err(err);
     }

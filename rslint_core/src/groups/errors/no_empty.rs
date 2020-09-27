@@ -9,7 +9,7 @@ declare_lint! {
     they can get confusing really quickly. This rule reports empty block statements and empty switch
     case blocks if they do not have a comment.
 
-    ## Invalid Code Examples 
+    ## Invalid Code Examples
 
     ```ignore
     {}
@@ -21,7 +21,7 @@ declare_lint! {
     }
     ```
 
-    ## Correct Code Examples 
+    ## Correct Code Examples
 
     ```ignore
     if (foo) {
@@ -75,9 +75,10 @@ impl CstRule for NoEmpty {
                 let range =
                     util::token_list_range(&[switch.l_curly_token()?, switch.r_curly_token()?]);
 
-                if !switch.syntax().tokens().iter().any(|tok| {
+                let is_empty = switch.syntax().tokens().iter().any(|tok| {
                     tok.kind() == SyntaxKind::COMMENT && tok.text_range().start() > start
-                }) {
+                });
+                if !is_empty {
                     let err = ctx
                         .err(self.name(), "empty switch statements are not allowed")
                         .primary(range, "");

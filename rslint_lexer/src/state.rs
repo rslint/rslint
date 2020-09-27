@@ -145,7 +145,7 @@ fn ctx_is_expr(ctx: Context) -> bool {
 }
 
 fn ctx_is_brace_block(
-    ctx: &Vec<Context>,
+    ctx: &[Context],
     prev: Option<SyntaxKind>,
     had_linebreak: bool,
     expr_allowed: bool,

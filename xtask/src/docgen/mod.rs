@@ -133,7 +133,7 @@ pub fn rule_src(group_name: &str, rule_name: &str) -> String {
 }
 
 pub fn first_sentence(string: &str) -> Option<&str> {
-    string.trim().split("\n").next().map(|x| x.trim())
+    string.trim().split('\n').next().map(|x| x.trim())
 }
 
 pub fn extract_group(group_name: &str) -> Result<HashMap<String, RuleFile>, Box<dyn Error>> {
@@ -152,7 +152,6 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
         .lint_declaration
         .docstring
         .unwrap_or_default()
-        .clone()
         .replace("```ignore", "```js");
     ret.insert_str(
         0,

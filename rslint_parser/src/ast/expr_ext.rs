@@ -506,7 +506,7 @@ impl Literal {
         }
     }
 
-    pub fn into_number(&self) -> Option<f64> {
+    pub fn as_number(&self) -> Option<f64> {
         if let LiteralKind::Number(num) = self.kind() {
             Some(num)
         } else {

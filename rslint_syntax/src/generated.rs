@@ -1,6 +1,11 @@
 //! Generated file, do not edit by hand, see `xtask/src/codegen`
 
-#![allow(bad_style, missing_docs, unreachable_pub)]
+#![allow(
+    bad_style,
+    missing_docs,
+    unreachable_pub,
+    clippy::manual_non_exhaustive
+)]
 #[doc = r" The kind of syntax node, e.g. `IDENT`, `FUNCTION_KW`, or `FOR_STMT`."]
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[repr(u16)]

@@ -1,26 +1,22 @@
-mod files;
 mod cli;
-mod panic_hook;
 mod config;
+mod files;
+mod panic_hook;
 
-pub use self::{
-    files::*,
-    cli::ExplanationRunner,
-    panic_hook::*,
-    config::*
-};
-pub use rslint_core::{DiagnosticBuilder, Diagnostic, Outcome};
+pub use self::{cli::ExplanationRunner, config::*, files::*, panic_hook::*};
+pub use rslint_core::{Diagnostic, DiagnosticBuilder, Outcome};
 
 use codespan_reporting::diagnostic::Severity;
 use codespan_reporting::term::Config;
 use codespan_reporting::term::{
     emit,
-    termcolor::{ColorChoice, StandardStream, self},
+    termcolor::{self, ColorChoice, StandardStream},
 };
 use rayon::prelude::*;
 use rslint_core::{lint_file, CstRuleStore, RuleLevel};
 
-pub(crate) const DOCS_LINK_BASE: &str = "https://raw.githubusercontent.com/RDambrosio016/RSLint/dev/docs/rules";
+pub(crate) const DOCS_LINK_BASE: &str =
+    "https://raw.githubusercontent.com/RDambrosio016/RSLint/dev/docs/rules";
 pub(crate) const REPO_LINK: &str = "https://github.com/RDambrosio016/RSLint/tree/dev";
 
 pub fn codespan_config() -> Config {
@@ -41,18 +37,24 @@ pub fn run(glob: String, verbose: bool) {
     let walker = FileWalker::from_glob(res.unwrap());
     let joined = handle.join();
 
-    let config = if let Some(Some(Err(err))) = joined.as_ref().ok() {
+    let config = if let Ok(Some(Err(err))) = joined.as_ref() {
         // this is a bit of a hack. we should do this in a better way in the future
         // toml also seems to give incorrect column numbers so we can't use it currently
         let regex = regex::Regex::new(r"\. did you mean '(.*?)'\?").unwrap();
         let location_regex = regex::Regex::new(r"at line \d+").unwrap();
-        let mut msg = err.to_string().split_at(location_regex.find(&err.to_string()).unwrap().range().start).0.to_string();
+        let mut msg = err
+            .to_string()
+            .split_at(location_regex.find(&err.to_string()).unwrap().range().start)
+            .0
+            .to_string();
         let old = msg.clone();
 
         let diagnostic = if let Some(found) = regex.find(&old) {
             msg.replace_range(found.range(), "");
-            DiagnosticBuilder::error(0, "config", &msg)
-                .note(format!("help: did you mean '{}'?", regex.captures(&old).unwrap().get(1).unwrap().as_str()))
+            DiagnosticBuilder::error(0, "config", &msg).note(format!(
+                "help: did you mean '{}'?",
+                regex.captures(&old).unwrap().get(1).unwrap().as_str()
+            ))
         } else {
             DiagnosticBuilder::error(0, "config", msg)
         };
@@ -99,9 +101,18 @@ pub fn run(glob: String, verbose: bool) {
         }
     }
 
-    let failures = results.iter().filter(|res| res.outcome() == Outcome::Failure).count();
-    let warnings = results.iter().filter(|res| res.outcome() == Outcome::Warning).count();
-    let successes = results.iter().filter(|res| res.outcome() == Outcome::Success).count();
+    let failures = results
+        .iter()
+        .filter(|res| res.outcome() == Outcome::Failure)
+        .count();
+    let warnings = results
+        .iter()
+        .filter(|res| res.outcome() == Outcome::Warning)
+        .count();
+    let successes = results
+        .iter()
+        .filter(|res| res.outcome() == Outcome::Success)
+        .count();
 
     let overall = Outcome::merge(results.iter().map(|res| res.outcome()));
 
@@ -128,29 +139,39 @@ fn output_overall(failures: usize, warnings: usize, successes: usize) {
     use termcolor::{Color, ColorSpec, WriteColor};
 
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::White))).unwrap();
+    stdout
+        .set_color(ColorSpec::new().set_fg(Some(Color::White)))
+        .unwrap();
     write!(&mut stdout, "\nOutcome: ").unwrap();
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red))).unwrap();
+    stdout
+        .set_color(ColorSpec::new().set_fg(Some(Color::Red)))
+        .unwrap();
     write!(&mut stdout, "{}", failures).unwrap();
     stdout.reset().unwrap();
     write!(&mut stdout, " fail, ").unwrap();
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow))).unwrap();
+    stdout
+        .set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))
+        .unwrap();
     write!(&mut stdout, "{}", warnings).unwrap();
     stdout.reset().unwrap();
     write!(&mut stdout, " warn, ").unwrap();
-    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green))).unwrap();
+    stdout
+        .set_color(ColorSpec::new().set_fg(Some(Color::Green)))
+        .unwrap();
     write!(&mut stdout, "{}", successes).unwrap();
     stdout.reset().unwrap();
-    write!(&mut stdout, " success\n").unwrap();
+    writeln!(&mut stdout, " success").unwrap();
 }
 
-/// Remap each error diagnostic to a warning diagnostic based on the rule's level. 
+/// Remap each error diagnostic to a warning diagnostic based on the rule's level.
 /// this leaves warnings untouched because rules should be able to emit errors and warnings for context without
-/// the warnings being remapped to errors. 
+/// the warnings being remapped to errors.
 pub fn remap_diagnostics_to_level(diagnostics: &mut Vec<Diagnostic>, level: RuleLevel) {
     for diagnostic in diagnostics.iter_mut() {
         match diagnostic.severity {
-            Severity::Error | Severity::Bug if level == RuleLevel::Warning => diagnostic.severity = Severity::Warning,
+            Severity::Error | Severity::Bug if level == RuleLevel::Warning => {
+                diagnostic.severity = Severity::Warning
+            }
             _ => {}
         }
     }
@@ -163,8 +184,9 @@ pub fn emit_diagnostic(diagnostic: impl Into<Diagnostic>, walker: &FileWalker) {
         &mut termcolor::StandardStream::stderr(Always),
         &crate::codespan_config(),
         walker,
-        &diagnostic.into()
-    ).expect("Failed to throw linter diagnostic");
+        &diagnostic.into(),
+    )
+    .expect("Failed to throw linter diagnostic");
 }
 
 #[macro_export]

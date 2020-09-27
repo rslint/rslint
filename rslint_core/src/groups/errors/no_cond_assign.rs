@@ -4,9 +4,9 @@ use SyntaxKind::*;
 
 declare_lint! {
     /**
-    Forbid the use of assignment expressions in conditions which may yield unwanted behavior. 
+    Forbid the use of assignment expressions in conditions which may yield unwanted behavior.
 
-    Assignment expressions return the value assigned: 
+    Assignment expressions return the value assigned:
 
     ```ignore
     let foo = 5;
@@ -57,7 +57,13 @@ impl CstRule for NoCondAssign {
         let cond = condition(node)?;
         if COND_CHECKED.contains(&node.kind()) && check(&cond, self.allow_parens) {
             let err = ctx
-                .err(self.name(), format!("Unexpected assignment inside a {} condition", node.readable_stmt_name()))
+                .err(
+                    self.name(),
+                    format!(
+                        "Unexpected assignment inside a {} condition",
+                        node.readable_stmt_name()
+                    ),
+                )
                 .primary(
                     cond.syntax().trimmed_range(),
                     "this condition results in unexpected behavior",
@@ -82,7 +88,7 @@ fn condition(node: &SyntaxNode) -> Option<Expr> {
     if node.kind() == COND_EXPR {
         return node.to::<ast::CondExpr>().test();
     }
-    
+
     node.children()
         .find(|it| it.kind() == CONDITION)?
         .to::<ast::Condition>()
@@ -92,20 +98,30 @@ fn condition(node: &SyntaxNode) -> Option<Expr> {
 fn check(expr: &ast::Expr, allow_parens: bool) -> bool {
     match expr {
         Expr::AssignExpr(_) => {
-            if expr.syntax().parent().map(|x| x.kind() == GROUPING_EXPR && allow_parens).unwrap_or_default() {
+            if expr
+                .syntax()
+                .parent()
+                .map(|x| x.kind() == GROUPING_EXPR && allow_parens)
+                .unwrap_or_default()
+            {
                 return false;
             }
             true
-        },
+        }
         Expr::GroupingExpr(group) => {
             if let Some(inner) = group.inner() {
-                return check(&inner.into(), allow_parens);
+                return check(&inner, allow_parens);
             }
             false
-        },
+        }
         Expr::BinExpr(bin) if bin.conditional() => {
-            bin.lhs().map(|e| check(&e, allow_parens)).unwrap_or_default()
-                || bin.rhs().map(|e| check(&e, allow_parens)).unwrap_or_default()
+            bin.lhs()
+                .map(|e| check(&e, allow_parens))
+                .unwrap_or_default()
+                || bin
+                    .rhs()
+                    .map(|e| check(&e, allow_parens))
+                    .unwrap_or_default()
         }
         _ => false,
     }
@@ -128,8 +144,11 @@ fn help_expr(expr: &SyntaxNode) -> String {
                     .map(|e| help_expr(&e.syntax()))
                     .unwrap_or_default()
             )
-        },
-        GROUPING_EXPR => format!("({})", help_expr(&expr.to::<ast::GroupingExpr>().inner().unwrap().syntax())),
+        }
+        GROUPING_EXPR => format!(
+            "({})",
+            help_expr(&expr.to::<ast::GroupingExpr>().inner().unwrap().syntax())
+        ),
         _ => expr.trimmed_text().to_string(),
     }
 }

@@ -1,4 +1,4 @@
-//! JS Number parsing. 
+//! JS Number parsing.
 
 use lexical::parse_radix;
 
@@ -7,7 +7,7 @@ pub use num_bigint::BigInt;
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsNum {
     Float(f64),
-    BigInt(BigInt)
+    BigInt(BigInt),
 }
 
 /// Parse a js number as a string into a number.  
@@ -16,12 +16,12 @@ pub(crate) fn parse_js_num(num: String) -> Option<JsNum> {
         Some("0x") | Some("0X") => (16, num.get(2..).unwrap()),
         Some("0b") | Some("0B") => (2, num.get(2..).unwrap()),
         Some("0o") | Some("0O") => (8, num.get(2..).unwrap()),
-        _ => (10, num.as_str())
+        _ => (10, num.as_str()),
     };
 
-    if radix == 10 && raw.starts_with("0") {
+    if radix == 10 && raw.starts_with('0') {
         // account for legacy octal literals
-        if let Some(parsed) = parse_radix(raw.as_bytes(), 8).ok() {
+        if let Ok(parsed) = parse_radix(raw.as_bytes(), 8) {
             return Some(JsNum::Float(parsed));
         }
     }
@@ -36,20 +36,25 @@ pub(crate) fn parse_js_num(num: String) -> Option<JsNum> {
     if bigint {
         Some(JsNum::BigInt(BigInt::parse_bytes(raw.as_bytes(), radix)?))
     } else {
-        Some(JsNum::Float(parse_radix::<f64, _>(raw.as_bytes(), radix as u8).ok()?))
+        Some(JsNum::Float(
+            parse_radix::<f64, _>(raw.as_bytes(), radix as u8).ok()?,
+        ))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{parse_expr, ast::{Expr, LiteralKind}};
+    use crate::{
+        ast::{Expr, LiteralKind},
+        parse_expr,
+    };
     use num_bigint::ToBigInt;
 
     macro_rules! assert_float {
         ($literal:literal, $value:expr) => {
             let parsed = parse_expr($literal, 0);
             if let Expr::Literal(literal) = parsed.tree() {
-                assert_eq!(literal.into_number(), Some($value));
+                assert_eq!(literal.as_number(), Some($value));
             } else {
                 panic!("Parsed expression is not a literal");
             }
@@ -113,7 +118,7 @@ mod tests {
         assert_bigint!("0n", 0);
         assert_bigint!("9007199254740991n", 9007199254740991);
     }
-    
+
     #[test]
     fn base_16_bigint() {
         assert_bigint!("0xffn", 255);
@@ -126,7 +131,13 @@ mod tests {
     fn base_2_bigint() {
         assert_bigint!("0b0n", 0);
         assert_bigint!("0B0n", 0);
-        assert_bigint!("0b11111111111111111111111111111111111111111111111111111n", 9007199254740991);
-        assert_bigint!("0B11111111111111111111111111111111111111111111111111111n", 9007199254740991);
+        assert_bigint!(
+            "0b11111111111111111111111111111111111111111111111111111n",
+            9007199254740991
+        );
+        assert_bigint!(
+            "0B11111111111111111111111111111111111111111111111111111n",
+            9007199254740991
+        );
     }
 }

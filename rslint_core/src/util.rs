@@ -53,9 +53,9 @@ pub fn simple_bool_coerce(condition: Expr) -> Option<bool> {
         }
         Expr::Template(tpl) => {
             if tpl.quasis().any(|t| !t.text().is_empty()) {
-                return Some(true);
+                Some(true)
             } else if tpl.syntax().text().len() == 2.into() {
-                return Some(false);
+                Some(false)
             } else {
                 None
             }
@@ -101,11 +101,11 @@ pub fn multi_node_range(mut nodes: impl Iterator<Item = SyntaxNode>) -> TextRang
         nodes
             .next()
             .map(|x| x.trimmed_range().start())
-            .unwrap_or(0.into()),
+            .unwrap_or_else(|| 0.into()),
         nodes
             .last()
             .map(|x| x.trimmed_range().end())
-            .unwrap_or(0.into()),
+            .unwrap_or_else(|| 0.into()),
     )
 }
 
@@ -130,16 +130,18 @@ pub fn is_const(expr: Expr, boolean_pos: bool, notes: &mut Vec<&str>) -> bool {
             .inner()
             .map_or(true, |e| is_const(e, boolean_pos, notes)),
         Expr::ArrayExpr(array) => {
-            if array.syntax().parent().map_or(false, |p| {
+            let not_const = array.syntax().parent().map_or(false, |p| {
                 p.kind() == BIN_EXPR && p.to::<BinExpr>().op() == Some(BinOp::Plus)
-            }) {
-                return array.elements().all(|elem| {
+            });
+
+            if not_const {
+                array.elements().all(|elem| {
                     if let ExprOrSpread::Expr(expr) = elem {
                         is_const(expr, boolean_pos, notes)
                     } else {
                         false
                     }
-                });
+                })
             } else {
                 true
             }
@@ -180,7 +182,7 @@ pub fn is_const(expr: Expr, boolean_pos: bool, notes: &mut Vec<&str>) -> bool {
                 let rhs_const = binexpr
                     .rhs()
                     .map_or(false, |expr| is_const(expr, false, notes));
-                    
+
                 lhs_const && rhs_const && binexpr.op() != Some(op!(in))
             }
         }
@@ -281,23 +283,21 @@ pub fn simple_const_condition_context(
                             alt.syntax().trimmed_range(),
                             "...which makes this unreachable",
                         );
-                } else {
-                    if let Some(cons) = stmt.cons() {
-                        diagnostic = diagnostic
-                            .primary(
-                                stmt.condition().unwrap().syntax().trimmed_range(),
-                                "this condition is always truthy...",
-                            )
-                            .secondary(
-                                cons.syntax().trimmed_range(),
-                                "...which makes this always run",
-                            );
-                    } else {
-                        diagnostic = diagnostic.primary(
+                } else if let Some(cons) = stmt.cons() {
+                    diagnostic = diagnostic
+                        .primary(
                             stmt.condition().unwrap().syntax().trimmed_range(),
-                            "this condition consistently yields one result",
+                            "this condition is always truthy...",
                         )
-                    }
+                        .secondary(
+                            cons.syntax().trimmed_range(),
+                            "...which makes this always run",
+                        );
+                } else {
+                    diagnostic = diagnostic.primary(
+                        stmt.condition().unwrap().syntax().trimmed_range(),
+                        "this condition consistently yields one result",
+                    )
                 }
             } else if !condition_value && stmt.alt().is_some() {
                 diagnostic = diagnostic
@@ -502,7 +502,7 @@ pub fn find_best_match_for_name<'a>(
     // 2. Levenshtein distance match
     // 3. Sorted word match
     if let Some(candidate) = case_insensitive_match {
-        Some(candidate.as_ref())
+        Some(candidate)
     } else if levenshtein_match.is_some() {
         levenshtein_match.map(|x| x.0)
     } else {

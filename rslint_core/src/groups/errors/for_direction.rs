@@ -4,15 +4,15 @@ use SyntaxKind::*;
 
 declare_lint! {
     /**
-    Disallow for loops which update their counter in the wrong direction. 
+    Disallow for loops which update their counter in the wrong direction.
 
     A for loop with a counter may update its value in the wrong direction. that is to say, if i made
     a counter with a value of `0`, if the for statement checked if `counter < 10` and the update went `counter--`,
-    that loop would be infinite. This is because `counter` will never be smaller than `10` because `counter--` always 
+    that loop would be infinite. This is because `counter` will never be smaller than `10` because `counter--` always
     yields a value smaller than 10. A for loop which does this is almost always a bug because it is either
     unreachable or infinite.
 
-    ## Incorrect Code Examples 
+    ## Incorrect Code Examples
 
     ```ignore
     for (var i = 0; i < 10; i--) {
@@ -26,11 +26,11 @@ declare_lint! {
     }
     ```
 
-    ## Correct Code Examples 
+    ## Correct Code Examples
 
     ```ignore
     for (var i = 0; i < 10; i++) {
-        
+
     }
     ```
     */
@@ -84,11 +84,12 @@ fn update_direction(for_stmt: &ForStmt, counter: &NameRef) -> Option<i8> {
     match update.kind() {
         UNARY_EXPR => {
             let expr = update.to::<UnaryExpr>();
-            if expr.expr()?.syntax().try_to::<NameRef>()?.syntax().text() == counter.syntax().text() {
+            if expr.expr()?.syntax().try_to::<NameRef>()?.syntax().text() == counter.syntax().text()
+            {
                 let op = expr.op().unwrap();
                 Some(if op == UnaryOp::Increment { 1 } else { -1 })
             } else {
-                return None;
+                None
             }
         }
         ASSIGN_EXPR => assign_direction(update.to(), counter),
@@ -135,7 +136,10 @@ fn throw_err(for_stmt: ForStmt, counter: &NameRef, ctx: &mut RuleCtx) {
     let rhs = bin.rhs().unwrap().syntax().clone();
     let op = bin.op().unwrap();
 
-    if let Some(lit) = rhs.try_to::<Literal>().filter(|literal| literal.is_number()) {
+    if let Some(lit) = rhs
+        .try_to::<Literal>()
+        .filter(|literal| literal.is_number())
+    {
         if try_offer_context(&for_stmt, counter, op, lit, ctx).is_some() {
             return;
         }
@@ -186,7 +190,7 @@ fn try_offer_context(
 ) -> Option<()> {
     let init = for_stmt.init()?;
 
-    let initial_value = match init.clone().inner().unwrap() {
+    let initial_value = match init.inner().unwrap() {
         ForHead::Decl(decl) => {
             let decl = decl.declared().find(|declarator| {
                 declarator.pattern().map_or(false, |pat| {
@@ -222,7 +226,7 @@ fn try_offer_context(
         .try_to::<Literal>()
         .map(|lit| lit.kind())
     {
-        if is_initially_unreachable(num, checked_value.into_number().unwrap(), op) {
+        if is_initially_unreachable(num, checked_value.as_number().unwrap(), op) {
             err = err
                 .secondary(
                     init.syntax().trimmed_range(),
