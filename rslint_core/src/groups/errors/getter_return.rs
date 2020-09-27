@@ -85,7 +85,7 @@ impl CstRule for GetterReturn {
                     {
                         for prop in obj.props() {
                             if let ObjectProp::LiteralProp(literal_prop) = prop {
-                                if literal_prop.key()?.syntax().text() != "get" {
+                                if literal_prop.key()?.text() != "get" {
                                     continue;
                                 }
                                 match literal_prop.value()? {
