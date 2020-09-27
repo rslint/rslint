@@ -5,6 +5,12 @@
 
 Enforce the use of valid string literals in a `typeof` comparison.
 
+`typeof` can only return a small set of strings, `undefined`, `object`,
+`boolean`, `number`, `string` or `function`, and if you provide
+an invalid value, it's most likely a typo, and the comparison
+will always return `false`.
+This behaviour will be denied by this rule.
+
 ## Invalid Code Examples
 ```js
 typeof foo === "strnig"
@@ -16,7 +22,7 @@ typeof bar !== "fucntion"
 ## Config
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `requireStringLiterals` | bool |  |
+| `requireStringLiterals` | bool | * If this option is `true`, `typeof` expression can only be compared<br>* to valid string literals, or other `typeof` expressions, but<br>* can not be compared to any other value.<br> |
 
 <details>
  <summary> More incorrect examples </summary>
