@@ -1,11 +1,10 @@
 use crate::rule_prelude::*;
-use ast::{BinExpr, Expr, UnaryOp};
+use ast::{BinExpr, Expr, UnaryExpr};
 use rslint_parser::{SyntaxText, TextRange};
-use SyntaxKind::*;
 
 declare_lint! {
     /**
-    Enforces the to use valid string literals in a `typeof` comparison.
+    Enforce the use of valid string literals in a `typeof` comparison.
 
     ## Invalid Code Examples
     ```ignore
@@ -18,7 +17,10 @@ declare_lint! {
     #[derive(Default)]
     ValidTypeof,
     errors,
-    "valid-typeof"
+    "valid-typeof",
+
+    #[serde(default)]
+    pub require_string_literals: bool,
 }
 
 const VALID_TYPES: [&str; 8] = [
@@ -35,35 +37,32 @@ const VALID_TYPES: [&str; 8] = [
 #[typetag::serde]
 impl CstRule for ValidTypeof {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
-        if node.kind() == BIN_EXPR {
-            let expr = node.to::<BinExpr>();
-            if !expr.comparison() {
-                return None;
-            }
+        let expr = node.try_to::<BinExpr>()?;
+        if !expr.comparison() {
+            return None;
+        }
 
-            let (literal, range) = get_type_literal(expr.lhs(), expr.rhs())?;
+        let (literal, range) = get_type_literal(expr.lhs(), expr.rhs())?;
 
-            if !VALID_TYPES.iter().any(|ty| *ty == literal) {
-                let literal = String::from(literal);
-                let suggestion = VALID_TYPES
-                    .iter()
-                    .map(|ty| (*ty, strsim::levenshtein(ty, &literal)))
-                    .filter(|(_, d)| *d < 4)
-                    .next();
+        if !VALID_TYPES.iter().any(|ty| *ty == literal) {
+            let literal = String::from(literal);
+            let suggestion =
+                util::find_best_match_for_name(VALID_TYPES.iter().copied(), &literal, None);
 
-                let err = ctx.err(self.name(), "Invalid typeof comparison value");
+            let err = ctx
+                .err(self.name(), "invalid typeof comparison value")
+                .primary(range, "");
 
-                let err = if let Some((suggestion, _)) = suggestion {
-                    err.primary(
-                        range,
-                        format!("help: a type with a similair name exists: `{}`", suggestion),
-                    )
-                } else {
-                    err.primary(range, "invalid type for typeof comparison")
-                };
+            let err = if let Some(suggestion) = suggestion {
+                err.note(format!(
+                    "help: a type with a similair name exists: `{}`",
+                    suggestion
+                ))
+            } else {
+                err
+            };
 
-                ctx.add_err(err);
-            }
+            ctx.add_err(err);
         }
         None
     }
@@ -88,15 +87,9 @@ fn get_type_literal(lhs: Option<Expr>, rhs: Option<Expr>) -> Option<(SyntaxText,
 }
 
 fn is_typeof_expr(expr: Option<&Expr>) -> bool {
-    if let Some(Expr::UnaryExpr(unary)) = expr {
-        if let Some(UnaryOp::Typeof) = unary.op() {
-            true
-        } else {
-            false
-        }
-    } else {
-        false
-    }
+    expr.and_then(|e| e.syntax().try_to::<UnaryExpr>())
+        .filter(|expr| expr.op() == Some(op!(typeof)))
+        .is_some()
 }
 
 rule_tests! {
