@@ -1,4 +1,5 @@
 use crate::rule_prelude::*;
+use ast::*;
 use SyntaxKind::*;
 
 declare_lint! {
@@ -106,7 +107,7 @@ declare_lint! {
 /// - `Object.defineProperties`
 /// - `Reflect.defineProperties`
 /// and receives three arguments.
-fn is_define_property(expr: &ast::CallExpr) -> bool {
+fn is_define_property(expr: &CallExpr) -> bool {
     expr.callee().map_or(false, |e| {
         [
             ["Object", ".", "defineProperty"],
@@ -119,7 +120,7 @@ fn is_define_property(expr: &ast::CallExpr) -> bool {
 }
 
 /// Check if the expr is `Object.create` and receives two arguments.
-fn is_object_create(expr: &ast::CallExpr) -> bool {
+fn is_object_create(expr: &CallExpr) -> bool {
     expr.callee().map_or(false, |e| {
         e.syntax()
             .structural_lossy_token_eq(&["Object", ".", "create"])
@@ -131,27 +132,26 @@ impl CstRule for NoSetterReturn {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         match node.kind() {
             CALL_EXPR => {
-                let expr = node.to::<ast::CallExpr>();
+                let expr = node.to::<CallExpr>();
                 if is_define_property(&expr) {
-                    let args: Vec<ast::Expr> = expr.arguments().unwrap().args().collect();
+                    let args: Vec<Expr> = expr.arguments().unwrap().args().collect();
                     if let Some(obj) = args
                         .get(2)
-                        .and_then(|expr| expr.syntax().try_to::<ast::ObjectExpr>())
+                        .and_then(|expr| expr.syntax().try_to::<ObjectExpr>())
                     {
                         for prop in obj.props() {
                             self.check_object_props(args[1].syntax(), &prop, ctx);
                         }
                     }
                 } else if is_object_create(&expr) {
-                    let args: Vec<ast::Expr> = expr.arguments().unwrap().args().collect();
+                    let args: Vec<Expr> = expr.arguments().unwrap().args().collect();
                     if let Some(obj) = args
                         .get(1)
-                        .and_then(|expr| expr.syntax().try_to::<ast::ObjectExpr>())
+                        .and_then(|expr| expr.syntax().try_to::<ObjectExpr>())
                     {
                         for prop in obj.props() {
-                            if let ast::ObjectProp::LiteralProp(literal_prop) = prop {
-                                if let Some(ast::Expr::ObjectExpr(inner_obj)) = literal_prop.value()
-                                {
+                            if let ObjectProp::LiteralProp(literal_prop) = prop {
+                                if let Some(Expr::ObjectExpr(inner_obj)) = literal_prop.value() {
                                     for inner_prop in inner_obj.props() {
                                         self.check_object_props(
                                             literal_prop.syntax(),
@@ -166,7 +166,7 @@ impl CstRule for NoSetterReturn {
                 }
             }
             SETTER => {
-                let setter = node.to::<ast::Setter>();
+                let setter = node.to::<Setter>();
                 if let Some(body) = setter.body() {
                     if let Some(key) = setter.key() {
                         self.check_stmts(key.syntax(), body.syntax(), body.stmts(), ctx);
@@ -183,30 +183,30 @@ impl NoSetterReturn {
     fn check_object_props(
         &self,
         key: &SyntaxNode,
-        prop: &ast::ObjectProp,
+        prop: &ObjectProp,
         ctx: &mut RuleCtx,
     ) -> Option<()> {
         match prop {
-            ast::ObjectProp::LiteralProp(literal_prop) => {
+            ObjectProp::LiteralProp(literal_prop) => {
                 if literal_prop.key()?.syntax().text() != "set" {
                     return None;
                 }
                 match literal_prop.value()? {
-                    ast::Expr::FnExpr(decl) => {
+                    Expr::FnExpr(decl) => {
                         self.check_stmts(key, decl.body()?.syntax(), decl.body()?.stmts(), ctx);
                     }
-                    ast::Expr::ArrowExpr(arrow) => {
-                        if let ast::ExprOrBlock::Block(block) = arrow.body()? {
+                    Expr::ArrowExpr(arrow) => {
+                        if let ExprOrBlock::Block(block) = arrow.body()? {
                             self.check_stmts(key, block.syntax(), block.stmts(), ctx);
                         }
                     }
                     _ => {}
                 }
             }
-            ast::ObjectProp::Setter(setter) => {
+            ObjectProp::Setter(setter) => {
                 self.check_stmts(key, setter.body()?.syntax(), setter.body()?.stmts(), ctx);
             }
-            ast::ObjectProp::Method(method) => {
+            ObjectProp::Method(method) => {
                 if method.name()?.syntax().text() != "set" {
                     return None;
                 }
@@ -222,7 +222,7 @@ impl NoSetterReturn {
         &self,
         key: &SyntaxNode,
         body: &SyntaxNode,
-        mut stmts: impl Iterator<Item = ast::Stmt>,
+        mut stmts: impl Iterator<Item = Stmt>,
         ctx: &mut RuleCtx,
     ) {
         if stmts.any(|stmt| self.stmt_returns_value(&stmt)) {
@@ -238,9 +238,9 @@ impl NoSetterReturn {
     }
 
     /// Return `true` if a stmt returns a value.
-    fn stmt_returns_value(&self, stmt: &ast::Stmt) -> bool {
+    fn stmt_returns_value(&self, stmt: &Stmt) -> bool {
         match stmt {
-            ast::Stmt::IfStmt(if_stmt) => {
+            Stmt::IfStmt(if_stmt) => {
                 let cons_result = if_stmt
                     .cons()
                     .map_or(false, |cons| self.stmt_returns_value(&cons));
@@ -249,13 +249,13 @@ impl NoSetterReturn {
                     .map_or(false, |alt| self.stmt_returns_value(&alt));
                 cons_result || alt_result
             }
-            ast::Stmt::BlockStmt(block) => block.stmts().any(|stmt| self.stmt_returns_value(&stmt)),
-            ast::Stmt::ReturnStmt(stmt) => stmt.value().is_some(),
-            ast::Stmt::SwitchStmt(switch) => switch.cases().any(|case| match case {
-                ast::SwitchCase::CaseClause(clause) => {
+            Stmt::BlockStmt(block) => block.stmts().any(|stmt| self.stmt_returns_value(&stmt)),
+            Stmt::ReturnStmt(stmt) => stmt.value().is_some(),
+            Stmt::SwitchStmt(switch) => switch.cases().any(|case| match case {
+                SwitchCase::CaseClause(clause) => {
                     clause.cons().any(|s| self.stmt_returns_value(&s))
                 }
-                ast::SwitchCase::DefaultClause(clause) => {
+                SwitchCase::DefaultClause(clause) => {
                     clause.cons().any(|s| self.stmt_returns_value(&s))
                 }
             }),
