@@ -33,7 +33,6 @@ jobs:
         with:
           rust-version: ${{ matrix.rust }}
       - run: cargo test --verbose --workspace --all-features
-      - run: cargo test --verbose --workspace --no-default-features
 
   clippy:
     name: Clippy
@@ -47,7 +46,6 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           components: clippy
-      - run: cargo clippy --workspace --all-targets --verbose --no-default-features
       - run: cargo clippy --workspace --all-targets --verbose --all-features
 
   rustfmt:
