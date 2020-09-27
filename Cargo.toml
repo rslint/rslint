@@ -13,3 +13,8 @@ default-members = ["rslint_cli"]
 [profile]
 release = { lto = true, codegen-units = 1 }
 bench = { lto = true, codegen-units = 1 }
+
+[profile.dev]
+# Disabling debug info speeds up builds a lot, and we do not really
+# rely on debug info for debugging
+debug = 0
