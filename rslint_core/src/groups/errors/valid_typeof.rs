@@ -1,6 +1,5 @@
 use crate::rule_prelude::*;
-use ast::{BinExpr, Expr, UnaryExpr};
-use rslint_parser::{SyntaxText, TextRange};
+use ast::{BinExpr, Expr, Literal, UnaryExpr};
 
 declare_lint! {
     /**
@@ -41,8 +40,36 @@ impl CstRule for ValidTypeof {
         if !expr.comparison() {
             return None;
         }
+        let (lhs, rhs) = (expr.lhs()?, expr.rhs()?);
 
-        let (literal, range) = get_type_literal(expr.lhs(), expr.rhs())?;
+        let cmp_value = if is_typeof_expr(&lhs) {
+            rhs
+        } else if is_typeof_expr(&rhs) {
+            lhs
+        } else {
+            return None;
+        };
+
+        let str_literal = cmp_value
+            .syntax()
+            .try_to::<Literal>()
+            .and_then(|lit| Some((lit.inner_string_text()?, lit.range())));
+
+        let (literal, literal_range) = if self.require_string_literals {
+            if let Some(lit) = str_literal {
+                lit
+            } else if is_typeof_expr(&cmp_value) {
+                return None;
+            } else {
+                let err = ctx
+                    .err(self.name(), "invalid typeof comparison value")
+                    .primary(cmp_value.range(), "");
+                ctx.add_err(err);
+                return None;
+            }
+        } else {
+            str_literal?
+        };
 
         if !VALID_TYPES.iter().any(|ty| *ty == literal) {
             let literal = String::from(literal);
@@ -51,7 +78,7 @@ impl CstRule for ValidTypeof {
 
             let err = ctx
                 .err(self.name(), "invalid typeof comparison value")
-                .primary(range, "");
+                .primary(literal_range, "");
 
             let err = if let Some(suggestion) = suggestion {
                 err.note(format!(
@@ -68,42 +95,26 @@ impl CstRule for ValidTypeof {
     }
 }
 
-fn get_type_literal(lhs: Option<Expr>, rhs: Option<Expr>) -> Option<(SyntaxText, TextRange)> {
-    fn inner(expr: Expr) -> Option<(SyntaxText, TextRange)> {
-        if let Expr::Literal(lit) = expr {
-            lit.inner_string_text().map(|text| (text, lit.range()))
-        } else {
-            None
-        }
-    }
-
-    if is_typeof_expr(lhs.as_ref()) {
-        inner(rhs?)
-    } else if is_typeof_expr(rhs.as_ref()) {
-        inner(lhs?)
-    } else {
-        None
-    }
-}
-
-fn is_typeof_expr(expr: Option<&Expr>) -> bool {
-    expr.and_then(|e| e.syntax().try_to::<UnaryExpr>())
+fn is_typeof_expr(expr: &Expr) -> bool {
+    expr.syntax()
+        .try_to::<UnaryExpr>()
         .filter(|expr| expr.op() == Some(op!(typeof)))
         .is_some()
 }
 
 rule_tests! {
-  ValidTypeof::default(),
-  err: {
-    r#"typeof foo === "strnig""#,
-    r#"typeof foo == "undefimed""#,
-    r#"typeof bar != "nunber""#,
-    r#"typeof bar !== "fucntion""#
-  },
-  ok: {
-    r#"typeof foo === "string""#,
-    r#"typeof bar == "undefined""#,
-    "typeof foo === baz",
-    "typeof bar === typeof qux"
-  }
+    ValidTypeof::default(),
+    err: {
+        r#"typeof foo === "strnig""#,
+        r#"typeof foo == "undefimed""#,
+        r#"typeof bar != "nunber""#,
+        r#"typeof bar !== "fucntion""#
+    },
+    ok: {
+        r#"typeof foo === "string""#,
+        r#"typeof bar == "undefined""#,
+        "typeof foo === baz",
+        "typeof foo === 4",
+        "typeof bar === typeof qux"
+    }
 }
