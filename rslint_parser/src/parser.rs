@@ -65,10 +65,10 @@ use crate::*;
 /// // Make a new SyntaxNode from the green node
 /// let untyped_node = SyntaxNode::new_root(green);
 ///
-/// assert!(GroupingExpr::can_cast(untyped_node));
+/// assert!(GroupingExpr::can_cast(untyped_node.kind()));
 ///
 /// // Convert the untyped SyntaxNode into a typed AST node
-/// let typed_expr = GroupingExpr::cast(untyped_node.kind()).unwrap();
+/// let typed_expr = GroupingExpr::cast(untyped_node).unwrap();
 ///
 /// assert_eq!(typed_expr.inner().unwrap().syntax().text(), "delete b");
 /// ```
@@ -348,7 +348,7 @@ impl<'t> Parser<'t> {
 
     /// Get the current index of the last event
     pub fn cur_event_pos(&self) -> usize {
-        self.events.len() - 1
+        self.events.len().saturating_sub(1)
     }
 
     /// Remove `amount` events from the parser

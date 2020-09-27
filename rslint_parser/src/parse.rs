@@ -44,7 +44,7 @@ impl<T> Parse<T> {
     /// The syntax node represented by this Parse result
     ///
     /// ```
-    /// use rslint_parse::{SyntaxNode, parse_text, ast::IfStmt, SyntaxNodeExt};
+    /// use rslint_parser::{parse_text, ast::IfStmt, SyntaxNodeExt, SyntaxKind, AstNode};
     ///
     /// let parse = parse_text(
     /// "
@@ -56,11 +56,11 @@ impl<T> Parse<T> {
     /// // The first child of the root syntax node (Script) is the if statement.
     /// let if_stmt = parse.syntax().first_child().unwrap();
     ///
-    /// assert_eq!(if_stmt.kind(), SyntaxNode::IF_STMT);
+    /// assert_eq!(if_stmt.kind(), SyntaxKind::IF_STMT);
     ///
     /// // The if statement node is untyped, we must first cast it to a typed ast node
     /// // to be able to get properties of it in an easy way.
-    /// assert_eq!(if_stmt.as::<IfStmt>().unwrap().condition().unwrap().syntax().text(), "(a > 5)");
+    /// assert_eq!(if_stmt.to::<IfStmt>().condition().unwrap().syntax().text(), "(a > 5)");
     /// ```
     pub fn syntax(&self) -> SyntaxNode {
         SyntaxNode::new_root(self.green.clone())

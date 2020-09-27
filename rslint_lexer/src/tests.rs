@@ -149,7 +149,7 @@ fn all_whitespace() {
     assert_lex! {
         "
         ",
-        WHITESPACE:13
+        WHITESPACE:9
     }
 }
 
@@ -792,7 +792,7 @@ fn single_line_comments() {
         "//abc
     ",
         COMMENT:5,
-        WHITESPACE:9
+        WHITESPACE:5
     }
 
     assert_lex! {
@@ -806,7 +806,7 @@ fn block_comment() {
     assert_lex! {
         "/*
         */",
-        COMMENT:17
+        COMMENT:13
     }
 
     assert_lex! {
