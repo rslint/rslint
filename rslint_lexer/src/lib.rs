@@ -550,18 +550,24 @@ impl<'src> Lexer<'src> {
                 if self.special_number_start(|c| c.is_ascii_hexdigit()) {
                     self.read_hexnumber();
                     self.maybe_bigint();
+                } else {
+                    self.next();
                 }
             }
             Some(b'b') | Some(b'B') => {
                 if self.special_number_start(|c| c == '0' || c == '1') {
                     self.read_bindigits();
                     self.maybe_bigint();
+                } else {
+                    self.next();
                 }
             }
             Some(b'o') | Some(b'O') => {
                 if self.special_number_start(|c| ('0'..='7').contains(&c)) {
                     self.read_octaldigits();
                     self.maybe_bigint();
+                } else {
+                    self.next();
                 }
             }
             Some(b'n') => {

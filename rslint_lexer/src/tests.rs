@@ -3,6 +3,9 @@
 
 use crate::Lexer;
 use quickcheck_macros::quickcheck;
+use std::sync::mpsc::channel;
+use std::thread;
+use std::time::Duration;
 
 // Assert the result of lexing a piece of source code,
 // and make sure the tokens yielded are fully lossless and the source can be reconstructed from only the tokens
@@ -50,7 +53,24 @@ macro_rules! assert_lex {
 // It parses random strings and puts them back together with the produced tokens and compares
 #[quickcheck]
 fn losslessness(string: String) -> bool {
-    let tokens = Lexer::from_str(&string, 0).map(|x| x.0).collect::<Vec<_>>();
+    // using an mpsc channel allows us to spawn a thread and spawn the lexer there, then if
+    // it takes more than 2 seconds we panic because it is 100% infinite recursion
+    let cloned = string.clone();
+    let (sender, receiver) = channel();
+    thread::spawn(move || {
+        sender
+            .send(Lexer::from_str(&cloned, 0).map(|x| x.0).collect::<Vec<_>>())
+            .expect("Could not send tokens to receiver");
+    });
+    let tokens = receiver
+        .recv_timeout(Duration::from_secs(2))
+        .unwrap_or_else(|_| {
+            panic!(
+                "Lexer is infinitely recursing with this code: ->{}<-",
+                string
+            )
+        });
+
     let mut new_str = String::with_capacity(string.len());
     let mut idx = 0;
 
@@ -884,6 +904,18 @@ fn fuzz_fail_2() {
 fn fuzz_fail_3() {
     assert_lex! {
         "0e",
+        ERROR_TOKEN:2
+    }
+}
+
+#[test]
+fn fuzz_fail_4() {
+    assert_lex! {
+        "0o 0b 0x",
+        ERROR_TOKEN:2,
+        WHITESPACE:1,
+        ERROR_TOKEN:2,
+        WHITESPACE:1,
         ERROR_TOKEN:2
     }
 }
