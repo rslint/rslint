@@ -1,12 +1,12 @@
 mod extract;
 
 use crate::project_root;
+use convert_case::{Case, Casing};
 use extract::*;
 use quote::ToTokens;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{read_dir, read_to_string, write};
-use convert_case::{Case, Casing};
 
 const GROUPS_ROOT: &str = "rslint_core/src/groups";
 
@@ -26,7 +26,7 @@ pub fn run() {
 
             let res = extract_group(&meta.name).expect("Failed to extract group rule data");
             let mut v: Vec<_> = res.into_iter().collect();
-            v.sort_by(|x,y| x.0.cmp(&y.0));
+            v.sort_by(|x, y| x.0.cmp(&y.0));
 
             let data = group_markdown(&v, &meta);
 
@@ -41,10 +41,14 @@ pub fn run() {
             groups.push(meta);
         }
     }
-    write(project_root().join("docs/rules/README.md"), rules_markdown(groups)).expect("Failed to write rules readme");
+    write(
+        project_root().join("docs/rules/README.md"),
+        rules_markdown(groups),
+    )
+    .expect("Failed to write rules readme");
 }
 
-const RULES_PRELUDE: &str = 
+const RULES_PRELUDE: &str =
 "
 <!--
 generated docs file, do not edit by hand, see xtask/docgen 
@@ -94,7 +98,12 @@ pub fn rules_markdown(groups: Vec<Group>) -> String {
     ret.push_str("| ---- | ----------- |\n");
 
     for group in groups.into_iter() {
-        ret.push_str(&format!("| [{}](./{}) | {} |\n", group.name, group.name, group.docstring.replace("\n", "<br>")));
+        ret.push_str(&format!(
+            "| [{}](./{}) | {} |\n",
+            group.name,
+            group.name,
+            group.docstring.replace("\n", "<br>")
+        ));
     }
 
     ret.push_str(RULES_CONCLUSION);
@@ -124,7 +133,10 @@ pub fn group_markdown(data: &[(String, RuleFile)], group: &Group) -> String {
                 .unwrap_or_default()
         ));
     }
-    ret.push_str(&format!("\n[Source](../../../rslint_core/src/groups/{})", group.name));
+    ret.push_str(&format!(
+        "\n[Source](../../../rslint_core/src/groups/{})",
+        group.name
+    ));
     ret
 }
 
@@ -133,7 +145,7 @@ pub fn rule_src(group_name: &str, rule_name: &str) -> String {
 }
 
 pub fn first_sentence(string: &str) -> Option<&str> {
-    string.trim().split("\n").next().map(|x| x.trim())
+    string.trim().split('\n').next().map(|x| x.trim())
 }
 
 pub fn extract_group(group_name: &str) -> Result<HashMap<String, RuleFile>, Box<dyn Error>> {
@@ -152,11 +164,13 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
         .lint_declaration
         .docstring
         .unwrap_or_default()
-        .clone()
         .replace("```ignore", "```js");
     ret.insert_str(
         0,
-        &format!("<!--\n generated docs file, do not edit by hand, see xtask/docgen \n-->\n# {}\n\n", rule.lint_declaration.name),
+        &format!(
+            "<!--\n generated docs file, do not edit by hand, see xtask/docgen \n-->\n# {}\n\n",
+            rule.lint_declaration.name
+        ),
     );
 
     if !rule.lint_declaration.config_fields.is_empty() {
@@ -167,9 +181,19 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
         for config in rule.lint_declaration.config_fields.iter() {
             ret.push_str(&format!(
                 "| `{}` | {} | {} |\n",
-                config.field.ident.as_ref().unwrap().to_string().to_case(Case::Camel),
+                config
+                    .field
+                    .ident
+                    .as_ref()
+                    .unwrap()
+                    .to_string()
+                    .to_case(Case::Camel),
                 config.field.ty.to_token_stream().to_string(),
-                config.docstring.clone().unwrap_or_default().replace("\n", "<br>")
+                config
+                    .docstring
+                    .clone()
+                    .unwrap_or_default()
+                    .replace("\n", "<br>")
             ));
         }
     }

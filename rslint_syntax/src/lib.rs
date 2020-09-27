@@ -1,4 +1,4 @@
-//! A crate for generated Syntax node definitions and utility macros. 
+//! A crate for generated Syntax node definitions and utility macros.
 //! Both rslint_lexer and rslint_parser rely on these definitions, therefore
 //! they are wrapped in this crate to prevent cyclic dependencies
 

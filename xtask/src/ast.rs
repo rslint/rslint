@@ -1,4 +1,4 @@
-//! Definitions for the ECMAScript AST used for codegen  
+//! Definitions for the ECMAScript AST used for codegen
 //! Based on the rust analyzer parser and ast definitions
 
 pub(crate) struct KindsSrc<'a> {
@@ -116,13 +116,9 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "void",
         "while",
         "with",
-        "yield"
+        "yield",
     ],
-    literals: &[
-        "NUMBER",
-        "STRING",
-        "REGEX",
-    ],
+    literals: &["NUMBER", "STRING", "REGEX"],
     tokens: &[
         "TEMPLATE_CHUNK",
         "DOLLARCURLY", // ${
@@ -131,7 +127,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "IDENT",
         "WHITESPACE",
         "COMMENT",
-        "SHEBANG"
+        "SHEBANG",
     ],
     nodes: &[
         "SCRIPT",
@@ -225,11 +221,9 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "FOR_STMT_TEST",
         "FOR_STMT_UPDATE",
         "FOR_STMT_INIT",
-
         // Regex, rslint_syntax includes those defs too so we dont have a weird
         // interface between rslint_regex syntax kinds and rslint_syntax syntax kinds
-        
-    ]
+    ],
 };
 
 pub(crate) struct AstSrc<'a> {
@@ -347,7 +341,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct ExportDecl {
             T![export],
             decl: Decl
-        } 
+        }
 
         struct ExportNamed {
             T![export],
@@ -491,7 +485,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct BreakStmt {
             T![break],
             T![ident],
-            T![;], 
+            T![;],
         }
 
         struct ReturnStmt {
@@ -676,7 +670,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             /* optional chain */
             arguments: ArgList,
         }
-        
+
         struct SuperCall {
             T![super],
             arguments: ArgList
@@ -736,7 +730,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             elements: [TemplateElement],
             /* backtick */
         }
-        
+
         struct TemplateElement {
             /* dollarcurly */
             expr: Expr,
@@ -849,7 +843,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             expr: Expr
         }
     },
-    enums: &ast_enums!{
+    enums: &ast_enums! {
         enum ObjectProp {
             LiteralProp,
             Getter,
@@ -908,7 +902,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             ClassDecl
         }
 
-        /* 
+        /*
         enum ModuleItem {
             Stmt,
             ImportDeclaration,
@@ -923,20 +917,20 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
         */
 
-        /* 
+        /*
         enum StmtListItem {
             STMT,
             DECLARATION
         }
         */
-        
+
         enum Decl {
             FnDecl,
             ClassDecl,
             VarDecl,
         }
 
-        /* 
+        /*
         enum ForHead {
             VAR_STMT,
             EXPR
@@ -970,5 +964,5 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             YieldExpr,
             AwaitExpr
         }
-    }
+    },
 };

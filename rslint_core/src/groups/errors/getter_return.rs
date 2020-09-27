@@ -3,8 +3,8 @@ use SyntaxKind::*;
 use ast::*;
 
 declare_lint! {
-    /** 
-    Disallow getter properties which do not always return a value. 
+    /**
+    Disallow getter properties which do not always return a value.
 
     Getters are special properties introduced in ES5 which call a function when a property is accessed.
     The value returned will be the value returned for the property access:
@@ -28,7 +28,7 @@ declare_lint! {
     Getters are expected to return a value, it is a bad practice to use getters to run some function
     without a return. This rule makes sure that does not happen and enforces a getter always returns a value.
 
-    ## Incorrect code examples 
+    ## Incorrect code examples
 
     ```ignore
     // The getter does not always return a value, it would not return anything
@@ -42,7 +42,7 @@ declare_lint! {
     }
     ```
 
-    ## Correct code examples 
+    ## Correct code examples
 
     ```ignore
     // The getter always returns a value
@@ -61,8 +61,8 @@ declare_lint! {
     GetterReturn,
     errors,
     "getter-return",
-    /// Whether to allow implicitly returning undefined with `return;`. 
-    /// `true` by default. 
+    /// Whether to allow implicitly returning undefined with `return;`.
+    /// `true` by default.
     pub allow_implicit: bool
 }
 
@@ -96,7 +96,7 @@ impl CstRule for GetterReturn {
                                         if let ExprOrBlock::Block(block) = arrow.body()? {
                                             self.check_stmts(args[1].syntax(), block.syntax(), block.stmts(), ctx);
                                         }
-                                    },
+                                    }
                                     _ => {}
                                 }
                             }
@@ -111,7 +111,7 @@ impl CstRule for GetterReturn {
                         self.check_stmts(key.syntax(), body.syntax(), body.stmts(), ctx);
                     }
                 }
-            },
+            }
             _ => {}
         }
         None

@@ -4,14 +4,14 @@ use SyntaxKind::*;
 
 declare_lint! {
     /**
-    Disallow constant conditions which always yield one result. 
+    Disallow constant conditions which always yield one result.
 
-    Constant conditions such as `if (true) {}` are almost always a mistake. Constant 
-    conditions always yield a single result which almost always ends up in unwanted behavior. 
+    Constant conditions such as `if (true) {}` are almost always a mistake. Constant
+    conditions always yield a single result which almost always ends up in unwanted behavior.
     This rule is aimed at catching those conditions in `if`, `do while`, `while`, and `for` statements, as well as
     conditional expressions.
 
-    ## Incorrect Code Examples 
+    ## Incorrect Code Examples
 
     ```ignore
     if (true) {
@@ -28,12 +28,12 @@ declare_lint! {
     }
     ```
 
-    ## Correct Code Examples 
+    ## Correct Code Examples
 
     ```ignore
     if (foo) {
         /* */
-    } 
+    }
     ```
     */
     #[derive(Default)]
@@ -56,32 +56,36 @@ impl CstRule for NoConstantCondition {
                 } else {
                     return None;
                 }
-            },
+            }
             COND_EXPR => {
                 let cond = node.to::<CondExpr>().test()?;
                 if !util::is_const(cond.clone(), true, &mut notes) {
                     return None;
                 }
                 cond
-            },
+            }
             FOR_STMT => {
                 let cond = node.to::<ForStmt>().test()?.expr()?;
                 if !util::is_const(cond.clone(), true, &mut notes) {
                     return None;
                 }
                 cond
-            },
-            _ => return None
+            }
+            _ => return None,
         };
 
         let mut err = ctx.err(self.name(), "Unexpected constant condition");
         if let Some(condition_value) = util::simple_bool_coerce(cond.clone()) {
             err = util::simple_const_condition_context(node.clone(), condition_value, err);
         } else {
-            err = err.primary(cond.syntax().trimmed_range(), "this condition always yields one result")
+            err = err.primary(
+                cond.syntax().trimmed_range(),
+                "this condition always yields one result",
+            )
         }
         ctx.add_err(err);
-        return None;
+
+        None
     }
 }
 

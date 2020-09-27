@@ -322,18 +322,16 @@ impl Analyzer {
                     (*(Rc::as_ptr(maybe_valid) as *mut VariableRef)).hoisted_declaration =
                         corresponding_decl.map(|this| Rc::downgrade(&this));
                 }
-            } else {
-                if let Some(decl) = corresponding_decl {
-                    for var_ref in decl
-                        .references
-                        .iter()
-                        .map(|weak| weak.upgrade().expect("Weak dropped in scope analysis"))
-                    {
-                        // Safety: same as before, no immutable reads occur while the pointer exists
-                        unsafe {
-                            (*(Rc::as_ptr(&var_ref) as *mut VariableRef)).declaration =
-                                Some(Rc::downgrade(&decl));
-                        }
+            } else if let Some(decl) = corresponding_decl {
+                for var_ref in decl
+                    .references
+                    .iter()
+                    .map(|weak| weak.upgrade().expect("Weak dropped in scope analysis"))
+                {
+                    // Safety: same as before, no immutable reads occur while the pointer exists
+                    unsafe {
+                        (*(Rc::as_ptr(&var_ref) as *mut VariableRef)).declaration =
+                            Some(Rc::downgrade(&decl));
                     }
                 }
             }

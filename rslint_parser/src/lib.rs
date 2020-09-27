@@ -59,14 +59,14 @@ mod parser;
 #[macro_use]
 mod token_set;
 mod diagnostics;
+mod event;
 mod lossless_tree_sink;
 mod lossy_tree_sink;
+mod numbers;
 mod parse;
 mod state;
 mod syntax_node;
 mod token_source;
-mod event;
-mod numbers;
 
 #[cfg(test)]
 mod tests;
@@ -82,14 +82,14 @@ pub use crate::{
     event::{process, Event},
     lossless_tree_sink::LosslessTreeSink,
     lossy_tree_sink::LossyTreeSink,
+    numbers::{BigInt, JsNum},
     parse::*,
     parser::{CompletedMarker, Marker, Parser},
     state::{ParserState, StrictMode},
     syntax_node::*,
     token_set::TokenSet,
     token_source::TokenSource,
-    util::{SyntaxTokenExt, SyntaxNodeExt},
-    numbers::{JsNum, BigInt}
+    util::{SyntaxNodeExt, SyntaxTokenExt},
 };
 
 pub use rowan::{SmolStr, SyntaxText, TextRange, TextSize, WalkEvent};

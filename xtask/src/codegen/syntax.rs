@@ -1,5 +1,5 @@
-//! Generate SyntaxKind definitions as well as typed AST definitions for nodes and tokens. 
-//! This is derived from rust-analyzer/xtask/codegen 
+//! Generate SyntaxKind definitions as well as typed AST definitions for nodes and tokens.
+//! This is derived from rust-analyzer/xtask/codegen
 
 use proc_macro2::{Punct, Spacing};
 use quote::{format_ident, quote};
@@ -121,7 +121,11 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
         .enums
         .iter()
         .map(|en| {
-            let variants: Vec<_> = en.variants.iter().map(|var| format_ident!("{}", var)).collect();
+            let variants: Vec<_> = en
+                .variants
+                .iter()
+                .map(|var| format_ident!("{}", var))
+                .collect();
             let name = format_ident!("{}", en.name);
             let kinds: Vec<_> = variants
                 .iter()
@@ -174,8 +178,10 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
     let enum_names = grammar.enums.iter().map(|it| it.name);
     let node_names = grammar.nodes.iter().map(|it| it.name);
 
-    let display_impls =
-        enum_names.chain(node_names.clone()).map(|it| format_ident!("{}", it)).map(|name| {
+    let display_impls = enum_names
+        .chain(node_names.clone())
+        .map(|it| format_ident!("{}", it))
+        .map(|name| {
             quote! {
                 impl std::fmt::Display for #name {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -199,7 +205,10 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
         #(#display_impls)*
     };
 
-    let ast = ast.to_string().replace("T ! [ ", "T![").replace(" ] )", "])");
+    let ast = ast
+        .to_string()
+        .replace("T ! [ ", "T![")
+        .replace(" ] )", "])");
 
     let mut res = String::with_capacity(ast.len() * 2);
 
@@ -230,12 +239,16 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
     });
     let punctuation_strings = punctuation_values.clone().map(|name| name.to_string());
 
-    let punctuation =
-        grammar.punct.iter().map(|(_token, name)| format_ident!("{}", name)).collect::<Vec<_>>();
+    let punctuation = grammar
+        .punct
+        .iter()
+        .map(|(_token, name)| format_ident!("{}", name))
+        .collect::<Vec<_>>();
 
     let full_keywords_values = &grammar.keywords;
-    let full_keywords =
-        full_keywords_values.iter().map(|kw| format_ident!("{}_KW", to_upper_snake_case(&kw)));
+    let full_keywords = full_keywords_values
+        .iter()
+        .map(|kw| format_ident!("{}_KW", to_upper_snake_case(&kw)));
 
     let all_keywords_values = grammar.keywords.to_vec();
     let all_keywords_idents = all_keywords_values.iter().map(|kw| format_ident!("{}", kw));
@@ -244,15 +257,26 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
         .map(|name| format_ident!("{}_KW", to_upper_snake_case(&name)))
         .collect::<Vec<_>>();
 
-    let literals =
-        grammar.literals.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
+    let literals = grammar
+        .literals
+        .iter()
+        .map(|name| format_ident!("{}", name))
+        .collect::<Vec<_>>();
 
-    let tokens = grammar.tokens.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
+    let tokens = grammar
+        .tokens
+        .iter()
+        .map(|name| format_ident!("{}", name))
+        .collect::<Vec<_>>();
 
-    let nodes = grammar.nodes.iter().map(|name| format_ident!("{}", name)).collect::<Vec<_>>();
+    let nodes = grammar
+        .nodes
+        .iter()
+        .map(|name| format_ident!("{}", name))
+        .collect::<Vec<_>>();
 
     let ast = quote! {
-        #![allow(bad_style, missing_docs, unreachable_pub)]
+        #![allow(bad_style, missing_docs, unreachable_pub, clippy::manual_non_exhaustive)]
         /// The kind of syntax node, e.g. `IDENT`, `FUNCTION_KW`, or `FOR_STMT`.
         #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
         #[repr(u16)]

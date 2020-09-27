@@ -1,7 +1,7 @@
 use crate::*;
 
 #[cfg(feature = "highlight")]
-pub use ansi_term::{ANSIGenericString, Color, Style, self};
+pub use ansi_term::{self, ANSIGenericString, Color, Style};
 #[cfg(feature = "highlight")]
 use atty::is;
 

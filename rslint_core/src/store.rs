@@ -23,12 +23,12 @@ impl CstRuleStore {
         self.rules.extend(rules);
     }
 
-    /// Get a rule using its rule name from this store. 
-    /// 
-    /// # Examples 
+    /// Get a rule using its rule name from this store.
+    ///
+    /// # Examples
     /// ```
     /// use rslint_core::CstRuleStore;
-    /// 
+    ///
     /// assert!(CstRuleStore::new().builtins().get("no-empty").is_some())
     /// ```
     pub fn get(&self, rule_name: impl AsRef<str>) -> Option<Box<dyn CstRule>> {

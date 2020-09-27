@@ -1,7 +1,9 @@
 use crate::{util::find_best_match_for_name, CstRule, CstRuleStore, Diagnostic, DiagnosticBuilder};
 use codespan_reporting::diagnostic::Severity;
 use rslint_lexer::Lexer as RawLexer;
-use rslint_parser::{util::Comment, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTokenExt, T, TextRange};
+use rslint_parser::{
+    util::Comment, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTokenExt, TextRange, T,
+};
 use std::collections::HashMap;
 use std::iter::Peekable;
 use std::ops::Range;
@@ -215,7 +217,7 @@ impl<'store> DirectiveParser<'store> {
             let commands = self.parse_directive(comment.token.clone(), None)?;
             directives.push(RawDirective { commands, comment });
         }
-        Ok(directives) 
+        Ok(directives)
     }
 
     fn parse_directive(
@@ -245,19 +247,18 @@ impl<'store> DirectiveParser<'store> {
         {
             if first {
                 first = false;
+            } else if lexer.peek_no_whitespace().map(|x| x.kind) != Some(T![-]) {
+                return Err(self
+                    .err("Directive commands must be separated by `-`")
+                    .primary(
+                        lexer.cur..lexer.cur + lexer.peek_no_whitespace().unwrap().len,
+                        "",
+                    )
+                    .into());
             } else {
-                if lexer.peek_no_whitespace().map(|x| x.kind) != Some(T![-]) {
-                    return Err(self
-                        .err("Directive commands must be separated by `-`")
-                        .primary(
-                            lexer.cur..lexer.cur + lexer.peek_no_whitespace().unwrap().len,
-                            "",
-                        )
-                        .into());
-                } else {
-                    lexer.next();
-                }
+                lexer.next();
             }
+
             raw_commands.push(self.parse_command(&mut lexer, node.clone())?);
         }
         Ok(raw_commands)
@@ -311,7 +312,7 @@ impl<'store> DirectiveParser<'store> {
                 {
                     err = err.note(format!("help: did you mean `{}`", suggestion));
                 }
-                return Err(err.into());
+                Err(err.into())
             }
         }
     }
@@ -364,7 +365,7 @@ impl<'src> Lexer<'src> {
                 self.raw.next();
                 return self.peek();
             }
-            Some(tok.clone())
+            Some(*tok)
         } else {
             None
         }
@@ -388,11 +389,11 @@ impl<'src> Lexer<'src> {
 
     pub fn word(&mut self) -> Result<Token, Diagnostic> {
         let end = self.src.len() + self.offset;
-        let next: rslint_lexer::Token = self.next().ok_or(
+        let next: rslint_lexer::Token = self.next().ok_or_else(|| {
             self.err("Expected a word when parsing a directive, but the comment ends prematurely")
                 .primary(end..end + 1, "comment ends here")
-                .finish(),
-        )?;
+                .finish()
+        })?;
         if next.kind != T![ident] && !next.kind.is_keyword() {
             return Err(self
                 .err("Expected a word when parsing a directive, but found none")
@@ -409,14 +410,14 @@ impl<'src> Lexer<'src> {
 
     pub fn rule_name(&mut self) -> Result<Token, Diagnostic> {
         let end = self.src.len() + self.offset;
-        let next = self.next().ok_or(
+        let next = self.next().ok_or_else(|| {
             self.err(
                 "Expected a rule name when parsing a directive, but the comment ends prematurely",
             )
             .primary(end..end + 1, "comment ends here")
-            .finish(),
-        )?;
-        let start = self.range(next.clone()).start + 1;
+            .finish()
+        })?;
+        let start = self.range(next).start + 1;
         let mut tok = next;
 
         loop {

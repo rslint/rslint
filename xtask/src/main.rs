@@ -3,7 +3,7 @@ use xtask::{
     codegen::{self, Mode},
     docgen,
     glue::pushd,
-    run_rustfmt, project_root, Result
+    project_root, run_rustfmt, Result,
 };
 
 fn main() -> Result<()> {
@@ -17,7 +17,7 @@ fn main() -> Result<()> {
             args.finish()?;
             codegen::generate_parser_tests(Mode::Overwrite)?;
             Ok(())
-        },
+        }
         "syntax" => {
             args.finish()?;
             codegen::generate_syntax(Mode::Overwrite)?;

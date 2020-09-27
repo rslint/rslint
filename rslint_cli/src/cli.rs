@@ -1,7 +1,7 @@
 //! CLI options
 
 use crate::{lint_err, DOCS_LINK_BASE, REPO_LINK};
-use ansi_term::Color::{White, RGB, Green};
+use ansi_term::Color::{Green, White, RGB};
 use regex::{Captures, Regex};
 use rslint_lexer::{ansi_term, color};
 use ureq::get;
@@ -53,7 +53,9 @@ impl ExplanationRunner {
         let regex = Regex::new("```js\n([\\s\\S]*?)\n```").unwrap();
         for rule in self.rules.iter_mut() {
             *rule = regex
-                .replace_all(rule, |cap: &Captures| format!("\n{}\n", color(cap.get(1).unwrap().as_str())))
+                .replace_all(rule, |cap: &Captures| {
+                    format!("\n{}\n", color(cap.get(1).unwrap().as_str()))
+                })
                 .to_string();
         }
     }
@@ -75,7 +77,11 @@ impl ExplanationRunner {
             *rule = regex
                 .replace_all(rule, |cap: &Captures| {
                     let color = RGB(42, 42, 42);
-                    ansi_term::Style::new().on(color).fg(White).paint(cap.get(1).unwrap().as_str()).to_string()
+                    ansi_term::Style::new()
+                        .on(color)
+                        .fg(White)
+                        .paint(cap.get(1).unwrap().as_str())
+                        .to_string()
                 })
                 .to_string();
         }

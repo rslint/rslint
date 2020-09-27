@@ -189,11 +189,11 @@ fn check_name_pat(
     }
 }
 
-/// Check the LHS expression inside of a for...in or for...of statement according to 
+/// Check the LHS expression inside of a for...in or for...of statement according to
 pub fn check_for_stmt_lhs(p: &mut Parser, expr: Expr, marker: &CompletedMarker) {
     match expr {
         Expr::NameRef(ident) => check_simple_assign_target(p, &Expr::from(ident), marker.range(p)),
-        Expr::DotExpr(_) | Expr::BracketExpr(_) => {},
+        Expr::DotExpr(_) | Expr::BracketExpr(_) => {}
         Expr::AssignExpr(expr) => {
             if let Some(rhs) = expr.rhs() {
                 check_for_stmt_lhs(p, rhs, marker);
@@ -288,7 +288,8 @@ fn check_spread_element(p: &mut Parser, lhs: Expr, marker: &CompletedMarker) {
 
 pub fn check_lhs(p: &mut Parser, expr: Expr, marker: &CompletedMarker) {
     if expr.syntax().kind() == ASSIGN_EXPR {
-        let err = p.err_builder("Illegal assignment expression in for statement")
+        let err = p
+            .err_builder("Illegal assignment expression in for statement")
             .primary(marker.offset_range(p, expr.syntax().trimmed_range()), "");
 
         p.error(err);
@@ -303,18 +304,24 @@ pub fn check_for_stmt_declarators(p: &mut Parser, marker: &CompletedMarker) {
     let excess = parsed.declared().skip(1).collect::<Vec<_>>();
 
     if !excess.is_empty() {
-        let start = marker.offset_range(p, excess.first().unwrap().syntax().trimmed_range()).start();
-        let end = marker.offset_range(p, excess.last().unwrap().syntax().trimmed_range()).end();
+        let start = marker
+            .offset_range(p, excess.first().unwrap().syntax().trimmed_range())
+            .start();
+        let end = marker
+            .offset_range(p, excess.last().unwrap().syntax().trimmed_range())
+            .end();
 
-        let err = p.err_builder("For statement variable declarations may only have one declaration")
+        let err = p
+            .err_builder("For statement variable declarations may only have one declaration")
             .primary(TextRange::new(start, end), "");
-        
+
         p.error(err);
     }
 
     if let Some(decl) = parsed.declared().next() {
         if let Some(init) = decl.value() {
-            let err = p.err_builder("Illegal initializer in for statement variable declaration")
+            let err = p
+                .err_builder("Illegal initializer in for statement variable declaration")
                 .primary(marker.offset_range(p, init.syntax().trimmed_range()), "");
 
             p.error(err);

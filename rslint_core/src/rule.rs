@@ -84,11 +84,11 @@ pub trait Rule: Debug + DynClone + Send + Sync {
 dyn_clone::clone_trait_object!(Rule);
 dyn_clone::clone_trait_object!(CstRule);
 
-/// The level configured for a rule. 
+/// The level configured for a rule.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RuleLevel {
     Warning,
-    Error
+    Error,
 }
 
 /// Context given to a rule when running it.
@@ -102,7 +102,7 @@ pub struct RuleCtx {
     /// Whether the linter is run with the `--verbose` option.
     /// Which dictates whether the linter should include more (potentially spammy) context in diagnostics.
     pub verbose: bool,
-    /// An empty vector of diagnostics which the rule adds to. 
+    /// An empty vector of diagnostics which the rule adds to.
     pub diagnostics: Vec<Diagnostic>,
 }
 
@@ -117,7 +117,7 @@ impl RuleCtx {
     }
 }
 
-/// The result of running a single rule on a syntax tree. 
+/// The result of running a single rule on a syntax tree.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RuleResult {
     pub diagnostics: Vec<Diagnostic>,
@@ -189,7 +189,7 @@ impl Outcome {
 ///     /// A description of the rule here
 ///     /// This will be used as the doc for the rule struct
 ///     RuleName,
-///     // The name of the group this rule belongs to. 
+///     // The name of the group this rule belongs to.
 ///     groupname,
 ///     // Make sure this is kebab-case and unique.
 ///     "rule-name",

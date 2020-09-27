@@ -535,11 +535,10 @@ pub fn args(p: &mut Parser) -> CompletedMarker {
     while !p.at(EOF) && !p.at(T![')']) {
         if first {
             first = false;
-        } else {
-            if p.expect(T![,]) && p.at(T![')']) {
-                break;
-            }
+        } else if p.expect(T![,]) && p.at(T![')']) {
+            break;
         }
+
         if p.at(T![...]) {
             spread_element(p);
         } else {

@@ -1,9 +1,9 @@
 use crate::{parse_module, ParserError};
-use std::path::{Path, PathBuf};
-use std::fs;
-use expect_test::expect_file;
-use codespan_reporting::term::{Config, termcolor::Buffer, emit};
 use codespan_reporting::files::SimpleFiles;
+use codespan_reporting::term::{emit, termcolor::Buffer, Config};
+use expect_test::expect_file;
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[test]
 fn parser_smoke_test() {
@@ -32,14 +32,20 @@ fn parser_tests() {
         let errors = parse.errors();
         assert_errors_are_present(&errors, path);
         let mut files = SimpleFiles::new();
-        files.add(path.file_name().unwrap().to_string_lossy().to_string(), text);
+        files.add(
+            path.file_name().unwrap().to_string_lossy().to_string(),
+            text,
+        );
         let mut ret = format!("{:#?}", parse.syntax());
 
         for diag in parse.errors() {
             let mut buf = Buffer::no_color();
-        
+
             emit(&mut buf, &Config::default(), &files, diag).expect("failed to emit diagnostic");
-            ret.push_str(&format!("--\n{}", std::str::from_utf8(buf.as_slice()).expect("non utf8 in error buffer")));
+            ret.push_str(&format!(
+                "--\n{}",
+                std::str::from_utf8(buf.as_slice()).expect("non utf8 in error buffer")
+            ));
         }
         ret.push_str(&format!("--\n{}", text));
         ret
@@ -91,7 +97,11 @@ fn js_files_in_dir(dir: &Path) -> Vec<PathBuf> {
 }
 
 fn assert_errors_are_present(errors: &[ParserError], path: &Path) {
-    assert!(!errors.is_empty(), "There should be errors in the file {:?}", path.display());
+    assert!(
+        !errors.is_empty(),
+        "There should be errors in the file {:?}",
+        path.display()
+    );
 }
 
 fn assert_errors_are_absent(errors: &[ParserError], path: &Path) {

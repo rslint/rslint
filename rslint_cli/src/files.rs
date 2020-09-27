@@ -2,6 +2,7 @@
 
 use codespan_reporting::files::Files;
 use glob::Paths;
+use hashbrown::HashMap;
 use std::borrow::Cow;
 use std::fs::read_to_string;
 use std::ops::Range;
@@ -9,7 +10,6 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::Builder;
 use walkdir::WalkDir;
-use hashbrown::HashMap;
 
 // 0 is reserved for "no file id" (virtual files)
 static FILE_ID_COUNTER: AtomicUsize = AtomicUsize::new(1);
@@ -39,7 +39,7 @@ impl<'a> Files<'a> for FileWalker {
                 .path
                 .as_ref()
                 .map(|p| p.to_string_lossy())
-                .unwrap_or((&entry.name).into()),
+                .unwrap_or_else(|| (&entry.name).into()),
         )
     }
 
@@ -63,7 +63,7 @@ impl<'a> Files<'a> for FileWalker {
 impl FileWalker {
     pub fn empty() -> Self {
         Self {
-            files: HashMap::new()
+            files: HashMap::new(),
         }
     }
 
@@ -72,12 +72,25 @@ impl FileWalker {
     pub fn from_glob(paths: Paths) -> Self {
         let mut threads = Vec::new();
         for entry in paths.filter_map(Result::ok) {
-            if IGNORED.contains(&entry.file_name().map(|x| x.to_string_lossy().to_string()).unwrap_or_default().as_str()) {
+            if IGNORED.contains(
+                &entry
+                    .file_name()
+                    .map(|x| x.to_string_lossy().to_string())
+                    .unwrap_or_default()
+                    .as_str(),
+            ) {
                 continue;
             }
 
             for file in WalkDir::new(entry).into_iter().filter_map(Result::ok) {
-                if !LINTED_FILES.contains(&file.path().extension().map(|osstr| osstr.to_string_lossy().to_string()).unwrap_or_default().as_str()) {
+                if !LINTED_FILES.contains(
+                    &file
+                        .path()
+                        .extension()
+                        .map(|osstr| osstr.to_string_lossy().to_string())
+                        .unwrap_or_default()
+                        .as_str(),
+                ) {
                     continue;
                 }
                 if IGNORED.contains(&file.file_name().to_string_lossy().to_string().as_str()) {
@@ -103,7 +116,7 @@ impl FileWalker {
             .collect::<Vec<_>>();
         let jsfiles = files
             .into_iter()
-            .map(|(src, path)| JsFile::new_concrete(src, path.into()))
+            .map(|(src, path)| JsFile::new_concrete(src, path))
             .map(|file| (file.id, file))
             .collect();
 
@@ -140,7 +153,11 @@ pub enum JsFileKind {
 impl JsFile {
     pub fn new_concrete(source: String, path: PathBuf) -> Self {
         let id = FILE_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
-        let kind = if path.extension().map_or("".into(), |ext| ext.to_string_lossy()) == "mjs" {
+        let kind = if path
+            .extension()
+            .map_or("".into(), |ext| ext.to_string_lossy())
+            == "mjs"
+        {
             JsFileKind::Module
         } else {
             JsFileKind::Script
@@ -149,11 +166,13 @@ impl JsFile {
 
         Self {
             source,
-            name: path.file_name().map_or(String::new(), |osstr| osstr.to_string_lossy().to_string()),
+            name: path
+                .file_name()
+                .map_or(String::new(), |osstr| osstr.to_string_lossy().to_string()),
             path: Some(path),
             id,
             kind,
-            line_starts
+            line_starts,
         }
     }
 

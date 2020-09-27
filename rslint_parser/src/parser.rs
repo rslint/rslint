@@ -281,13 +281,17 @@ impl<'t> Parser<'t> {
             let err = if self.cur() == SyntaxKind::EOF {
                 self.err_builder(&format!(
                     "expected `{}` but instead the file ends",
-                    kind.to_string().map(|x| x.to_string()).unwrap_or_else(|| format!("{:?}", kind))
+                    kind.to_string()
+                        .map(|x| x.to_string())
+                        .unwrap_or_else(|| format!("{:?}", kind))
                 ))
                 .primary(self.cur_tok().range, "the file ends here")
             } else {
                 self.err_builder(&format!(
                     "expected `{}` but instead found `{}`",
-                    kind.to_string().map(|x| x.to_string()).unwrap_or_else(|| format!("{:?}", kind)),
+                    kind.to_string()
+                        .map(|x| x.to_string())
+                        .unwrap_or_else(|| format!("{:?}", kind)),
                     self.cur_src()
                 ))
                 .primary(self.cur_tok().range, "unexpected")

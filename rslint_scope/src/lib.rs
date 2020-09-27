@@ -1,12 +1,12 @@
-//! A scope analysis library for JavaScript which strives to be as detailed as possible. 
+//! A scope analysis library for JavaScript which strives to be as detailed as possible.
 
 mod analyzer;
 
-use rslint_parser::{SyntaxKind, SyntaxNode, SmolStr, SyntaxText, parse_module};
-use std::rc::{Rc, Weak};
 use analyzer::*;
+use rslint_parser::{parse_module, SmolStr, SyntaxKind, SyntaxNode, SyntaxText};
+use std::rc::{Rc, Weak};
 
-/// A variable which exists in a particular scope. 
+/// A variable which exists in a particular scope.
 #[derive(Debug, Clone)]
 pub struct VariableBinding {
     /// The node which defined this variable
@@ -20,7 +20,7 @@ pub struct VariableBinding {
     pub kind: BindingKind,
     /// Whether this variable is not defined in this scope but is instead passed down
     /// from a parent scope
-    pub inherited: bool
+    pub inherited: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -29,17 +29,17 @@ pub struct VariableRef {
     pub node: SyntaxNode,
     /// How the variable was used.
     pub usage: VariableUsageKind,
-    /// The variable declaration, if the variable was actually defined. 
+    /// The variable declaration, if the variable was actually defined.
     pub declaration: Option<Weak<VariableBinding>>,
     /// The possible variable declaration if its a let or const binding and the variable ref
-    /// is in a temporal dead zone. Aka: 
-    /// 
+    /// is in a temporal dead zone. Aka:
+    ///
     /// ```js
     /// foo + 5; // temporal dead zone
-    /// 
+    ///
     /// let foo = 5;
     /// ```
-    pub hoisted_declaration: Option<Weak<VariableBinding>>
+    pub hoisted_declaration: Option<Weak<VariableBinding>>,
 }
 
 impl VariableRef {
@@ -60,10 +60,10 @@ pub struct Scope {
     pub var_refs: Vec<Rc<VariableRef>>,
     pub children: Vec<Rc<Scope>>,
     pub parent: Option<Weak<Scope>>,
-    pub unreachable: bool
+    pub unreachable: bool,
 }
 
-/// How a variable was used in a reference to it. 
+/// How a variable was used in a reference to it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VariableUsageKind {
     /// Usages such as `foo.bar`, `let a = foo`, etc.
@@ -73,10 +73,10 @@ pub enum VariableUsageKind {
     /// Constructing a new instance of the variable, like `new foo()`.
     Construct,
     /// Reassign the variable
-    Write
+    Write,
 }
 
-/// In what way a variable is declared. 
+/// In what way a variable is declared.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BindingKind {
     /// An import declaration, includes the type of import and the optional source.
@@ -89,10 +89,10 @@ pub enum BindingKind {
     Param(PatternBindingKind),
     CatchClause,
     Getter,
-    Setter
+    Setter,
 }
 
-/// The kind of pattern which declares a parameter or variable or destructuring assignment. 
+/// The kind of pattern which declares a parameter or variable or destructuring assignment.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PatternBindingKind {
     /// A single identifier binding such as `let foo = 5`
@@ -111,7 +111,7 @@ pub enum ImportBindingKind {
     /// also includes the optional original name if this is an alias, aka `foo as bar`
     DestructuredImport(Option<SmolStr>),
     /// An import referencing a default, such as `import foo from "bar"`
-    LiteralImport
+    LiteralImport,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -148,5 +148,8 @@ fn it_works() {
     analyzer.analyze(None);
     let global = analyzer.end();
     assert!(!global.children[0].children[0].var_refs[0].undefined());
-    assert_eq!(global.children[0].children[0].var_refs[0].usage, VariableUsageKind::Call);
+    assert_eq!(
+        global.children[0].children[0].var_refs[0].usage,
+        VariableUsageKind::Call
+    );
 }

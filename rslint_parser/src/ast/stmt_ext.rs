@@ -294,34 +294,36 @@ impl WildcardImport {
 
 impl IfStmt {
     pub fn cons(&self) -> Option<Stmt> {
-        self.syntax()
-            .child_with_ast::<Stmt>()
-            .filter(|cons| {
-                cons.syntax().text_range().start()
-                    <= self
-                        .else_token()
-                        .map(|x| x.text_range().start())
-                        .unwrap_or(cons.syntax().text_range().start())
-            })
+        self.syntax().child_with_ast::<Stmt>().filter(|cons| {
+            cons.syntax().text_range().start()
+                <= self
+                    .else_token()
+                    .map(|x| x.text_range().start())
+                    .unwrap_or_else(|| cons.syntax().text_range().start())
+        })
     }
 
     pub fn alt(&self) -> Option<Stmt> {
-        let possible_blocks = self.syntax()
+        let possible_blocks = self
+            .syntax()
             .children()
             .filter(|child| child.is::<Stmt>())
             .collect::<Vec<_>>();
-        
+
         // handle if (true) else {}
         if let Some(else_block) = possible_blocks.get(1) {
             Some(else_block.to())
         } else {
-            possible_blocks.first().filter(|node| {
-                node.text_range().start()
-                    > self
-                        .else_token()
-                        .map(|x| x.text_range().start())
-                        .unwrap_or(node.text_range().start())
-            }).map(|x| x.to())
+            possible_blocks
+                .first()
+                .filter(|node| {
+                    node.text_range().start()
+                        > self
+                            .else_token()
+                            .map(|x| x.text_range().start())
+                            .unwrap_or_else(|| node.text_range().start())
+                })
+                .map(|x| x.to())
         }
     }
 }

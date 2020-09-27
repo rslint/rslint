@@ -3,12 +3,12 @@
 //! See the [ECMAScript spec](https://www.ecma-international.org/ecma-262/5.1/#sec-12).
 
 use super::decl::{class_decl, function_decl};
-use super::expr::{assign_expr, expr, primary_expr, STARTS_EXPR, EXPR_RECOVERY_SET};
+use super::expr::{assign_expr, expr, primary_expr, EXPR_RECOVERY_SET, STARTS_EXPR};
 use super::pat::*;
+use super::program::{export_decl, import_decl};
 use super::util::{
     check_for_stmt_declarators, check_label_use, check_lhs, check_var_decl_bound_names,
 };
-use super::program::{import_decl, export_decl};
 use crate::{SyntaxKind::*, *};
 
 pub const STMT_RECOVERY_SET: TokenSet = token_set![
@@ -86,10 +86,8 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
             let m = p.start();
             // TODO: Should we change this to fn_expr if there is no name?
             function_decl(p, m)
-        },
-        T![class] => {
-            class_decl(p, false)
         }
+        T![class] => class_decl(p, false),
         T![ident]
             if p.cur_src() == "async"
                 && p.nth_at(1, T![function])
@@ -150,14 +148,17 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
         _ => {
             let err = p
                 .err_builder("Expected a statement or declaration, but found none")
-                .primary(p.cur_tok().range, "Expected a statement or declaration here");
+                .primary(
+                    p.cur_tok().range,
+                    "Expected a statement or declaration here",
+                );
 
             // We must explicitly handle this case or else infinite recursion can happen
             if p.at(T!['}']) {
                 p.err_and_bump(err);
                 return None;
             }
-            
+
             p.err_recover(err, recovery_set.into().unwrap_or(STMT_RECOVERY_SET));
             return None;
         }
@@ -230,10 +231,7 @@ pub fn break_stmt(p: &mut Parser) -> CompletedMarker {
     if !p.state.break_allowed && p.state.labels.is_empty() {
         let err = p
             .err_builder("Invalid break not inside of a switch, loop, or labelled statement")
-            .primary(
-                start.start..end,
-                "",
-            );
+            .primary(start.start..end, "");
 
         p.error(err);
     }
@@ -267,10 +265,7 @@ pub fn continue_stmt(p: &mut Parser) -> CompletedMarker {
     if !p.state.break_allowed && p.state.labels.is_empty() {
         let err = p
             .err_builder("Invalid continue not inside of a loop")
-            .primary(
-                start.start..end,
-                "",
-            );
+            .primary(start.start..end, "");
 
         p.error(err);
     }
@@ -322,7 +317,11 @@ pub fn empty_stmt(p: &mut Parser) -> CompletedMarker {
 // {}
 // {{{{}}}}
 // { foo = bar; }
-pub fn block_stmt(p: &mut Parser, function_body: bool, recovery_set: impl Into<Option<TokenSet>>) -> CompletedMarker {
+pub fn block_stmt(
+    p: &mut Parser,
+    function_body: bool,
+    recovery_set: impl Into<Option<TokenSet>>,
+) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['{']);
     block_items(p, function_body, false, recovery_set);
@@ -332,7 +331,12 @@ pub fn block_stmt(p: &mut Parser, function_body: bool, recovery_set: impl Into<O
 
 /// Top level items or items inside of a block statement, this also handles module items so we can
 /// easily recover from erroneous module declarations in scripts
-pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool, recovery_set: impl Into<Option<TokenSet>>) {
+pub(crate) fn block_items(
+    p: &mut Parser,
+    directives: bool,
+    top_level: bool,
+    recovery_set: impl Into<Option<TokenSet>>,
+) {
     let old = p.state.clone();
     let recovery_set = recovery_set.into();
 
@@ -353,36 +357,16 @@ pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool, rec
             T![import] if !token_set![T![.], T!['(']].contains(p.nth(1)) => {
                 let mut m = import_decl(p);
                 if !p.state.is_module {
-                    let err = p.err_builder("Illegal use of an import declaration outside of a module")
+                    let err = p
+                        .err_builder("Illegal use of an import declaration outside of a module")
                         .primary(m.range(p), "not allowed inside scripts");
 
                     p.error(err);
                     m.change_kind(p, ERROR);
                 }
                 if !top_level {
-                    let err = p.err_builder("Illegal use of an import declaration not at the top level")
-                        .primary(m.range(p), "move this declaration to the top level");
-
-                    p.error(err);
-                    m.change_kind(p, ERROR);
-                }
-                Some(m)
-            },
-            // test_err export_decl_not_top_level
-            // {
-            //  export { pain } from "life";
-            // }
-            T![export] => {
-                let mut m = export_decl(p);
-                if !p.state.is_module {
-                    let err = p.err_builder("Illegal use of an export declaration outside of a module")
-                        .primary(m.range(p), "not allowed inside scripts");
-
-                    p.error(err);
-                    m.change_kind(p, ERROR);
-                }
-                if !top_level {
-                    let err = p.err_builder("Illegal use of an import declaration not at the top level")
+                    let err = p
+                        .err_builder("Illegal use of an import declaration not at the top level")
                         .primary(m.range(p), "move this declaration to the top level");
 
                     p.error(err);
@@ -390,9 +374,33 @@ pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool, rec
                 }
                 Some(m)
             }
-            _ => stmt(p, recovery_set.clone()),
+            // test_err export_decl_not_top_level
+            // {
+            //  export { pain } from "life";
+            // }
+            T![export] => {
+                let mut m = export_decl(p);
+                if !p.state.is_module {
+                    let err = p
+                        .err_builder("Illegal use of an export declaration outside of a module")
+                        .primary(m.range(p), "not allowed inside scripts");
+
+                    p.error(err);
+                    m.change_kind(p, ERROR);
+                }
+                if !top_level {
+                    let err = p
+                        .err_builder("Illegal use of an import declaration not at the top level")
+                        .primary(m.range(p), "move this declaration to the top level");
+
+                    p.error(err);
+                    m.change_kind(p, ERROR);
+                }
+                Some(m)
+            }
+            _ => stmt(p, recovery_set),
         };
-        
+
         // Directives are the longest sequence of string literals, so
         // ```
         // function a() {
@@ -404,7 +412,9 @@ pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool, rec
         if let Some(kind) = complete.map(|x| x.kind()).filter(|_| could_be_directive) {
             match kind {
                 EXPR_STMT => {
-                    let parsed = p.parse_marker::<ast::ExprStmt>(complete.as_ref().unwrap()).expr();
+                    let parsed = p
+                        .parse_marker::<ast::ExprStmt>(complete.as_ref().unwrap())
+                        .expr();
                     if let Some(LITERAL) = parsed.as_ref().map(|it| it.syntax().kind()) {
                         let unwrapped = parsed.unwrap().syntax().to::<ast::Literal>();
                         if unwrapped.is_string() {
@@ -420,8 +430,8 @@ pub(crate) fn block_items(p: &mut Parser, directives: bool, top_level: bool, rec
                             could_be_directive = false;
                         }
                     }
-                },
-                _ => could_be_directive = false
+                }
+                _ => could_be_directive = false,
             }
         }
     }
@@ -451,7 +461,10 @@ pub fn if_stmt(p: &mut Parser) -> CompletedMarker {
     // if () {} else {}
     let m = p.start();
     p.expect(T![if]);
-    condition(&mut *p.with_state(ParserState { expr_recovery_set: EXPR_RECOVERY_SET.union(token_set![T![else]]), ..p.state.clone()}));
+    condition(&mut *p.with_state(ParserState {
+        expr_recovery_set: EXPR_RECOVERY_SET.union(token_set![T![else]]),
+        ..p.state.clone()
+    }));
     // allows us to recover from `if (true) else {}`
     stmt(p, STMT_RECOVERY_SET.union(token_set![T![else]]));
     if p.eat(T![else]) {
@@ -466,10 +479,11 @@ pub fn with_stmt(p: &mut Parser) -> CompletedMarker {
     p.expect(T![with]);
     condition(p);
     stmt(p, None);
-    
+
     let mut complete = m.complete(p, WITH_STMT);
     if p.state.strict.is_some() {
-        let err = p.err_builder("`with` statements are not allowed in strict mode")
+        let err = p
+            .err_builder("`with` statements are not allowed in strict mode")
             .primary(complete.range(p), "");
 
         p.error(err);
@@ -492,7 +506,14 @@ pub fn while_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![while]);
     condition(p);
-    stmt(&mut *p.with_state(ParserState { break_allowed: true, continue_allowed: true, ..p.state.clone() }), None);
+    stmt(
+        &mut *p.with_state(ParserState {
+            break_allowed: true,
+            continue_allowed: true,
+            ..p.state.clone()
+        }),
+        None,
+    );
     m.complete(p, WHILE_STMT)
 }
 
@@ -600,7 +621,10 @@ fn for_head(p: &mut Parser) -> SyntaxKind {
     let m = p.start();
     if p.at(T![const]) || p.at(T![var]) || (p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)))
     {
-        let mut guard = p.with_state(ParserState { include_in: false, ..p.state.clone() });
+        let mut guard = p.with_state(ParserState {
+            include_in: false,
+            ..p.state.clone()
+        });
         let decl = var_decl(&mut *guard, true);
         drop(guard);
         m.complete(p, FOR_STMT_INIT);
@@ -623,7 +647,10 @@ fn for_head(p: &mut Parser) -> SyntaxKind {
             normal_for_head(p);
             return FOR_STMT;
         }
-        let mut guard = p.with_state(ParserState { include_in: false, ..p.state.clone() });
+        let mut guard = p.with_state(ParserState {
+            include_in: false,
+            ..p.state.clone()
+        });
         let complete = expr(&mut *guard);
         drop(guard);
         m.complete(p, FOR_STMT_INIT);
@@ -688,7 +715,14 @@ pub fn for_stmt(p: &mut Parser) -> CompletedMarker {
     p.expect(T!['(']);
     let kind = for_head(p);
     p.expect(T![')']);
-    stmt(&mut *p.with_state(ParserState { continue_allowed: true, break_allowed: true, ..p.state.clone() }), None);
+    stmt(
+        &mut *p.with_state(ParserState {
+            continue_allowed: true,
+            break_allowed: true,
+            ..p.state.clone()
+        }),
+        None,
+    );
     m.complete(p, kind)
 }
 
@@ -758,7 +792,10 @@ pub fn switch_stmt(p: &mut Parser) -> CompletedMarker {
     let mut first_default: Option<Range<usize>> = None;
 
     while !p.at(EOF) && !p.at(T!['}']) {
-        let mut temp = p.with_state(ParserState { break_allowed: true, ..p.state.clone() });
+        let mut temp = p.with_state(ParserState {
+            break_allowed: true,
+            ..p.state.clone()
+        });
         if let Some(range) = switch_clause(&mut *temp) {
             if let Some(ref err_range) = first_default {
                 let err = temp

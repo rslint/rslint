@@ -1,9 +1,9 @@
 //! Utilities for high level parsing of js code.
 
 use crate::{
-    ast::{Expr, Script, Module},
-    AstNode, Event, GreenNode, LosslessTreeSink, LossyTreeSink, ParserError,
-    SyntaxNode, TokenSource,
+    ast::{Expr, Module, Script},
+    AstNode, Event, GreenNode, LosslessTreeSink, LossyTreeSink, ParserError, SyntaxNode,
+    TokenSource,
 };
 use std::marker::PhantomData;
 
@@ -34,9 +34,9 @@ impl<T> Parse<T> {
         }
     }
 
-    /// Consume the parse result and get its green node. 
-    /// This is useful for multithreaded accesses to the tree as 
-    /// syntax nodes are not sync but green nodes are. 
+    /// Consume the parse result and get its green node.
+    /// This is useful for multithreaded accesses to the tree as
+    /// syntax nodes are not sync but green nodes are.
     pub fn green(self) -> GreenNode {
         self.green
     }
@@ -122,12 +122,12 @@ pub fn tokenize(text: &str, file_id: usize) -> (Vec<rslint_lexer::Token>, Vec<Pa
 fn parse_common(
     text: &str,
     file_id: usize,
-    module: bool
+    module: bool,
 ) -> (Vec<Event>, Vec<ParserError>, Vec<rslint_lexer::Token>) {
     let (tokens, errors) = tokenize(&text, file_id);
 
     let tok_source = TokenSource::new(text, &tokens);
-    
+
     let parser = if module {
         let mut parser = crate::Parser::new_module(tok_source, file_id);
         crate::syntax::program::module(&mut parser);

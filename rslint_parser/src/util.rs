@@ -305,7 +305,7 @@ pub trait SyntaxNodeExt {
     }
 
     /// Separate all the lossy tokens of this node, then compare each token's text with the corresponding
-    /// text in `tokens`. 
+    /// text in `tokens`.
     fn structural_lossy_token_eq(&self, tokens: &[impl AsRef<str>]) -> bool {
         let node_tokens = self.to_node().lossy_tokens();
         if node_tokens.len() == tokens.len() {
@@ -318,12 +318,14 @@ pub trait SyntaxNodeExt {
         }
     }
 
-    /// Whether the node contains any comments. 
+    /// Whether the node contains any comments.
     fn contains_comments(&self) -> bool {
-        self.tokens().iter().any(|tok| tok.kind() == SyntaxKind::COMMENT)
+        self.tokens()
+            .iter()
+            .any(|tok| tok.kind() == SyntaxKind::COMMENT)
     }
 
-    /// Get the first child with a specific kind. 
+    /// Get the first child with a specific kind.
     fn child_with_kind(&self, kind: SyntaxKind) -> Option<SyntaxNode> {
         self.to_node().children().find(|child| child.kind() == kind)
     }
@@ -343,7 +345,7 @@ pub trait SyntaxNodeExt {
         self.to_node().children().find_map(|child| child.try_to())
     }
 
-    /// Same as [`descendants_with`] but considers tokens too. 
+    /// Same as [`descendants_with`] but considers tokens too.
     fn descendants_with_tokens_with<F>(&self, func: &mut F)
     where
         F: FnMut(&SyntaxElement) -> bool,
@@ -355,7 +357,9 @@ pub trait SyntaxNodeExt {
                         node.descendants_with_tokens_with(func)
                     }
                 }
-                NodeOrToken::Token(_) => drop(func(&elem))
+                NodeOrToken::Token(_) => {
+                    let _ = func(&elem);
+                }
             }
         }
     }
@@ -420,7 +424,11 @@ pub trait SyntaxTokenExt {
             }
             _ => return None,
         };
-        Some(Comment { kind, content, token: self.to_token().clone() })
+        Some(Comment {
+            kind,
+            content,
+            token: self.to_token().clone(),
+        })
     }
 
     /// Check whether this token's kind is contained in a token set.
@@ -439,7 +447,7 @@ impl SyntaxTokenExt for SyntaxToken {
 pub struct Comment {
     pub kind: CommentKind,
     pub content: String,
-    pub token: SyntaxToken
+    pub token: SyntaxToken,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -464,5 +472,8 @@ pub fn concat_tokens(tokens: &[SyntaxToken]) -> String {
 /// `\n`, `\r`, `\u{2028}`, or `\u{2029}`
 pub fn contains_js_linebreak(string: impl AsRef<str>) -> bool {
     let text = string.as_ref();
-    text.contains("\n") || text.contains("\r") || text.contains("\u{2028}") || text.contains("\u{2029}")
+    text.contains('\n')
+        || text.contains('\r')
+        || text.contains("\u{2028}")
+        || text.contains("\u{2029}")
 }

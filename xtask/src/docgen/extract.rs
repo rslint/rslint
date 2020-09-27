@@ -110,7 +110,7 @@ impl Parse for LintDeclaration {
             .into_iter()
             .filter(|field| matches!(field.field.vis, Visibility::Public(_)))
             .collect();
-            
+
         Ok(Self {
             name,
             docstring,
@@ -218,12 +218,7 @@ impl Parse for Example {
     fn parse(input: ParseStream) -> Result<Self> {
         let docstring = parse_docstring(&input);
         let string = input.parse::<LitStr>()?.value();
-        let source = unindent(&string)
-            .trim()
-            .to_string();
-        Ok(Example {
-            docstring,
-            source,
-        })
+        let source = unindent(&string).trim().to_string();
+        Ok(Example { docstring, source })
     }
 }

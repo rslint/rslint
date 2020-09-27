@@ -9,7 +9,7 @@ mod expr_ext;
 mod generated;
 mod stmt_ext;
 
-use crate::{syntax_node::*, SmolStr, SyntaxKind, util::SyntaxNodeExt, TextRange};
+use crate::{syntax_node::*, util::SyntaxNodeExt, SmolStr, SyntaxKind, TextRange};
 use std::marker::PhantomData;
 
 pub use self::{

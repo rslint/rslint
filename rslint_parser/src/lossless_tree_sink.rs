@@ -1,6 +1,9 @@
 use crate::{
-    syntax_node::GreenNode, ParserError, SmolStr, SyntaxKind::{*, self}, SyntaxTreeBuilder, TextRange,
-    TextSize, TreeSink, AstNode, ast
+    ast,
+    syntax_node::GreenNode,
+    AstNode, ParserError, SmolStr,
+    SyntaxKind::{self, *},
+    SyntaxTreeBuilder, TextRange, TextSize, TreeSink,
 };
 use rslint_lexer::Token;
 use std::mem;
@@ -51,10 +54,16 @@ impl<'a> TreeSink for LosslessTreeSink<'a> {
         }
 
         // If this is a statement then attach a leading comment to it
-        let n_trivias = self.tokens[self.token_pos..].iter().take_while(|it| it.kind.is_trivia()).count();
+        let n_trivias = self.tokens[self.token_pos..]
+            .iter()
+            .take_while(|it| it.kind.is_trivia())
+            .count();
         let leading_trivias = &self.tokens[self.token_pos..self.token_pos + n_trivias];
-        let mut trivia_end =
-            self.text_pos + leading_trivias.iter().map(|it| TextSize::from(it.len as u32)).sum::<TextSize>();
+        let mut trivia_end = self.text_pos
+            + leading_trivias
+                .iter()
+                .map(|it| TextSize::from(it.len as u32))
+                .sum::<TextSize>();
 
         let n_attached_trivias = {
             let leading_trivias = leading_trivias.iter().rev().map(|it| {
@@ -159,30 +168,29 @@ impl<'a> LosslessTreeSink<'a> {
 /// We need to attach any comment to statements
 fn n_attached_trivias<'a>(
     kind: SyntaxKind,
-    trivias: impl Iterator<Item = (SyntaxKind, &'a str)>
+    trivias: impl Iterator<Item = (SyntaxKind, &'a str)>,
 ) -> usize {
     if ast::ModuleItem::can_cast(kind) {
         let mut trivias = trivias.enumerate().peekable();
 
         match trivias.next() {
-            Some((idx, (kind, text))) => {
-                match kind {
-                    WHITESPACE => {
-                        if linebreak_count(text) > 1 {
-                            return 0;
-                        } else {
-                            if trivias.peek().map_or(false, |(_, (kind, _))| *kind == COMMENT) {
-                                return trivias.next().unwrap().0 + 1;
-                            }
-                        }
-                    },
-                    COMMENT => {
-                        return idx + 1;
-                    },
-                    _ => {}
+            Some((idx, (kind, text))) => match kind {
+                WHITESPACE => {
+                    if linebreak_count(text) > 1 {
+                        return 0;
+                    } else if trivias
+                        .peek()
+                        .map_or(false, |(_, (kind, _))| *kind == COMMENT)
+                    {
+                        return trivias.next().unwrap().0 + 1;
+                    }
                 }
+                COMMENT => {
+                    return idx + 1;
+                }
+                _ => {}
             },
-            _ => return 0
+            _ => return 0,
         }
         0
     } else {
@@ -191,6 +199,8 @@ fn n_attached_trivias<'a>(
 }
 
 fn linebreak_count(text: &str) -> usize {
-    text.matches("\n").count() + text.matches("\r").count() + text.matches("\u{2028}").count() + text.matches("\u{2029}").count()
+    text.matches('\n').count()
+        + text.matches('\r').count()
+        + text.matches("\u{2028}").count()
+        + text.matches("\u{2029}").count()
 }
-
