@@ -15,7 +15,6 @@ fn parser_smoke_test() {
 }
 
 fn test_data_dir() -> PathBuf {
-    println!("{:#?}", project_dir());
     project_dir().join("rslint_parser/test_data")
 }
 

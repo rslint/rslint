@@ -870,3 +870,20 @@ fn fuzz_fail_1() {
         ERROR_TOKEN:2
     }
 }
+
+#[test]
+fn fuzz_fail_2() {
+    assert_lex! {
+        "..",
+        DOT:1,
+        DOT:1
+    }
+}
+
+#[test]
+fn fuzz_fail_3() {
+    assert_lex! {
+        "0e",
+        ERROR_TOKEN:2
+    }
+}

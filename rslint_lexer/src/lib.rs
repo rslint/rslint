@@ -581,7 +581,9 @@ impl<'src> Lexer<'src> {
                         }
                     }
                     Some(b'0'..=b'9') => self.read_exponent(),
-                    _ => {}
+                    _ => {
+                        self.next();
+                    }
                 }
             }
             // FIXME: many engines actually allow things like `09`, but by the spec, this is not allowed
@@ -1102,7 +1104,7 @@ impl<'src> Lexer<'src> {
                 self.verify_number_end(start)
             }
             PRD => {
-                if let Some(b"..") = self.bytes.get(self.cur..self.cur + 2) {
+                if let Some(b"..") = self.bytes.get(self.cur + 1..self.cur + 3) {
                     self.cur += 3;
                     return tok!(DOT2, 3);
                 }
