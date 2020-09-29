@@ -26,6 +26,5 @@ If building from source:
 <version>
 ```
 
-**If 
 **Additional context**
 Add any other context about the problem here.
