@@ -39,7 +39,7 @@ if (!isNaN(foo)) {
 ## Config
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `enforceForSwitchCase` | bool |  Switch statements use `===` internally to match an expression, therefore `switch (NaN)` and `case NaN` will never match.<br>This rule disables uses like that which are always incorrect (false by default) |
+| `enforceForSwitchCase` | bool |  Switch statements use `===` internally to match an expression, therefore `switch (NaN)` and `case NaN` will never match.<br>This rule disables uses like that which are always incorrect (true by default) |
 | `enforceForIndexOf` | bool |  Index functions like `indexOf` and `lastIndexOf` use `===` internally, therefore matching them against `NaN` will always<br>yield `-1`. This option disallows using `indexOf(NaN)` and `lastIndexOf(NaN)` (false by default) |
 
 <details>
