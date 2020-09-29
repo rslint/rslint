@@ -23,6 +23,7 @@ group! {
     no_prototype_builtins::NoPrototypeBuiltins,
     no_sparse_arrays::NoSparseArrays,
     no_unexpected_multiline::NoUnexpectedMultiline,
+    use_isnan::UseIsnan,
     no_setter_return::NoSetterReturn,
     valid_typeof::ValidTypeof,
     no_extra_boolean_cast::NoExtraBooleanCast,
