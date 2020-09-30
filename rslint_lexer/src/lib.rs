@@ -760,7 +760,6 @@ impl<'src> Lexer<'src> {
                 self.next();
                 while self.next().is_some() {
                     let chr = self.get_unicode_char();
-                    self.cur += chr.len_utf8();
 
                     if is_linebreak(chr) {
                         return tok!(COMMENT, self.cur - start);

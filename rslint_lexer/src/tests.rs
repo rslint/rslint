@@ -924,6 +924,7 @@ fn fuzz_fail_4() {
 fn fuzz_fail_5() {
     assert_lex! {
         "//\u{2028}",
-        COMMENT:5
+        COMMENT:2,
+        WHITESPACE:3
     }
 }
