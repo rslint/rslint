@@ -4,12 +4,12 @@ use rslint_parser::{NodeOrToken, SyntaxToken};
 
 declare_lint! {
     /**
-    Disallow duplicate keys in object literals. 
+    Disallow duplicate keys in object literals.
 
     Object literals allow keys to be declared multiple times, however this causes unwanted
-    behavior by shadowing the first declaration. 
+    behavior by shadowing the first declaration.
 
-    ## Invalid Code Examples 
+    ## Invalid Code Examples
 
     ```ignore
     let foo = {
@@ -44,8 +44,10 @@ impl CstRule for NoDupeKeys {
                     NodeOrToken::Node(node) => node.trimmed_text().to_string(),
                     NodeOrToken::Token(tok) => tok.text().to_string(),
                 };
-
-                if let Some((found, text)) = declared.iter().find(|(decl_tokens, _)| util::string_token_eq(decl_tokens, &tokens)) {
+                if let Some((found, text)) = declared
+                    .iter()
+                    .find(|(decl_tokens, _)| util::string_token_eq(decl_tokens, &tokens))
+                {
                     let range = util::token_list_range(found);
 
                     let err = ctx
@@ -54,7 +56,10 @@ impl CstRule for NoDupeKeys {
                             format!("duplicate property definition `{}`", text),
                         )
                         .secondary(range, format!("`{}` is first declared here", text))
-                        .primary(util::token_list_range(tokens), format!("`{}` is then redeclared here", text));
+                        .primary(
+                            util::token_list_range(tokens),
+                            format!("`{}` is then redeclared here", text),
+                        );
 
                     ctx.add_err(err);
                 } else {

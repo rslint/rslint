@@ -234,10 +234,7 @@ impl NoSetterReturn {
                         key.trimmed_text(),
                     ),
                 )
-                .primary(
-                    body.trimmed_range(),
-                    "this setter somethimes or always returns a value",
-                );
+                .primary(body, "this setter somethimes or always returns a value");
             ctx.add_err(err);
         }
     }

@@ -2,13 +2,13 @@ use crate::rule_prelude::*;
 
 declare_lint! {
     /**
-    Disallow the use of debugger statements. 
+    Disallow the use of debugger statements.
 
     `debugger` statements are used to tell the environment executing the code to start an appropriate
-    debugger. These statements are rendered useless by modern IDEs which have built in breakpoint support. 
+    debugger. These statements are rendered useless by modern IDEs which have built in breakpoint support.
     Having them in production code is erroneous as it will tell the browser to stop running and open a debugger.
 
-    ## Invalid Code Examples 
+    ## Invalid Code Examples
 
     ```ignore
     function doSomething() {
@@ -27,8 +27,9 @@ declare_lint! {
 impl CstRule for NoDebugger {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == SyntaxKind::DEBUGGER_STMT {
-            let err = ctx.err(self.name(), "Debugger statements are not allowed")
-                .primary(node.trimmed_range(), "");
+            let err = ctx
+                .err(self.name(), "Debugger statements are not allowed")
+                .primary(node, "");
 
             ctx.add_err(err);
         }

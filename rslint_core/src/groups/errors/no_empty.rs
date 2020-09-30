@@ -63,7 +63,7 @@ impl CstRule for NoEmpty {
             if node.first_child().is_none() && !node.contains_comments() {
                 let err = ctx
                     .err(self.name(), "empty block statements are not allowed")
-                    .primary(node.trimmed_range(), "");
+                    .primary(node, "");
 
                 ctx.add_err(err);
             }

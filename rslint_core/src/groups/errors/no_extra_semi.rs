@@ -49,7 +49,7 @@ impl CstRule for NoExtraSemi {
         {
             let err = ctx
                 .err(self.name(), "Unnecessary semicolon")
-                .primary(node.trimmed_range(), "help: delete this semicolon");
+                .primary(node, "help: delete this semicolon");
 
             ctx.add_err(err);
         }

@@ -145,12 +145,9 @@ impl GetterReturn {
                         key.trimmed_text()
                     ),
                 )
-                .secondary(
-                    key.trimmed_range(),
-                    "this key is sometimes or always undefined...",
-                )
+                .secondary(key, "this key is sometimes or always undefined...")
                 .primary(
-                    body.trimmed_range(),
+                    body,
                     "...because this getter does not always return a value",
                 );
 

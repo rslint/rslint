@@ -151,7 +151,7 @@ fn throw_err(for_stmt: ForStmt, counter: &NameRef, ctx: &mut RuleCtx) {
             "For loop is updating the counter in the wrong direction",
         )
         .secondary(
-            for_stmt.test().unwrap().syntax().trimmed_range(),
+            for_stmt.test().unwrap().range(),
             format!(
                 "this test is checking if `{}` is {} `{}`...",
                 lhs,
@@ -160,7 +160,7 @@ fn throw_err(for_stmt: ForStmt, counter: &NameRef, ctx: &mut RuleCtx) {
             ),
         )
         .primary(
-            for_stmt.update().unwrap().syntax().trimmed_range(),
+            for_stmt.update().unwrap().range(),
             format!(
                 "...but `{}` is updating in the same direction",
                 for_stmt.update().unwrap().syntax().trimmed_text()
@@ -237,7 +237,7 @@ fn try_offer_context(
                     ),
                 )
                 .secondary(
-                    for_stmt.test().unwrap().syntax().trimmed_range(),
+                    for_stmt.test().unwrap().range(),
                     format!(
                         "...which makes this test unreachable because `{}` is not {} `{}`...",
                         initial_value.syntax().text(),
@@ -246,13 +246,13 @@ fn try_offer_context(
                     ),
                 )
                 .primary(
-                    for_stmt.update().unwrap().syntax().trimmed_range(),
+                    for_stmt.update().unwrap().range(),
                     "...and this update will never make it true",
                 );
         } else {
             err = err
                 .secondary(
-                    init.syntax().trimmed_range(),
+                    init.syntax(),
                     format!(
                         "{} is first declared as `{}`...",
                         counter.syntax().text(),
@@ -260,7 +260,7 @@ fn try_offer_context(
                     ),
                 )
                 .secondary(
-                    for_stmt.test().unwrap().syntax().trimmed_range(),
+                    for_stmt.test().unwrap().range(),
                     format!(
                         "...which makes this test always true because `{}` is always {} `{}`...",
                         initial_value.syntax().text(),
@@ -269,7 +269,7 @@ fn try_offer_context(
                     ),
                 )
                 .primary(
-                    for_stmt.update().unwrap().syntax().trimmed_range(),
+                    for_stmt.update().unwrap().range(),
                     "...and this update will never make the condition false",
                 );
         }

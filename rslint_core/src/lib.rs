@@ -9,7 +9,7 @@ pub mod rule_prelude;
 pub mod util;
 
 pub use self::{
-    diagnostic::DiagnosticBuilder,
+    diagnostic::{DiagnosticBuilder, Span},
     rule::{CstRule, Outcome, Rule, RuleCtx, RuleLevel, RuleResult},
     store::CstRuleStore,
 };

@@ -1,7 +1,8 @@
 //! A simple builder for facilitating the creation of diagnostics
 
-use crate::{Diagnostic, RuleResult};
+use crate::{Diagnostic, RuleResult, SyntaxNode};
 use codespan_reporting::diagnostic::{Label, Severity};
+use rslint_parser::{SyntaxElement, SyntaxNodeExt, SyntaxToken, TextRange};
 use std::ops::Range;
 
 /// A simple builder for creating codespan diagnostics sequentially
@@ -62,17 +63,17 @@ impl DiagnosticBuilder {
     }
 
     /// Add a primary label to the diagnostic
-    pub fn primary(mut self, range: impl Into<Range<usize>>, message: impl AsRef<str>) -> Self {
+    pub fn primary(mut self, range: impl Span, message: impl AsRef<str>) -> Self {
         self.0.labels.append(&mut vec![
-            Label::primary(self.1, range.into()).with_message(message.as_ref())
+            Label::primary(self.1, range.as_range()).with_message(message.as_ref())
         ]);
         self
     }
 
     /// Add a secondary label to this diagnostic
-    pub fn secondary(mut self, range: impl Into<Range<usize>>, message: impl AsRef<str>) -> Self {
+    pub fn secondary(mut self, range: impl Span, message: impl AsRef<str>) -> Self {
         self.0.labels.append(&mut vec![
-            Label::secondary(self.1, range.into()).with_message(message.as_ref())
+            Label::secondary(self.1, range.as_range()).with_message(message.as_ref())
         ]);
         self
     }
@@ -107,5 +108,67 @@ impl From<DiagnosticBuilder> for Option<RuleResult> {
         Some(RuleResult {
             diagnostics: vec![builder.into()],
         })
+    }
+}
+
+/// A value which can be used as the range inside of a diagnostic.
+///
+/// This is essentially a hack to allow us to use SyntaxElement, SyntaxNode, etc directly
+pub trait Span {
+    fn as_range(&self) -> Range<usize>;
+}
+
+impl<T: Span> Span for &T {
+    fn as_range(&self) -> Range<usize> {
+        (*self).as_range()
+    }
+}
+
+impl<T: Span> Span for &mut T {
+    fn as_range(&self) -> Range<usize> {
+        (**self).as_range()
+    }
+}
+
+impl<T: Clone> Span for Range<T>
+where
+    T: Into<usize>,
+{
+    fn as_range(&self) -> Range<usize> {
+        self.start.clone().into()..self.end.clone().into()
+    }
+}
+
+impl Span for SyntaxNode {
+    fn as_range(&self) -> Range<usize> {
+        self.trimmed_range().into()
+    }
+}
+
+impl Span for SyntaxToken {
+    fn as_range(&self) -> Range<usize> {
+        self.text_range().into()
+    }
+}
+
+impl Span for SyntaxElement {
+    fn as_range(&self) -> Range<usize> {
+        match self {
+            SyntaxElement::Node(n) => n.trimmed_range(),
+            SyntaxElement::Token(t) => t.text_range(),
+        }
+        .into()
+    }
+}
+
+impl<FileId: Clone> Span for Label<FileId> {
+    fn as_range(&self) -> Range<usize> {
+        self.range.clone()
+    }
+}
+
+impl Span for TextRange {
+    fn as_range(&self) -> Range<usize> {
+        self.clone().into()
     }
 }

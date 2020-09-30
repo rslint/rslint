@@ -3,12 +3,12 @@ use ast::SwitchStmt;
 
 declare_lint! {
     /**
-    Disallow duplicate test cases in `switch` statements. 
+    Disallow duplicate test cases in `switch` statements.
 
     `switch` statement clauses can freely have duplicate tests, however this is almost always a mistake, because
     the second case is unreachable. It is likely that the programmer copied a case clause but did not change the test for it.
 
-    ## Invalid Code Examples 
+    ## Invalid Code Examples
 
     ```ignore
     switch (a) {
@@ -47,9 +47,22 @@ impl CstRule for NoDuplicateCases {
             for case in switch.cases().filter_map(|case| case.into_case()) {
                 if let Some(expr) = case.test() {
                     if let Some(old) = seen.iter().find(|clause| clause.lexical_eq(expr.syntax())) {
-                        let err = ctx.err(self.name(), format!("Duplicate switch statement test `{}`", old.trimmed_text()))
-                            .secondary(old.trimmed_range(), format!("`{}` is first tested for here", old.trimmed_text()))
-                            .primary(expr.syntax().trimmed_range(), format!("`{}` is then tested for again here", expr.syntax().trimmed_text()));
+                        let err = ctx
+                            .err(
+                                self.name(),
+                                format!("Duplicate switch statement test `{}`", old.trimmed_text()),
+                            )
+                            .secondary(
+                                old,
+                                format!("`{}` is first tested for here", old.trimmed_text()),
+                            )
+                            .primary(
+                                expr.syntax(),
+                                format!(
+                                    "`{}` is then tested for again here",
+                                    expr.syntax().trimmed_text()
+                                ),
+                            );
 
                         ctx.add_err(err)
                     } else {

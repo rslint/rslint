@@ -78,10 +78,7 @@ impl CstRule for NoConstantCondition {
         if let Some(condition_value) = util::simple_bool_coerce(cond.clone()) {
             err = util::simple_const_condition_context(node.clone(), condition_value, err);
         } else {
-            err = err.primary(
-                cond.syntax().trimmed_range(),
-                "this condition always yields one result",
-            )
+            err = err.primary(cond.syntax(), "this condition always yields one result")
         }
         ctx.add_err(err);
 

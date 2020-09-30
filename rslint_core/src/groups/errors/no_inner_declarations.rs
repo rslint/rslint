@@ -4,13 +4,13 @@ use SyntaxKind::*;
 
 declare_lint! {
     /**
-    Disallow variable and function declarations in nested blocks. 
+    Disallow variable and function declarations in nested blocks.
 
     Prior to ECMAScript 6, function declarations were only allowed in the first level of a program
     or the body of another function, although parsers sometimes incorrectly accept it. This rule only applies to
-    function declarations, not function expressions. 
+    function declarations, not function expressions.
 
-    ## Invalid Code Examples 
+    ## Invalid Code Examples
 
     ```ignore
     function foo() {
@@ -27,7 +27,7 @@ declare_lint! {
     }
     ```
 
-    ## Correct Code Examples 
+    ## Correct Code Examples
 
     ```ignore
     function foo() {}
@@ -48,7 +48,7 @@ declare_lint! {
 impl Default for NoInnerDeclarations {
     fn default() -> Self {
         Self {
-            disallowed: vec!["functions".to_string()]
+            disallowed: vec!["functions".to_string()],
         }
     }
 }
@@ -56,7 +56,7 @@ impl Default for NoInnerDeclarations {
 impl NoInnerDeclarations {
     pub fn disallow_all() -> Self {
         Self {
-            disallowed: vec!["functions".to_string(), "variables".to_string()]
+            disallowed: vec!["functions".to_string(), "variables".to_string()],
         }
     }
 }
@@ -110,13 +110,11 @@ impl CstRule for NoInnerDeclarations {
                 format!("move this function declaration to {}", second_part)
             };
 
-            let mut err = ctx
-                .err(self.name(), message)
-                .primary(node.trimmed_range(), "");
+            let mut err = ctx.err(self.name(), message).primary(node, "");
 
             if let Some(function) = enclosing {
                 err = err.secondary(
-                    function.trimmed_range(),
+                    function,
                     "move the declaration to the body of this function",
                 );
             } else {

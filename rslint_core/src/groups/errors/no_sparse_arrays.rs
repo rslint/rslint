@@ -2,19 +2,19 @@ use crate::rule_prelude::*;
 
 declare_lint! {
     /**
-    Disallow sparse arrays. 
+    Disallow sparse arrays.
 
     Sparse arrays are arrays with empty slots, they are denoted by extra commas, such as:
-    
+
     ```ignore
     let foo = [,,];
     let foo = [bar,, baz];
     ```
 
-    Sparse elements will be filled in as undefined elements and count towards array length. 
+    Sparse elements will be filled in as undefined elements and count towards array length.
     This is often a typo or is hard to comprehend and an explicit method should be used.
 
-    ## Invalid Code Examples 
+    ## Invalid Code Examples
 
     ```ignore
     let foo = [,];
@@ -34,9 +34,10 @@ impl CstRule for NoSparseArrays {
         if !elems.is_empty() {
             let mut err = ctx.err(self.name(), "sparse arrays are not allowed");
             for elem in elems {
-                err = err.primary(elem.text_range(), "");
+                err = err.primary(elem, "");
             }
-            err = err.note("note: the sparse elements will become elements with a value of `undefined`");
+            err = err
+                .note("note: the sparse elements will become elements with a value of `undefined`");
             ctx.add_err(err);
         }
         None

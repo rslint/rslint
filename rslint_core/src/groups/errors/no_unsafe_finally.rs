@@ -54,7 +54,9 @@ pub const CONTROL_FLOW_STMT: [SyntaxKind; 4] = [BREAK_STMT, CONTINUE_STMT, THROW
 #[typetag::serde]
 impl CstRule for NoUnsafeFinally {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
-        if CONTROL_FLOW_STMT.contains(&node.kind()) && node.parent()?.parent()?.is::<ast::Finalizer>() {
+        if CONTROL_FLOW_STMT.contains(&node.kind())
+            && node.parent()?.parent()?.is::<ast::Finalizer>()
+        {
             self.output(node, ctx);
         }
         None
@@ -93,9 +95,24 @@ impl NoUnsafeFinally {
                 _ => unreachable!(),
             };
 
-            err.secondary(control.trimmed_range(), format!("{} is paused until the `finally` block is done executing...", get_kind(control.kind())))
-                    .primary(node.trimmed_range(), format!("...however, {} exits the statement altogether", get_kind(node.kind())))
-                    .primary(node.trimmed_range(), format!("which makes `{}` never finish running", control))
+            err.secondary(
+                control.clone(),
+                format!(
+                    "{} is paused until the `finally` block is done executing...",
+                    get_kind(control.kind())
+                ),
+            )
+            .primary(
+                node,
+                format!(
+                    "...however, {} exits the statement altogether",
+                    get_kind(node.kind())
+                ),
+            )
+            .primary(
+                node,
+                format!("which makes `{}` never finish running", control),
+            )
         } else {
             ctx.err(
                 self.name(),
@@ -105,7 +122,7 @@ impl NoUnsafeFinally {
                 ),
             )
             .primary(
-                node.trimmed_range(),
+                node,
                 "this statement abruptly ends execution, yielding unwanted behavior",
             )
         };

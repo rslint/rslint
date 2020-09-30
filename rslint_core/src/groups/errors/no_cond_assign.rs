@@ -65,7 +65,7 @@ impl CstRule for NoCondAssign {
                     ),
                 )
                 .primary(
-                    cond.syntax().trimmed_range(),
+                    cond.syntax(),
                     "this condition results in unexpected behavior",
                 )
                 .note(format!("help: try using `{}`", color("===")))
