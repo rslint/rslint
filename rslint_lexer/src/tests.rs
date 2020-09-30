@@ -919,3 +919,11 @@ fn fuzz_fail_4() {
         ERROR_TOKEN:2
     }
 }
+
+#[test]
+fn fuzz_fail_5() {
+    assert_lex! {
+        "//\u{2028}",
+        COMMENT:5
+    }
+}
