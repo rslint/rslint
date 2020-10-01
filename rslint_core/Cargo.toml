@@ -12,3 +12,4 @@ serde = { version = "1.0.115", features = ["derive"] }
 typetag = "0.1.5"
 rayon = "1.4.0"
 dyn-clone = "1.0.2"
+text-diff = "0.4.0"
