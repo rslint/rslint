@@ -814,18 +814,6 @@ dependencies = [
 [[package]]
 name = "rowan"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e081ed6eacce09e243b619ab90f069c27b0cff8a6d0eb8ad2ec935b65853798"
-dependencies = [
- "rustc-hash",
- "smol_str",
- "text-size",
- "thin-dst",
-]
-
-[[package]]
-name = "rowan"
-version = "0.10.0"
 source = "git+https://github.com/RDambrosio016/rowan#0f950ff8a12ef0a34952d8bf056e91339702147b"
 dependencies = [
  "erasable",
@@ -833,6 +821,18 @@ dependencies = [
  "slice-dst",
  "smol_str",
  "text-size",
+]
+
+[[package]]
+name = "rowan"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e081ed6eacce09e243b619ab90f069c27b0cff8a6d0eb8ad2ec935b65853798"
+dependencies = [
+ "rustc-hash",
+ "smol_str",
+ "text-size",
+ "thin-dst",
 ]
 
 [[package]]

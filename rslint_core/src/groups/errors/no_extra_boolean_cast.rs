@@ -55,7 +55,7 @@ impl CstRule for NoExtraBooleanCast {
                     return None;
                 }
 
-                if let Some(reason) = in_bool_ctx(node) {
+                if let Some(reason) = in_bool_ctx(node, self.enforce_for_logical_operands) {
                     let err = ctx.err(self.name(), "redundant double negation").primary(
                         expr.op_token().unwrap().text_range(),
                         "this operator is redundant...",
@@ -68,7 +68,7 @@ impl CstRule for NoExtraBooleanCast {
                     return None;
                 }
 
-                if let Some(reason) = in_bool_ctx(node) {
+                if let Some(reason) = in_bool_ctx(node, self.enforce_for_logical_operands) {
                     let err = ctx.err(self.name(), "redundant `Boolean` call").primary(
                         node.trimmed_range(),
                         "this call to `Boolean` is redundant...",
@@ -99,7 +99,7 @@ fn reason_labels(builder: DiagnosticBuilder, reason: Reason) -> DiagnosticBuilde
     }
 }
 
-fn in_bool_ctx(node: &SyntaxNode) -> Option<Reason> {
+fn in_bool_ctx(node: &SyntaxNode, enforce_logical: bool) -> Option<Reason> {
     let parent = skip_grouping(node.parent(), SyntaxNode::parent).nth(1);
     if let Some(parent) = parent {
         // TODO: Once we have scope analysis we can know if Boolean was shadowed
@@ -140,15 +140,28 @@ fn in_bool_ctx(node: &SyntaxNode) -> Option<Reason> {
             .map(Reason::ImplicitCast);
     }
 
-    let unary = skip_grouping(node.parent(), SyntaxNode::parent).next()?;
-    if let Some(unexpr) = unary.try_to::<UnaryExpr>() {
+    // TODO: Improve error message, or even detection, of `!!!foo`,
+    // without breaking `!Boolean(foo)`.
+    let parent = skip_grouping(node.parent(), SyntaxNode::parent).next()?;
+    if let Some(unexpr) = parent.try_to::<UnaryExpr>() {
         let (tok, op) = unexpr.op_details()?;
         if op == op![!] {
             return Some(Reason::LogicalNotCast(tok));
         }
     }
 
-    None
+    if enforce_logical {
+        let expr = parent.try_to::<BinExpr>()?;
+
+        expr.op()
+            .and_then(|op| match op {
+                op if op == op![||] || op == op![&&] => Some(()),
+                _ => None,
+            })
+            .and_then(|_| in_bool_ctx(expr.syntax(), true))
+    } else {
+        None
+    }
 }
 
 fn skip_grouping<F>(
@@ -178,7 +191,7 @@ fn implicitly_casted_node(node: &SyntaxNode) -> Option<SyntaxNode> {
 }
 
 rule_tests! {
-    NoExtraBooleanCast::default(),
+    NoExtraBooleanCast { enforce_for_logical_operands: true },
     err: {
         "if (!!foo) {}",
         "do {} while (!!foo)",
@@ -395,7 +408,12 @@ rule_tests! {
         "for (let a = 0; a < n; a++) { if (!!b) {} }",
         "for (let a = 0; a < n; a++) { if (Boolean(b)) {} }",
         "do { const b = !!!c; } while(a)",
-        "do { const b = !Boolean(c); } while(a)"
+        "do { const b = !Boolean(c); } while(a)",
+        "if (!!foo || bar) {}",
+        "while (!!foo && bar) {}",
+        "if ((!!foo || bar) && baz) {}",
+        "foo && Boolean(bar) ? baz : bat",
+        "var foo = new Boolean(!!bar || baz)"
     },
     ok: {
         "Boolean(bar, !!baz);",
