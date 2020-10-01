@@ -1,5 +1,6 @@
 //! The structure responsible for managing IO and the files implementation for codespan.
 
+use crate::lint_warn;
 use codespan_reporting::files::Files;
 use glob::Paths;
 use hashbrown::HashMap;
@@ -124,6 +125,26 @@ impl FileWalker {
     pub fn line_start(&self, id: usize, line_index: usize) -> Option<usize> {
         self.files.get(&id)?.line_start(line_index)
     }
+
+    /// try loading a file's source code and updating the correspoding file in the walker
+    pub fn maybe_update_file_src(&mut self, path: PathBuf) {
+        if let Some(file) = self.files.values_mut().find(|f| {
+            f.path
+                .clone()
+                .map_or(false, |x| x.file_name() == path.file_name())
+        }) {
+            let src = if let Ok(src) = read_to_string(&path) {
+                src
+            } else {
+                return lint_warn!(
+                    "failed to reload the source code at `{}`",
+                    path.to_string_lossy()
+                );
+            };
+            file.source = src;
+            file.line_starts = JsFile::line_starts(&file.source).collect();
+        }
+    }
 }
 
 /// A structure representing either a concrete (in-disk) or virtual (temporary/non-disk) js or mjs file.
@@ -174,7 +195,8 @@ impl JsFile {
         }
     }
 
-    fn line_starts<'a>(source: &'a str) -> impl Iterator<Item = usize> + 'a {
+    // TODO: Needs to work correctly for \u2028, \u2029, and \r line endings
+    pub fn line_starts<'a>(source: &'a str) -> impl Iterator<Item = usize> + 'a {
         std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
     }
 

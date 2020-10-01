@@ -2,6 +2,7 @@ mod cli;
 mod config;
 mod files;
 mod panic_hook;
+mod watch;
 
 pub use self::{cli::ExplanationRunner, config::*, files::*, panic_hook::*};
 pub use rslint_core::{Diagnostic, DiagnosticBuilder, Outcome};
@@ -12,8 +13,10 @@ use codespan_reporting::term::{
     emit,
     termcolor::{self, ColorChoice, StandardStream},
 };
+use colored::*;
 use rayon::prelude::*;
-use rslint_core::{lint_file, CstRuleStore, RuleLevel};
+use rslint_core::{lint_file, CstRuleStore, LintResult, RuleLevel};
+use watch::start_watcher;
 
 pub(crate) const DOCS_LINK_BASE: &str =
     "https://raw.githubusercontent.com/RDambrosio016/RSLint/dev/docs/rules";
@@ -26,7 +29,8 @@ pub fn codespan_config() -> Config {
     base
 }
 
-pub fn run(glob: String, verbose: bool) {
+#[allow(unused_must_use)]
+pub fn run(glob: String, verbose: bool, watch: bool) {
     let res = glob::glob(&glob);
     if let Err(err) = res {
         lint_err!("Invalid glob pattern: {}", err);
@@ -70,32 +74,54 @@ pub fn run(glob: String, verbose: bool) {
         CstRuleStore::new().builtins()
     };
 
-    let mut results = walker
+    let results = walker
         .files
         .par_iter()
         .map(|(id, file)| {
-            lint_file(
-                *id,
-                &file.source,
-                file.kind == JsFileKind::Module,
-                &store,
-                verbose,
+            (
+                lint_file(
+                    *id,
+                    &file.source,
+                    file.kind == JsFileKind::Module,
+                    &store,
+                    verbose,
+                ),
+                file,
             )
         })
-        .filter_map(|res| {
+        .filter_map(|(res, file)| {
             if let Err(diagnostic) = res {
                 emit_diagnostic(diagnostic, &walker);
                 None
             } else {
-                res.ok()
+                res.ok().map(|res| (res, file))
             }
         })
         .collect::<Vec<_>>();
 
+    let unzipped_results = results.clone().into_iter().map(|(r, _)| r).collect();
+    print_results(unzipped_results, &walker, config.as_ref());
+
+    if watch {
+        use std::io::Write;
+        use termcolor::{Color, ColorSpec, WriteColor};
+
+        let mut stdout = StandardStream::stdout(ColorChoice::Always);
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
+        writeln!(&mut stdout, "\nWatching for file changes...\n");
+        start_watcher(walker.clone(), results, config.as_ref());
+    }
+}
+
+pub(crate) fn print_results(
+    mut results: Vec<LintResult>,
+    walker: &FileWalker,
+    config: Option<&config::Config>,
+) {
     // Map each diagnostic to the correct level according to configured rule level
     for result in results.iter_mut() {
         for (rule_name, diagnostics) in result.rule_diagnostics.iter_mut() {
-            if let Some(conf) = config.as_ref().and_then(|cfg| cfg.rules.as_ref()) {
+            if let Some(conf) = config.and_then(|cfg| cfg.rules.as_ref()) {
                 remap_diagnostics_to_level(diagnostics, conf.rule_level_by_name(rule_name));
             }
         }
@@ -121,7 +147,7 @@ pub fn run(glob: String, verbose: bool) {
             emit(
                 &mut StandardStream::stderr(ColorChoice::Always),
                 &codespan_config(),
-                &walker,
+                walker,
                 diagnostic,
             )
             .expect("Failed to throw diagnostic");
@@ -134,33 +160,15 @@ pub fn run(glob: String, verbose: bool) {
     }
 }
 
+#[allow(unused_must_use)]
 fn output_overall(failures: usize, warnings: usize, successes: usize) {
-    use std::io::Write;
-    use termcolor::{Color, ColorSpec, WriteColor};
-
-    let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    stdout
-        .set_color(ColorSpec::new().set_fg(Some(Color::White)))
-        .unwrap();
-    write!(&mut stdout, "\nOutcome: ").unwrap();
-    stdout
-        .set_color(ColorSpec::new().set_fg(Some(Color::Red)))
-        .unwrap();
-    write!(&mut stdout, "{}", failures).unwrap();
-    stdout.reset().unwrap();
-    write!(&mut stdout, " fail, ").unwrap();
-    stdout
-        .set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))
-        .unwrap();
-    write!(&mut stdout, "{}", warnings).unwrap();
-    stdout.reset().unwrap();
-    write!(&mut stdout, " warn, ").unwrap();
-    stdout
-        .set_color(ColorSpec::new().set_fg(Some(Color::Green)))
-        .unwrap();
-    write!(&mut stdout, "{}", successes).unwrap();
-    stdout.reset().unwrap();
-    writeln!(&mut stdout, " success").unwrap();
+    println!(
+        "{}: {} fail, {} warn, {} success",
+        "Outcome".white(),
+        failures.to_string().red(),
+        warnings.to_string().yellow(),
+        successes.to_string().green()
+    );
 }
 
 /// Remap each error diagnostic to a warning diagnostic based on the rule's level.
@@ -189,6 +197,7 @@ pub fn emit_diagnostic(diagnostic: impl Into<Diagnostic>, walker: &FileWalker) {
     .expect("Failed to throw linter diagnostic");
 }
 
+// TODO: don't use expect because we treat panics as linter bugs
 #[macro_export]
 macro_rules! lint_diagnostic {
     ($severity:ident, $($format_args:tt)*) => {

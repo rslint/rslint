@@ -22,6 +22,7 @@
 //! - Very easy tree traversal through [`SyntaxNode`](rowan::SyntaxNode).
 //! - Descriptive errors with multiple labels and notes.
 //! - Very cheap cloning, cloning an ast node or syntax node is the cost of adding a reference to an Rc.
+//! - Cheap incremental reparsing of changed text.
 //!
 //! The crate further includes utilities such as:
 //! - ANSI syntax highlighting of nodes (through [`util`]) or text through [`rslint_lexer`].
@@ -60,6 +61,7 @@ mod parser;
 mod token_set;
 mod diagnostics;
 mod event;
+mod incremental;
 mod lossless_tree_sink;
 mod lossy_tree_sink;
 mod numbers;
@@ -80,6 +82,7 @@ pub use crate::{
     ast::{AstNode, AstToken},
     diagnostics::ErrorBuilder,
     event::{process, Event},
+    incremental::Indel,
     lossless_tree_sink::LosslessTreeSink,
     lossy_tree_sink::LossyTreeSink,
     numbers::{BigInt, JsNum},

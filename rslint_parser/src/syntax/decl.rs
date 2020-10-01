@@ -105,7 +105,7 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
     m.complete(&mut *guard, CLASS_DECL)
 }
 
-fn class_body(p: &mut Parser) -> CompletedMarker {
+pub(crate) fn class_body(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['{']);
 
