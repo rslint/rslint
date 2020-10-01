@@ -3,7 +3,7 @@
 -->
 # no-sparse-arrays
 
-Disallow sparse arrays. 
+Disallow sparse arrays.
 
 Sparse arrays are arrays with empty slots, they are denoted by extra commas, such as:
 
@@ -12,10 +12,10 @@ let foo = [,,];
 let foo = [bar,, baz];
 ```
 
-Sparse elements will be filled in as undefined elements and count towards array length. 
+Sparse elements will be filled in as undefined elements and count towards array length.
 This is often a typo or is hard to comprehend and an explicit method should be used.
 
-## Invalid Code Examples 
+## Invalid Code Examples
 
 ```js
 let foo = [,];

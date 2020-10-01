@@ -22,10 +22,8 @@ declare_lint! {
     errors,
     "no-extra-boolean-cast",
 
-    /**
-     * If this option is `true`, this rule will also check for unnecessary boolean
-     * cast inside logical expression, which is disabled by default.
-     */
+    /// If this option is `true`, this rule will also check for unnecessary boolean
+    /// cast inside logical expression, which is disabled by default.
     pub enforce_for_logical_operands: bool,
 }
 

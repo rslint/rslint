@@ -3,13 +3,13 @@
 -->
 # no-debugger
 
-Disallow the use of debugger statements. 
+Disallow the use of debugger statements.
 
 `debugger` statements are used to tell the environment executing the code to start an appropriate
-debugger. These statements are rendered useless by modern IDEs which have built in breakpoint support. 
+debugger. These statements are rendered useless by modern IDEs which have built in breakpoint support.
 Having them in production code is erroneous as it will tell the browser to stop running and open a debugger.
 
-## Invalid Code Examples 
+## Invalid Code Examples
 
 ```js
 function doSomething() {
