@@ -1,0 +1,8 @@
+[package]
+name = "rslint_errors"
+version = "0.1.0"
+authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+termcolor = "1.1.0"

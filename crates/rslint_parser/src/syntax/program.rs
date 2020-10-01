@@ -55,7 +55,7 @@ pub fn import_decl(p: &mut Parser) -> CompletedMarker {
             from_clause(p);
         }
         T!['{'] => {
-            named_list(p, None).complete(p, NAMED_IMPORTS);
+            named_imports(p);
             from_clause(p);
         }
         T![ident] | T![await] | T![yield] => {
@@ -79,6 +79,10 @@ pub fn import_decl(p: &mut Parser) -> CompletedMarker {
 
     p.expect(T![;]);
     m.complete(p, IMPORT_DECL)
+}
+
+pub(crate) fn named_imports(p: &mut Parser) -> CompletedMarker {
+    named_list(p, None).complete(p, NAMED_IMPORTS)
 }
 
 fn wildcard(p: &mut Parser, m: impl Into<Option<Marker>>) -> Marker {
