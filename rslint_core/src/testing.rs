@@ -9,11 +9,7 @@
 /// test code is run as modules, not scripts.
 #[macro_export]
 macro_rules! rule_tests {
-    (
-    $rule:expr,
-    // Optional doc used in the user facing docs for the
-    // more invalid code examples section.
-    $(#[_:meta])*
+    ($rule:expr,
     err: {
         $(
             // An optional tag to give to docgen
@@ -32,16 +28,31 @@ macro_rules! rule_tests {
             $ok_code:literal
         ),* $(,)?
     } $(,)?) => {
-        #[allow(unused_imports)]
-        use $crate::run_rule;
-        #[allow(unused_imports)]
-        use rslint_parser::parse_module;
-
+        rule_tests!(valid, invalid, $rule, err: { $($code),* }, ok: { $($ok_code),* });
+    };
+    (
+    $ok_name:ident,
+    $err_name:ident,
+    $rule:expr,
+    err: {
+        $(
+            // An optional tag to give to docgen
+            $(#[$err_meta:meta])*
+            $code:literal
+        ),* $(,)?
+    },
+    ok: {
+        $(
+            // An optional tag to give to docgen
+            $(#[$ok_meta:meta])*
+            $ok_code:literal
+        ),* $(,)?
+    } $(,)?) => {
         #[test]
-        fn invalid() {
+        fn $err_name() {
             $(
-                let res = parse_module($code, 0);
-                let errs = run_rule(&$rule, 0, res.syntax(), true, &[]);
+                let res = rslint_parser::parse_module($code, 0);
+                let errs = $crate::run_rule(&$rule, 0, res.syntax(), true, &[]);
                 if errs.is_empty() {
                     panic!("\nExpected:\n```\n{}\n```\nto fail linting, but instead it passed (with {} parsing errors)", $code, res.errors().len());
                 }
@@ -49,10 +60,10 @@ macro_rules! rule_tests {
         }
 
         #[test]
-        fn valid() {
+        fn $ok_name() {
             $(
-                let res = parse_module($ok_code, 0);
-                let errs = run_rule(&$rule, 0, res.syntax(), true, &[]);
+                let res = rslint_parser::parse_module($ok_code, 0);
+                let errs = $crate::run_rule(&$rule, 0, res.syntax(), true, &[]);
 
                 if !errs.is_empty() {
                     panic!("\nExpected:\n```\n{}\n```\nto pass linting, but instead it threw errors (along with {} parsing errors):\n\n", $ok_code, res.errors().len());
