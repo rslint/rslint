@@ -137,7 +137,7 @@ fn in_bool_ctx(node: &SyntaxNode) -> Option<Reason> {
                     .as_ref()
                     == Some(node)
             })
-            .map(|node| Reason::ImplicitCast(node));
+            .map(Reason::ImplicitCast);
     }
 
     let unary = skip_grouping(node.parent(), SyntaxNode::parent).next()?;
@@ -168,8 +168,7 @@ fn implicitly_casted_node(node: &SyntaxNode) -> Option<SyntaxNode> {
         Some(CONDITION) | Some(FOR_STMT_TEST)
     ) {
         skip_grouping(node.parent(), SyntaxNode::parent)
-            .skip(1)
-            .next()
+            .nth(1)
             .filter(|node| BOOL_NODE_KINDS.contains(&node.kind()))
     } else {
         skip_grouping(node.parent(), SyntaxNode::parent)
