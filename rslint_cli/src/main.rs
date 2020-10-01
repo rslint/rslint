@@ -15,9 +15,6 @@ pub(crate) struct Options {
     files: String,
     #[structopt(subcommand)]
     cmd: Option<SubCommand>,
-    /// Watch the linted files for changes and lint them on the fly again
-    #[structopt(short, long)]
-    watch: bool,
 }
 
 #[derive(Debug, StructOpt)]
@@ -35,6 +32,6 @@ fn main() {
     if let Some(SubCommand::Explain { rules }) = opt.cmd {
         ExplanationRunner::new(rules).print();
     } else {
-        rslint_cli::run(opt.files, opt.verbose, opt.watch);
+        rslint_cli::run(opt.files, opt.verbose);
     }
 }
