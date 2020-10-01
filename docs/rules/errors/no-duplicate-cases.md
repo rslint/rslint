@@ -3,12 +3,12 @@
 -->
 # no-duplicate-cases
 
-Disallow duplicate test cases in `switch` statements. 
+Disallow duplicate test cases in `switch` statements.
 
 `switch` statement clauses can freely have duplicate tests, however this is almost always a mistake, because
 the second case is unreachable. It is likely that the programmer copied a case clause but did not change the test for it.
 
-## Invalid Code Examples 
+## Invalid Code Examples
 
 ```js
 switch (a) {

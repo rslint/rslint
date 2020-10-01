@@ -3,12 +3,12 @@
 -->
 # no-dupe-keys
 
-Disallow duplicate keys in object literals. 
+Disallow duplicate keys in object literals.
 
 Object literals allow keys to be declared multiple times, however this causes unwanted
-behavior by shadowing the first declaration. 
+behavior by shadowing the first declaration.
 
-## Invalid Code Examples 
+## Invalid Code Examples
 
 ```js
 let foo = {

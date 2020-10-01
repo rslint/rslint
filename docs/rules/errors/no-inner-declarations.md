@@ -3,13 +3,13 @@
 -->
 # no-inner-declarations
 
-Disallow variable and function declarations in nested blocks. 
+Disallow variable and function declarations in nested blocks.
 
 Prior to ECMAScript 6, function declarations were only allowed in the first level of a program
 or the body of another function, although parsers sometimes incorrectly accept it. This rule only applies to
-function declarations, not function expressions. 
+function declarations, not function expressions.
 
-## Invalid Code Examples 
+## Invalid Code Examples
 
 ```js
 function foo() {
@@ -26,7 +26,7 @@ if (bar) {
 }
 ```
 
-## Correct Code Examples 
+## Correct Code Examples
 
 ```js
 function foo() {}

@@ -3,14 +3,13 @@
 -->
 # no-compare-neg-zero
 
- 
 Disallow comparison against `-0` which yields unexpected behavior.
 
 Comparison against `-0` causes unwanted behavior because it passes for both `-0` and `+0`.
 That is, `x == -0` and `x == +0` both pass under the same circumstances. If a user wishes
 to compare against `-0` they should use `Object.is(x, -0)`.
 
-## Incorrect Code Examples 
+## Incorrect Code Examples
 
 ```js
 if (x === -0) {
@@ -18,7 +17,7 @@ if (x === -0) {
 }
 ```
 
-## Correct code examples 
+## Correct code examples
 
 ```js
 if (x === 0) {

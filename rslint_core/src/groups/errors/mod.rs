@@ -25,4 +25,5 @@ group! {
     no_unexpected_multiline::NoUnexpectedMultiline,
     no_setter_return::NoSetterReturn,
     valid_typeof::ValidTypeof,
+    no_extra_boolean_cast::NoExtraBooleanCast,
 }
