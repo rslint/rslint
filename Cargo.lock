@@ -149,7 +149,8 @@ dependencies = [
 [[package]]
 name = "codespan-reporting"
 version = "0.9.5"
-source = "git+https://github.com/brendanzab/codespan.git#48e863dbe7650b80ecaab72c29edd62059a08e0c"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e0762455306b1ed42bc651ef6a2197aabda5e1d4a43c34d5eab5c1a3634e81d"
 dependencies = [
  "serde",
  "termcolor",
@@ -813,18 +814,6 @@ dependencies = [
 [[package]]
 name = "rowan"
 version = "0.10.0"
-source = "git+https://github.com/RDambrosio016/rowan#0f950ff8a12ef0a34952d8bf056e91339702147b"
-dependencies = [
- "erasable",
- "rustc-hash",
- "slice-dst",
- "smol_str",
- "text-size",
-]
-
-[[package]]
-name = "rowan"
-version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e081ed6eacce09e243b619ab90f069c27b0cff8a6d0eb8ad2ec935b65853798"
 dependencies = [
@@ -832,6 +821,18 @@ dependencies = [
  "smol_str",
  "text-size",
  "thin-dst",
+]
+
+[[package]]
+name = "rowan"
+version = "0.10.0"
+source = "git+https://github.com/RDambrosio016/rowan#0f950ff8a12ef0a34952d8bf056e91339702147b"
+dependencies = [
+ "erasable",
+ "rustc-hash",
+ "slice-dst",
+ "smol_str",
+ "text-size",
 ]
 
 [[package]]

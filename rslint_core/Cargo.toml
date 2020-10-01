@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 rslint_parser = { path = "../rslint_parser", version = "0.1.0" }
 rslint_lexer = { path = "../rslint_lexer", version = "0.1.0" }
-codespan-reporting = { git = "https://github.com/brendanzab/codespan.git", features = ["serialization"] }
+codespan-reporting = { version = "0.9.5", features = ["serialization"] }
 serde = { version = "1.0.115", features = ["derive"] }
 typetag = "0.1.5"
 rayon = "1.4.0"

@@ -31,7 +31,7 @@ error: Unterminated template literal
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0018_subscripts_err.js:1:6
+  ┌─ 0018_subscripts_err.js:1:1
   │
 1 │ foo()?.baz[].
   │ -----^^

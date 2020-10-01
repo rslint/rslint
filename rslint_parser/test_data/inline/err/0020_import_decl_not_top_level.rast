@@ -72,7 +72,7 @@ error[SyntaxError]: Illegal use of an import declaration not at the top level
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0020_import_decl_not_top_level.js:4:6
+  ┌─ 0020_import_decl_not_top_level.js:4:1
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
   │ -----^^^^
@@ -82,7 +82,7 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0020_import_decl_not_top_level.js:4:11
+  ┌─ 0020_import_decl_not_top_level.js:4:6
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
   │      -----^^
@@ -92,7 +92,7 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0020_import_decl_not_top_level.js:4:14
+  ┌─ 0020_import_decl_not_top_level.js:4:11
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
   │           ---^^^^
@@ -102,7 +102,7 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0020_import_decl_not_top_level.js:4:19
+  ┌─ 0020_import_decl_not_top_level.js:4:14
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
   │              -----^^^
@@ -119,7 +119,7 @@ error[SyntaxError]: expected `'{'` but instead found `parsing`
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0020_import_decl_not_top_level.js:4:31
+  ┌─ 0020_import_decl_not_top_level.js:4:23
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
   │                       --------^^^^^^
@@ -129,7 +129,7 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0020_import_decl_not_top_level.js:4:43
+  ┌─ 0020_import_decl_not_top_level.js:4:31
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
   │                               ------------^^
@@ -139,7 +139,7 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0020_import_decl_not_top_level.js:4:46
+  ┌─ 0020_import_decl_not_top_level.js:4:43
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
   │                                           ---^^^^^^
@@ -156,7 +156,7 @@ error[SyntaxError]: Expected an expression, but found none
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0020_import_decl_not_top_level.js:4:55
+  ┌─ 0020_import_decl_not_top_level.js:4:46
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
   │                                              ---------^^
@@ -166,7 +166,7 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0020_import_decl_not_top_level.js:4:58
+  ┌─ 0020_import_decl_not_top_level.js:4:55
   │
 4 │ make sure we dont try parsing import.meta or import() as declarations
   │                                                       ---^^^^^^^^^^^^

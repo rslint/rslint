@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 rslint_core = { path = "../rslint_core", version = "0.1.0" }
-codespan-reporting = { git = "https://github.com/brendanzab/codespan.git", features = ["serialization"] }
+codespan-reporting = { version = "0.9.5", features = ["serialization"] }
 walkdir = "2.3.1"
 glob = "0.3.0"
 structopt = "0.3.17"
