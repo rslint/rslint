@@ -189,7 +189,9 @@ fn implicitly_casted_node(node: &SyntaxNode) -> Option<SyntaxNode> {
 }
 
 rule_tests! {
-    NoExtraBooleanCast { enforce_for_logical_operands: true },
+    default_valid,
+    default_invalid,
+    NoExtraBooleanCast::default(),
     err: {
         "if (!!foo) {}",
         "do {} while (!!foo)",
@@ -407,11 +409,6 @@ rule_tests! {
         "for (let a = 0; a < n; a++) { if (Boolean(b)) {} }",
         "do { const b = !!!c; } while(a)",
         "do { const b = !Boolean(c); } while(a)",
-        "if (!!foo || bar) {}",
-        "while (!!foo && bar) {}",
-        "if ((!!foo || bar) && baz) {}",
-        "foo && Boolean(bar) ? baz : bat",
-        "var foo = new Boolean(!!bar || baz)"
     },
     ok: {
         "Boolean(bar, !!baz);",
@@ -426,5 +423,26 @@ rule_tests! {
         "for(Boolean(foo);;) {}",
         "for(;; Boolean(foo)) {}",
         "if (new Boolean(foo)) {}"
+    }
+}
+
+rule_tests! {
+    logical_operands_valid,
+    logical_operands_invalid,
+    NoExtraBooleanCast { enforce_for_logical_operands: true },
+    err: {
+        "if (!!foo || bar) {}",
+        "while (!!foo && bar) {}",
+        "if ((!!foo || bar) && baz) {}",
+        "foo && Boolean(bar) ? baz : bat",
+        "var foo = new Boolean(!!bar || baz)"
+    },
+    ok: {
+        "if (foo || bar) {}",
+        "while (foo && bar) {}",
+        "if ((foo || bar) && baz) {}",
+        "foo && bar ? baz : bat",
+        "var foo = new Boolean(bar || baz)",
+        "var foo = !!bar || baz;"
     }
 }
