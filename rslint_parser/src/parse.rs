@@ -2,6 +2,7 @@
 
 use crate::{
     ast::{Expr, Module, Script},
+    incremental::{incremental_reparse, Indel},
     AstNode, Event, GreenNode, LosslessTreeSink, LossyTreeSink, ParserError, SyntaxNode,
     TokenSource,
 };
@@ -252,4 +253,32 @@ pub fn parse_expr(text: &str, file_id: usize) -> Parse<Expr> {
     let (green, parse_errors) = tree_sink.finish();
     errors.extend(parse_errors);
     Parse::new(green, errors)
+}
+
+pub fn try_incrementally_reparsing_script(
+    old: SyntaxNode,
+    errors: Vec<ParserError>,
+    change: &Indel,
+    file_id: usize,
+) -> Option<Parse<Script>> {
+    let res = incremental_reparse(&old, change, errors, file_id);
+    if let Some((green, errors, _)) = res {
+        Some(Parse::new(green, errors))
+    } else {
+        None
+    }
+}
+
+pub fn try_incrementally_reparsing_module(
+    old: SyntaxNode,
+    errors: Vec<ParserError>,
+    change: &Indel,
+    file_id: usize,
+) -> Option<Parse<Module>> {
+    let res = incremental_reparse(&old, change, errors, file_id);
+    if let Some((green, errors, _)) = res {
+        Some(Parse::new(green, errors))
+    } else {
+        None
+    }
 }
