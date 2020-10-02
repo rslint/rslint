@@ -83,8 +83,8 @@ impl CstRule for UseIsnan {
                     "false"
                 };
 
-                let mut err = ctx
-                    .err(
+                let mut err = if opposite.text().len() <= 20 {
+                    ctx.err(
                         self.name(),
                         format!(
                             "comparing `{}` to `NaN` using `{}` will always return {}",
@@ -93,8 +93,18 @@ impl CstRule for UseIsnan {
                             always_text
                         ),
                     )
-                    .primary(expr.range(), "")
-                    .note("note: `NaN` is not equal to anything including itself");
+                } else {
+                    ctx.err(
+                        self.name(),
+                        format!(
+                            "comparisons to `NaN` with `{}` will always return {}",
+                            expr.op_token().unwrap().text(),
+                            always_text
+                        ),
+                    )
+                }
+                .primary(expr.range(), "")
+                .note("note: `NaN` is not equal to anything including itself");
 
                 // telling the user to use isNaN for `<`, `>`, etc is a bit misleading so we won't do it if that is the case
                 if op == op!(==) || op == op!(===) {
@@ -141,12 +151,29 @@ impl CstRule for UseIsnan {
             CALL_EXPR if self.enforce_for_index_of => {
                 let expr = node.to::<CallExpr>();
                 let callee = expr.callee()?;
-                if is_indexof_static_prop(&callee)
+                let node = callee.syntax();
+                // rustfmt puts the last call's args each on a new line for some reason which is very ugly
+                #[rustfmt::skip]
+                let is_index_call =
+                    node.structural_lossy_token_eq(&["Array", ".", "prototype", ".", "indexOf"])
+                        || node.structural_lossy_token_eq(&["Array", ".", "prototype", ".", "lastIndexOf"])
+                        || node.structural_lossy_token_eq(&["String", ".", "prototype", ".", "indexOf"])
+                        || node.structural_lossy_token_eq(&["String", ".", "prototype", ".", "lastIndexOf"]);
+
+                let second_arg_is_nan = expr
+                    .arguments()
+                    .map(|a| a.args().nth(1).filter(|x| x.text() == "NaN"))
+                    .flatten()
+                    .is_some();
+
+                if (is_indexof_static_prop(&callee)
                     && expr.arguments()?.args().next()?.text() == "NaN"
+                    && !is_index_call)
+                    || (is_index_call && second_arg_is_nan)
                 {
                     let err = ctx
                         .err(
-                            "use-isnan",
+                            self.name(),
                             "an index check with `NaN` will always return `-1`",
                         )
                         .primary(expr.range(), "")
@@ -179,7 +206,6 @@ fn is_indexof_static_prop(expr: &Expr) -> bool {
     }
 }
 
-// TODO: add a way to test rules with options
 rule_tests! {
     UseIsnan::default(),
     err: {
@@ -217,5 +243,26 @@ rule_tests! {
         "var x; if (x = NaN) { }",
         "foo.indexOf(NaN)",
         "foo.lastIndexOf(NaN)",
+    }
+}
+
+rule_tests! {
+    indexof_ok,
+    indexof_err,
+    UseIsnan {
+        enforce_for_index_of: true,
+        enforce_for_switch_case: false
+    },
+    err: {
+        "Array.prototype.indexOf(foo, NaN)",
+        "Array.prototype.lastIndexOf(foo, NaN)",
+        "String.prototype.indexOf(foo, NaN)",
+        "String.prototype.lastIndexOf(foo, NaN)",
+    },
+    ok: {
+        "Array.prototype.indexOf(NaN)",
+        "Array.prototype.lastIndexOf(NaN)",
+        "String.prototype.indexOf(NaN)",
+        "String.prototype.lastIndexOf(NaN)",
     }
 }
