@@ -4,6 +4,8 @@ name = "rslint_parser"
 version = "0.1.0"
 authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
 license = "MIT"
+description = "An extremely fast ECMAScript parser made for the rslint project"
+repository = "https://github.com/RDambrosio016/RSLint"
 
 [dependencies]
 codespan-reporting = "0.9.5"

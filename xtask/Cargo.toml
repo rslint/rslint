@@ -1,9 +1,10 @@
 [package]
 edition = "2018"
 name = "xtask"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
 license = "MIT"
+publish = false
 
 [dependencies]
 quote = "1.0.2"
