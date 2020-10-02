@@ -18,7 +18,7 @@ pub use codespan_reporting::diagnostic::{Label, Severity};
 use crate::directives::{apply_top_level_directives, skip_node, Directive, DirectiveParser};
 use dyn_clone::clone_box;
 use rayon::prelude::*;
-use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxNode};
+use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
 use std::collections::HashMap;
 
 /// The type of errors, warnings, and notes emitted by the linter.
@@ -124,7 +124,7 @@ pub fn run_rule(
     root.descendants_with_tokens_with(&mut |elem| {
         match elem {
             rslint_parser::NodeOrToken::Node(node) => {
-                if skip_node(directives, &node, rule) {
+                if skip_node(directives, &node, rule) || node.kind() == SyntaxKind::ERROR {
                     return false;
                 }
                 rule.check_node(&node, &mut ctx);
@@ -135,7 +135,6 @@ pub fn run_rule(
         };
         true
     });
-
     ctx.diagnostics
 }
 
