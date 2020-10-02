@@ -527,19 +527,18 @@ pub fn identifier_name(p: &mut Parser) -> CompletedMarker {
 pub fn args(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['(']);
-    let mut first = true;
 
     while !p.at(EOF) && !p.at(T![')']) {
-        if first {
-            first = false;
-        } else if p.expect(T![,]) && p.at(T![')']) {
-            break;
-        }
-
         if p.at(T![...]) {
             spread_element(p);
         } else {
             assign_expr(p);
+        }
+
+        if p.at(T![,]) {
+            p.bump_any();
+        } else {
+            break;
         }
     }
 
