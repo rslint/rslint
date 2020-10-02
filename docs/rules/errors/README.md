@@ -20,6 +20,7 @@ unexpected behavior.
 | [no-dupe-keys](./no-dupe-keys.md) | Disallow duplicate keys in object literals. |
 | [no-duplicate-cases](./no-duplicate-cases.md) | Disallow duplicate test cases in `switch` statements. |
 | [no-empty](./no-empty.md) | Disallow empty block statements. |
+| [no-extra-boolean-cast](./no-extra-boolean-cast.md) | * In contexts where expression will be coerced to a `Boolean` (e.g. `if`), |
 | [no-extra-semi](./no-extra-semi.md) | Disallow unneeded semicolons. |
 | [no-inner-declarations](./no-inner-declarations.md) | Disallow variable and function declarations in nested blocks. |
 | [no-irregular-whitespace](./no-irregular-whitespace.md) | Disallow weird/irregular whitespace. |
