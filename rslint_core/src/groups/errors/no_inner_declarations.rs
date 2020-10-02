@@ -62,7 +62,13 @@ impl NoInnerDeclarations {
 }
 
 const VALID_BLOCK_PARENT: [SyntaxKind; 3] = [FN_DECL, FN_EXPR, ARROW_EXPR];
-const VALID_PARENT: [SyntaxKind; 4] = [SCRIPT, MODULE, EXPORT_NAMED, EXPORT_DEFAULT_DECL];
+const VALID_PARENT: [SyntaxKind; 5] = [
+    SCRIPT,
+    MODULE,
+    EXPORT_NAMED,
+    EXPORT_DEFAULT_DECL,
+    EXPORT_DECL,
+];
 
 #[typetag::serde]
 impl CstRule for NoInnerDeclarations {
@@ -141,6 +147,8 @@ rule_tests! {
     ok: {
         "function doSomething() { }",
         "if (test) { let x = 1; }",
-        "if (test) { const x = 1; }"
+        "if (test) { const x = 1; }",
+        "export const foo = [];
+        export function bar() {}"
     }
 }
