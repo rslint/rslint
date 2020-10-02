@@ -92,7 +92,7 @@ pub use crate::{
     util::{SyntaxNodeExt, SyntaxTokenExt},
 };
 
-pub use rowan::{SmolStr, SyntaxText, TextRange, TextSize, WalkEvent};
+pub use rslint_rowan::{SmolStr, SyntaxText, TextRange, TextSize, WalkEvent};
 
 pub use rslint_syntax::*;
 

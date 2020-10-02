@@ -11,7 +11,7 @@ repository = "https://github.com/RDambrosio016/RSLint"
 codespan-reporting = "0.9.5"
 rslint_syntax = { path = "../rslint_syntax", version = "0.1" }
 rslint_lexer = { path = "../rslint_lexer", version = "0.1", features = ["highlight"] }
-rowan = { git = "https://github.com/RDambrosio016/rowan" }
+rslint_rowan = "0.10.0"
 num-bigint = "0.3.0"
 lexical = { version = "5.2.0", features = ["radix"] }
 
@@ -24,4 +24,3 @@ expect-test = "1.0"
 [[bench]]
 name = "parser"
 harness = false
-

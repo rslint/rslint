@@ -7,9 +7,9 @@
 
 use crate::{Parse, SmolStr, SyntaxKind};
 use codespan_reporting::diagnostic::Diagnostic;
-use rowan::{GreenNodeBuilder, Language};
+use rslint_rowan::{GreenNodeBuilder, Language};
 
-pub use rowan::GreenNode;
+pub use rslint_rowan::GreenNode;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct JsLanguage;
@@ -17,24 +17,24 @@ pub struct JsLanguage;
 impl Language for JsLanguage {
     type Kind = SyntaxKind;
 
-    fn kind_from_raw(raw: rowan::SyntaxKind) -> SyntaxKind {
+    fn kind_from_raw(raw: rslint_rowan::SyntaxKind) -> SyntaxKind {
         SyntaxKind::from(raw.0)
     }
 
-    fn kind_to_raw(kind: SyntaxKind) -> rowan::SyntaxKind {
-        rowan::SyntaxKind(kind.into())
+    fn kind_to_raw(kind: SyntaxKind) -> rslint_rowan::SyntaxKind {
+        rslint_rowan::SyntaxKind(kind.into())
     }
 }
 
-pub type SyntaxNode = rowan::SyntaxNode<JsLanguage>;
-pub type SyntaxToken = rowan::SyntaxToken<JsLanguage>;
-pub type SyntaxElement = rowan::SyntaxElement<JsLanguage>;
-pub type SyntaxNodeChildren = rowan::SyntaxNodeChildren<JsLanguage>;
-pub type SyntaxElementChildren = rowan::SyntaxElementChildren<JsLanguage>;
+pub type SyntaxNode = rslint_rowan::SyntaxNode<JsLanguage>;
+pub type SyntaxToken = rslint_rowan::SyntaxToken<JsLanguage>;
+pub type SyntaxElement = rslint_rowan::SyntaxElement<JsLanguage>;
+pub type SyntaxNodeChildren = rslint_rowan::SyntaxNodeChildren<JsLanguage>;
+pub type SyntaxElementChildren = rslint_rowan::SyntaxElementChildren<JsLanguage>;
 
-pub use rowan::{Direction, NodeOrToken};
+pub use rslint_rowan::{Direction, NodeOrToken};
 
-/// Simple wrapper around a rowan [`GreenNodeBuilder`]
+/// Simple wrapper around a rslint_rowan [`GreenNodeBuilder`]
 #[derive(Default, Debug)]
 pub struct SyntaxTreeBuilder {
     errors: Vec<Diagnostic<usize>>,
