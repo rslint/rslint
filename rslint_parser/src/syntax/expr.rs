@@ -524,6 +524,10 @@ pub fn identifier_name(p: &mut Parser) -> CompletedMarker {
 /// Arguments to a function.
 ///
 /// `"(" (AssignExpr ",")* ")"`
+
+// test_err invalid_arg_list
+// foo(a,b;
+// foo(a,b var
 pub fn args(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['(']);
