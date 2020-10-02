@@ -117,16 +117,13 @@ fn assign_expr_recursive(
 ) -> Option<CompletedMarker> {
     if p.at_ts(ASSIGN_TOKENS) {
         if p.at(T![=]) {
-            if ![DOT_EXPR, BRACKET_EXPR, IDENT].contains(&target.kind()) {
+            if ![DOT_EXPR, BRACKET_EXPR, NAME_REF].contains(&target.kind()) {
                 p.rewind(token_cur);
                 p.drain_events(p.cur_event_pos() - event_cur);
                 target = pattern(p)?;
             }
         } else {
             check_simple_assign_target(p, &p.parse_marker(&target), target.range(p));
-        }
-        if target.kind() == NAME_REF {
-            target.change_kind(p, SINGLE_PATTERN);
         }
         let m = target.precede(p);
         p.bump_any();
