@@ -21,9 +21,8 @@ MODULE@0..27
     WHITESPACE@13..14 " "
     EXPR_STMT@14..24
       ASSIGN_EXPR@14..23
-        SINGLE_PATTERN@14..17
-          NAME@14..17
-            IDENT@14..17 "foo"
+        NAME_REF@14..17
+          IDENT@14..17 "foo"
         WHITESPACE@17..18 " "
         EQ@18..19 "="
         WHITESPACE@19..20 " "

@@ -43,49 +43,49 @@ MODULE@0..52
   WHITESPACE@51..52 "\n"
 --
 error[SyntaxError]: expected `'('` but instead found `true`
-  ┌─ 0003_while_stmt_err.js:1:7
+  ┌─ while_stmt_err.js:1:7
   │
 1 │ while true {}
   │       ^^^^ unexpected
 
 --
 error[SyntaxError]: expected `')'` but instead found `{`
-  ┌─ 0003_while_stmt_err.js:1:12
+  ┌─ while_stmt_err.js:1:12
   │
 1 │ while true {}
   │            ^ unexpected
 
 --
 error[SyntaxError]: expected `'('` but instead found `{`
-  ┌─ 0003_while_stmt_err.js:2:7
+  ┌─ while_stmt_err.js:2:7
   │
 2 │ while {}
   │       ^ unexpected
 
 --
 error[SyntaxError]: expected `')'` but instead found `while`
-  ┌─ 0003_while_stmt_err.js:3:1
+  ┌─ while_stmt_err.js:3:1
   │
 3 │ while (true {}
   │ ^^^^^ unexpected
 
 --
 error[SyntaxError]: expected `')'` but instead found `{`
-  ┌─ 0003_while_stmt_err.js:3:13
+  ┌─ while_stmt_err.js:3:13
   │
 3 │ while (true {}
   │             ^ unexpected
 
 --
 error[SyntaxError]: expected `'('` but instead found `true`
-  ┌─ 0003_while_stmt_err.js:4:7
+  ┌─ while_stmt_err.js:4:7
   │
 4 │ while true) }
   │       ^^^^ unexpected
 
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
-  ┌─ 0003_while_stmt_err.js:4:13
+  ┌─ while_stmt_err.js:4:13
   │
 4 │ while true) }
   │             ^ Expected a statement or declaration here

@@ -20,7 +20,7 @@ MODULE@0..24
   WHITESPACE@23..24 "\n"
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0021_semicolons_err.js:1:1
+  ┌─ semicolons_err.js:1:1
   │
 1 │ let foo = bar throw foo
   │ --------------^^^^^ An explicit or implicit semicolon is expected here...

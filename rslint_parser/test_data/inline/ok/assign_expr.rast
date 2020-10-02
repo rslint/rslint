@@ -1,20 +1,19 @@
 MODULE@0..101
   EXPR_STMT@0..21
     ASSIGN_EXPR@0..20
-      SINGLE_PATTERN@0..3
+      NAME_REF@0..3
         IDENT@0..3 "foo"
       WHITESPACE@3..4 " "
       PLUSEQ@4..6 "+="
       WHITESPACE@6..7 " "
       ASSIGN_EXPR@7..20
-        SINGLE_PATTERN@7..10
-          NAME@7..10
-            IDENT@7..10 "bar"
+        NAME_REF@7..10
+          IDENT@7..10 "bar"
         WHITESPACE@10..11 " "
         EQ@11..12 "="
         WHITESPACE@12..13 " "
         ASSIGN_EXPR@13..20
-          SINGLE_PATTERN@13..14
+          NAME_REF@13..14
             IDENT@13..14 "b"
           WHITESPACE@14..15 " "
           QUESTION2EQ@15..18 "??="
@@ -25,7 +24,7 @@ MODULE@0..101
   WHITESPACE@21..22 "\n"
   EXPR_STMT@22..33
     ASSIGN_EXPR@22..32
-      SINGLE_PATTERN@22..25
+      NAME_REF@22..25
         IDENT@22..25 "foo"
       WHITESPACE@25..26 " "
       MINUSEQ@26..28 "-="

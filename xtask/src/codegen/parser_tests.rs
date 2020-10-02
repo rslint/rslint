@@ -57,13 +57,11 @@ pub fn generate_parser_tests(mode: Mode) -> Result<()> {
             panic!("Test is deleted: {}", t);
         }
 
-        let mut new_idx = existing.len() + 1;
         for (name, test) in tests {
             let path = match existing.get(name) {
                 Some((path, _test)) => path.clone(),
                 None => {
-                    let file_name = format!("{:04}_{}.js", new_idx, name);
-                    new_idx += 1;
+                    let file_name = format!("{}.js", name);
                     tests_dir.join(file_name)
                 }
             };

@@ -24,7 +24,7 @@ MODULE@0..18
   WHITESPACE@17..18 "\n"
 --
 error: Unexpected token `\`
-  ┌─ 0007_primary_expr_invalid_recovery.js:1:9
+  ┌─ primary_expr_invalid_recovery.js:1:9
   │
 1 │ let a = \; foo();
   │         ^

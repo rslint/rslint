@@ -12,14 +12,14 @@ MODULE@0..20
   WHITESPACE@19..20 "\n"
 --
 error[SyntaxError]: Illegal return statement outside of a function
-  ┌─ 0013_return_stmt_err.js:1:1
+  ┌─ return_stmt_err.js:1:1
   │
 1 │ return;
   │ ^^^^^^^
 
 --
 error[SyntaxError]: Illegal return statement outside of a function
-  ┌─ 0013_return_stmt_err.js:2:1
+  ┌─ return_stmt_err.js:2:1
   │
 2 │ return foo;
   │ ^^^^^^^^^^^

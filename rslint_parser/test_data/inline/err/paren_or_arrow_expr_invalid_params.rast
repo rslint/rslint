@@ -22,42 +22,42 @@ MODULE@0..14
   WHITESPACE@13..14 "\n"
 --
 error[SyntaxError]: Expected an identifier or pattern, but found none
-  ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:2
+  ┌─ paren_or_arrow_expr_invalid_params.js:1:2
   │
 1 │ (5 + 5) => {}
   │  ^
 
 --
 error[SyntaxError]: expected `,` but instead found `+`
-  ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:4
+  ┌─ paren_or_arrow_expr_invalid_params.js:1:4
   │
 1 │ (5 + 5) => {}
   │    ^ unexpected
 
 --
 error[SyntaxError]: Expected an identifier or pattern, but found none
-  ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:4
+  ┌─ paren_or_arrow_expr_invalid_params.js:1:4
   │
 1 │ (5 + 5) => {}
   │    ^
 
 --
 error[SyntaxError]: expected `')'` but instead found `5`
-  ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:6
+  ┌─ paren_or_arrow_expr_invalid_params.js:1:6
   │
 1 │ (5 + 5) => {}
   │      ^ unexpected
 
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:7
+  ┌─ paren_or_arrow_expr_invalid_params.js:1:7
   │
 1 │ (5 + 5) => {}
   │       ^ Expected an expression here
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:1
+  ┌─ paren_or_arrow_expr_invalid_params.js:1:1
   │
 1 │ (5 + 5) => {}
   │ ------^
@@ -67,14 +67,14 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
 
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
-  ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:7
+  ┌─ paren_or_arrow_expr_invalid_params.js:1:7
   │
 1 │ (5 + 5) => {}
   │       ^ Expected a statement or declaration here
 
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
-  ┌─ 0001_paren_or_arrow_expr_invalid_params.js:1:9
+  ┌─ paren_or_arrow_expr_invalid_params.js:1:9
   │
 1 │ (5 + 5) => {}
   │         ^^ Expected a statement or declaration here

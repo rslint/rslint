@@ -18,14 +18,14 @@ MODULE@0..12
   WHITESPACE@11..12 "\n"
 --
 error[SyntaxError]: expected `:` but instead found `}`
-  ┌─ 0002_object_expr_non_ident_literal_prop.js:1:11
+  ┌─ object_expr_non_ident_literal_prop.js:1:11
   │
 1 │ let b = {5}
   │           ^ unexpected
 
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ 0002_object_expr_non_ident_literal_prop.js:1:11
+  ┌─ object_expr_non_ident_literal_prop.js:1:11
   │
 1 │ let b = {5}
   │           ^ Expected an expression here
