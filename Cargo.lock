@@ -812,30 +812,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rowan"
-version = "0.10.0"
-source = "git+https://github.com/RDambrosio016/rowan#0f950ff8a12ef0a34952d8bf056e91339702147b"
-dependencies = [
- "erasable",
- "rustc-hash",
- "slice-dst",
- "smol_str",
- "text-size",
-]
-
-[[package]]
-name = "rowan"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e081ed6eacce09e243b619ab90f069c27b0cff8a6d0eb8ad2ec935b65853798"
-dependencies = [
- "rustc-hash",
- "smol_str",
- "text-size",
- "thin-dst",
-]
-
-[[package]]
 name = "rslint_cli"
 version = "0.1.0"
 dependencies = [
@@ -890,17 +866,30 @@ dependencies = [
  "lexical",
  "num-bigint",
  "rayon",
- "rowan 0.10.0 (git+https://github.com/RDambrosio016/rowan)",
  "rslint_lexer",
+ "rslint_rowan",
  "rslint_syntax",
  "walkdir",
+]
+
+[[package]]
+name = "rslint_rowan"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2de60577b88df53597d840c39463418df3a1891dab6e0a70b1cea59bdc57329"
+dependencies = [
+ "erasable",
+ "rustc-hash",
+ "slice-dst",
+ "smol_str",
+ "text-size",
 ]
 
 [[package]]
 name = "rslint_syntax"
 version = "0.1.0"
 dependencies = [
- "rowan 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rslint_rowan",
 ]
 
 [[package]]
@@ -1164,12 +1153,6 @@ checksum = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
 dependencies = [
  "unicode-width",
 ]
-
-[[package]]
-name = "thin-dst"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db3c46be180f1af9673ebb27bc1235396f61ef6965b3fe0dbb2e624deb604f0e"
 
 [[package]]
 name = "thread_local"
@@ -1488,7 +1471,7 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "convert_case",
