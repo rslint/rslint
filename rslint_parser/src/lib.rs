@@ -19,7 +19,7 @@
 //! - Completely error tolerant, able to produce an AST from any source code.
 //! - Zero cost for converting untyped nodes to a typed AST.
 //! - Ability to go from AST to SyntaxNodes to SyntaxTokens to source code and back very easily with nearly zero cost.
-//! - Very easy tree traversal through [`SyntaxNode`](rowan::SyntaxNode).
+//! - Very easy tree traversal through [`SyntaxNode`](rslint_rowan::SyntaxNode).
 //! - Descriptive errors with multiple labels and notes.
 //! - Very cheap cloning, cloning an ast node or syntax node is the cost of adding a reference to an Rc.
 //!
