@@ -1,0 +1,23 @@
+MODULE@0..9
+  EXPR_STMT@0..8
+    CALL_EXPR@0..7
+      NAME_REF@0..3
+        IDENT@0..3 "foo"
+      ARG_LIST@3..7
+        L_PAREN@3..4 "("
+        NAME_REF@4..5
+          IDENT@4..5 "a"
+        COMMA@5..6 ","
+        NAME_REF@6..7
+          IDENT@6..7 "b"
+    SEMICOLON@7..8 ";"
+  WHITESPACE@8..9 "\n"
+--
+error[SyntaxError]: expected `')'` but instead found `;`
+  ┌─ 0025_invalid_arg_list.js:1:8
+  │
+1 │ foo(a,b;
+  │        ^ unexpected
+
+--
+foo(a,b;
