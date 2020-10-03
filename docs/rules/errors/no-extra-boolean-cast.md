@@ -3,17 +3,20 @@
 -->
 # no-extra-boolean-cast
 
-* In contexts where expression will be coerced to a `Boolean` (e.g. `if`),
-* casting to a boolean (using `!!` or `Boolean(expr)`) is unnecessary.
-*
-* # Invalid Code Examples
-* ```js
-* if (!!foo) {}
-* while (!!foo) {}
-*
-* var foo = !!!bar;
-* var foo = Boolean(!!bar);
-* ```
+Disallow unnecessary boolean casts.
+
+In contexts where expression will be coerced to a `Boolean` (e.g. `if`),
+casting to a boolean (using `!!` or `Boolean(expr)`) is unnecessary.
+
+## Invalid Code Examples
+
+```js
+if (!!foo) {}
+while (!!foo) {}
+
+var foo = !!!bar;
+var foo = Boolean(!!bar);
+```
 
 ## Config
 | Name | Type | Description |

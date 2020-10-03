@@ -84,6 +84,11 @@ if (test) { let x = 1; }
 ```js
 if (test) { const x = 1; }
 ```
+
+```js
+export const foo = [];
+export function bar() {}
+```
 </details>
 
 [Source](../../../rslint_core/src/groups/errors/no_inner_declarations.rs)
