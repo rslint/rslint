@@ -61,7 +61,9 @@ pub fn parse_rule_file(file: &str) -> Result<Option<RuleFile>> {
                 .last()
                 .map_or(false, |x| x.ident == "rule_tests")
             {
-                tests = Some(parse2::<RuleTests>(call.tokens)?);
+                if tests.is_none() {
+                    tests = Some(parse2::<RuleTests>(call.tokens)?);
+                }
             }
         }
     }
