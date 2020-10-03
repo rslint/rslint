@@ -9,7 +9,7 @@ The project is in early development, there will be bugs and weird productions. I
 You must have cargo installed on your machine, then git clone the repository, and either build the binary and run it, or use cargo run directly.
 
 ```sh
-git clone -b dev https://github.com/RDambrosio016/RSLint.git
+git clone https://github.com/RDambrosio016/RSLint.git
 cd RSLint
 cargo run --release -- ./glob/pattern.js
 ```
@@ -21,6 +21,10 @@ Please see the [docs](./docs/config.md) for linter configuration details.
 # Rules 
 
 You can find rule documentation [here](./docs/rules).
+
+# Contributing
+
+RSLint's syntax is unlike any other linter, therefore it may be very foreign to people coming from ESTree-like parsers/linters. If you want to learn more about RSLint's syntax tree implementation and how to implement rules you should read the [dev docs](https://github.com/RDambrosio016/RSLint/tree/master/docs/dev). You can further read both the [rslint_parser](https://docs.rs/rslint_parser/0.1.0/rslint_parser/) docs, and the [rslint_core](https://docs.rs/rslint_core/0.1.0/rslint_core/) docs, specifically the `ast` module and `SyntaxNodeExt` methods.
 
 # Differences from other linters 
 
@@ -39,6 +43,7 @@ You can find rule documentation [here](./docs/rules).
 - Completely error tolerant and fast parser 
 - Lossless tree used for stylistic linting 
 - TOML config (json will be allowed too), (TOML implemented, json not yet)
+- Incremental reparsing and native file watching support (WIP, see #16)
 
 ## Planned 
 
@@ -56,6 +61,8 @@ RSLint is designed to be the fastest JavaScript linter ever made, it accomplishe
   - Linting each file in parallel
   - Running each rule from every group in parallel over the concrete syntax tree
   - (WIP) linting each untyped node in parallel
+  - (WIP) Incrementaly reparsing and relinting files
+  - (WIP) Having native file watching support using incremental parsing
 
 # Roadmap
 
