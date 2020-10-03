@@ -70,7 +70,7 @@ pub fn run(glob: String, verbose: bool) {
         CstRuleStore::new().builtins()
     };
 
-    if walker.files.len() == 0 {
+    if walker.files.is_empty() {
         lint_err!("No matching files found");
         return;
     }
