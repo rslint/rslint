@@ -191,8 +191,6 @@ fn implicitly_casted_node(node: &SyntaxNode) -> Option<SyntaxNode> {
 }
 
 rule_tests! {
-    default_valid,
-    default_invalid,
     NoExtraBooleanCast::default(),
     err: {
         "if (!!foo) {}",

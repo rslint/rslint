@@ -20,7 +20,7 @@ unexpected behavior.
 | [no-dupe-keys](./no-dupe-keys.md) | Disallow duplicate keys in object literals. |
 | [no-duplicate-cases](./no-duplicate-cases.md) | Disallow duplicate test cases in `switch` statements. |
 | [no-empty](./no-empty.md) | Disallow empty block statements. |
-| [no-extra-boolean-cast](./no-extra-boolean-cast.md) | * In contexts where expression will be coerced to a `Boolean` (e.g. `if`), |
+| [no-extra-boolean-cast](./no-extra-boolean-cast.md) | Disallow unnecessary boolean casts. |
 | [no-extra-semi](./no-extra-semi.md) | Disallow unneeded semicolons. |
 | [no-inner-declarations](./no-inner-declarations.md) | Disallow variable and function declarations in nested blocks. |
 | [no-irregular-whitespace](./no-irregular-whitespace.md) | Disallow weird/irregular whitespace. |
@@ -30,7 +30,7 @@ unexpected behavior.
 | [no-unexpected-multiline](./no-unexpected-multiline.md) | Disallow confusing newlines in expressions. |
 | [no-unsafe-finally](./no-unsafe-finally.md) | Forbid the use of unsafe control flow statements in try and catch blocks. |
 | [no-unsafe-negation](./no-unsafe-negation.md) | Deny the use of `!` on the left hand side of an `instanceof` or `in` expression where it is ambiguous. |
-| [valid-typeof](./valid-typeof.md) | Enforce the use of valid string literals in a `typeof` comparison. |
 | [use-isnan](./use-isnan.md) | Disallow incorrect comparisons against `NaN`. |
+| [valid-typeof](./valid-typeof.md) | Enforce the use of valid string literals in a `typeof` comparison. |
 
 [Source](../../../rslint_core/src/groups/errors)
