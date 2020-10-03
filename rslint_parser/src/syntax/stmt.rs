@@ -101,7 +101,7 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                     ..p.state.clone()
                 }),
                 m,
-                true
+                true,
             )
         }
         T![ident] if p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)) => var_decl(p, false),

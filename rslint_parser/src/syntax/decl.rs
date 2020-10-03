@@ -1,6 +1,6 @@
 //! Class and function declarations.
 
-use super::expr::{assign_expr, object_prop_name, lhs_expr, EXPR_RECOVERY_SET};
+use super::expr::{assign_expr, lhs_expr, object_prop_name, EXPR_RECOVERY_SET};
 use super::pat::{binding_element, binding_identifier, opt_binding_identifier, pattern};
 use super::stmt::block_stmt;
 use crate::{SyntaxKind::*, *};
@@ -30,7 +30,10 @@ pub fn function_decl(p: &mut Parser, m: Marker, fn_expr: bool) -> CompletedMarke
 
     let complete = opt_binding_identifier(p);
     if complete.is_none() && !fn_expr {
-        let err = p.err_builder("expected a name for the function in a function declaration, but found none")
+        let err = p
+            .err_builder(
+                "expected a name for the function in a function declaration, but found none",
+            )
             .primary(p.cur_tok().range, "");
 
         p.error(err);

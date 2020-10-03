@@ -162,7 +162,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                             ..p.state.clone()
                         }),
                         inner,
-                        true
+                        true,
                     );
                     m.complete(p, EXPORT_DEFAULT_DECL)
                 } else {
@@ -227,7 +227,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                             ..p.state.clone()
                         }),
                         inner,
-                        true
+                        true,
                     );
                     m.complete(p, EXPORT_DECL)
                 } else {

@@ -95,7 +95,10 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
         return Some(m.complete(p, AWAIT_EXPR));
     }
     let potential_arrow_start = matches!(p.cur(), T![ident] | T!['('] | T![yield] | T![await]);
-    let mut guard = p.with_state(ParserState { potential_arrow_start, ..p.state.clone() });
+    let mut guard = p.with_state(ParserState {
+        potential_arrow_start,
+        ..p.state.clone()
+    });
 
     let token_cur = guard.token_pos();
     let event_cur = guard.cur_event_pos();
@@ -720,7 +723,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                         ..p.state.clone()
                     }),
                     m,
-                    true
+                    true,
                 );
                 complete.change_kind(p, FN_EXPR);
                 complete
