@@ -43,10 +43,11 @@ pub const FOLLOWS_LET: TokenSet = token_set![T!['{'], T!['['], T![ident], T![yie
 // let foo;
 // let foo
 // let foo
+// function foo() { return true }
 pub fn semi(p: &mut Parser, err_range: Range<usize>) {
     // test_err semicolons_err
     // let foo = bar throw foo
-    if p.eat(T![;]) || p.at(EOF) {
+    if p.eat(T![;]) || p.at(EOF) || p.at(T!['}']) {
         return;
     }
     if !p.has_linebreak_before_n(0) {

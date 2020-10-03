@@ -1,4 +1,4 @@
-MODULE@0..53
+MODULE@0..84
   VAR_DECL@0..14
     IDENT@0..3 "let"
     WHITESPACE@3..4 " "
@@ -52,3 +52,23 @@ MODULE@0..53
         NAME@49..52
           IDENT@49..52 "foo"
   WHITESPACE@52..53 "\n"
+  FN_DECL@53..83
+    FUNCTION_KW@53..61 "function"
+    WHITESPACE@61..62 " "
+    NAME@62..65
+      IDENT@62..65 "foo"
+    PARAMETER_LIST@65..67
+      L_PAREN@65..66 "("
+      R_PAREN@66..67 ")"
+    WHITESPACE@67..68 " "
+    BLOCK_STMT@68..83
+      L_CURLY@68..69 "{"
+      WHITESPACE@69..70 " "
+      RETURN_STMT@70..81
+        RETURN_KW@70..76 "return"
+        WHITESPACE@76..77 " "
+        LITERAL@77..81
+          TRUE_KW@77..81 "true"
+      WHITESPACE@81..82 " "
+      R_CURLY@82..83 "}"
+  WHITESPACE@83..84 "\n"
