@@ -14,6 +14,13 @@ cd RSLint
 cargo run --release -- ./glob/pattern.js
 ```
 
+You can also directly install rslint_cli:
+
+```sh
+cargo install rslint_cli
+rslint_cli ./glob/pattern.js
+```
+
 # Configuration 
 
 Please see the [docs](./docs/config.md) for linter configuration details. 
