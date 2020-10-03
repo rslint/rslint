@@ -60,10 +60,9 @@ pub fn parse_rule_file(file: &str) -> Result<Option<RuleFile>> {
                 .segments
                 .last()
                 .map_or(false, |x| x.ident == "rule_tests")
+                && tests.is_none()
             {
-                if tests.is_none() {
-                    tests = Some(parse2::<RuleTests>(call.tokens)?);
-                }
+                tests = Some(parse2::<RuleTests>(call.tokens)?);
             }
         }
     }
