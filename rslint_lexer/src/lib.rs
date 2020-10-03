@@ -764,6 +764,7 @@ impl<'src> Lexer<'src> {
                     if is_linebreak(chr) {
                         return tok!(COMMENT, self.cur - start);
                     }
+                    self.cur += chr.len_utf8() - 1;
                 }
                 tok!(COMMENT, self.cur - start)
             }

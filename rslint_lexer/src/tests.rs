@@ -928,3 +928,11 @@ fn fuzz_fail_5() {
         WHITESPACE:3
     }
 }
+
+#[test]
+fn fuzz_fail_6() {
+    assert_lex! {
+        "//\u{200a}",
+        COMMENT:5
+    }
+}
