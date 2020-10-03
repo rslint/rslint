@@ -1,4 +1,4 @@
-use super::expr::{assign_expr, identifier_reference, object_prop_name, EXPR_RECOVERY_SET};
+use super::expr::{assign_expr, identifier_reference, object_prop_name, identifier_name, EXPR_RECOVERY_SET};
 use crate::{SyntaxKind::*, *};
 
 pub fn pattern(p: &mut Parser) -> Option<CompletedMarker> {
@@ -142,9 +142,17 @@ pub fn object_binding_pattern(p: &mut Parser) -> CompletedMarker {
     m.complete(p, OBJECT_PATTERN)
 }
 
+// test object_binding_prop
+// let { default: foo, bar } = {}
+// let { foo = bar, baz } = {}
 fn object_binding_prop(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
-    let name = object_prop_name(p, true);
+    let name = if (p.cur().is_keyword() || p.cur() == T![ident]) && p.nth(1) == T![:] {
+        identifier_name(p)
+    } else { 
+        object_prop_name(p, true) 
+    };
+
     if p.eat(T![:]) {
         binding_element(p);
         return Some(m.complete(p, KEY_VALUE_PATTERN));

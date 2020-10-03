@@ -222,7 +222,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
                 in_generator,
                 ..p.state.clone()
             });
-            object_prop_name(&mut *guard, true);
+            object_prop_name(&mut *guard, false);
             formal_parameters(&mut *guard);
             block_stmt(&mut *guard, true, None);
             drop(guard);
@@ -234,7 +234,7 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
                 in_generator,
                 ..p.state.clone()
             });
-            object_prop_name(&mut *guard, true);
+            object_prop_name(&mut *guard, false);
             formal_parameters(&mut *guard);
             block_stmt(&mut *guard, true, None);
             drop(guard);

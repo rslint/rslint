@@ -5,8 +5,12 @@ All notable changes to this crate will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
-## Fixed 
+
+## [0.1.2] - 2020-10-3
+### Fixed 
 - Fixed automatic semicolon insertion for statements which have `}` after it
+- Fixed keywords not being allowed in key value patterns
+- Fixed LosslessTreeSink accessing unicode char boundaries
 
 ## [0.1.1] - 2020-10-3
 ### Fixed 

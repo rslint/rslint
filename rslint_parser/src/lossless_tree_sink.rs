@@ -63,7 +63,7 @@ impl<'a> TreeSink for LosslessTreeSink<'a> {
             + leading_trivias
                 .iter()
                 .map(|it| TextSize::from(it.len as u32))
-                .sum::<TextSize>();
+                .sum::<TextSize>() + TextSize::from(1);
 
         let n_attached_trivias = {
             let leading_trivias = leading_trivias.iter().rev().map(|it| {
