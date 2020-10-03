@@ -1,3 +1,5 @@
 foo => {}
 yield => {}
 await => {}
+foo =>
+{}

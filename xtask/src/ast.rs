@@ -104,7 +104,6 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "protected",
         "public",
         "return",
-        "static",
         "super",
         "switch",
         "this",
@@ -812,7 +811,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct StaticMethod {
-            T![static],
+            T![ident],
             method: Method
         }
 

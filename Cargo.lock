@@ -845,7 +845,7 @@ dependencies = [
 
 [[package]]
 name = "rslint_lexer"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ansi_term 0.12.1",
  "atty",
@@ -858,7 +858,7 @@ dependencies = [
 
 [[package]]
 name = "rslint_parser"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "codespan-reporting",
  "criterion",
@@ -887,7 +887,7 @@ dependencies = [
 
 [[package]]
 name = "rslint_syntax"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rslint_rowan",
 ]

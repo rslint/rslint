@@ -1,0 +1,104 @@
+MODULE@0..53
+  CLASS_DECL@0..8
+    CLASS_KW@0..5 "class"
+    WHITESPACE@5..6 " "
+    CLASS_BODY@6..8
+      L_CURLY@6..7 "{"
+      R_CURLY@7..8 "}"
+  WHITESPACE@8..9 "\n"
+  CLASS_DECL@9..29
+    CLASS_KW@9..14 "class"
+    WHITESPACE@14..15 " "
+    EXTENDS_KW@15..22 "extends"
+    WHITESPACE@22..23 " "
+    NAME_REF@23..26
+      IDENT@23..26 "bar"
+    WHITESPACE@26..27 " "
+    CLASS_BODY@27..29
+      L_CURLY@27..28 "{"
+      R_CURLY@28..29 "}"
+  WHITESPACE@29..30 "\n"
+  CLASS_DECL@30..53
+    CLASS_KW@30..35 "class"
+    WHITESPACE@35..36 " "
+    EXTENDS_KW@36..43 "extends"
+    WHITESPACE@43..44 " "
+    OBJECT_EXPR@44..46
+      L_CURLY@44..45 "{"
+      R_CURLY@45..46 "}"
+    WHITESPACE@46..47 "\n"
+    CLASS_BODY@47..53
+      METHOD@47..53
+        NAME@47..52
+          IDENT@47..52 "class"
+        WHITESPACE@52..53 "\n"
+        PARAMETER_LIST@53..53
+        BLOCK_STMT@53..53
+--
+error[SyntaxError]: class declarations must have a name
+  ┌─ class_decl_err.js:1:7
+  │
+1 │ class {}
+  │       ^
+
+--
+error[SyntaxError]: class declarations must have a name
+  ┌─ class_decl_err.js:2:7
+  │
+2 │ class extends bar {}
+  │       ^^^^^^^
+
+--
+error[SyntaxError]: class declarations must have a name
+  ┌─ class_decl_err.js:3:7
+  │
+3 │ class extends {}
+  │       ^^^^^^^
+
+--
+error[SyntaxError]: expected `'{'` but instead found `class`
+  ┌─ class_decl_err.js:4:1
+  │
+4 │ class
+  │ ^^^^^ unexpected
+
+--
+error[SyntaxError]: expected `'('` but instead the file ends
+  ┌─ class_decl_err.js:5:1
+  │
+5 │ 
+  │ ^ the file ends here
+
+--
+error[SyntaxError]: expected `')'` but instead the file ends
+  ┌─ class_decl_err.js:5:1
+  │
+5 │ 
+  │ ^ the file ends here
+
+--
+error[SyntaxError]: expected `'{'` but instead the file ends
+  ┌─ class_decl_err.js:5:1
+  │
+5 │ 
+  │ ^ the file ends here
+
+--
+error[SyntaxError]: expected `'}'` but instead the file ends
+  ┌─ class_decl_err.js:5:1
+  │
+5 │ 
+  │ ^ the file ends here
+
+--
+error[SyntaxError]: expected `'}'` but instead the file ends
+  ┌─ class_decl_err.js:5:1
+  │
+5 │ 
+  │ ^ the file ends here
+
+--
+class {}
+class extends bar {}
+class extends {}
+class

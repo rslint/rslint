@@ -1,4 +1,4 @@
-MODULE@0..65
+MODULE@0..85
   EXPR_STMT@0..6
     GROUPING_EXPR@0..5
       L_PAREN@0..1 "("
@@ -81,3 +81,25 @@ MODULE@0..65
         R_CURLY@62..63 "}"
     SEMICOLON@63..64 ";"
   WHITESPACE@64..65 "\n"
+  EXPR_STMT@65..84
+    ARROW_EXPR@65..84
+      PARAMETER_LIST@65..78
+        L_PAREN@65..66 "("
+        SINGLE_PATTERN@66..69
+          NAME@66..69
+            IDENT@66..69 "foo"
+        COMMA@69..70 ","
+        WHITESPACE@70..71 " "
+        REST_PATTERN@71..77
+          DOT2@71..74 "..."
+          SINGLE_PATTERN@74..77
+            NAME@74..77
+              IDENT@74..77 "bar"
+        R_PAREN@77..78 ")"
+      WHITESPACE@78..79 " "
+      FAT_ARROW@79..81 "=>"
+      WHITESPACE@81..82 " "
+      BLOCK_STMT@82..84
+        L_CURLY@82..83 "{"
+        R_CURLY@83..84 "}"
+  WHITESPACE@84..85 "\n"

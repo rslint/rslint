@@ -1,4 +1,4 @@
-MODULE@0..34
+MODULE@0..44
   EXPR_STMT@0..9
     ARROW_EXPR@0..9
       NAME_REF@0..3
@@ -32,3 +32,14 @@ MODULE@0..34
         L_CURLY@31..32 "{"
         R_CURLY@32..33 "}"
   WHITESPACE@33..34 "\n"
+  EXPR_STMT@34..43
+    ARROW_EXPR@34..43
+      NAME_REF@34..37
+        IDENT@34..37 "foo"
+      WHITESPACE@37..38 " "
+      FAT_ARROW@38..40 "=>"
+      WHITESPACE@40..41 "\n"
+      BLOCK_STMT@41..43
+        L_CURLY@41..42 "{"
+        R_CURLY@42..43 "}"
+  WHITESPACE@43..44 "\n"

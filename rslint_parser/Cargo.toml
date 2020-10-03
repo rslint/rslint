@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "rslint_parser"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
 license = "MIT"
 description = "An extremely fast ECMAScript parser made for the rslint project"

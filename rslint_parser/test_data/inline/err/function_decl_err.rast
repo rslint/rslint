@@ -1,0 +1,89 @@
+MODULE@0..102
+  FN_DECL@0..13
+    FUNCTION_KW@0..8 "function"
+    PARAMETER_LIST@8..10
+      L_PAREN@8..9 "("
+      R_PAREN@9..10 ")"
+    WHITESPACE@10..11 " "
+    BLOCK_STMT@11..13
+      L_CURLY@11..12 "{"
+      R_CURLY@12..13 "}"
+  WHITESPACE@13..14 "\n"
+  FN_DECL@14..29
+    FUNCTION_KW@14..22 "function"
+    WHITESPACE@22..23 " "
+    STAR@23..24 "*"
+    PARAMETER_LIST@24..26
+      L_PAREN@24..25 "("
+      R_PAREN@25..26 ")"
+    WHITESPACE@26..27 " "
+    BLOCK_STMT@27..29
+      L_CURLY@27..28 "{"
+      R_CURLY@28..29 "}"
+  WHITESPACE@29..30 "\n"
+  FN_DECL@30..49
+    IDENT@30..35 "async"
+    WHITESPACE@35..36 " "
+    FUNCTION_KW@36..44 "function"
+    PARAMETER_LIST@44..46
+      L_PAREN@44..45 "("
+      R_PAREN@45..46 ")"
+    WHITESPACE@46..47 " "
+    BLOCK_STMT@47..49
+      L_CURLY@47..48 "{"
+      R_CURLY@48..49 "}"
+  WHITESPACE@49..50 "\n"
+  FN_DECL@50..71
+    IDENT@50..55 "async"
+    WHITESPACE@55..56 " "
+    FUNCTION_KW@56..64 "function"
+    WHITESPACE@64..65 " "
+    STAR@65..66 "*"
+    PARAMETER_LIST@66..68
+      L_PAREN@66..67 "("
+      R_PAREN@67..68 ")"
+    WHITESPACE@68..69 " "
+    BLOCK_STMT@69..71
+      L_CURLY@69..70 "{"
+      R_CURLY@70..71 "}"
+  WHITESPACE@71..72 "\n"
+  FN_DECL@72..90
+    FUNCTION_KW@72..80 "function"
+    WHITESPACE@80..81 " "
+    STAR@81..82 "*"
+    NAME@82..85
+      IDENT@82..85 "foo"
+    PARAMETER_LIST@85..87
+      L_PAREN@85..86 "("
+      R_PAREN@86..87 ")"
+    WHITESPACE@87..88 " "
+    BLOCK_STMT@88..90
+      L_CURLY@88..89 "{"
+      R_CURLY@89..90 "}"
+  WHITESPACE@90..91 "\n"
+  EXPR_STMT@91..96
+    NAME_REF@91..96
+      IDENT@91..96 "yield"
+  WHITESPACE@96..97 " "
+  EXPR_STMT@97..101
+    NAME_REF@97..100
+      IDENT@97..100 "foo"
+    SEMICOLON@100..101 ";"
+  WHITESPACE@101..102 "\n"
+--
+error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
+  ┌─ function_decl_err.js:6:1
+  │
+6 │ yield foo;
+  │ ------^^^
+  │ │     │
+  │ │     An explicit or implicit semicolon is expected here...
+  │ ...Which is required to end this statement
+
+--
+function() {}
+function *() {}
+async function() {}
+async function *() {}
+function *foo() {}
+yield foo;

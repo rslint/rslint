@@ -1,31 +1,47 @@
 //! Class and function declarations.
 
-use super::expr::{assign_expr, object_prop_name, EXPR_RECOVERY_SET};
+use super::expr::{assign_expr, object_prop_name, lhs_expr, EXPR_RECOVERY_SET};
 use super::pat::{binding_element, binding_identifier, opt_binding_identifier, pattern};
 use super::stmt::block_stmt;
 use crate::{SyntaxKind::*, *};
 use std::collections::HashMap;
 
-// A statement list item, either a statement or a declaration
-// pub fn stmt_list_item(p: &mut Parser) -> Option<CompletedMarker> {
-
-// }
-
 /// A function declaration, this could be async and or a generator. This takes a marker
 /// because you need to first advance over async or start a marker and feed it in.
-pub fn function_decl(p: &mut Parser, m: Marker) -> CompletedMarker {
+// test function_decl
+// function foo() {}
+// function *foo() {}
+// function foo(await) {}
+// async function *foo() {}
+// async function foo() {}
+// function *foo() {
+//   yield foo;
+// }
+pub fn function_decl(p: &mut Parser, m: Marker, fn_expr: bool) -> CompletedMarker {
+    // test_err function_decl_err
+    // function() {}
+    // function *() {}
+    // async function() {}
+    // async function *() {}
+    // function *foo() {}
+    // yield foo;
     p.expect(T![function]);
-    if p.eat(T![*]) {
-        p.state.in_generator = true;
-    }
+    let in_generator = p.eat(T![*]);
 
-    opt_binding_identifier(p);
+    let complete = opt_binding_identifier(p);
+    if complete.is_none() && !fn_expr {
+        let err = p.err_builder("expected a name for the function in a function declaration, but found none")
+            .primary(p.cur_tok().range, "");
+
+        p.error(err);
+    }
     formal_parameters(p);
 
     block_stmt(
         &mut *p.with_state(ParserState {
             labels: HashMap::new(),
             in_function: true,
+            in_generator,
             ..p.state.clone()
         }),
         true,
@@ -77,7 +93,16 @@ pub fn arrow_body(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
+// test class_decl
+// class foo {}
+// class foo extends bar {}
+// class foo extends foo.bar {}
 pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
+    // test_err class_decl_err
+    // class {}
+    // class extends bar {}
+    // class extends {}
+    // class
     let m = p.start();
     p.expect(T![class]);
     // class bodies are implicitly strict
@@ -97,7 +122,7 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
     }
 
     if guard.eat(T![extends]) {
-        binding_identifier(&mut *guard);
+        lhs_expr(&mut *guard);
     }
 
     class_body(&mut *guard);
@@ -111,12 +136,21 @@ fn class_body(p: &mut Parser) -> CompletedMarker {
 
     while !p.at(EOF) && !p.at(T!['}']) {
         match p.cur() {
+            // test class_empty_element
+            // class foo { ;;;;;;;;;; get foo() {};;;;}
             T![;] => {
                 let inner = p.start();
                 p.bump_any();
                 inner.complete(p, EMPTY_STMT);
             }
-            T![static] => {
+            // test static_method
+            // class foo {
+            //  static foo(bar) {}
+            //  static *foo() {}
+            //  static async foo() {}
+            //  static async *foo() {}
+            // }
+            _ if p.cur_src() == "static" => {
                 let inner = p.start();
                 p.bump_any();
                 method(p, None);
@@ -138,11 +172,21 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
     p.state.in_function = true;
     // FIXME: handle get* which is a property + a generator
     let complete = match p.cur() {
+        // FIXME: this is wrong and it wrongfully allows things like `class foo { (bar) {} }`
         T!['('] => {
             formal_parameters(p);
             block_stmt(p, true, None);
             m.complete(p, METHOD)
         }
+        // test method_getter
+        // class foo {
+        //  get bar() {}
+        // }
+
+        // test_err method_getter_err
+        // class foo {
+        //  get {}
+        // }
         T![ident] if p.cur_src() == "get" && p.nth(1) != T!['('] => {
             p.bump_any();
             object_prop_name(p, false);
@@ -151,6 +195,10 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             block_stmt(p, true, None);
             m.complete(p, GETTER)
         }
+        // test method_setter
+        // class foo {
+        //  set bar() {}
+        // }
         T![ident] if p.cur_src() == "set" && p.nth(1) != T!['('] => {
             p.bump_any();
             object_prop_name(p, false);
@@ -158,6 +206,11 @@ pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<Compl
             block_stmt(p, true, None);
             m.complete(p, SETTER)
         }
+        // test async_method
+        // class foo {
+        //  async foo() {}
+        //  async *foo() {}
+        // }
         T![ident] if p.cur_src() == "async" && !p.has_linebreak_before_n(1) => {
             p.bump_any();
             let in_generator = p.eat(T![*]);

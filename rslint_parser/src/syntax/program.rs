@@ -142,7 +142,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
         let complete = match p.cur() {
             T![function] => {
                 let inner = p.start();
-                function_decl(p, inner);
+                function_decl(p, inner, true);
                 m.complete(p, EXPORT_DEFAULT_DECL)
             }
             T![class] => {
@@ -162,6 +162,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                             ..p.state.clone()
                         }),
                         inner,
+                        true
                     );
                     m.complete(p, EXPORT_DEFAULT_DECL)
                 } else {
@@ -192,7 +193,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
             }
             T![function] => {
                 let inner = p.start();
-                function_decl(p, inner);
+                function_decl(p, inner, true);
                 m.complete(p, EXPORT_DECL)
             }
             T!['{'] => {
@@ -226,6 +227,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                             ..p.state.clone()
                         }),
                         inner,
+                        true
                     );
                     m.complete(p, EXPORT_DECL)
                 } else {

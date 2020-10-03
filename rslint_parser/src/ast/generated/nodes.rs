@@ -722,7 +722,7 @@ pub struct StaticMethod {
     pub(crate) syntax: SyntaxNode,
 }
 impl StaticMethod {
-    pub fn static_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![static]) }
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn method(&self) -> Option<Method> { support::child(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -731,7 +731,9 @@ pub struct ClassDecl {
 }
 impl ClassDecl {
     pub fn class_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![class]) }
+    pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
     pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
+    pub fn parent(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<ClassBody> { support::child(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

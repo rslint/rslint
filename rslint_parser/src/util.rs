@@ -135,8 +135,8 @@ pub trait SyntaxNodeExt {
         let trimmed = self.to_node().trimmed_range();
         let offset = self.to_node().text_range().start();
         self.to_node().text().slice(TextRange::new(
-            trimmed.start() - offset,
-            trimmed.end() - offset,
+            trimmed.start().checked_sub(offset).unwrap_or_default(),
+            trimmed.end().checked_sub(offset).unwrap_or_default(),
         ))
     }
 

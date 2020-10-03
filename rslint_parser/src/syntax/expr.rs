@@ -94,13 +94,13 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
         unary_expr(p);
         return Some(m.complete(p, AWAIT_EXPR));
     }
+    let potential_arrow_start = matches!(p.cur(), T![ident] | T!['('] | T![yield] | T![await]);
+    let mut guard = p.with_state(ParserState { potential_arrow_start, ..p.state.clone() });
 
-    p.state.potential_arrow_start = matches!(p.cur(), T![ident] | T!['('] | T![yield] | T![await]);
-
-    let token_cur = p.token_pos();
-    let event_cur = p.cur_event_pos();
-    let target = conditional_expr(p)?;
-    assign_expr_recursive(p, target, token_cur, event_cur)
+    let token_cur = guard.token_pos();
+    let event_cur = guard.cur_event_pos();
+    let target = conditional_expr(&mut *guard)?;
+    assign_expr_recursive(&mut *guard, target, token_cur, event_cur)
 }
 
 // test assign_expr
@@ -507,7 +507,7 @@ pub fn bracket_expr(p: &mut Parser, lhs: CompletedMarker, optional_chain: bool) 
 }
 
 /// An identifier name, either an ident or a keyword
-pub fn identifier_name(p: &mut Parser) -> CompletedMarker {
+pub fn identifier_name(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
     match p.cur() {
         t if t.is_keyword() || t == T![ident] => p.bump_remap(T![ident]),
@@ -516,9 +516,11 @@ pub fn identifier_name(p: &mut Parser) -> CompletedMarker {
                 .err_builder("Expected an identifier or keyword")
                 .primary(p.cur_tok().range, "Expected an identifier or keyword here");
             p.error(err);
+            m.abandon(p);
+            return None;
         }
     }
-    m.complete(p, NAME)
+    Some(m.complete(p, NAME))
 }
 
 /// Arguments to a function.
@@ -555,6 +557,7 @@ pub fn args(p: &mut Parser) -> CompletedMarker {
 // (foo) => {};
 // (5 + 5);
 // ({foo, bar, b: [f, ...baz]}) => {};
+// (foo, ...bar) => {}
 
 // test_err paren_or_arrow_expr_invalid_params
 // (5 + 5) => {}
@@ -564,23 +567,43 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
     let event_cur = p.cur_event_pos();
     p.expect(T!['(']);
     let mut spread_range = None;
+    let mut trailing_comma_marker = None;
+    let mut had_comma = false;
 
     let mut temp = p.with_state(ParserState {
         potential_arrow_start: true,
         ..p.state.clone()
     });
-    if temp.at_ts(STARTS_EXPR) {
-        expr(&mut *temp);
-    }
-    if temp.at(T![...]) {
-        let spread_marker = temp.start();
-        temp.bump_any();
-        pattern(&mut *temp);
-        spread_range = Some(spread_marker.complete(&mut *temp, SPREAD_ELEMENT));
+    let expr_m = temp.start();
+
+    loop {
+        if temp.at(T![...]) {
+            let m = temp.start();
+            temp.bump_any();
+            pattern(&mut *temp);
+            let complete = m.complete(&mut *temp, REST_PATTERN);
+            spread_range = Some(complete.range(&*temp));
+            temp.expect(T![')']);
+            break;
+        }
+        assign_expr(&mut *temp);
+        let sub_m = temp.start();
+        if temp.eat(T![,]) {
+            if temp.at(T![')']) {
+                trailing_comma_marker = Some(sub_m.complete(&mut *temp, ERROR));
+                temp.bump_any();
+                break;
+            }
+            had_comma = true;
+        } else {
+            if had_comma {
+                expr_m.complete(&mut *temp, SEQUENCE_EXPR);
+            }
+            temp.expect(T![')']);
+            break;
+        }
     }
     drop(temp);
-
-    p.expect(T![')']);
 
     // This is an arrow expr, so we rewind the parser and reparse as parameters
     // This is kind of inefficient but in the grand scheme of things it does not matter
@@ -604,10 +627,18 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
         }
     }
 
-    if let Some(m) = spread_range {
+    if let Some(range) = spread_range {
         let err = p
             .err_builder("Illegal spread element inside grouping expression")
-            .primary(m.range(p), "");
+            .primary(range, "");
+
+        p.error(err);
+    }
+
+    if let Some(complete) = trailing_comma_marker {
+        let err = p
+            .err_builder("Illegal trailing comma in grouping expression")
+            .primary(complete.range(p), "");
 
         p.error(err);
     }
@@ -689,6 +720,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                         ..p.state.clone()
                     }),
                     m,
+                    true
                 );
                 complete.change_kind(p, FN_EXPR);
                 complete
@@ -727,7 +759,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             // let a = function() {}
             // let b = function foo() {}
             let m = p.start();
-            let mut complete = function_decl(p, m);
+            let mut complete = function_decl(p, m, true);
             complete.change_kind(p, FN_EXPR);
             complete
         }
@@ -737,11 +769,13 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             // yield;
             // await;
             let ident = identifier_reference(p)?;
-            if p.state.potential_arrow_start && p.at(T![=>]) && !p.has_linebreak_before_n(1) {
+            if p.state.potential_arrow_start && p.at(T![=>]) && !p.has_linebreak_before_n(0) {
                 // test arrow_expr_single_param
                 // foo => {}
                 // yield => {}
                 // await => {}
+                // foo =>
+                // {}
                 let m = ident.precede(p);
                 p.bump_any();
                 arrow_body(p);
@@ -1034,7 +1068,7 @@ pub fn object_prop_name(p: &mut Parser, binding: bool) -> Option<CompletedMarker
             Some(m.complete(p, COMPUTED_PROPERTY_NAME))
         }
         _ if binding => super::pat::binding_identifier(p),
-        _ => Some(identifier_name(p)),
+        _ => identifier_name(p),
     }
 }
 

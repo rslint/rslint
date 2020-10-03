@@ -85,7 +85,7 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
         T![function] => {
             let m = p.start();
             // TODO: Should we change this to fn_expr if there is no name?
-            function_decl(p, m)
+            function_decl(p, m, true)
         }
         T![class] => class_decl(p, false),
         T![ident]
@@ -101,6 +101,7 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                     ..p.state.clone()
                 }),
                 m,
+                true
             )
         }
         T![ident] if p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)) => var_decl(p, false),
