@@ -70,6 +70,11 @@ pub fn run(glob: String, verbose: bool) {
         CstRuleStore::new().builtins()
     };
 
+    if walker.files.is_empty() {
+        lint_err!("No matching files found");
+        return;
+    }
+
     let mut results = walker
         .files
         .par_iter()
