@@ -110,7 +110,7 @@ fn assign_direction(assign: AssignExpr, counter: &NameRef) -> Option<i8> {
 }
 
 fn maybe_negate_direction(rhs: Expr, direction: i8) -> Option<i8> {
-    Some(match dbg!(rhs) {
+    Some(match rhs {
         Expr::UnaryExpr(unexpr) => {
             if unexpr.op()? == UnaryOp::Minus {
                 -direction
