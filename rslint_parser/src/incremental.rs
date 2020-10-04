@@ -4,7 +4,7 @@ use rslint_rowan::GreenToken;
 
 /// insert-delete, a single change to text which does not overlap with
 /// other indels
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Indel {
     pub insert: String,
     pub delete: TextRange,
