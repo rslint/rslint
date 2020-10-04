@@ -1,6 +1,6 @@
 use crate::syntax::{decl::*, expr::*, pat::object_binding_pattern, stmt::*};
 use crate::{SyntaxKind::*, *};
-use rowan::GreenToken;
+use rslint_rowan::GreenToken;
 
 /// insert-delete, a single change to text which does not overlap with
 /// other indels
@@ -123,8 +123,10 @@ fn reparse_token<'node>(
                 new_text.pop();
             }
 
-            let new_token =
-                GreenToken::new(rowan::SyntaxKind(prev_token_kind.into()), new_text.into());
+            let new_token = GreenToken::new(
+                rslint_rowan::SyntaxKind(prev_token_kind.into()),
+                new_text.into(),
+            );
             Some((
                 prev_token.replace_with(new_token),
                 new_err.into_iter().collect(),
