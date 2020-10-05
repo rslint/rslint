@@ -5,6 +5,7 @@ members = [
   "rslint_parser",
   "rslint_core",
   "rslint_cli",
+  "rslint_lsp",
   "xtask",
 ]
 default-members = ["rslint_cli"]

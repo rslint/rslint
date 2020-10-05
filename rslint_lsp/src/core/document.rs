@@ -1,0 +1,84 @@
+//! Core definitions related to documents.
+
+use crate::core::language::{Language, LanguageId};
+use codespan_reporting::files::SimpleFiles;
+use rslint_parser::{ast, parse_module, parse_text, GreenNode, Parse, ParserError};
+use std::convert::TryFrom;
+use tower_lsp::lsp_types::*;
+
+/// Trait for working with Parse<T> for a document.
+pub trait DocumentParse: Send + Sync {
+    /// The GreenNode for a document.
+    fn green(&self) -> GreenNode;
+    /// The parser diagnostics for a document.
+    fn parser_diagnostics(&self) -> &[ParserError];
+}
+
+impl DocumentParse for Parse<ast::Module> {
+    fn green(&self) -> GreenNode {
+        Parse::green(self.clone())
+    }
+
+    fn parser_diagnostics(&self) -> &[ParserError] {
+        self.errors()
+    }
+}
+
+impl DocumentParse for Parse<ast::Script> {
+    fn green(&self) -> GreenNode {
+        Parse::green(self.clone())
+    }
+
+    fn parser_diagnostics(&self) -> &[ParserError] {
+        self.errors()
+    }
+}
+
+/// The current state of a document.
+pub struct Document {
+    /// The files database containing the document.
+    pub files: SimpleFiles<Url, String>,
+    /// The file id of the document.
+    pub file_id: usize,
+    /// The language type of the document (e.g., JavaScript (script) or JavaScript (module)).
+    pub language: Language,
+    /// The language id of the document (e.g., "javascript").
+    pub language_id: LanguageId,
+    /// The result of parsing a document.
+    pub parse: Box<dyn DocumentParse>,
+    /// The textual content of the document.
+    pub text: String,
+}
+
+impl Document {
+    /// Create a new Document.
+    pub fn new(uri: Url, language_id: String, text: String) -> anyhow::Result<Self> {
+        let language = {
+            if let Ok(path) = uri.to_file_path() {
+                Language::try_from(path.as_path())?
+            } else {
+                Language::try_from(LanguageId(language_id.clone()))?
+            }
+        };
+
+        let mut files = SimpleFiles::new();
+        let file_id = files.add(uri, text.clone());
+
+        let parse = if language == Language::JavaScriptModule {
+            Box::new(parse_module(&text, file_id)) as Box<dyn DocumentParse>
+        } else {
+            Box::new(parse_text(&text, file_id)) as Box<dyn DocumentParse>
+        };
+
+        let document = Document {
+            files,
+            file_id,
+            language,
+            language_id: LanguageId(language_id),
+            parse,
+            text,
+        };
+
+        Ok(document)
+    }
+}
