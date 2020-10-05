@@ -3,6 +3,7 @@
 use crate::groups::*;
 use crate::CstRule;
 
+/// A utility structure for housing CST rules for a linting run.
 #[derive(Debug, Default, Clone)]
 pub struct CstRuleStore {
     pub rules: Vec<Box<dyn CstRule>>,
@@ -19,6 +20,7 @@ impl CstRuleStore {
         self
     }
 
+    /// Load a list of rules into this store.
     pub fn load_rules(&mut self, rules: impl IntoIterator<Item = Box<dyn CstRule>>) {
         self.rules.extend(rules);
     }

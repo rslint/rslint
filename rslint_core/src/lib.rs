@@ -27,9 +27,13 @@ pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
 /// The result of linting a file.
 #[derive(Debug)]
 pub struct LintResult<'s> {
+    /// Any diagnostics (errors, warnings, etc) emitted from the parser
     pub parser_diagnostics: Vec<Diagnostic>,
+    /// The store used for the lint run
     pub store: &'s CstRuleStore,
+    /// The diagnostics emitted by each rule run
     pub rule_diagnostics: HashMap<&'static str, Vec<Diagnostic>>,
+    /// Any warnings or errors emitted by the directive parser
     pub directive_diagnostics: Vec<Diagnostic>,
 }
 
@@ -106,6 +110,10 @@ pub fn lint_file(
     })
 }
 
+/// Run a single run on an entire parsed file.
+///
+/// # Panics
+/// Panics if `root`'s kind is not `SCRIPT` or `MODULE`
 pub fn run_rule(
     rule: &dyn CstRule,
     file_id: usize,
@@ -113,6 +121,7 @@ pub fn run_rule(
     verbose: bool,
     directives: &[Directive],
 ) -> Vec<Diagnostic> {
+    assert!(root.kind() == SyntaxKind::SCRIPT || root.kind() == SyntaxKind::MODULE);
     let mut ctx = RuleCtx {
         file_id,
         verbose,

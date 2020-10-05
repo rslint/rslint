@@ -1,3 +1,5 @@
+//! All of the groups of built in rules in the linter.
+
 pub mod errors;
 
 pub use errors::errors;

@@ -1,3 +1,6 @@
+//! Rules which relate to productions which are almost always erroneous or cause
+//! unexpected behavior.
+
 use crate::group;
 
 group! {
