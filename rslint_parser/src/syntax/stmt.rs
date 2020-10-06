@@ -69,7 +69,7 @@ pub fn semi(p: &mut Parser, err_range: Range<usize>) {
 pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option<CompletedMarker> {
     Some(match p.cur() {
         T![;] => empty_stmt(p),
-        T!['{'] => block_stmt(p, false, recovery_set),
+        T!['{'] => return block_stmt(p, false, recovery_set),
         T![if] => if_stmt(p),
         T![with] => with_stmt(p),
         T![while] => while_stmt(p),
@@ -323,12 +323,23 @@ pub fn block_stmt(
     p: &mut Parser,
     function_body: bool,
     recovery_set: impl Into<Option<TokenSet>>,
-) -> CompletedMarker {
+) -> Option<CompletedMarker> {
+    if !p.at(T!['{']) {
+        let err = p
+            .err_builder(&format!(
+                "expected a block statement but instead found `{}`",
+                p.cur_src()
+            ))
+            .primary(p.cur_tok().range, "");
+
+        p.error(err);
+        return None;
+    }
     let m = p.start();
-    p.expect(T!['{']);
+    p.bump(T!['{']);
     block_items(p, function_body, false, recovery_set);
     p.expect(T!['}']);
-    m.complete(p, BLOCK_STMT)
+    Some(m.complete(p, BLOCK_STMT))
 }
 
 /// Top level items or items inside of a block statement, this also handles module items so we can

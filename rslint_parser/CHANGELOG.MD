@@ -6,14 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed infinite recursion with block statement recovery
+
 ## [0.1.2] - 2020-10-3
-### Fixed 
+
+### Fixed
+
 - Fixed automatic semicolon insertion for statements which have `}` after it
 - Fixed keywords not being allowed in key value patterns
 - Fixed LosslessTreeSink accessing unicode char boundaries
 
 ## [0.1.1] - 2020-10-3
-### Fixed 
+
+### Fixed
+
 - Fixed proper state handling in generators
 - Fixed proper error reporting for function declarations without a name
 - Fixed arrow functions with a newline after the arrow being parsed incorrectly
