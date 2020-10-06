@@ -2,7 +2,7 @@
 edition = "2018"
 name = "xtask"
 version = "0.0.0"
-authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
+authors = ["RSLint developers"]
 license = "MIT"
 publish = false
 

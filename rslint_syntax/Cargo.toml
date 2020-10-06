@@ -2,7 +2,7 @@
 edition = "2018"
 name = "rslint_syntax"
 version = "0.1.1"
-authors = ["RDambrosio016 <rdambrosio016@gmail.com>"]
+authors = ["RSLint developers"]
 description = "SyntaxKind and common rowan definitions for rslint_parser"
 license = "MIT"
 repository = "https://github.com/RDambrosio016/RSLint"
