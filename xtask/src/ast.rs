@@ -817,7 +817,6 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ClassDecl {
             T![class],
-            name: Name,
             T![extends],
             parent: Expr,
             body: ClassBody

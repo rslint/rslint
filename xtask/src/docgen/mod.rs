@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{read_dir, read_to_string, write};
 
-const GROUPS_ROOT: &str = "rslint_core/src/groups";
+const GROUPS_ROOT: &str = "crates/rslint_core/src/groups";
 
 pub fn run() {
     let mut groups = vec![];
@@ -134,7 +134,7 @@ pub fn group_markdown(data: &[(String, RuleFile)], group: &Group) -> String {
         ));
     }
     ret.push_str(&format!(
-        "\n[Source](../../../rslint_core/src/groups/{})",
+        "\n[Source](../../../crates/rslint_core/src/groups/{})",
         group.name
     ));
     ret

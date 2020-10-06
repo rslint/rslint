@@ -45,7 +45,7 @@ fn extract_comment_blocks(
 }
 
 pub fn generate_parser_tests(mode: Mode) -> Result<()> {
-    let tests = tests_from_dir(&project_root().join(Path::new("rslint_parser/src/syntax")))?;
+    let tests = tests_from_dir(&project_root().join(Path::new("crates/rslint_parser/src/syntax")))?;
     fn install_tests(tests: &HashMap<String, Test>, into: &str, mode: Mode) -> Result<()> {
         let tests_dir = project_root().join(into);
         if !tests_dir.is_dir() {
@@ -69,8 +69,12 @@ pub fn generate_parser_tests(mode: Mode) -> Result<()> {
         }
         Ok(())
     }
-    install_tests(&tests.ok, "rslint_parser/test_data/inline/ok", mode)?;
-    install_tests(&tests.err, "rslint_parser/test_data/inline/err", mode)
+    install_tests(&tests.ok, "crates/rslint_parser/test_data/inline/ok", mode)?;
+    install_tests(
+        &tests.err,
+        "crates/rslint_parser/test_data/inline/err",
+        mode,
+    )
 }
 
 #[derive(Debug)]
