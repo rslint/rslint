@@ -77,7 +77,11 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
             break;
         }
 
-        binding_element(p);
+        // test_err formal_params_no_binding_element
+        // function foo(true) {}
+        if binding_element(p).is_none() {
+            p.err_recover_no_err(EXPR_RECOVERY_SET.union(token_set![T![,]]));
+        }
     }
 
     p.expect(T![')']);
