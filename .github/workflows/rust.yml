@@ -73,3 +73,43 @@ jobs:
           for package in $(cargo metadata --no-deps --format-version=1 | jq -r '.packages[] | .name'); do
             cargo rustdoc -p "$package" --all-features -- -D warnings
           done
+  deploy:
+    name: Deploy for ${{ matrix.os }}
+    if: startsWith(github.ref, 'refs/tags')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        name: [linux, windows, macos]
+
+        include:
+          - name: linux
+            os: ubuntu-latest
+            artifact_name: rslint_cli
+            asset_name: rslint_cli-linux
+          - name: windows
+            os: windows-latest
+            artifact_name: rslint_cli.exe
+            asset_name: rslint_cli-windows
+          - name: macos
+            os: macos-latest
+            artifact_name: rslint_cli
+            asset_name: rslint_cli-macos
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: Build
+        run: cargo build --release --locked
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/${{ matrix.artifact_name }}
+          asset_name: ${{ matrix.asset_name }}
+          tag: ${{ github.ref }}
