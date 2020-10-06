@@ -936,3 +936,42 @@ fn fuzz_fail_6() {
         COMMENT:5
     }
 }
+
+#[test]
+fn unicode_ident_start_handling() {
+    assert_lex! {
+        "αβeta_tester",
+        IDENT:16
+    }
+}
+
+#[test]
+fn unicode_ident_separated_by_unicode_whitespace() {
+    assert_lex! {
+        "β\u{FEFF}α",
+        IDENT:2,
+        WHITESPACE:3,
+        IDENT:2
+    }
+}
+
+#[test]
+fn issue_30() {
+    assert_lex! {
+        "let foo = { α: true }",
+        IDENT:3,
+        WHITESPACE:1,
+        IDENT:3,
+        WHITESPACE:1,
+        EQ:1,
+        WHITESPACE:1,
+        L_CURLY:1,
+        WHITESPACE:1,
+        IDENT:2,
+        COLON:1,
+        WHITESPACE:1,
+        TRUE_KW:4,
+        WHITESPACE:1,
+        R_CURLY:1
+    }
+}

@@ -15,16 +15,17 @@ mod labels;
 mod state;
 mod tests;
 
+#[rustfmt::skip]
+mod tables;
+
 pub use token::Token;
 
 #[cfg(feature = "highlight")]
 pub use highlight::*;
 
 use codespan_reporting::diagnostic::{Diagnostic, Label};
-// There is a way of making these functions 7x faster, but it involves 100kb+ static bitmaps
-// Although i am reluctant of using that currently as it does not seem needed, but this will have to be considered
 use state::LexerState;
-use unicode_xid::UnicodeXID;
+use tables::derived_property::*;
 
 pub use rslint_syntax::*;
 pub type LexerReturn = (Token, Option<Diagnostic<usize>>);
@@ -63,6 +64,14 @@ const UNICODE_SPACES: [char; 16] = [
     '\u{00A0}', '\u{1680}', '\u{2000}', '\u{2001}', '\u{2002}', '\u{2003}', '\u{2004}', '\u{2005}',
     '\u{2006}', '\u{2007}', '\u{2008}', '\u{2009}', '\u{200A}', '\u{202F}', '\u{205F}', '\u{3000}',
 ];
+
+fn is_id_start(c: char) -> bool {
+    ID_Start(c)
+}
+
+fn is_id_continue(c: char) -> bool {
+    ID_Continue(c)
+}
 
 /// An extremely fast, lookup table based, lossless ECMAScript lexer
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -420,7 +429,7 @@ impl<'src> Lexer<'src> {
             | L_V | L_W | L_Y => true,
             // FIXME: This should use ID_Continue, not XID_Continue
             UNI => {
-                let res = self.get_unicode_char().is_xid_continue();
+                let res = is_id_continue(self.get_unicode_char());
                 if res {
                     self.cur += self.get_unicode_char().len_utf8() - 1;
                 }
@@ -429,7 +438,7 @@ impl<'src> Lexer<'src> {
             BSL if self.bytes.get(self.cur + 1) == Some(&b'u') => {
                 self.next();
                 if let Ok(c) = self.read_unicode_escape(false) {
-                    if c.is_xid_continue() {
+                    if is_id_continue(c) {
                         self.cur += c.len_utf8() - 1;
                         true
                     } else {
@@ -458,7 +467,7 @@ impl<'src> Lexer<'src> {
             BSL if self.bytes.get(self.cur + 1) == Some(&b'u') => {
                 self.next();
                 if let Ok(chr) = self.read_unicode_escape(false) {
-                    if chr.is_xid_start() {
+                    if is_id_start(chr) {
                         self.advance(5);
                         return true;
                     }
@@ -468,7 +477,7 @@ impl<'src> Lexer<'src> {
             }
             UNI => {
                 let chr = self.get_unicode_char();
-                if chr.is_xid_start() {
+                if is_id_start(chr) {
                     self.cur += chr.len_utf8() - 1;
                     true
                 } else {
@@ -1126,7 +1135,7 @@ impl<'src> Lexer<'src> {
                     self.next();
                     match self.read_unicode_escape(true) {
                         Ok(chr) => {
-                            if chr.is_xid_start() {
+                            if is_id_start(chr) {
                                 self.consume_ident();
 
                                 tok!(IDENT, self.cur - start)
@@ -1201,15 +1210,20 @@ impl<'src> Lexer<'src> {
                 } else {
                     let chr = self.get_unicode_char();
                     self.cur += chr.len_utf8() - 1;
-                    let err = Diagnostic::error()
-                        .with_message(&format!("Unexpected token `{}`", chr as char))
-                        .with_labels(vec![Label::primary(self.file_id, start..self.cur + 1)]);
-                    self.next();
+                    if is_id_start(chr) {
+                        self.consume_ident();
+                        tok!(IDENT, self.cur - start)
+                    } else {
+                        let err = Diagnostic::error()
+                            .with_message(&format!("Unexpected token `{}`", chr as char))
+                            .with_labels(vec![Label::primary(self.file_id, start..self.cur + 1)]);
+                        self.next();
 
-                    (
-                        Token::new(SyntaxKind::ERROR_TOKEN, self.cur - start),
-                        Some(err),
-                    )
+                        (
+                            Token::new(SyntaxKind::ERROR_TOKEN, self.cur - start),
+                            Some(err),
+                        )
+                    }
                 }
             }
             _ => {
