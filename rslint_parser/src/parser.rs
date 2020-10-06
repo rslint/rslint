@@ -184,9 +184,14 @@ impl<'t> Parser<'t> {
     }
 
     /// Recover from an error with a recovery set or by using a `{` or `}`.
-    pub fn err_recover(&mut self, error: impl Into<ParserError>, recovery: TokenSet) {
+    pub fn err_recover(
+        &mut self,
+        error: impl Into<ParserError>,
+        recovery: TokenSet,
+        include_braces: bool,
+    ) {
         match self.cur() {
-            T!['{'] | T!['}'] => {
+            T!['{'] | T!['}'] if include_braces => {
                 self.error(error);
                 return;
             }
@@ -205,9 +210,9 @@ impl<'t> Parser<'t> {
     }
 
     /// Recover from an error but don't add an error to the events
-    pub fn err_recover_no_err(&mut self, recovery: TokenSet) {
+    pub fn err_recover_no_err(&mut self, recovery: TokenSet, include_braces: bool) {
         match self.cur() {
-            T!['{'] | T!['}'] => {
+            T!['{'] | T!['}'] if include_braces => {
                 return;
             }
             _ => (),

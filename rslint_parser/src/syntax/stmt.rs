@@ -161,7 +161,7 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                 return None;
             }
 
-            p.err_recover(err, recovery_set.into().unwrap_or(STMT_RECOVERY_SET));
+            p.err_recover(err, recovery_set.into().unwrap_or(STMT_RECOVERY_SET), false);
             return None;
         }
     })
@@ -775,7 +775,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
                     "Expected the start to a case or default clause here",
                 );
 
-            p.err_recover(err, STMT_RECOVERY_SET);
+            p.err_recover(err, STMT_RECOVERY_SET, true);
         }
     }
     None

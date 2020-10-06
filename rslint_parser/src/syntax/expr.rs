@@ -849,7 +849,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             let err = p
                 .err_builder("Expected an expression, but found none")
                 .primary(p.cur_tok().range, "Expected an expression here");
-            p.err_recover(err, p.state.expr_recovery_set);
+            p.err_recover(err, p.state.expr_recovery_set, true);
             return None;
         }
     };
@@ -869,7 +869,7 @@ pub fn identifier_reference(p: &mut Parser) -> Option<CompletedMarker> {
                 .err_builder("Expected an identifier, but found none")
                 .primary(p.cur_tok(), "");
 
-            p.err_recover(err, p.state.expr_recovery_set);
+            p.err_recover(err, p.state.expr_recovery_set, true);
             None
         }
     }
@@ -1043,9 +1043,10 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
                 method(p, m)
             } else {
                 // test_err object_expr_error_prop_name
-                // let a = { /: 6, /: / }
+                // let a = { /: 6, /: /foo/ }
+                // let a = {{}}
                 if prop.is_none() {
-                    p.err_recover_no_err(EXPR_RECOVERY_SET.union(token_set![T![:], T![,]]));
+                    p.err_recover_no_err(token_set![T![:], T![,]], false);
                 }
                 // test_err object_expr_non_ident_literal_prop
                 // let b = {5}

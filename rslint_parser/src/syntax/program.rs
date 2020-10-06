@@ -71,7 +71,7 @@ pub fn import_decl(p: &mut Parser) -> CompletedMarker {
                 .err_builder("Expected an import clause, but found none")
                 .primary(p.cur_tok(), "");
 
-            p.err_recover(err, STMT_RECOVERY_SET);
+            p.err_recover(err, STMT_RECOVERY_SET, true);
         }
     }
 
@@ -125,7 +125,7 @@ fn from_clause(p: &mut Parser) {
             .err_builder("Expected a `from` clause, but found none")
             .primary(p.cur_tok(), "");
 
-        p.err_recover(err, STMT_RECOVERY_SET);
+        p.err_recover(err, STMT_RECOVERY_SET, true);
     } else {
         p.bump_any();
     }

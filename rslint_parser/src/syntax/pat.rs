@@ -17,7 +17,7 @@ pub fn pattern(p: &mut Parser) -> Option<CompletedMarker> {
                 .err_builder("Expected an identifier or pattern, but found none")
                 .primary(p.cur_tok(), "");
 
-            p.err_recover(err, EXPR_RECOVERY_SET);
+            p.err_recover(err, EXPR_RECOVERY_SET, true);
             return None;
         }
     })
