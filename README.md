@@ -21,6 +21,13 @@ cargo install rslint_cli
 rslint_cli ./glob/pattern.js
 ```
 
+# Running in VSC 
+
+RSLint has a basic LSP and VSC extension, it is however not yet published as it is very early in development. If you would like to use it you 
+must first install the lsp in the project with `cargo install --path rslint_lsp`. Then, open `editors/vscode` with visual studio code and press
+`f5` to start a new vscode instance with the extension. Any `js` or `mjs` files you open will now be actively linted. The linter runs on the fly, not on save,
+if you find any panics/errors please report them as they are a bug.
+
 # Configuration 
 
 Please see the [docs](./docs/config.md) for linter configuration details. 
