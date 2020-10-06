@@ -64,4 +64,4 @@ new Promise(function foo() {}, foo)
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_async_promise_executor.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_async_promise_executor.rs)

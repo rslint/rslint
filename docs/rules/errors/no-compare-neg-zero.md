@@ -82,4 +82,4 @@ Object.is(x, -0)
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_compare_neg_zero.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_compare_neg_zero.rs)

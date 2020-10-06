@@ -1,11 +1,6 @@
 [workspace]
 members = [
-  "crates/rslint_syntax",
-  "crates/rslint_lexer",
-  "crates/rslint_parser",
-  "crates/rslint_core",
-  "crates/rslint_cli",
-  "crates/rslint_lsp",
+  "crates/*",
   "xtask",
 ]
 default-members = ["crates/rslint_cli"]

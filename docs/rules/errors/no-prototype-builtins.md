@@ -116,4 +116,4 @@ propertyIsEnumberable(foo, 'bar');
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_prototype_builtins.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_prototype_builtins.rs)

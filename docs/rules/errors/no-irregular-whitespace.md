@@ -258,4 +258,4 @@ var any 　 = 'thing';
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_irregular_whitespace.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_irregular_whitespace.rs)

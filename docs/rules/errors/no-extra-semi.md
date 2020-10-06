@@ -55,4 +55,4 @@ class Foo {}
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_extra_semi.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_extra_semi.rs)
