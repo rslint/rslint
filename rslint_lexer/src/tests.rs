@@ -941,7 +941,7 @@ fn fuzz_fail_6() {
 fn unicode_ident_start_handling() {
     assert_lex! {
         "αβeta_tester",
-        IDENT:16
+        IDENT:14
     }
 }
 
