@@ -1,14 +1,9 @@
 [workspace]
 members = [
-  "rslint_syntax",
-  "rslint_lexer",
-  "rslint_parser",
-  "rslint_core",
-  "rslint_cli",
-  "rslint_lsp",
+  "crates/*",
   "xtask",
 ]
-default-members = ["rslint_cli"]
+default-members = ["crates/rslint_cli"]
 
 [profile]
 release = { lto = true, codegen-units = 1 }

@@ -30,4 +30,4 @@ debugger;
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_debugger.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_debugger.rs)

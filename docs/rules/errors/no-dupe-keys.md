@@ -56,4 +56,4 @@ let foo = {
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_dupe_keys.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_dupe_keys.rs)

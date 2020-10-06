@@ -220,4 +220,4 @@ Object.defineProperty(foo, 'bar', { set(val) { return; } })
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_setter_return.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_setter_return.rs)

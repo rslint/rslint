@@ -62,4 +62,4 @@ if (bar = 5 ? foo : bar) {}
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_cond_assign.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_cond_assign.rs)

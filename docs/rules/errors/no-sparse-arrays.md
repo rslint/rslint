@@ -49,4 +49,4 @@ let bar = [foo,, bar];
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_sparse_arrays.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_sparse_arrays.rs)

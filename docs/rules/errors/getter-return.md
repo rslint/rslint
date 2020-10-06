@@ -136,4 +136,4 @@ let bar = {
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/getter_return.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/getter_return.rs)

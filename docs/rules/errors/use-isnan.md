@@ -177,4 +177,4 @@ foo.lastIndexOf(NaN)
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/use_isnan.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/use_isnan.rs)

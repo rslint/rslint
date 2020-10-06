@@ -33,4 +33,4 @@ unexpected behavior.
 | [use-isnan](./use-isnan.md) | Disallow incorrect comparisons against `NaN`. |
 | [valid-typeof](./valid-typeof.md) | Enforce the use of valid string literals in a `typeof` comparison. |
 
-[Source](../../../rslint_core/src/groups/errors)
+[Source](../../../crates/rslint_core/src/groups/errors)

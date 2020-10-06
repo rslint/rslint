@@ -104,4 +104,4 @@ for(let i = 5n; i < 2n; i &= 2) {}
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/for_direction.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/for_direction.rs)

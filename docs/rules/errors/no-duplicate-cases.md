@@ -60,4 +60,4 @@ switch foo {
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_duplicate_cases.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_duplicate_cases.rs)

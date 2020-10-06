@@ -84,4 +84,4 @@ switch (bar) { /* */ }
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_empty.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_empty.rs)

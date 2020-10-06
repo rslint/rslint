@@ -98,4 +98,4 @@ for(var i = 5; foo; i++) {}
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_constant_condition.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_constant_condition.rs)

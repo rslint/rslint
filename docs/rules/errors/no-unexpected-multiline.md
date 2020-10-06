@@ -283,4 +283,4 @@ var a = b
 ```
 </details>
 
-[Source](../../../rslint_core/src/groups/errors/no_unexpected_multiline.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_unexpected_multiline.rs)
