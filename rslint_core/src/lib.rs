@@ -15,7 +15,8 @@ pub use self::{
 };
 pub use codespan_reporting::diagnostic::{Label, Severity};
 
-use crate::directives::{apply_top_level_directives, skip_node, Directive, DirectiveParser};
+use crate::directives::skip_node;
+pub use crate::directives::{apply_top_level_directives, Directive, DirectiveParser};
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
