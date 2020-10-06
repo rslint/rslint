@@ -82,7 +82,11 @@ impl FileWalker {
                 continue;
             }
 
-            for file in WalkDir::new(entry).into_iter().filter_map(Result::ok) {
+            let walkdir = WalkDir::new(entry)
+                .into_iter()
+                .filter_entry(|entry| !IGNORED.contains(&&*entry.file_name().to_string_lossy()));
+
+            for file in walkdir.filter_map(Result::ok) {
                 if !LINTED_FILES.contains(
                     &file
                         .path()
@@ -91,9 +95,6 @@ impl FileWalker {
                         .unwrap_or_default()
                         .as_str(),
                 ) {
-                    continue;
-                }
-                if IGNORED.contains(&file.file_name().to_string_lossy().to_string().as_str()) {
                     continue;
                 }
                 // Give each io thread a name so we can potentially debug any io failures easily
