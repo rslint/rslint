@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 
 - Fixed infinite recursion with block statement recovery
+- Fixed infinite recursion with erroneous tokens as object property names (#30)
 
 ## [0.1.2] - 2020-10-3
 

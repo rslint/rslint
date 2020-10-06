@@ -204,6 +204,24 @@ impl<'t> Parser<'t> {
         m.complete(self, SyntaxKind::ERROR);
     }
 
+    /// Recover from an error but don't add an error to the events
+    pub fn err_recover_no_err(&mut self, recovery: TokenSet) {
+        match self.cur() {
+            T!['{'] | T!['}'] => {
+                return;
+            }
+            _ => (),
+        }
+
+        if self.at_ts(recovery) {
+            return;
+        }
+
+        let m = self.start();
+        self.bump_any();
+        m.complete(self, SyntaxKind::ERROR);
+    }
+
     /// Starts a new node in the syntax tree. All nodes and tokens
     /// consumed between the `start` and the corresponding `Marker::complete`
     /// belong to the same node.

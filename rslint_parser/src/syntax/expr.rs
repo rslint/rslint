@@ -1042,9 +1042,17 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
             if p.at(T!['(']) {
                 method(p, m)
             } else {
+                // test_err object_expr_error_prop_name
+                // let a = { /: 6, /: / }
+                if prop.is_none() {
+                    p.err_recover_no_err(EXPR_RECOVERY_SET.union(token_set![T![:], T![,]]));
+                }
                 // test_err object_expr_non_ident_literal_prop
                 // let b = {5}
-                if prop?.kind() != NAME || p.at(T![:]) {
+
+                // test object_expr_ident_literal_prop
+                // let b = { a: true }
+                if p.at(T![:]) || prop?.kind() != NAME {
                     p.expect(T![:]);
                     assign_expr(p);
                     Some(m.complete(p, LITERAL_PROP))
