@@ -90,7 +90,7 @@ pub fn arrow_body(p: &mut Parser) -> Option<CompletedMarker> {
         ..p.state.clone()
     });
     if guard.at(T!['{']) {
-        Some(block_stmt(&mut *guard, true, None))
+        block_stmt(&mut *guard, true, None)
     } else {
         assign_expr(&mut *guard)
     }
