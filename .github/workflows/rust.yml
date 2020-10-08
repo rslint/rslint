@@ -71,7 +71,7 @@ jobs:
       # Check every crate in the workspace
       - run: |
           for package in $(cargo metadata --no-deps --format-version=1 | jq -r '.packages[] | .name'); do
-            cargo rustdoc -p "$package" --all-features -- -D warnings
+            cargo rustdoc -p "$package" --all-features --lib -- -D warnings
           done
   deploy:
     name: Deploy for ${{ matrix.os }}
