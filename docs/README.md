@@ -24,6 +24,8 @@ cargo install rslint_cli
 rslint_cli ./glob/pattern.js
 ```
 
+If you do not have rust installed you can find prebuilt binaries for every release [here](https://github.com/RDambrosio016/RSLint/releases).
+
 ## Running in VSC
 
 RSLint has a basic LSP and VSC extension, it is however not yet published as it is very early in development. If you would like to use it you
