@@ -447,6 +447,7 @@ impl<'src> Lexer<'src> {
                 res
             }
             BSL if self.bytes.get(self.cur + 1) == Some(&b'u') => {
+                let start = self.cur;
                 self.next();
                 let res = if self.bytes.get(self.cur + 1).copied() == Some(b'{') {
                     self.next();
@@ -455,7 +456,7 @@ impl<'src> Lexer<'src> {
                     self.read_unicode_escape(true)
                 };
 
-                if let Ok(c) = self.read_unicode_escape(false) {
+                if let Ok(c) = res {
                     if is_id_continue(c) {
                         self.cur += c.len_utf8() - 1;
                         true
@@ -464,7 +465,7 @@ impl<'src> Lexer<'src> {
                         false
                     }
                 } else {
-                    self.cur -= 1;
+                    self.cur = start;
                     false
                 }
             }
