@@ -276,7 +276,8 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
         .collect::<Vec<_>>();
 
     let ast = quote! {
-        #![allow(bad_style, missing_docs, unreachable_pub, clippy::manual_non_exhaustive)]
+        #![allow(clippy)]
+        #![allow(bad_style, missing_docs, unreachable_pub)]
         /// The kind of syntax node, e.g. `IDENT`, `FUNCTION_KW`, or `FOR_STMT`.
         #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
         #[repr(u16)]
