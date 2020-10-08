@@ -317,14 +317,4 @@ pub fn check_for_stmt_declarators(p: &mut Parser, marker: &CompletedMarker) {
 
         p.error(err);
     }
-
-    if let Some(decl) = parsed.declared().next() {
-        if let Some(init) = decl.value() {
-            let err = p
-                .err_builder("Illegal initializer in for statement variable declaration")
-                .primary(marker.offset_range(p, init.syntax().trimmed_range()), "");
-
-            p.error(err);
-        }
-    }
 }

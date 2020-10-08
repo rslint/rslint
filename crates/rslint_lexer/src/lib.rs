@@ -219,7 +219,7 @@ impl<'src> Lexer<'src> {
     }
 
     // Read a `\u{000...}` escape sequence, this expects the cur char to be the `{`
-    fn read_codepoint_escape(&mut self) -> Result<Option<char>, Diagnostic<usize>> {
+    fn read_codepoint_escape(&mut self) -> Result<char, Diagnostic<usize>> {
         let start = self.cur + 1;
         self.read_hexnumber();
 
@@ -248,7 +248,18 @@ impl<'src> Lexer<'src> {
         };
 
         match u32::from_str_radix(digits_str, 16) {
-            Ok(digits) if digits <= 0x10FFFF => Ok(std::char::from_u32(digits)),
+            Ok(digits) if digits <= 0x10FFFF => {
+                let res = std::char::from_u32(digits);
+                if let Some(chr) = res {
+                    Ok(chr)
+                } else {
+                    let err = Diagnostic::error()
+                        .with_message("invalid codepoint for unicode escape")
+                        .with_labels(vec![Label::primary(self.file_id, start..self.cur)]);
+
+                    Err(err)
+                }
+            }
 
             _ => {
                 let err = Diagnostic::error()
@@ -1133,7 +1144,14 @@ impl<'src> Lexer<'src> {
             BSL => {
                 if self.bytes.get(self.cur + 1) == Some(&b'u') {
                     self.next();
-                    match self.read_unicode_escape(true) {
+                    let res = if self.bytes.get(self.cur + 1).copied() == Some(b'{') {
+                        self.next();
+                        self.read_codepoint_escape()
+                    } else {
+                        self.read_unicode_escape(true)
+                    };
+
+                    match res {
                         Ok(chr) => {
                             if is_id_start(chr) {
                                 self.consume_ident();

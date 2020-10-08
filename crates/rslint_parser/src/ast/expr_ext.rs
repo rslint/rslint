@@ -502,6 +502,7 @@ impl Literal {
             STRING => LiteralKind::String,
             TRUE_KW => LiteralKind::Bool(true),
             FALSE_KW => LiteralKind::Bool(false),
+            REGEX => LiteralKind::Regex,
             _ => unreachable!(),
         }
     }

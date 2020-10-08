@@ -1,6 +1,4 @@
-use super::expr::{
-    assign_expr, identifier_name, identifier_reference, object_prop_name, EXPR_RECOVERY_SET,
-};
+use super::expr::{assign_expr, identifier_name, identifier_reference, object_prop_name};
 use crate::{SyntaxKind::*, *};
 
 pub fn pattern(p: &mut Parser) -> Option<CompletedMarker> {
@@ -16,8 +14,11 @@ pub fn pattern(p: &mut Parser) -> Option<CompletedMarker> {
             let err = p
                 .err_builder("Expected an identifier or pattern, but found none")
                 .primary(p.cur_tok(), "");
-
-            p.err_recover(err, EXPR_RECOVERY_SET, true);
+            p.err_recover(
+                err,
+                token_set![T![ident], T![yield], T![await], T!['['], T!['{']],
+                false,
+            );
             return None;
         }
     })
@@ -56,7 +57,7 @@ pub fn binding_identifier(p: &mut Parser) -> Option<CompletedMarker> {
         p.error(err);
     }
 
-    if p.state.strict.is_some() && p.cur_src() == "eval" || p.cur_src() == "arguments" {
+    if p.state.strict.is_some() && (p.cur_src() == "eval" || p.cur_src() == "arguments") {
         let err = p
             .err_builder(&format!(
                 "Illegal use of `{}` as an identifier in strict mode",
@@ -102,8 +103,11 @@ pub fn array_binding_pattern(p: &mut Parser) -> CompletedMarker {
 
             m.complete(p, REST_PATTERN);
             break;
-        } else {
-            binding_element(p);
+        } else if binding_element(p).is_none() {
+            p.err_recover_no_err(
+                token_set![T![await], T![ident], T![yield], T![:], T![=], T![']']],
+                false,
+            );
         }
         if !p.at(T![']']) {
             p.expect(T![,]);
@@ -160,7 +164,15 @@ fn object_binding_prop(p: &mut Parser) -> Option<CompletedMarker> {
         return Some(m.complete(p, KEY_VALUE_PATTERN));
     }
 
-    if name?.kind() != NAME {
+    if name.is_none() {
+        p.err_recover_no_err(
+            token_set![T![await], T![ident], T![yield], T![:], T![=], T!['}']],
+            false,
+        );
+        return None;
+    }
+
+    if name.map(|x| x.kind()) != Some(NAME) {
         let err = p
             .err_builder("Expected an identifier for a pattern, but found none")
             .primary(name.unwrap().range(p), "");

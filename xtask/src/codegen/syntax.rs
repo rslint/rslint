@@ -329,7 +329,7 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
                     | ELSE_KW | RETURN_KW | THROW_KW | NEW_KW | EXTENDS_KW | YIELD_KW
                     | IN_KW | TYPEOF_KW | VOID_KW | DELETE_KW | PLUSEQ | MINUSEQ
                     | PIPEEQ | AMPEQ | CARETEQ | SLASHEQ | STAREQ | PERCENTEQ | AMP2
-                    | PIPE2 | SHLEQ | SHREQ | USHREQ | EQ | FAT_ARROW => true,
+                    | PIPE2 | SHLEQ | SHREQ | USHREQ | EQ | FAT_ARROW | MINUS | PLUS => true,
                     _ => false,
                 }
             }

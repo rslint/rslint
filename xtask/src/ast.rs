@@ -542,7 +542,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct CatchClause {
             T![catch],
             T!['('],
-            error: Name,
+            error: Pattern,
             T![')'],
             cons: BlockStmt
         }
