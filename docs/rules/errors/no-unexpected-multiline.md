@@ -3,9 +3,9 @@
 -->
 # no-unexpected-multiline
 
-Disallow confusing newlines in expressions. 
+Disallow confusing newlines in expressions.
 
-JavaScript has automatic semicolon insertion, where newlines end statements, however, 
+JavaScript has automatic semicolon insertion, where newlines end statements, however,
 expressions can often span across newlines, therefore it can become a bit confusing at times
 and ambiguous. Take the following as an example:
 

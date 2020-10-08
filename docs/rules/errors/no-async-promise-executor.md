@@ -3,20 +3,20 @@
 -->
 # no-async-promise-executor
 
-Disallow async functions as promise executors. 
+Disallow async functions as promise executors.
 
-Promise executors are special functions inside `new Promise()` constructors which take a `resolve` and 
-`reject` parameter to resolve or reject the promise. The function is a normal function therefore it could be 
-an async function. However this is usually wrong because: 
+Promise executors are special functions inside `new Promise()` constructors which take a `resolve` and
+`reject` parameter to resolve or reject the promise. The function is a normal function therefore it could be
+an async function. However this is usually wrong because:
     - Any errors thrown by the function are lost.
-    - It usually means the new promise is unnecessary. 
+    - It usually means the new promise is unnecessary.
 
-## Incorrect code examples 
+## Incorrect code examples
 
 ```js
 let foo = new Promise(async (resolve, reject) => {
     doSomething(bar, (err, res)) => {
-       /* */ 
+       /* */
     });
 });
 ```
@@ -27,9 +27,9 @@ let foo = new Promise(async function(resolve, reject) => {
 });
 ```
 
-## Correct code examples 
+## Correct code examples
 
-Use a normal non-async function. 
+Use a normal non-async function.
 
 ```js
 let foo = new Promise(function(resolve, reject) => {

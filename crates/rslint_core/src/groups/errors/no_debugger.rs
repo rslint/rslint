@@ -10,7 +10,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```ignore
+    ```js
     function doSomething() {
         debugger;
         doSomethingElse();

@@ -14,13 +14,13 @@ declare_lint! {
 
     ## Incorrect Code Examples
 
-    ```ignore
+    ```js
     if (!foo instanceof String) {
 
     }
     ```
 
-    ```ignore
+    ```js
     if (!bar in {}) {
 
     }

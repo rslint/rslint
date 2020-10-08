@@ -5,13 +5,13 @@ use SyntaxKind::*;
 
 declare_lint! {
     /**
-    Disallow confusing newlines in expressions. 
+    Disallow confusing newlines in expressions.
 
-    JavaScript has automatic semicolon insertion, where newlines end statements, however, 
+    JavaScript has automatic semicolon insertion, where newlines end statements, however,
     expressions can often span across newlines, therefore it can become a bit confusing at times
     and ambiguous. Take the following as an example:
 
-    ```ignore
+    ```js
     let foo = bar
     /bar/g.test("foo");
     ```
@@ -23,7 +23,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```ignore
+    ```js
     var foo = bar
     (1 || 2).baz();
 
@@ -43,7 +43,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```ignore
+    ```js
     var foo = bar;
     (1 || 2).baz();
 

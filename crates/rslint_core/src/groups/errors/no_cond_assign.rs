@@ -8,7 +8,7 @@ declare_lint! {
 
     Assignment expressions return the value assigned:
 
-    ```ignore
+    ```js
     let foo = 5;
 
     console.log(foo = 8); // 8
@@ -21,7 +21,7 @@ declare_lint! {
 
     ## Incorrect Code Examples
 
-    ```ignore
+    ```js
     let foo = 5;
 
     if (foo = 6) {

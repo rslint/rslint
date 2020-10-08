@@ -10,7 +10,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```ignore
+    ```js
     switch (a) {
         case 1:
             break;
@@ -23,7 +23,7 @@ declare_lint! {
     }
     ```
 
-    ```ignore
+    ```js
     switch (a) {
         case foo.bar:
             break;

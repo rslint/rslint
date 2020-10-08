@@ -7,15 +7,15 @@ declare_lint! {
 
     ES 5.1 added `Object.create` which allows creation of object with a custom prototype. This
     pattern is frequently used for objects used as Maps. However this pattern can lead to errors
-    if something else relies on prototype properties/methods. 
+    if something else relies on prototype properties/methods.
 
     Moreover, the methods could be shadowed, this can lead to random bugs and denial of service
     vulnerabilities. For example, calling `hasOwnProperty` directly on parsed json could lead to vulnerabilities.
     Instead, you should use get the method directly from the object using `Object.prototype.prop.call(item, args)`.
 
-    ## Invalid Code Examples 
+    ## Invalid Code Examples
 
-    ```ignore
+    ```js
     var bar = foo.hasOwnProperty("bar");
 
     var bar = foo.isPrototypeOf(bar);
@@ -23,9 +23,9 @@ declare_lint! {
     var bar = foo.propertyIsEnumerable("bar");
     ```
 
-    ## Correct Code Examples 
+    ## Correct Code Examples
 
-    ```ignore
+    ```js
     var bar = Object.prototype.hasOwnProperty.call(foo, "bar");
 
     var bar = Object.prototype.isPrototypeOf.call(foo, bar);
@@ -48,9 +48,17 @@ impl CstRule for NoPrototypeBuiltins {
         let lhs = expr.callee()?.syntax().try_to::<DotExpr>()?;
         let prop = lhs.prop()?;
         let object = lhs.object()?;
-        
+
         if CHECKED_PROPS.contains(&prop.text().as_str()) {
-            let mut err = ctx.err(self.name(), format!("do not access the object property `{}` directly from `{}`", prop.text(), object.text()))
+            let mut err = ctx
+                .err(
+                    self.name(),
+                    format!(
+                        "do not access the object property `{}` directly from `{}`",
+                        prop.text(),
+                        object.text()
+                    ),
+                )
                 .primary(expr.range(), "");
 
             err = suggestion(prop.text(), object.text(), expr, err);
@@ -60,7 +68,12 @@ impl CstRule for NoPrototypeBuiltins {
     }
 }
 
-fn suggestion(prop: String, object: String, expr: CallExpr, err: DiagnosticBuilder) -> DiagnosticBuilder {
+fn suggestion(
+    prop: String,
+    object: String,
+    expr: CallExpr,
+    err: DiagnosticBuilder,
+) -> DiagnosticBuilder {
     let arg = if let Some(arg) = expr.arguments().and_then(|args| args.args().next()) {
         format!(", {}", arg.text())
     } else {
