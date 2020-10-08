@@ -448,6 +448,13 @@ impl<'src> Lexer<'src> {
             }
             BSL if self.bytes.get(self.cur + 1) == Some(&b'u') => {
                 self.next();
+                let res = if self.bytes.get(self.cur + 1).copied() == Some(b'{') {
+                    self.next();
+                    self.read_codepoint_escape()
+                } else {
+                    self.read_unicode_escape(true)
+                };
+
                 if let Ok(c) = self.read_unicode_escape(false) {
                     if is_id_continue(c) {
                         self.cur += c.len_utf8() - 1;
@@ -788,6 +795,10 @@ impl<'src> Lexer<'src> {
                 }
                 tok!(COMMENT, self.cur - start)
             }
+            Some(b'=') => {
+                self.advance(2);
+                tok!(SLASHEQ, self.cur - start)
+            }
             _ if self.state.expr_allowed => self.read_regex(),
             _ => self.eat(tok![/]),
         }
@@ -995,13 +1006,17 @@ impl<'src> Lexer<'src> {
     fn resolve_greater_than(&mut self) -> LexerReturn {
         match self.next() {
             Some(b'>') => {
-                if let Some(b'>') = self.next() {
+                let next = self.next().copied();
+                if let Some(b'>') = next {
                     if let Some(b'=') = self.next() {
                         self.next();
                         tok!(USHREQ, 4)
                     } else {
                         tok!(USHR, 3)
                     }
+                } else if next == Some(b'=') {
+                    self.next();
+                    tok!(SHREQ, 2)
                 } else {
                     tok!(SHR, 2)
                 }
