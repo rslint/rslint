@@ -1,5 +1,25 @@
+use std::ops::Range;
+
 /// An id that points into a file database.
 pub type FileId = usize;
+
+/// A range that is indexed in a specific file.
+#[derive(Debug, Clone, Copy)]
+pub struct FileSpan {
+    pub file: FileId,
+    pub span: Range<usize>,
+}
+
+impl FileSpan {
+    pub fn new(file: FileId, span: impl Span) -> Self {
+        Self(file, span.as_range())
+    }
+}
+
+/// Any object that can be turned into a [`Range`](std::ops::Range).
+pub trait Span {
+    fn as_range(&self) -> Range<usize>;
+}
 
 /// Interface for interacting with source files
 /// that are identified by a unique identifier.

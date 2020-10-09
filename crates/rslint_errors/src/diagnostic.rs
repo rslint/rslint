@@ -1,80 +1,75 @@
-use crate::file::FileId;
-use std::ops::Range;
-
-/// Types of severity.
-#[derive(Clone, Copy, Debug)]
-pub enum Severity {
-    Error,
-    Warning,
-    Help,
-    Note,
-    Info,
-}
-
-/// Styles for a [`Label`].
-#[derive(Clone, Copy, Debug)]
-pub enum LabelStyle {
-    Primary,
-    Secondary,
-}
-
-/// Any object that can be turned into a [`Range`](std::ops::Range).
-pub trait Span {
-    fn as_range(&self) -> Range<usize>;
-}
+use crate::{
+    file::{FileId, FileSpan, Span},
+    Severity,
+};
+use smol_str::SmolStr;
 
 /// A diagnostic message that can give information
 /// like errors or warnings.
-pub struct Diagnostic<'str> {
+pub struct Diagnostic {
     file_id: FileId,
-    code: &'str str,
-    title: &'str str,
+
     severity: Severity,
-    labels: Vec<Label<'str>>,
+    code: Option<SmolStr>,
+    title: SmolStr,
+
+    children: Vec<SubDiagnostic>,
 }
 
-impl<'str> Diagnostic<'str> {
+impl Diagnostic {
     /// Creates a new [`Diagnostic`] that will be used in a builder-like way
     /// to modify labels, and suggestions.
-    pub fn new<'code: 'str, 'title: 'str>(
+    pub fn new(file_id: FileId, severity: Severity, title: impl Into<SmolStr>) -> Self {
+        Self::new_with_code(file_id, severity, title, None)
+    }
+
+    /// Creates a new [`Diagnostic`] with an error code that will be used in a builder-like way
+    /// to modify labels, and suggestions.
+    pub fn new_with_code(
         file_id: FileId,
         severity: Severity,
-        code: &'code str,
-        title: &'title str,
+        title: impl Into<SmolStr>,
+        code: impl Into<Option<SmolStr>>,
     ) -> Self {
         Self {
             file_id,
-            code,
-            title,
+            code: code.into(),
             severity,
-            labels: vec![],
+            title: title.into(),
+            children: vec![],
         }
     }
 
     /// Attaches a primary label to this [`Diagnostic`].
-    pub fn primary<'label: 'str>(mut self, span: impl Span, label: &'label str) -> Self {
-        self.labels.push(Label {
-            range: span.as_range(),
-            style: LabelStyle::Primary,
-            label,
+    ///
+    /// A primary is just a label with the [`Error`](Severity::Error) severity.
+    pub fn primary(mut self, span: impl Span, msg: impl Into<SmolStr>) -> Self {
+        self.children.push(SubDiagnostic {
+            severity: Severity::Error,
+            msg: msg.into(),
+            span: FileSpan::new(self.file_id, span),
         });
         self
     }
 
     /// Attaches a secondary label to this [`Diagnostic`].
-    pub fn secondary<'label: 'str>(mut self, span: impl Span, label: &'label str) -> Self {
-        self.labels.push(Label {
-            range: span.as_range(),
-            style: LabelStyle::Secondary,
-            label,
+    ///
+    /// A secondary is just a label with the [`Info`](Severity::Info) severity.
+    pub fn secondary(mut self, span: impl Span, msg: impl Into<SmolStr>) -> Self {
+        self.children.push(SubDiagnostic {
+            severity: Severity::Info,
+            msg: msg.into(),
+            span: FileSpan::new(self.file_id, span),
         });
         self
     }
 }
 
-/// Structure that represents a range of text to be highlighted with a label.
-pub struct Label<'str> {
-    label: &'str str,
-    range: Range<usize>,
-    style: LabelStyle,
+/// Everything that can be added to a diagnostic, like
+/// a suggestion that will be displayed under the actual error.
+#[derive(Debug, Clone)]
+pub struct SubDiagnostic {
+    severity: Severity,
+    msg: SmolStr,
+    span: FileSpan,
 }
