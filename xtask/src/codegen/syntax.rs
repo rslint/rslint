@@ -41,6 +41,7 @@ fn generate_tokens(grammar: AstSrc<'_>) -> Result<String> {
                 }
             }
             impl AstToken for #name {
+                #[inline]
                 fn can_cast(kind: SyntaxKind) -> bool { kind == #kind }
                 fn cast(syntax: SyntaxToken) -> Option<Self> {
                     if Self::can_cast(syntax.kind()) { Some(Self { syntax }) } else { None }
@@ -104,6 +105,7 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
                 },
                 quote! {
                     impl AstNode for #name {
+                        #[inline]
                         fn can_cast(kind: SyntaxKind) -> bool {
                             kind == #kind
                         }
@@ -150,6 +152,7 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
                     )*
 
                     impl AstNode for #name {
+                        #[inline]
                         fn can_cast(kind: SyntaxKind) -> bool {
                             matches!(kind, #(#kinds)|*)
                         }
