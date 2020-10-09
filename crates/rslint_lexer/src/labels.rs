@@ -5,7 +5,7 @@ impl Lexer<'_> {
     pub(crate) fn resolve_label_a(&mut self) -> Option<SyntaxKind> {
         if let Some(b"wait") = self.bytes.get(self.cur + 1..self.cur + 5) {
             self.advance(4);
-            Some(T![await])
+            Some(Token![await])
         } else {
             None
         }
