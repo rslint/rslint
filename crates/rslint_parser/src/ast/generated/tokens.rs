@@ -16,6 +16,7 @@ impl std::fmt::Display for Whitespace {
     }
 }
 impl AstToken for Whitespace {
+    #[inline]
     fn can_cast(kind: SyntaxKind) -> bool { kind == WHITESPACE }
     fn cast(syntax: SyntaxToken) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
@@ -37,6 +38,7 @@ impl std::fmt::Display for Comment {
     }
 }
 impl AstToken for Comment {
+    #[inline]
     fn can_cast(kind: SyntaxKind) -> bool { kind == COMMENT }
     fn cast(syntax: SyntaxToken) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
@@ -58,6 +60,7 @@ impl std::fmt::Display for String {
     }
 }
 impl AstToken for String {
+    #[inline]
     fn can_cast(kind: SyntaxKind) -> bool { kind == STRING }
     fn cast(syntax: SyntaxToken) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
