@@ -220,8 +220,30 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "FOR_STMT_TEST",
         "FOR_STMT_UPDATE",
         "FOR_STMT_INIT",
-        // Regex, rslint_syntax includes those defs too so we dont have a weird
-        // interface between rslint_regex syntax kinds and rslint_syntax syntax kinds
+        // TypeScript
+        "TS_ANY",
+        "TS_UNKNOWN",
+        "TS_NUMBER",
+        "TS_OBJECT",
+        "TS_BOOLEAN",
+        "TS_BIGINT",
+        "TS_STRING",
+        "TS_SYMBOL",
+        "TS_VOID",
+        "TS_UNDEFINED",
+        "TS_NULL",
+        "TS_NEVER",
+        "TS_THIS",
+        "TS_LITERAL",
+        "TS_PREDICATE",
+        "TS_TUPLE",
+        "TS_TUPLE_ELEMENT",
+        "TS_PAREN",
+        "TS_TYPE_REF",
+        "TS_QUALIFIED_PATH",
+        "TS_TYPE_NAME",
+        // TODO: we should combine template into Literal
+        "TS_TEMPLATE",
     ],
 };
 
@@ -234,6 +256,7 @@ pub(crate) struct AstSrc<'a> {
 pub(crate) struct AstNodeSrc<'a> {
     pub(crate) name: &'a str,
     pub(crate) fields: &'a [Field<'a>],
+    pub(crate) doc: &'a str,
 }
 
 pub(crate) enum Field<'a> {
@@ -250,10 +273,12 @@ pub(crate) enum FieldSrc<'a> {
 pub(crate) struct AstEnumSrc<'a> {
     pub(crate) name: &'a str,
     pub(crate) variants: &'a [&'a str],
+    pub(crate) doc: &'a str,
 }
 
 macro_rules! ast_nodes {
     ($(
+        $(#[doc = $doc:literal])*
         struct $name:ident {
             $($field_name:ident $(![$($token:tt)*])? $(: $ty:tt)?),*$(,)?
         }
@@ -264,6 +289,7 @@ macro_rules! ast_nodes {
                 fields: &[
                     $(field!($(T![$($token)*])? $field_name $($ty)?)),*
                 ],
+                doc: concat!($($doc, "\n"),*)
             }
         ),*]
     };
@@ -286,6 +312,7 @@ macro_rules! field {
 
 macro_rules! ast_enums {
     ($(
+        $(#[doc = $doc:literal])*
         enum $name:ident {
             $($variant:ident),*$(,)?
         }
@@ -294,6 +321,7 @@ macro_rules! ast_enums {
             AstEnumSrc {
                 name: stringify!($name),
                 variants: &[$(stringify!($variant)),*],
+                doc: concat!($($doc, "\n"),*)
             }
         ),*]
     };
@@ -305,6 +333,120 @@ macro_rules! ast_enums {
 pub(crate) const AST_SRC: AstSrc = AstSrc {
     tokens: &["Whitespace", "Comment", "String"],
     nodes: &ast_nodes! {
+        // TODO: move this down once ts is done -------------
+
+        /// A type signifying any type (Any)
+        struct TsAny { T![ident] }
+        /// A type signifying an unknown type (Unknown)
+        struct TsUnknown { T![ident] }
+        /// A type signifying a number (number)
+        struct TsNumber { T![ident] }
+        /// A type signifying a JavaScript Object, any non-primitive (object)
+        struct TsObject { T![ident] }
+        /// A type signifying a boolean (boolean)
+        struct TsBoolean { T![ident] }
+        /// A type signifying a JavaScript bigint (big integer) (bigint)
+        struct TsBigint { T![ident] }
+        /// A type signifying a JavaScript string (string)
+        struct TsString { T![ident] }
+        /// A type signifying a JavaScript Symbol (symbol)
+        struct TsSymbol { T![ident] }
+        /// A type signifying no type (void)
+        struct TsVoid { T![ident] }
+        /// A type signifying a JavaScript undefined value (undefined)
+        struct TsUndefined { T![ident] }
+        /// A type signifying a JavaScript null value (null)
+        struct TsNull { T![ident] }
+        /// A type signifying a function never returns (never)
+        struct TsNever { T![ident] }
+
+        /// A type signifying JavaScript's `this`
+        struct TsThis { T![this] }
+        /// A type represented by a literal value
+        struct TsLiteral {
+            /* - for numbers */
+            lit: Literal
+        }
+        /// A type represented by a literal template
+        struct TsTemplate { template: Template }
+
+        /// A type guard which performs a runtime check to guarantee the type of something in a scope
+        ///
+        /// ```ts
+        /// function isFish(pet: Fish | Bird): pet is Fish {
+        ///    return (pet as Fish).swim !== undefined;
+        /// }
+        /// ```
+        ///
+        /// It could also be an assertion function:
+        ///
+        /// ```ts
+        /// function check(cond: any): asserts condition { /* */ }
+        /// ```
+        ///
+        /// https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#assertion-functions
+        /// https://www.typescriptlang.org/docs/handbook/advanced-types.html#user-defined-type-guards
+        struct TsPredicate {
+            /* asserts */
+            lhs: TsThisOrName,
+            /* is */
+            rhs: TsType
+        }
+
+        /// A type with a fixed number of elements with known types
+        ///
+        /// ```ts
+        /// let x: [number, ...string[]];
+        /// let y: [foo: number, ...bar: string[]];
+        /// ```
+        ///
+        /// https://www.typescriptlang.org/docs/handbook/basic-types.html#tuple
+        struct TsTuple {
+            T!['['],
+            elements: TsTupleElement,
+            T![']']
+        }
+
+        /// An individual tuple element, this could be a rest element and could be named:
+        /// e.g. `number`, `foo: number`, `...number`, or `...foo: number`
+        struct TsTupleElement {
+            T![...],
+            T![ident],
+            T![:],
+            ty: TsType
+        }
+
+        /// A parenthesized type
+        ///
+        /// ```ts
+        /// let x: (Foo);
+        /// ```
+        struct TsParen {
+            T!['('],
+            ty: TsType,
+            T![')']
+        }
+
+        /// A reference to a type which may or may not have type arguments. e.g. `Foo`, `Foo<Bar>`, `Foo<Bar, Baz>`
+        struct TsTypeRef {
+            name: TsEntityName,
+            T![<],
+            type_args: [TsType],
+            T![>]
+        }
+
+        /// A full path to a type from a namespace. e.g. `foo.bar` or `foo.bar.baz`
+        struct TsQualifiedPath {
+            lhs: TsEntityName,
+            T![.],
+            rhs: TsTypeName
+        }
+
+        struct TsTypeName {
+            T![ident]
+        }
+
+        // --------------------------------------------------
         struct Script {
             T![shebang],
             items: [Stmt],
@@ -964,6 +1106,40 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             ImportCall,
             YieldExpr,
             AwaitExpr
+        }
+
+        /// Either a single type reference or a fully qualified path
+        enum TsEntityName {
+            TsTypeName,
+            TsQualifiedPath
+        }
+
+        /// A TypeScript type
+        enum TsType {
+            TsAny,
+            TsUnknown,
+            TsNumber,
+            TsObject,
+            TsBoolean,
+            TsBigint,
+            TsString,
+            TsSymbol,
+            TsVoid,
+            TsUndefined,
+            TsNull,
+            TsNever,
+            TsThis,
+            TsLiteral,
+            TsPredicate,
+            TsTuple,
+            TsParen,
+            TsTypeRef,
+            TsTemplate
+        }
+
+        enum TsThisOrName {
+            TsThis,
+            TsTypeName
         }
     },
 };

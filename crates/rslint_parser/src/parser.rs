@@ -82,6 +82,8 @@ pub struct Parser<'t> {
     steps: Cell<u32>,
     pub state: ParserState,
     errors: Vec<ParserError>,
+    /// Whether the parser is configured to parse TypeScript
+    pub typescript: bool,
 }
 
 impl<'t> Parser<'t> {
@@ -94,6 +96,7 @@ impl<'t> Parser<'t> {
             steps: Cell::new(0),
             state: ParserState::default(),
             errors: vec![],
+            typescript: false,
         }
     }
 
@@ -106,6 +109,19 @@ impl<'t> Parser<'t> {
             steps: Cell::new(0),
             state: ParserState::module(),
             errors: vec![],
+            typescript: false,
+        }
+    }
+
+    /// Make a new parser configured to parse TypeScript
+    pub fn new_typescript(tokens: TokenSource<'t>, file_id: usize) -> Parser<'t> {
+        Parser {
+            file_id,
+            tokens,
+            events: vec![],
+            steps: Cell::new(0),
+            state: ParserState::default(),
+            typescript: true,
         }
     }
 
@@ -299,6 +315,13 @@ impl<'t> Parser<'t> {
         self.tokens
             .source()
             .get(self.nth_tok(0).range)
+            .expect("Parser source and tokens mismatch")
+    }
+
+    pub fn nth_src(&self, n: usize) -> &str {
+        self.tokens
+            .source()
+            .get(self.nth_tok(n).range)
             .expect("Parser source and tokens mismatch")
     }
 

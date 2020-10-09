@@ -8,6 +8,7 @@
 mod expr_ext;
 mod generated;
 mod stmt_ext;
+mod ts_ext;
 
 use crate::{syntax_node::*, util::SyntaxNodeExt, SmolStr, SyntaxKind, TextRange};
 use std::marker::PhantomData;
