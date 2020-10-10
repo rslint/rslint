@@ -8,6 +8,13 @@ The project is in early development, there will be bugs and weird productions. I
 
 Please see the [website](https://rdambrosio016.github.io/RSLint/) for installation instructions and documentation.
 
+# Currently known big issues
+
+- Optional chaining is not parsed correctly
+- Empty template literals panic
+- Shebangs are not parsed correctly (but the parser can recover)
+- A lot of error recoveries do not work and result in infinite recursion
+
 # Differences from other linters
 
 ## Implemented
