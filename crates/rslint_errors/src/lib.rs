@@ -1,6 +1,10 @@
-pub mod diagnostic;
 pub mod file;
-pub mod suggestion;
+
+mod diagnostic;
+mod suggestion;
+
+pub use diagnostic::{Diagnostic, SubDiagnostic};
+pub use suggestion::CodeSuggestion;
 
 /// Indicicates how a tool should manage this suggestion.
 #[derive(Clone, Copy, Debug)]
