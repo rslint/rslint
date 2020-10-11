@@ -1,10 +1,11 @@
+pub use rslint_core::Span;
 use std::ops::Range;
 
 /// An id that points into a file database.
 pub type FileId = usize;
 
 /// A range that is indexed in a specific file.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct FileSpan {
     pub file: FileId,
     pub span: Range<usize>,
@@ -12,13 +13,11 @@ pub struct FileSpan {
 
 impl FileSpan {
     pub fn new(file: FileId, span: impl Span) -> Self {
-        Self(file, span.as_range())
+        Self {
+            file,
+            span: span.as_range(),
+        }
     }
-}
-
-/// Any object that can be turned into a [`Range`](std::ops::Range).
-pub trait Span {
-    fn as_range(&self) -> Range<usize>;
 }
 
 /// Interface for interacting with source files

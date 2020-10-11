@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 annotate-snippets = "0.9.0"
-smol_str = "0.1.17"
+rslint_core = { path = "../rslint_core" }

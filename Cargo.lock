@@ -1121,7 +1121,7 @@ name = "rslint_errors"
 version = "0.1.0"
 dependencies = [
  "annotate-snippets",
- "smol_str",
+ "rslint_core",
 ]
 
 [[package]]
