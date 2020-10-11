@@ -1,11 +1,10 @@
 //! The custom panic hook used by the linter to issue a more descriptive explanation.
 
-use codespan_reporting::term::termcolor::{self, ColorChoice};
-use std::io::Write;
+use std::io::{self, Write};
 use std::panic::PanicInfo;
 
 pub fn panic_hook(info: &PanicInfo) {
-    let stderr = termcolor::StandardStream::stderr(ColorChoice::Always);
+    let stderr = io::stderr();
 
     let mut stderr_lock = stderr.lock();
 
