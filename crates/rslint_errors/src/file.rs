@@ -1,5 +1,5 @@
 pub use rslint_core::Span;
-use std::ops::Range;
+use std::{borrow::Cow, ops::Range};
 
 /// An id that points into a file database.
 pub type FileId = usize;
@@ -23,16 +23,11 @@ impl FileSpan {
 /// Interface for interacting with source files
 /// that are identified by a unique identifier.
 pub trait Files {
-    /// The name for identifying a file.
-    type Name: AsRef<str>;
-    /// The source code of a file.
-    type Source: AsRef<str>;
-
     /// Returns the name of the file identified by the id.
-    fn name(&self, id: FileId) -> Self::Name;
+    fn name(&self, id: FileId) -> &str;
 
     /// Returns the source of the file identified by the id.
-    fn source(&self, id: FileId) -> Self::Source;
+    fn source(&self, id: FileId) -> &str;
 
     /// The index of the line at the byte index.
     ///

@@ -7,15 +7,15 @@ use crate::{
 /// A diagnostic message that can give information
 /// like errors or warnings.
 pub struct Diagnostic {
-    file_id: FileId,
+    pub(crate) file_id: FileId,
 
-    severity: Severity,
-    code: Option<String>,
-    title: String,
+    pub(crate) severity: Severity,
+    pub(crate) code: Option<String>,
+    pub(crate) title: String,
 
-    children: Vec<SubDiagnostic>,
-    suggestions: Vec<CodeSuggestion>,
-    footer: Vec<Footer>,
+    pub(crate) children: Vec<SubDiagnostic>,
+    pub(crate) suggestions: Vec<CodeSuggestion>,
+    pub(crate) footer: Vec<Footer>,
 }
 
 impl Diagnostic {
@@ -113,7 +113,7 @@ impl Diagnostic {
     /// otherwise it will be inlined with the other labels.
     ///
     /// A suggestion is displayed like:
-    /// ```
+    /// ```ignore
     /// try adding a `;`: console.log();
     /// ```
     ///
@@ -150,26 +150,20 @@ impl Diagnostic {
     pub fn footer_note(self, label: String) -> Self {
         self.footer(Severity::Note, label)
     }
-
-    /// Consumses this `Diagnostic` and converts it into a
-    /// immutable view of this diagnostic.
-    pub fn finish(self) {
-        todo!()
-    }
 }
 
 /// Everything that can be added to a diagnostic, like
 /// a suggestion that will be displayed under the actual error.
 #[derive(Debug, Clone)]
 pub struct SubDiagnostic {
-    severity: Severity,
-    msg: String,
-    span: FileSpan,
+    pub(crate) severity: Severity,
+    pub(crate) msg: String,
+    pub(crate) span: FileSpan,
 }
 
 /// A note or help that is displayed under the diagnostic.
 #[derive(Debug, Clone)]
 pub struct Footer {
-    label: String,
-    severity: Severity,
+    pub(crate) label: String,
+    pub(crate) severity: Severity,
 }
