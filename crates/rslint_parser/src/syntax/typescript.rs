@@ -87,7 +87,7 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
             }
             Some(m.complete(p, TS_LITERAL))
         }
-        T![import] => todo!("import type"),
+        T![import] => Some(ts_import(p)),
         T![this] => {
             if p.nth_src(1) == "is" {
                 ts_this_predicate(p)
@@ -142,12 +142,28 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
+pub fn ts_import(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.expect(T![import]);
+    p.expect(T!['(']);
+    p.expect(STRING);
+    p.expect(T![')']);
+    if p.eat(T![.]) {
+        ts_entity_name(p, None, false);
+    }
+    if p.at(T![:]) {
+        todo!("type args");
+    }
+
+    m.complete(p, TS_IMPORT)
+}
+
 pub fn ts_type_query(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![typeof]);
 
     if p.at(T![import]) {
-        todo!("TsImport");
+        ts_import(p);
     } else {
         ts_entity_name(p, None, true);
     }

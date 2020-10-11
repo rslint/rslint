@@ -1,16 +1,20 @@
 //! Extensions to TypeScript AST elements
 
-use crate::{ast::*, syntax_node::SyntaxNode, SyntaxKind};
+use crate::{
+    ast::*,
+    syntax_node::SyntaxNode,
+    SyntaxKind::{self, *},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TsTypeQueryExpr {
     TsEntityName(TsEntityName),
-    /* TsImport */
+    TsImport(TsImport),
 }
 
 impl AstNode for TsTypeQueryExpr {
     fn can_cast(kind: SyntaxKind) -> bool {
-        TsEntityName::can_cast(kind) || todo!("TsImport")
+        TsEntityName::can_cast(kind) || TsImport::can_cast(kind)
     }
 
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -18,14 +22,23 @@ impl AstNode for TsTypeQueryExpr {
             n if TsEntityName::can_cast(n) => Some(TsTypeQueryExpr::TsEntityName(
                 TsEntityName::cast(syntax).unwrap(),
             )),
-            _ => todo!("TsImport"),
+            _ => Some(TsTypeQueryExpr::TsImport(TsImport::cast(syntax)?)),
         }
     }
 
     fn syntax(&self) -> &SyntaxNode {
         match self {
             TsTypeQueryExpr::TsEntityName(it) => it.syntax(),
-            _ => todo!("TsImport"),
+            TsTypeQueryExpr::TsImport(it) => it.syntax(),
         }
+    }
+}
+
+impl TsImport {
+    pub fn arg(&self) -> Option<SyntaxToken> {
+        self.syntax()
+            .tokens()
+            .into_iter()
+            .find(|t| t.kind() == STRING)
     }
 }

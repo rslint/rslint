@@ -249,6 +249,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_MAPPED_TYPE_READONLY",
         "TS_TYPE_QUERY",
         "TS_TYPE_QUERY_EXPR",
+        "TS_IMPORT",
     ],
 };
 
@@ -494,6 +495,16 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct TsTypeQuery {
             T![typeof],
             expr: TsTypeQueryExpr
+        }
+
+        struct TsImport {
+            T![import],
+            T!['('],
+            /* arg */
+            T![')'],
+            T![.],
+            qualifier: TsEntityName,
+            /* TODO: type args */
         }
 
         // --------------------------------------------------
@@ -1185,7 +1196,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsParen,
             TsTypeRef,
             TsTemplate,
-            TsMappedType
+            TsMappedType,
+            TsImport
         }
 
         enum TsThisOrName {
