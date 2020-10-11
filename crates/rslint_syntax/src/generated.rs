@@ -246,6 +246,8 @@ pub enum SyntaxKind {
     TS_TYPE_PARAMS,
     TS_FN_TYPE,
     TS_CONSTRUCTOR_TYPE,
+    TS_EXTENDS,
+    TS_CONDITIONAL_TYPE,
     #[doc(hidden)]
     __LAST,
 }

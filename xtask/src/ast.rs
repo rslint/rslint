@@ -259,6 +259,8 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_TYPE_PARAMS",
         "TS_FN_TYPE",
         "TS_CONSTRUCTOR_TYPE",
+        "TS_EXTENDS",
+        "TS_CONDITIONAL_TYPE",
     ],
 };
 
@@ -563,6 +565,16 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             params: ParameterList,
             T![=>],
             return_type: TsType
+        }
+
+        struct TsExtends { /* manual impl */ }
+
+        struct TsConditionalType {
+            condition: TsExtends,
+            T![?],
+            /* cons */
+            T![:],
+            /* alt */
         }
 
         // --------------------------------------------------
@@ -1262,7 +1274,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsIntersection,
             TsUnion,
             TsFnType,
-            TsConstructorType
+            TsConstructorType,
+            TsConditionalType
         }
 
         enum TsThisOrName {

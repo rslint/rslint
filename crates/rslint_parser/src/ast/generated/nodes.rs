@@ -340,6 +340,22 @@ impl TsConstructorType {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsExtends {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsExtends {}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsConditionalType {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsConditionalType {
+    pub fn condition(&self) -> Option<TsExtends> { support::child(&self.syntax) }
+    pub fn question_mark_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![?]) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![:]) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
@@ -1324,6 +1340,7 @@ pub enum TsType {
     TsUnion(TsUnion),
     TsFnType(TsFnType),
     TsConstructorType(TsConstructorType),
+    TsConditionalType(TsConditionalType),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1718,6 +1735,28 @@ impl AstNode for TsFnType {
 }
 impl AstNode for TsConstructorType {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_CONSTRUCTOR_TYPE }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsExtends {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_EXTENDS }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsConditionalType {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_CONDITIONAL_TYPE }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3273,6 +3312,9 @@ impl From<TsFnType> for TsType {
 impl From<TsConstructorType> for TsType {
     fn from(node: TsConstructorType) -> TsType { TsType::TsConstructorType(node) }
 }
+impl From<TsConditionalType> for TsType {
+    fn from(node: TsConditionalType) -> TsType { TsType::TsConditionalType(node) }
+}
 impl AstNode for TsType {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -3305,6 +3347,7 @@ impl AstNode for TsType {
                 | TS_UNION
                 | TS_FN_TYPE
                 | TS_CONSTRUCTOR_TYPE
+                | TS_CONDITIONAL_TYPE
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3337,6 +3380,7 @@ impl AstNode for TsType {
             TS_UNION => TsType::TsUnion(TsUnion { syntax }),
             TS_FN_TYPE => TsType::TsFnType(TsFnType { syntax }),
             TS_CONSTRUCTOR_TYPE => TsType::TsConstructorType(TsConstructorType { syntax }),
+            TS_CONDITIONAL_TYPE => TsType::TsConditionalType(TsConditionalType { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3371,6 +3415,7 @@ impl AstNode for TsType {
             TsType::TsUnion(it) => &it.syntax,
             TsType::TsFnType(it) => &it.syntax,
             TsType::TsConstructorType(it) => &it.syntax,
+            TsType::TsConditionalType(it) => &it.syntax,
         }
     }
 }
@@ -3643,6 +3688,16 @@ impl std::fmt::Display for TsFnType {
     }
 }
 impl std::fmt::Display for TsConstructorType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsExtends {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsConditionalType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

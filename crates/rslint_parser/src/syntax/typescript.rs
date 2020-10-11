@@ -19,7 +19,20 @@ pub const BASE_TS_RECOVERY_SET: TokenSet = token_set![
 ];
 
 pub fn ts_type(p: &mut Parser) -> Option<CompletedMarker> {
-    unimplemented!();
+    let ty = ts_non_conditional_type(p);
+    if p.has_linebreak_before_n(0) && !p.at(T![extends]) {
+        return ty;
+    }
+
+    let m = ty.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
+    ts_non_conditional_type(p);
+    let compl = m.complete(p, TS_EXTENDS);
+    let m = compl.precede(p);
+    p.expect(T![?]);
+    ts_type(p);
+    p.expect(T![:]);
+    ts_type(p);
+    Some(m.complete(p, TS_CONDITIONAL_TYPE))
 }
 
 pub fn ts_fn_or_constructor_type(p: &mut Parser, fn_type: bool) -> CompletedMarker {
