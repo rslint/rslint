@@ -1,8 +1,8 @@
 //! The custom panic hook used by the linter to issue a more descriptive explanation.
 
 use crate::{lint_err, lint_note};
-use std::panic::PanicInfo;
 use std::io::{stderr, Write};
+use std::panic::PanicInfo;
 
 pub fn panic_hook(info: &PanicInfo) {
     lint_err!("The linter panicked unexpectedly. this is a bug.");
@@ -20,9 +20,10 @@ pub fn panic_hook(info: &PanicInfo) {
         .map(|x| x.to_string())
         .unwrap_or_default();
 
-    let location = info.location()
-            .map(|l| format!("{}", l))
-            .unwrap_or_default();
+    let location = info
+        .location()
+        .map(|l| format!("{}", l))
+        .unwrap_or_default();
 
     writeln!(stderr_lock, "message: {}", msg).expect("panic_hook failed to write to stderr");
     writeln!(stderr_lock, "location: {}", location).expect("panic_hook failed to write to stderr");
