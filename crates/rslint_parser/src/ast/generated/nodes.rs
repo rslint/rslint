@@ -222,6 +222,7 @@ impl TsMappedTypeParam {
     pub fn name(&self) -> Option<TsTypeName> { support::child(&self.syntax) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+    pub fn r_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![']']) }
 }
 #[doc = " An optional readonly modifier applied to mapped types\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1209,6 +1210,7 @@ pub enum TsType {
     TsParen(TsParen),
     TsTypeRef(TsTypeRef),
     TsTemplate(TsTemplate),
+    TsMappedType(TsMappedType),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -3010,6 +3012,9 @@ impl From<TsTypeRef> for TsType {
 impl From<TsTemplate> for TsType {
     fn from(node: TsTemplate) -> TsType { TsType::TsTemplate(node) }
 }
+impl From<TsMappedType> for TsType {
+    fn from(node: TsMappedType) -> TsType { TsType::TsMappedType(node) }
+}
 impl AstNode for TsType {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -3033,6 +3038,7 @@ impl AstNode for TsType {
                 | TS_PAREN
                 | TS_TYPE_REF
                 | TS_TEMPLATE
+                | TS_MAPPED_TYPE
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3056,6 +3062,7 @@ impl AstNode for TsType {
             TS_PAREN => TsType::TsParen(TsParen { syntax }),
             TS_TYPE_REF => TsType::TsTypeRef(TsTypeRef { syntax }),
             TS_TEMPLATE => TsType::TsTemplate(TsTemplate { syntax }),
+            TS_MAPPED_TYPE => TsType::TsMappedType(TsMappedType { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3081,6 +3088,7 @@ impl AstNode for TsType {
             TsType::TsParen(it) => &it.syntax,
             TsType::TsTypeRef(it) => &it.syntax,
             TsType::TsTemplate(it) => &it.syntax,
+            TsType::TsMappedType(it) => &it.syntax,
         }
     }
 }
