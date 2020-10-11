@@ -27,4 +27,5 @@ pub fn panic_hook(info: &PanicInfo) {
 
     writeln!(stderr_lock, "message: {}", msg).expect("panic_hook failed to write to stderr");
     writeln!(stderr_lock, "location: {}", location).expect("panic_hook failed to write to stderr");
+    std::process::exit(-1);
 }
