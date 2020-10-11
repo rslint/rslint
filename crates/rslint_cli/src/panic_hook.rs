@@ -12,11 +12,11 @@ pub fn panic_hook(info: &PanicInfo) {
         writeln!(stderr_lock, "{}", msg).expect("panic_hook failed to write to stderr");
     };
 
-    write("The linter panicked unexpectedly. This is a bug.");
+    write("The linter panicked unexpectedly. This is a bug.\n");
 
     write("We would appreciate a bug report: https://github.com/RDambrosio016/RSLint/issues/new?labels=ILE%2C+bug&template=internal-linter-error.md\n");
 
-    write("Please include the following info: ");
+    write("Please include the following info: \n");
 
     let msg = info
         .payload()
