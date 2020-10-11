@@ -430,6 +430,8 @@ impl Field<'_> {
                     "=>" => "fat_arrow",
                     ":" => "colon",
                     "?" => "question_mark",
+                    "+" => "plus",
+                    "-" => "minus",
                     _ => name,
                 };
                 format_ident!("{}_token", name)

@@ -231,6 +231,9 @@ pub enum SyntaxKind {
     TS_QUALIFIED_PATH,
     TS_TYPE_NAME,
     TS_TEMPLATE,
+    TS_MAPPED_TYPE,
+    TS_MAPPED_TYPE_PARAM,
+    TS_MAPPED_TYPE_READONLY,
     #[doc(hidden)]
     __LAST,
 }

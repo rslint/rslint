@@ -3,7 +3,7 @@
 //! Most of the functions do not check if the parser is configured for TypeScript.
 //! Functions that do check will say so in the docs.
 
-use super::expr::{identifier_reference, literal, template};
+use super::expr::{identifier_name, identifier_reference, literal, template};
 use crate::ast::Template;
 use crate::{SyntaxKind::*, *};
 
@@ -98,7 +98,13 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
             }
         }
         T![typeof] => todo!("type query"),
-        T!['{'] => todo!("mapped type or type_lit"),
+        T!['{'] => {
+            if is_mapped_type_start(p) {
+                Some(ts_mapped_type(p))
+            } else {
+                todo!("object types")
+            }
+        }
         T!['['] => todo!("tuples"),
         T!['('] => {
             let m = p.start();
@@ -134,6 +140,90 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
             None
         }
     }
+}
+
+pub fn ts_mapped_type(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.expect(T!['{']);
+    let tok = p.cur_tok().range;
+    let _m = p.start();
+    if p.eat(T![+]) || p.eat(T![-]) {
+        if p.cur_src() != "readonly" {
+            let err = p
+                .err_builder("`+` and `-` modifiers in mapped types must be followed by `readonly`")
+                .primary(tok, "");
+
+            p.error(err);
+        } else {
+            p.bump_any();
+        }
+        _m.complete(p, TS_MAPPED_TYPE_READONLY);
+    } else if p.cur_src() == "readonly" {
+        p.bump_any();
+        _m.complete(p, TS_MAPPED_TYPE_READONLY);
+    } else {
+        _m.abandon(p);
+    }
+
+    let param = p.start();
+    p.expect(T!['[']);
+    // This is basically to unwrap the marker from a node to a single token
+    if let Some(x) = identifier_name(p) {
+        x.undo_completion(p).abandon(p)
+    }
+    if p.cur_src() != "in" {
+        let err = p
+            .err_builder("expected `in` after a mapped type parameter name")
+            .primary(p.cur_tok().range, "");
+
+        p.error(err);
+    } else {
+        p.bump_any();
+    }
+    p.expect(T![']']);
+    param.complete(p, TS_MAPPED_TYPE_PARAM);
+    let tok = p.cur_tok().range;
+    if p.eat(T![+]) || p.eat(T![-]) {
+        if !p.at(T![?]) {
+            // TODO: Im not sure of the proper terminology for this, someone should clarify this error
+            let err = p
+                .err_builder("`+` and `-` modifiers in mapped types must be followed by `?`")
+                .primary(tok, "");
+
+            p.error(err);
+        } else {
+            p.bump_any();
+        }
+    } else if p.at(T![?]) {
+        p.bump_any();
+    }
+
+    p.expect(T![:]);
+    ts_type(p);
+    // FIXME: This should issue an error for no semi and no ASI, but the fact that a `}` is expected
+    // after should make this case kind of rare
+    p.eat(T![;]);
+    p.expect(T!['}']);
+    m.complete(p, TS_MAPPED_TYPE)
+}
+
+fn is_mapped_type_start(p: &Parser) -> bool {
+    if (p.nth_at(1, T![+]) || p.nth_at(1, T![+])) && p.nth_src(1) == "readonly" {
+        return true;
+    }
+    let mut cur = 1;
+    if p.cur_src() == "readonly" {
+        cur += 1;
+    }
+    if !p.nth_at(cur, T!['[']) {
+        return false;
+    }
+    cur += 1;
+    if !matches!(p.nth(cur), T![yield] | T![await] | T![ident]) {
+        return false;
+    }
+    cur += 1;
+    p.nth_at(cur, T![in])
 }
 
 /// A `this` type predicate such as `asserts this is foo` or `this is foo`, or `asserts this`

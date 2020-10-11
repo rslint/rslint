@@ -149,13 +149,7 @@ impl<'t> Parser<'t> {
     }
 
     /// Look ahead at a token and get its kind, **The max lookahead is 4**.  
-    ///
-    /// # Panics
-    /// This method panics if the lookahead is higher than `4`,
-    /// or if the parser has run this method more than 10m times, as it is a sign of infinite recursion
     pub fn nth(&self, n: usize) -> SyntaxKind {
-        assert!(n <= 4);
-
         let steps = self.steps.get();
         assert!(
             steps <= 10_000_000,
@@ -167,13 +161,7 @@ impl<'t> Parser<'t> {
     }
 
     /// Look ahead at a token, **The max lookahead is 4**.  
-    ///
-    /// # Panics
-    /// This method panics if the lookahead is higher than `4`,
-    /// or if the parser has run this method more than 10m times, as it is a sign of infinite recursion
     pub fn nth_tok(&self, n: usize) -> Token {
-        assert!(n <= 4);
-
         let steps = self.steps.get();
         assert!(
             steps <= 10_000_000,

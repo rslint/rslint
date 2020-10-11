@@ -244,6 +244,9 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_TYPE_NAME",
         // TODO: we should combine template into Literal
         "TS_TEMPLATE",
+        "TS_MAPPED_TYPE",
+        "TS_MAPPED_TYPE_PARAM",
+        "TS_MAPPED_TYPE_READONLY",
     ],
 };
 
@@ -412,6 +415,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct TsTupleElement {
             T![...],
             T![ident],
+            T![?],
             T![:],
             ty: TsType
         }
@@ -444,6 +448,45 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct TsTypeName {
             T![ident]
+        }
+
+        /// A type which allows the creation of new types from existing ones
+        /// by mapping over property types.
+        ///
+        /// ```ts
+        /// type Readonly<T> = {
+        ///   readonly [P in keyof T]: T[P];
+        /// }
+        /// ```
+        ///
+        /// https://www.typescriptlang.org/docs/handbook/advanced-types.html#mapped-types
+        // TODO: this is kind of ugly, especially the : then + then - then ?
+        struct TsMappedType {
+            T!['{'],
+            readonly_modifier: TsMappedTypeReadonly,
+            param: TsMappedTypeParam,
+            T![:],
+            T![+],
+            T![-],
+            T![?],
+            ty: TsType,
+            T![;],
+            T!['}']
+        }
+
+        struct TsMappedTypeParam {
+            T!['['],
+            name: TsTypeName,
+            T![ident],
+            ty: TsType,
+            T![']']
+        }
+
+        /// An optional readonly modifier applied to mapped types
+        struct TsMappedTypeReadonly {
+            T![+],
+            T![-],
+            /* readonly */
         }
 
         // --------------------------------------------------
