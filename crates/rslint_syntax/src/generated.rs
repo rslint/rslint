@@ -234,6 +234,8 @@ pub enum SyntaxKind {
     TS_MAPPED_TYPE,
     TS_MAPPED_TYPE_PARAM,
     TS_MAPPED_TYPE_READONLY,
+    TS_TYPE_QUERY,
+    TS_TYPE_QUERY_EXPR,
     #[doc(hidden)]
     __LAST,
 }

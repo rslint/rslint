@@ -3,7 +3,7 @@
 //! Most of the functions do not check if the parser is configured for TypeScript.
 //! Functions that do check will say so in the docs.
 
-use super::expr::{identifier_name, identifier_reference, literal, template};
+use super::expr::{identifier_name, literal, template};
 use crate::ast::Template;
 use crate::{SyntaxKind::*, *};
 
@@ -97,7 +97,7 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
                 Some(m.complete(p, TS_THIS))
             }
         }
-        T![typeof] => todo!("type query"),
+        T![typeof] => Some(ts_type_query(p)),
         T!['{'] => {
             if is_mapped_type_start(p) {
                 Some(ts_mapped_type(p))
@@ -140,6 +140,18 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
             None
         }
     }
+}
+
+pub fn ts_type_query(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.expect(T![typeof]);
+
+    if p.at(T![import]) {
+        todo!("TsImport");
+    } else {
+        ts_entity_name(p, None, true);
+    }
+    m.complete(p, TS_TYPE_QUERY)
 }
 
 pub fn ts_mapped_type(p: &mut Parser) -> CompletedMarker {
@@ -319,6 +331,7 @@ pub fn ts_type_name(
         return Some(m.complete(p, TS_TYPE_NAME));
     }
 
+    // FIXME: move the recovery job out of this method
     let set = recovery_set.into().unwrap_or(BASE_TS_RECOVERY_SET);
     let err = p
         .err_builder(&format!(

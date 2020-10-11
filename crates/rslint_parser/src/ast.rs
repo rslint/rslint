@@ -17,6 +17,7 @@ pub use self::{
     expr_ext::*,
     generated::{nodes::*, tokens::*},
     stmt_ext::*,
+    ts_ext::*,
 };
 
 /// The main trait to go from untyped `SyntaxNode`  to a typed ast. The

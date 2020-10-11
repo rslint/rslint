@@ -235,6 +235,15 @@ impl TsMappedTypeReadonly {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsTypeQuery {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsTypeQuery {
+    pub fn typeof_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![typeof]) }
+    pub fn expr(&self) -> Option<TsTypeQueryExpr> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
@@ -1484,6 +1493,17 @@ impl AstNode for TsMappedTypeParam {
 }
 impl AstNode for TsMappedTypeReadonly {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_MAPPED_TYPE_READONLY }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsTypeQuery {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_TYPE_QUERY }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3306,6 +3326,11 @@ impl std::fmt::Display for TsMappedTypeParam {
     }
 }
 impl std::fmt::Display for TsMappedTypeReadonly {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsTypeQuery {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

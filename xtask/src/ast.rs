@@ -247,6 +247,8 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_MAPPED_TYPE",
         "TS_MAPPED_TYPE_PARAM",
         "TS_MAPPED_TYPE_READONLY",
+        "TS_TYPE_QUERY",
+        "TS_TYPE_QUERY_EXPR",
     ],
 };
 
@@ -487,6 +489,11 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![+],
             T![-],
             /* readonly */
+        }
+
+        struct TsTypeQuery {
+            T![typeof],
+            expr: TsTypeQueryExpr
         }
 
         // --------------------------------------------------
