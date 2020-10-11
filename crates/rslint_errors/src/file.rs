@@ -1,5 +1,5 @@
 pub use rslint_core::Span;
-use std::{borrow::Cow, ops::Range};
+use std::ops::Range;
 
 /// An id that points into a file database.
 pub type FileId = usize;
@@ -33,7 +33,8 @@ pub trait Files {
     ///
     /// ## Implementation
     /// This can be implemented by caching the results of [`line_starts`]
-    /// and then use [`binary_search`](slice::binary_search) to compute the line index.
+    /// and then use [`binary_search`](https://doc.rust-lang.org/std/primitive.slice.html#method.binary_search)
+    /// to compute the line index.
     ///
     /// ```ignore
     /// match self.line_starts.binary_search(byte_index) {
@@ -45,6 +46,6 @@ pub trait Files {
 }
 
 /// Computes the byte indicies of every line start.
-pub fn line_starts<'src>(source: &'src str) -> impl 'src + Iterator<Item = usize> {
+pub fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
     std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
 }

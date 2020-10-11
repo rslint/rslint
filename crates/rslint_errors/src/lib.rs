@@ -92,6 +92,12 @@ fn convert<'d, 'f: 'd>(
         }
     }
 
+    //let suggestions = diagnostic.suggestions.iter().map(|sug| {
+    //snippet::Slice {
+    //source
+    //}
+    //})
+
     Snippet {
         title: Some(Annotation {
             id: Some(&diagnostic.title),
@@ -117,7 +123,7 @@ fn convert<'d, 'f: 'd>(
 }
 
 /// Takes a list of `Diagnostic`s and prints them to given output.
-pub fn emit<'f>(
+pub fn emit(
     out: &mut dyn Write,
     files: &dyn file::Files,
     color: bool,

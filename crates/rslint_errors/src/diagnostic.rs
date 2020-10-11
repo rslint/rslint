@@ -60,9 +60,9 @@ impl Diagnostic {
     ) -> Self {
         Self {
             file_id,
-            code: code.into(),
+            code,
             severity,
-            title: title.into(),
+            title,
             children: vec![],
             suggestions: vec![],
             footer: vec![],
@@ -74,7 +74,7 @@ impl Diagnostic {
     pub fn label_in_file(mut self, severity: Severity, span: FileSpan, msg: String) -> Self {
         self.children.push(SubDiagnostic {
             severity,
-            msg: msg.into(),
+            msg,
             span,
         });
         self
@@ -86,7 +86,7 @@ impl Diagnostic {
     pub fn label(mut self, severity: Severity, span: impl Span, msg: String) -> Self {
         self.children.push(SubDiagnostic {
             severity,
-            msg: msg.into(),
+            msg,
             span: FileSpan::new(self.file_id, span),
         });
         self
@@ -113,7 +113,7 @@ impl Diagnostic {
     /// otherwise it will be inlined with the other labels.
     ///
     /// A suggestion is displayed like:
-    /// ```ignore
+    /// ```no_rust
     /// try adding a `;`: console.log();
     /// ```
     ///
