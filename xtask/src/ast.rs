@@ -250,6 +250,9 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_TYPE_QUERY",
         "TS_TYPE_QUERY_EXPR",
         "TS_IMPORT",
+        "TS_TYPE_ARGS",
+        "TS_ARRAY",
+        "TS_INDEXED_ARRAY",
     ],
 };
 
@@ -437,9 +440,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         /// A reference to a type which may or may not have type arguments. e.g. `Foo`, `Foo<Bar>`, `Foo<Bar, Baz>`
         struct TsTypeRef {
             name: TsEntityName,
-            T![<],
-            type_args: [TsType],
-            T![>]
+            type_args: TsTypeArgs
         }
 
         /// A full path to a type from a namespace. e.g. `foo.bar` or `foo.bar.baz`
@@ -504,7 +505,26 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![')'],
             T![.],
             qualifier: TsEntityName,
-            /* TODO: type args */
+            type_args: TsTypeArgs
+        }
+
+        struct TsTypeArgs {
+            T![<],
+            args: [TsType],
+            T![>]
+        }
+
+        struct TsArray {
+            ty: TsType,
+            T!['['],
+            T![']']
+        }
+
+        struct TsIndexedArray {
+            ty: TsType,
+            T!['['],
+            /* index: TsType */
+            T![']']
         }
 
         // --------------------------------------------------
@@ -1197,7 +1217,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsTypeRef,
             TsTemplate,
             TsMappedType,
-            TsImport
+            TsImport,
+            TsArray,
+            TsIndexedArray
         }
 
         enum TsThisOrName {

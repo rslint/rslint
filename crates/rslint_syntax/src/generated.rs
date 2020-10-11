@@ -237,6 +237,9 @@ pub enum SyntaxKind {
     TS_TYPE_QUERY,
     TS_TYPE_QUERY_EXPR,
     TS_IMPORT,
+    TS_TYPE_ARGS,
+    TS_ARRAY,
+    TS_INDEXED_ARRAY,
     #[doc(hidden)]
     __LAST,
 }

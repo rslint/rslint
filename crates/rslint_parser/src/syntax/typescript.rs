@@ -21,6 +21,23 @@ pub fn ts_type(p: &mut Parser) -> Option<CompletedMarker> {
     unimplemented!();
 }
 
+pub fn ts_array_type_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
+    let ty = ts_non_array_type(p);
+
+    if !p.has_linebreak_before_n(0) && p.at(T!['[']) {
+        let m = ty.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
+        if p.eat(T![']']) {
+            Some(m.complete(p, TS_ARRAY))
+        } else {
+            ts_type(p);
+            p.expect(T![']']);
+            Some(m.complete(p, TS_INDEXED_ARRAY))
+        }
+    } else {
+        ty
+    }
+}
+
 pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
     match p.cur() {
         T![ident] | T![void] | T![yield] | T![null] | T![await] | T![break] => {
@@ -142,6 +159,33 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
+pub fn ts_type_args(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.expect(T![<]);
+    let mut first = true;
+
+    while !p.at(EOF) && !p.at(T![>]) {
+        if first {
+            first = false;
+        } else if p.at(T![,]) && p.nth_at(1, T![>]) {
+            let m = p.start();
+            let range = p.cur_tok().range;
+            p.bump_any();
+            m.complete(p, ERROR);
+            let err = p
+                .err_builder("type arguments may not contain trailing commas")
+                .primary(range, "help: remove this comma");
+
+            p.error(err);
+        } else {
+            p.expect(T![,]);
+        }
+        ts_type(p);
+    }
+    p.expect(T![>]);
+    m.complete(p, TS_TYPE_ARGS)
+}
+
 pub fn ts_import(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![import]);
@@ -151,8 +195,8 @@ pub fn ts_import(p: &mut Parser) -> CompletedMarker {
     if p.eat(T![.]) {
         ts_entity_name(p, None, false);
     }
-    if p.at(T![:]) {
-        todo!("type args");
+    if p.at(T![<]) && !p.has_linebreak_before_n(0) {
+        ts_type_args(p);
     }
 
     m.complete(p, TS_IMPORT)
@@ -307,7 +351,7 @@ pub fn ts_type_ref(
 
     ts_entity_name(p, recovery_set, true)?;
     if !p.has_linebreak_before_n(0) && p.at(T![<]) {
-        todo!("type args");
+        ts_type_args(p);
     }
 
     Some(m.complete(p, TS_TYPE_REF))

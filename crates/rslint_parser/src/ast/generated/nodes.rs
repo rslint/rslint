@@ -173,9 +173,7 @@ pub struct TsTypeRef {
 }
 impl TsTypeRef {
     pub fn name(&self) -> Option<TsEntityName> { support::child(&self.syntax) }
-    pub fn l_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![<]) }
-    pub fn type_args(&self) -> AstChildren<TsType> { support::children(&self.syntax) }
-    pub fn r_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![>]) }
+    pub fn type_args(&self) -> Option<TsTypeArgs> { support::child(&self.syntax) }
 }
 #[doc = " A full path to a type from a namespace. e.g. `foo.bar` or `foo.bar.baz`\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -253,6 +251,37 @@ impl TsImport {
     pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
     pub fn dot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![.]) }
     pub fn qualifier(&self) -> Option<TsEntityName> { support::child(&self.syntax) }
+    pub fn type_args(&self) -> Option<TsTypeArgs> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsTypeArgs {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsTypeArgs {
+    pub fn l_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![<]) }
+    pub fn args(&self) -> AstChildren<TsType> { support::children(&self.syntax) }
+    pub fn r_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![>]) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsArray {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsArray {
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+    pub fn l_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['[']) }
+    pub fn r_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![']']) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsIndexedArray {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsIndexedArray {
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+    pub fn l_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['[']) }
+    pub fn r_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![']']) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1233,6 +1262,8 @@ pub enum TsType {
     TsTemplate(TsTemplate),
     TsMappedType(TsMappedType),
     TsImport(TsImport),
+    TsArray(TsArray),
+    TsIndexedArray(TsIndexedArray),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1528,6 +1559,39 @@ impl AstNode for TsTypeQuery {
 }
 impl AstNode for TsImport {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_IMPORT }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsTypeArgs {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_TYPE_ARGS }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsArray {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_ARRAY }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsIndexedArray {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_INDEXED_ARRAY }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3062,6 +3126,12 @@ impl From<TsMappedType> for TsType {
 impl From<TsImport> for TsType {
     fn from(node: TsImport) -> TsType { TsType::TsImport(node) }
 }
+impl From<TsArray> for TsType {
+    fn from(node: TsArray) -> TsType { TsType::TsArray(node) }
+}
+impl From<TsIndexedArray> for TsType {
+    fn from(node: TsIndexedArray) -> TsType { TsType::TsIndexedArray(node) }
+}
 impl AstNode for TsType {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -3087,6 +3157,8 @@ impl AstNode for TsType {
                 | TS_TEMPLATE
                 | TS_MAPPED_TYPE
                 | TS_IMPORT
+                | TS_ARRAY
+                | TS_INDEXED_ARRAY
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3112,6 +3184,8 @@ impl AstNode for TsType {
             TS_TEMPLATE => TsType::TsTemplate(TsTemplate { syntax }),
             TS_MAPPED_TYPE => TsType::TsMappedType(TsMappedType { syntax }),
             TS_IMPORT => TsType::TsImport(TsImport { syntax }),
+            TS_ARRAY => TsType::TsArray(TsArray { syntax }),
+            TS_INDEXED_ARRAY => TsType::TsIndexedArray(TsIndexedArray { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3139,6 +3213,8 @@ impl AstNode for TsType {
             TsType::TsTemplate(it) => &it.syntax,
             TsType::TsMappedType(it) => &it.syntax,
             TsType::TsImport(it) => &it.syntax,
+            TsType::TsArray(it) => &it.syntax,
+            TsType::TsIndexedArray(it) => &it.syntax,
         }
     }
 }
@@ -3366,6 +3442,21 @@ impl std::fmt::Display for TsTypeQuery {
     }
 }
 impl std::fmt::Display for TsImport {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsTypeArgs {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsArray {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsIndexedArray {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
