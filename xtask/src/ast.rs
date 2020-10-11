@@ -253,6 +253,12 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_TYPE_ARGS",
         "TS_ARRAY",
         "TS_INDEXED_ARRAY",
+        "TS_TYPE_OPERATOR",
+        "TS_INTERSECTION",
+        "TS_UNION",
+        "TS_TYPE_PARAMS",
+        "TS_FN_TYPE",
+        "TS_CONSTRUCTOR_TYPE",
     ],
 };
 
@@ -525,6 +531,38 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T!['['],
             /* index: TsType */
             T![']']
+        }
+
+        struct TsTypeOperator {
+            /* operator */
+            ty: TsType
+        }
+
+        struct TsIntersection {
+            types: [TsType]
+        }
+
+        struct TsUnion {
+            types: [TsType]
+        }
+
+        struct TsTypeParams {
+            T![<],
+            params: [TsType],
+            T![>]
+        }
+
+        struct TsFnType {
+            params: ParameterList,
+            T![=>],
+            return_type: TsType
+        }
+
+        struct TsConstructorType {
+            T![new],
+            params: ParameterList,
+            T![=>],
+            return_type: TsType
         }
 
         // --------------------------------------------------
@@ -1219,7 +1257,12 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsMappedType,
             TsImport,
             TsArray,
-            TsIndexedArray
+            TsIndexedArray,
+            TsTypeOperator,
+            TsIntersection,
+            TsUnion,
+            TsFnType,
+            TsConstructorType
         }
 
         enum TsThisOrName {

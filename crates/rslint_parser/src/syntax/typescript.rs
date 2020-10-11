@@ -3,6 +3,7 @@
 //! Most of the functions do not check if the parser is configured for TypeScript.
 //! Functions that do check will say so in the docs.
 
+use super::decl::formal_parameters;
 use super::expr::{identifier_name, literal, template};
 use crate::ast::Template;
 use crate::{SyntaxKind::*, *};
@@ -19,6 +20,167 @@ pub const BASE_TS_RECOVERY_SET: TokenSet = token_set![
 
 pub fn ts_type(p: &mut Parser) -> Option<CompletedMarker> {
     unimplemented!();
+}
+
+pub fn ts_fn_or_constructor_type(p: &mut Parser, fn_type: bool) -> CompletedMarker {
+    let m = p.start();
+    if !fn_type {
+        p.expect(T![new]);
+    }
+
+    if p.at(T![<]) {
+        ts_type_args(p).change_kind(p, TS_TYPE_PARAMS);
+    }
+    formal_parameters(p);
+    ts_type_or_type_predicate_ann(p, T![=>]);
+    m.complete(
+        p,
+        if fn_type {
+            TS_FN_TYPE
+        } else {
+            TS_CONSTRUCTOR_TYPE
+        },
+    )
+}
+
+fn ts_type_or_type_predicate_ann(p: &mut Parser, return_token: SyntaxKind) {
+    let ident_ref_set = token_set![T![await], T![yield], T![ident]];
+    p.expect(return_token);
+
+    let type_pred = (p.cur_src() == "asserts" && ident_ref_set.contains(p.nth(1)))
+        || (p.at_ts(ident_ref_set) && p.nth_src(1) == "is" && !p.has_linebreak_before_n(1));
+
+    if type_pred {
+        ts_predicate(p);
+    } else {
+        ts_type(p);
+    }
+}
+
+pub fn ts_non_conditional_type(p: &mut Parser) -> Option<CompletedMarker> {
+    if is_start_of_fn_type(p) {
+        return Some(ts_fn_or_constructor_type(p, true));
+    }
+
+    if p.at(T![new]) {
+        return Some(ts_fn_or_constructor_type(p, true));
+    }
+
+    intersection_or_union(p, false)
+}
+
+fn look_ahead(p: &mut Parser, func: impl FnOnce(&mut Parser) -> bool) -> bool {
+    let cur_tok_pos = p.token_pos();
+    let cur_event_pos = p.cur_event_pos();
+    let res = func(p);
+    p.rewind(cur_tok_pos);
+    p.drain_events(p.cur_event_pos() - cur_event_pos);
+    res
+}
+
+fn is_start_of_fn_type(p: &mut Parser) -> bool {
+    p.at(T![<]) || (p.at(T!['(']) && look_ahead(p, is_unambiguously_start_of_fn_type))
+}
+
+fn is_unambiguously_start_of_fn_type(p: &mut Parser) -> bool {
+    p.eat(T!['(']);
+    if p.at(T![')']) || p.at(T![...]) {
+        return true;
+    }
+
+    if skip_parameter_start(p) {
+        if p.at_ts(token_set![T![:], T![,], T![?], T![=]]) {
+            return true;
+        }
+        if p.at(T![')']) && p.nth_at(1, T![=>]) {
+            return true;
+        }
+    }
+    false
+}
+
+fn skip_parameter_start(p: &mut Parser) -> bool {
+    maybe_eat_incorrect_modifier(p);
+    if p.at_ts(token_set![T![this], T![yield], T![ident], T![await]]) {
+        p.bump_any();
+        return true;
+    }
+
+    if p.eat(T!['{']) {
+        let mut counter = 1;
+
+        while counter > 0 {
+            if p.eat(T!['{']) {
+                counter += 1;
+            } else if p.eat(T!['}']) {
+                counter -= 1;
+            }
+        }
+        return true;
+    }
+
+    if p.eat(T!['[']) {
+        let mut counter = 1;
+
+        while counter > 0 {
+            if p.eat(T!['[']) {
+                counter += 1;
+            } else if p.eat(T![']']) {
+                counter -= 1;
+            }
+        }
+        return true;
+    }
+    false
+}
+
+// hack for intersection_or_union constituent
+fn union(p: &mut Parser) -> Option<CompletedMarker> {
+    intersection_or_union(p, true)
+}
+
+fn intersection_or_union(p: &mut Parser, intersection: bool) -> Option<CompletedMarker> {
+    let m = p.start();
+    let constituent = if intersection {
+        ts_type_operator_or_higher
+    } else {
+        union
+    };
+
+    let op = if intersection { T![&] } else { T![|] };
+    let saw_op = p.eat(op); //leading operator is allowed
+
+    if !saw_op && constituent(p).is_none() {
+        return None;
+    }
+
+    while p.eat(op) {
+        constituent(p);
+    }
+
+    Some(m.complete(
+        p,
+        if intersection {
+            TS_INTERSECTION
+        } else {
+            TS_UNION
+        },
+    ))
+}
+
+pub fn ts_type_operator_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
+    if matches!(p.cur_src(), "keyof" | "unique" | "readonly") {
+        let m = p.start();
+        p.bump_any();
+        ts_type_operator_or_higher(p);
+        Some(m.complete(p, TS_TYPE_OPERATOR))
+    } else if p.cur_src() == "infer" {
+        todo!("infer")
+    } else {
+        // FIXME: readonly should apparently be handled here?
+        // but the previous matches should have accounted for it 🤔
+        ts_array_type_or_higher(p)
+    }
 }
 
 pub fn ts_array_type_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
@@ -43,7 +205,7 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
         T![ident] | T![void] | T![yield] | T![null] | T![await] | T![break] => {
             if p.cur_src() == "asserts" && p.nth_at(1, T![this]) {
                 p.bump_any();
-                return ts_this_predicate(p);
+                return ts_predicate(p);
             }
 
             let kind = match p.cur_src() {
@@ -107,7 +269,7 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
         T![import] => Some(ts_import(p)),
         T![this] => {
             if p.nth_src(1) == "is" {
-                ts_this_predicate(p)
+                ts_predicate(p)
             } else {
                 let m = p.start();
                 p.bump_any();
@@ -150,7 +312,9 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
                     TRUE_KW,
                     FALSE_KW,
                     REGEX,
-                    BACKTICK
+                    BACKTICK,
+                    T![&],
+                    T![|]
                 ]),
                 false,
             );
@@ -298,8 +462,7 @@ fn is_mapped_type_start(p: &Parser) -> bool {
     p.nth_at(cur, T![in])
 }
 
-/// A `this` type predicate such as `asserts this is foo` or `this is foo`, or `asserts this`
-pub fn ts_this_predicate(p: &mut Parser) -> Option<CompletedMarker> {
+pub fn ts_predicate(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
     let mut advanced = false;
 
@@ -308,7 +471,15 @@ pub fn ts_this_predicate(p: &mut Parser) -> Option<CompletedMarker> {
         advanced = true;
     }
 
-    if p.expect(T![this]) {
+    if p.at(T![this]) {
+        let _m = p.start();
+        p.bump_any();
+        _m.complete(p, TS_THIS);
+        advanced = true;
+    } else if p.at_ts(token_set![T![await], T![yield], T![ident]]) {
+        let _m = p.start();
+        p.bump_any();
+        _m.complete(p, TS_TYPE_NAME);
         advanced = true;
     }
 

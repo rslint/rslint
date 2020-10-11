@@ -285,6 +285,61 @@ impl TsIndexedArray {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsTypeOperator {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsTypeOperator {
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsIntersection {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsIntersection {
+    pub fn types(&self) -> AstChildren<TsType> { support::children(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsUnion {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsUnion {
+    pub fn types(&self) -> AstChildren<TsType> { support::children(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsTypeParams {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsTypeParams {
+    pub fn l_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![<]) }
+    pub fn params(&self) -> AstChildren<TsType> { support::children(&self.syntax) }
+    pub fn r_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![>]) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsFnType {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsFnType {
+    pub fn params(&self) -> Option<ParameterList> { support::child(&self.syntax) }
+    pub fn fat_arrow_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![=>]) }
+    pub fn return_type(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsConstructorType {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsConstructorType {
+    pub fn new_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![new]) }
+    pub fn params(&self) -> Option<ParameterList> { support::child(&self.syntax) }
+    pub fn fat_arrow_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![=>]) }
+    pub fn return_type(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
@@ -1264,6 +1319,11 @@ pub enum TsType {
     TsImport(TsImport),
     TsArray(TsArray),
     TsIndexedArray(TsIndexedArray),
+    TsTypeOperator(TsTypeOperator),
+    TsIntersection(TsIntersection),
+    TsUnion(TsUnion),
+    TsFnType(TsFnType),
+    TsConstructorType(TsConstructorType),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1592,6 +1652,72 @@ impl AstNode for TsArray {
 }
 impl AstNode for TsIndexedArray {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_INDEXED_ARRAY }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsTypeOperator {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_TYPE_OPERATOR }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsIntersection {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_INTERSECTION }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsUnion {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_UNION }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsTypeParams {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_TYPE_PARAMS }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsFnType {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_FN_TYPE }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsConstructorType {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_CONSTRUCTOR_TYPE }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3132,6 +3258,21 @@ impl From<TsArray> for TsType {
 impl From<TsIndexedArray> for TsType {
     fn from(node: TsIndexedArray) -> TsType { TsType::TsIndexedArray(node) }
 }
+impl From<TsTypeOperator> for TsType {
+    fn from(node: TsTypeOperator) -> TsType { TsType::TsTypeOperator(node) }
+}
+impl From<TsIntersection> for TsType {
+    fn from(node: TsIntersection) -> TsType { TsType::TsIntersection(node) }
+}
+impl From<TsUnion> for TsType {
+    fn from(node: TsUnion) -> TsType { TsType::TsUnion(node) }
+}
+impl From<TsFnType> for TsType {
+    fn from(node: TsFnType) -> TsType { TsType::TsFnType(node) }
+}
+impl From<TsConstructorType> for TsType {
+    fn from(node: TsConstructorType) -> TsType { TsType::TsConstructorType(node) }
+}
 impl AstNode for TsType {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -3159,6 +3300,11 @@ impl AstNode for TsType {
                 | TS_IMPORT
                 | TS_ARRAY
                 | TS_INDEXED_ARRAY
+                | TS_TYPE_OPERATOR
+                | TS_INTERSECTION
+                | TS_UNION
+                | TS_FN_TYPE
+                | TS_CONSTRUCTOR_TYPE
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3186,6 +3332,11 @@ impl AstNode for TsType {
             TS_IMPORT => TsType::TsImport(TsImport { syntax }),
             TS_ARRAY => TsType::TsArray(TsArray { syntax }),
             TS_INDEXED_ARRAY => TsType::TsIndexedArray(TsIndexedArray { syntax }),
+            TS_TYPE_OPERATOR => TsType::TsTypeOperator(TsTypeOperator { syntax }),
+            TS_INTERSECTION => TsType::TsIntersection(TsIntersection { syntax }),
+            TS_UNION => TsType::TsUnion(TsUnion { syntax }),
+            TS_FN_TYPE => TsType::TsFnType(TsFnType { syntax }),
+            TS_CONSTRUCTOR_TYPE => TsType::TsConstructorType(TsConstructorType { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3215,6 +3366,11 @@ impl AstNode for TsType {
             TsType::TsImport(it) => &it.syntax,
             TsType::TsArray(it) => &it.syntax,
             TsType::TsIndexedArray(it) => &it.syntax,
+            TsType::TsTypeOperator(it) => &it.syntax,
+            TsType::TsIntersection(it) => &it.syntax,
+            TsType::TsUnion(it) => &it.syntax,
+            TsType::TsFnType(it) => &it.syntax,
+            TsType::TsConstructorType(it) => &it.syntax,
         }
     }
 }
@@ -3457,6 +3613,36 @@ impl std::fmt::Display for TsArray {
     }
 }
 impl std::fmt::Display for TsIndexedArray {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsTypeOperator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsIntersection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsUnion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsTypeParams {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsFnType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsConstructorType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

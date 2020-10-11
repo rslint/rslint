@@ -240,6 +240,12 @@ pub enum SyntaxKind {
     TS_TYPE_ARGS,
     TS_ARRAY,
     TS_INDEXED_ARRAY,
+    TS_TYPE_OPERATOR,
+    TS_INTERSECTION,
+    TS_UNION,
+    TS_TYPE_PARAMS,
+    TS_FN_TYPE,
+    TS_CONSTRUCTOR_TYPE,
     #[doc(hidden)]
     __LAST,
 }
