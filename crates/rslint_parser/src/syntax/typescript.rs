@@ -20,7 +20,7 @@ pub const BASE_TS_RECOVERY_SET: TokenSet = token_set![
 
 pub fn ts_type(p: &mut Parser) -> Option<CompletedMarker> {
     let ty = ts_non_conditional_type(p);
-    if p.has_linebreak_before_n(0) && !p.at(T![extends]) {
+    if p.has_linebreak_before_n(0) || !p.at(T![extends]) {
         return ty;
     }
 
