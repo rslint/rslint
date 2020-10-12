@@ -69,7 +69,7 @@ RSLint's goal is to provide extremely fast and user friendly linting for the who
 - [ ] Npm package (needs a build script to pull a prebuilt binary)
 - [ ] JSX Support
 - [ ] TS Support
-- [ ] Autofix
+- [ ] Autofix (#45)
 - [ ] JS Plugins
 - [ ] WASM Plugins
 - [x] Documentation website
