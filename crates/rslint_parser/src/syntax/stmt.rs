@@ -342,6 +342,14 @@ pub fn block_stmt(
     Some(m.complete(p, BLOCK_STMT))
 }
 
+pub fn block_stmt_unchecked(p: &mut Parser, function_body: bool) -> CompletedMarker {
+    let m = p.start();
+    p.bump(T!['{']);
+    block_items(p, function_body, false, None);
+    p.expect(T!['}']);
+    m.complete(p, BLOCK_STMT)
+}
+
 /// Top level items or items inside of a block statement, this also handles module items so we can
 /// easily recover from erroneous module declarations in scripts
 pub(crate) fn block_items(

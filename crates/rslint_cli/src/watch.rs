@@ -58,7 +58,7 @@ pub fn start_watcher(
                     continue;
                 };
                 let new = res.unwrap();
-                let results = results
+                let mut results = results
                     .clone()
                     .into_iter()
                     .map(|(res, _)| res)
@@ -71,7 +71,7 @@ pub fn start_watcher(
                     })
                     .collect();
 
-                print_results(results, &walker, config);
+                print_results(&mut results, &walker, config);
                 println!("{}", "watching for changes...\n".white());
             }
             _ => {}

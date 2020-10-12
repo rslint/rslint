@@ -3,6 +3,9 @@
 
 #![allow(unused_variables, unused_imports)]
 
+use crate::autofix::Fixer;
+use crate::{Diagnostic, DiagnosticBuilder};
+use codespan_reporting::diagnostic::Severity;
 use dyn_clone::DynClone;
 use rslint_errors::{Diagnostic, Severity};
 use rslint_parser::{SyntaxNode, SyntaxNodeExt, SyntaxToken};
@@ -12,6 +15,7 @@ use std::fmt::Debug;
 use std::marker::{Send, Sync};
 use std::ops::{Deref, DerefMut, Drop};
 use std::rc::Rc;
+use std::sync::Arc;
 
 /// The main type of rule run by the runner. The rule takes individual
 /// nodes inside of a Concrete Syntax Tree and checks them.
@@ -103,6 +107,8 @@ pub struct RuleCtx {
     pub verbose: bool,
     /// An empty vector of diagnostics which the rule adds to.
     pub diagnostics: Vec<Diagnostic>,
+    pub fixer: Option<Fixer>,
+    pub src: Arc<String>,
 }
 
 impl RuleCtx {
@@ -114,23 +120,42 @@ impl RuleCtx {
     pub fn add_err(&mut self, diagnostic: Diagnostic) {
         self.diagnostics.push(diagnostic)
     }
+
+    /// Make a new fixer for this context and return a mutable reference to it
+    pub fn fix(&mut self) -> &mut Fixer {
+        let fixer = Fixer::new(self.src.clone());
+        self.fixer = Some(fixer);
+        self.fixer.as_mut().unwrap()
+    }
 }
 
 /// The result of running a single rule on a syntax tree.
 #[derive(Debug, Clone)]
 pub struct RuleResult {
     pub diagnostics: Vec<Diagnostic>,
+    pub fixer: Option<Fixer>,
 }
 
 impl RuleResult {
+    /// Make a new rule result with diagnostics and an optional fixer.
+    pub fn new(diagnostics: Vec<Diagnostic>, fixer: impl Into<Option<Fixer>>) -> Self {
+        Self {
+            diagnostics,
+            fixer: fixer.into(),
+        }
+    }
+
     /// Get the result of running this rule.
     pub fn outcome(&self) -> Outcome {
         Outcome::from(&self.diagnostics)
     }
 
+    /// Merge two results, this will join `self` and `other`'s diagnostics and take
+    /// `self`'s fixer if available or otherwise take `other`'s fixer
     pub fn merge(self, other: RuleResult) -> RuleResult {
         RuleResult {
             diagnostics: [self.diagnostics, other.diagnostics].concat(),
+            fixer: self.fixer.or(other.fixer),
         }
     }
 }

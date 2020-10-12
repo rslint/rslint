@@ -189,6 +189,11 @@ impl JsFile {
         }
     }
 
+    pub fn update_src(&mut self, new: String) {
+        self.line_starts = Self::line_starts(&new).collect();
+        self.source = new;
+    }
+
     // TODO: Needs to work correctly for \u2028, \u2029, and \r line endings
     pub fn line_starts<'a>(source: &'a str) -> impl Iterator<Item = usize> + 'a {
         std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))

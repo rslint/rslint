@@ -239,11 +239,11 @@ fn is_contextual_kw(string: &str) -> bool {
 }
 
 fn block_stmt_reparse(p: &mut Parser) -> CompletedMarker {
-    block_stmt(p, false, None)
+    block_stmt_unchecked(p, false)
 }
 
 fn block_stmt_reparse_fn(p: &mut Parser) -> CompletedMarker {
-    block_stmt(p, true, None)
+    block_stmt_unchecked(p, true)
 }
 
 // TODO: switch stmt, import, and export reparsing

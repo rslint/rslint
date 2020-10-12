@@ -32,15 +32,11 @@ pub fn diff_to_indels(old: &str, new: &str) -> Vec<Indel> {
     indels
 }
 
-pub fn incrementally_relint<'a>(
+pub fn incrementally_relint_with_indels<'a>(
     old: LintResult<'a>,
+    indels: Vec<Indel>,
     new: &str,
 ) -> Result<LintResult<'a>, Diagnostic> {
-    let old_str = &old.parsed.text().to_string();
-    if old_str == new {
-        return Ok(old);
-    }
-    let indels = diff_to_indels(&old.parsed.text().to_string(), new);
     let mut reparsed = None;
 
     for indel in indels {
@@ -78,4 +74,16 @@ pub fn incrementally_relint<'a>(
     }
     let (node, errors) = reparsed.unwrap();
     lint_file_inner(node, errors, old.file_id, old.store, old.verbose)
+}
+
+pub fn incrementally_relint<'a>(
+    old: LintResult<'a>,
+    new: &str,
+) -> Result<LintResult<'a>, Diagnostic> {
+    let old_str = &old.parsed.text().to_string();
+    if old_str == new {
+        return Ok(old);
+    }
+    let indels = diff_to_indels(&old.parsed.text().to_string(), new);
+    incrementally_relint_with_indels(old, indels, new)
 }
