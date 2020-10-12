@@ -758,6 +758,32 @@ impl<'src> Lexer<'src> {
     }
 
     #[inline]
+    fn read_shebang(&mut self) -> LexerReturn {
+        assert_eq!(self.cur, 0);
+        self.next();
+        if let Some(b"#!") = self.bytes.get(0..2) {
+            while self.next().is_some() {
+                let chr = self.get_unicode_char();
+                self.cur += chr.len_utf8() - 1;
+
+                if is_linebreak(chr) {
+                    break;
+                }
+            }
+            tok!(SHEBANG, self.cur)
+        } else {
+            let err = Diagnostic::error()
+                .with_message("Incomplete shebang")
+                .with_labels(vec![
+                    Label::primary(self.file_id, 0..1)
+                        .with_message("Hash is located at the beginning of the file, which is supposed to be interpreted as shebang, but following `!` is not found")
+                ]);
+
+            (Token::new(SyntaxKind::SHEBANG, 1), Some(err))
+        }
+    }
+
+    #[inline]
     fn read_slash(&mut self) -> LexerReturn {
         let start = self.cur;
         match self.bytes.get(self.cur + 1) {
@@ -1130,6 +1156,14 @@ impl<'src> Lexer<'src> {
                 tok!(WHITESPACE, self.cur - start)
             }
             EXL => self.resolve_bang(),
+            HAS => {
+                if self.cur == 0 {
+                    self.read_shebang()
+                } else {
+                    self.consume_ident();
+                    tok!(IDENT, self.cur - start)
+                }
+            }
             PRC => self.bin_or_assign(T![%], T![%=]),
             AMP => self.resolve_amp(),
             PNO => self.eat(tok!(L_PAREN, 1)),
@@ -1366,6 +1400,7 @@ enum Dispatch {
     EXL,
     QOT,
     IDT,
+    HAS,
     PRC,
     AMP,
     PNO,
@@ -1418,7 +1453,7 @@ static DISPATCHER: [Dispatch; 256] = [
     //   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F   //
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, WHS, WHS, WHS, WHS, WHS, ERR, ERR, // 0
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
-    WHS, EXL, QOT, ERR, IDT, PRC, AMP, QOT, PNO, PNC, MUL, PLS, COM, MIN, PRD, SLH, // 2
+    WHS, EXL, QOT, ERR, HAS, PRC, AMP, QOT, PNO, PNC, MUL, PLS, COM, MIN, PRD, SLH, // 2
     ZER, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LSS, EQL, MOR, QST, // 3
     ERR, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, // 4
     IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, BTO, BSL, BTC, CRT, IDT, // 5
