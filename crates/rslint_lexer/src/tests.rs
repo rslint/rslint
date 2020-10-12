@@ -92,8 +92,13 @@ fn strip_shebang() {
 #[test]
 fn shebang() {
     assert_lex! {
-        "#! /bin/node\n\n",
+        "#! /bin/node",
         SHEBANG:12
+    }
+    assert_lex! {
+        "#!/bin/node\n",
+        SHEBANG:11,
+        WHITESPACE:1
     }
 }
 
