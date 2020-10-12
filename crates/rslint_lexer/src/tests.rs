@@ -90,6 +90,14 @@ fn strip_shebang() {
 }
 
 #[test]
+fn shebang() {
+    assert_lex! {
+        "#! /bin/node\n\n",
+        SHEBANG:12
+    }
+}
+
+#[test]
 fn empty() {
     assert_lex! {
         "",
