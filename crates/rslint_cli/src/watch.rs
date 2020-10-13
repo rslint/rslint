@@ -72,7 +72,7 @@ pub fn start_watcher(
                     .collect();
 
                 print_results(&mut results, &walker, config);
-                println!("{}", "watching for changes...\n".white());
+                println!("{}", "\nwatching for changes...".white());
             }
             _ => {}
         }
