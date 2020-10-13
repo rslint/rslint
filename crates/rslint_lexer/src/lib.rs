@@ -741,7 +741,7 @@ impl<'src> Lexer<'src> {
         if start != 0 {
             let err = Diagnostic::error()
                 .with_message("`#` must be at the beginning of the file")
-                .with_labels(vec![Label::primary(self.file_id, self.cur..self.cur + 1)
+                .with_labels(vec![Label::primary(self.file_id, start..(start + 1))
                     .with_message("but it's found here")]);
             return (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err));
         }
