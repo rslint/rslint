@@ -759,27 +759,32 @@ impl<'src> Lexer<'src> {
 
     #[inline]
     fn read_shebang(&mut self) -> LexerReturn {
-        assert_eq!(self.cur, 0);
+        let start = self.cur;
         self.next();
-        if let Some(b"#!") = self.bytes.get(0..2) {
+        if start != 0 {
+            let err = Diagnostic::error()
+                .with_message("`#` must be at the beginning of the file")
+                .with_labels(vec![Label::primary(self.file_id, self.cur..self.cur + 1)
+                    .with_message("but it's found here")]);
+            return (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err));
+        }
+
+        if let Some(b'!') = self.bytes.get(1) {
             while self.next().is_some() {
                 let chr = self.get_unicode_char();
-                self.cur += chr.len_utf8() - 1;
 
                 if is_linebreak(chr) {
-                    break;
+                    return tok!(SHEBANG, self.cur);
                 }
+                self.cur += chr.len_utf8() - 1;
             }
             tok!(SHEBANG, self.cur)
         } else {
             let err = Diagnostic::error()
-                .with_message("Incomplete shebang")
-                .with_labels(vec![
-                    Label::primary(self.file_id, 0..1)
-                        .with_message("Hash is located at the beginning of the file, which is supposed to be interpreted as shebang, but following `!` is not found")
-                ]);
+                .with_message("expected `!` following a `#`, but found none")
+                .with_labels(vec![Label::primary(self.file_id, 0..1).with_message("")]);
 
-            (Token::new(SyntaxKind::SHEBANG, 1), Some(err))
+            (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err))
         }
     }
 
@@ -1156,14 +1161,7 @@ impl<'src> Lexer<'src> {
                 tok!(WHITESPACE, self.cur - start)
             }
             EXL => self.resolve_bang(),
-            HAS => {
-                if self.cur == 0 {
-                    self.read_shebang()
-                } else {
-                    self.consume_ident();
-                    tok!(IDENT, self.cur - start)
-                }
-            }
+            HAS => self.read_shebang(),
             PRC => self.bin_or_assign(T![%], T![%=]),
             AMP => self.resolve_amp(),
             PNO => self.eat(tok!(L_PAREN, 1)),
