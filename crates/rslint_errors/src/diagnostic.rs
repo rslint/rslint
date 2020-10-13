@@ -1,6 +1,5 @@
 use crate::{
     file::{FileId, FileSpan, Span},
-    suggestion::Substitution,
     Applicability, CodeSuggestion, Severity,
 };
 
@@ -118,6 +117,7 @@ impl Diagnostic {
     /// ```
     ///
     /// The message should not contain the `:` because it's added automatically.
+    /// The suggestion will automatically be wrapped inside two backticks.
     pub fn suggestion(
         mut self,
         span: impl Span,
@@ -126,9 +126,7 @@ impl Diagnostic {
         applicability: Applicability,
     ) -> Self {
         self.suggestions.push(CodeSuggestion {
-            substitutions: vec![Substitution {
-                parts: vec![(FileSpan::new(self.file_id, span), suggestion)],
-            }],
+            substitution: (FileSpan::new(self.file_id, span), suggestion),
             msg: msg.into(),
             applicability,
         });

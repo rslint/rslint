@@ -8,7 +8,7 @@ pub use suggestion::CodeSuggestion;
 
 use annotate_snippets::{
     display_list::{DisplayList, FormatOptions},
-    snippet::{self, Annotation, Snippet},
+    snippet::{self, Annotation, AnnotationType, Snippet},
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -60,7 +60,7 @@ fn convert<'d, 'f: 'd>(
     diagnostic: &'d Diagnostic,
     files: &'f dyn file::Files,
     color: bool,
-) -> Snippet<'d> {
+) -> Vec<Snippet<'d>> {
     let mut slices: HashMap<file::FileId, snippet::Slice<'d>> = HashMap::new();
 
     for child in &diagnostic.children {
@@ -92,16 +92,43 @@ fn convert<'d, 'f: 'd>(
         }
     }
 
+    let mut snippets = vec![];
+
+    for sug in &diagnostic.suggestions {
+        let (file_id, span, replacement) = (
+            sug.substitution.0.file,
+            sug.substitution.0.span.clone(),
+            sug.substitution.1.as_str(),
+        );
+
+        let label = format!("{}: `{}`", sug.msg, replacement);
+
+        let snippet = Snippet {
+            title: Some(Annotation {
+                label: Some(&label),
+                id: None,
+                annotation_type: AnnotationType::Help,
+            }),
+            slices: vec![],
+            footer: vec![],
+            opt: FormatOptions {
+                color,
+                ..Default::default()
+            },
+        };
+        snippets.push(snippet);
+    }
+
     //let suggestions = diagnostic.suggestions.iter().map(|sug| {
     //snippet::Slice {
     //source
     //}
     //})
 
-    Snippet {
+    let snippet = Snippet {
         title: Some(Annotation {
-            id: Some(&diagnostic.title),
-            label: diagnostic.code.as_deref(),
+            label: Some(&diagnostic.title),
+            id: diagnostic.code.as_deref(),
             annotation_type: diagnostic.severity.into(),
         }),
         slices: slices.into_iter().map(|(_, v)| v).collect(),
@@ -119,7 +146,10 @@ fn convert<'d, 'f: 'd>(
             color,
             ..Default::default()
         },
-    }
+    };
+    snippets.push(snippet);
+
+    snippets
 }
 
 /// Takes a list of `Diagnostic`s and prints them to given output.
@@ -131,8 +161,8 @@ pub fn emit(
 ) -> Result<(), io::Error> {
     diagnostics
         .iter()
-        .map(|d| {
-            let snippet = convert(d, files, color);
+        .flat_map(|d| convert(d, files, color))
+        .map(|snippet| {
             let dl = DisplayList::from(snippet);
             writeln!(out, "{}", dl)
         })

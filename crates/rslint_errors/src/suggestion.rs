@@ -5,14 +5,7 @@ use crate::{file::FileSpan, Applicability};
 /// applied if it has the right [`Applicability`].
 #[derive(Debug, Clone)]
 pub struct CodeSuggestion {
-    pub(crate) substitutions: Vec<Substitution>,
+    pub(crate) substitution: (FileSpan, String),
     pub(crate) msg: String,
     pub(crate) applicability: Applicability,
-}
-
-/// A `Substitution` can be used to replace multiple ranges in a file,
-/// with other strings.
-#[derive(Debug, Clone)]
-pub struct Substitution {
-    pub(crate) parts: Vec<(FileSpan, String)>,
 }
