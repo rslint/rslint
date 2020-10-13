@@ -32,6 +32,10 @@ RSLint has a basic LSP and VSC extension, it is however not yet published as it 
 must first install the lsp in the project with `cargo install --path crates/rslint_lsp`. Then, open `editors/vscode` with visual studio code and press
 `f5` to start a new vscode instance with the extension. Any `js` or `mjs` files you open will now be actively linted. The linter runs on the fly, not on save.
 
+## Sponsoring 
+
+Consider supporting RSLint's development through our [Open Collective](https://opencollective.com/rslint). Any help is greatly appreciated.
+
 ## Note
 
 ⚠️ RSLint is still in early development, so expect bugs ⚠️
