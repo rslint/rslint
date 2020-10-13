@@ -365,6 +365,7 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
             #([#punctuation_values] => { $crate::SyntaxKind::#punctuation };)*
             #([#all_keywords_idents] => { $crate::SyntaxKind::#all_keywords };)*
             [ident] => { $crate::SyntaxKind::IDENT };
+            [shebang] => { $crate::SyntaxKind::SHEBANG };
         }
     };
 
