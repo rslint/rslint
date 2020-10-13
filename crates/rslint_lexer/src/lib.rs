@@ -109,29 +109,6 @@ impl<'src> Lexer<'src> {
         }
     }
 
-    /// Strip away the possible shebang sequence of a source
-    /// **This is not automatically done by the lexer**
-    pub fn strip_shebang(&mut self) {
-        if let Some(b"#!") = self.bytes.get(0..2) {
-            // Safety: Calling strip_shebang in the middle of lexing can potentially cause undefined behavior
-            // because the cursor is a byte index, advancing blindly into a utf8 boundary is a big oopsie and
-            // can lead to undefined behavior, therefore we must return if the lexer is not at the start
-            if self.cur != 0 {
-                return;
-            }
-
-            self.next();
-            while self.next().is_some() {
-                let chr = self.get_unicode_char();
-                self.cur += chr.len_utf8() - 1;
-
-                if is_linebreak(chr) {
-                    return;
-                }
-            }
-        }
-    }
-
     // Bump the lexer and return the token given in
     fn eat(&mut self, tok: LexerReturn) -> LexerReturn {
         self.next();

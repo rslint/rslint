@@ -83,13 +83,6 @@ fn losslessness(string: String) -> bool {
 }
 
 #[test]
-fn strip_shebang() {
-    let mut lex = Lexer::from_str("#! /bin/node \n\n", 0);
-    lex.strip_shebang();
-    assert_eq!(lex.cur, 13);
-}
-
-#[test]
 fn shebang() {
     assert_lex! {
         "#! /bin/node",
