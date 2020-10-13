@@ -2,22 +2,34 @@
 
 A (WIP) JavaScript linter written in Rust designed to be as fast as possible, customizable, and easy to use.
 
-The project is in early development, there will be bugs and weird productions. If you find any bugs feel free to submit an issue 👍.
+[User Documentation](https://rdambrosio016.github.io/RSLint/) | [Dev Documentation](https://rdambrosio016.github.io/RSLint/dev/index.html) | [Rustdoc Documentation](https://docs.rs/rslint_core/0.1.2/rslint_core/) | [Website](http://rslint.org)
 
-# Docs and installation
+## Docs and Installation
 
 Please see the [website](https://rdambrosio016.github.io/RSLint/) for installation instructions and documentation.
 
-# Currently known big issues
+## Currently known big issues
 
 - Optional chaining is not parsed correctly
 - Empty template literals panic
 - Shebangs are not parsed correctly (but the parser can recover)
 - A lot of error recoveries do not work and result in infinite recursion
 
-# Differences from other linters
+### Financial Contributors
 
-## Implemented
+Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/rslint/contribute)]
+
+#### Individuals
+
+<a href="https://opencollective.com/rslint"><img src="https://opencollective.com/rslint/individuals.svg?width=890"></a>
+
+#### Sponsors
+
+Support this project with your organization. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/rslint/contribute)]
+
+## Differences from other linters
+
+### Implemented
 
 - Unbeatably fast
 - Highly parallelized (files linted in parallel, rules run in parallel, nodes could be traversed in parallel in the future)
@@ -34,14 +46,14 @@ Please see the [website](https://rdambrosio016.github.io/RSLint/) for installati
 - TOML config (json will be allowed too), (TOML implemented, json not yet)
 - Incremental reparsing and native file watching support (WIP, see #16)
 
-## Planned
+### Planned
 
 - Global config
 - SSR-like templates for node matching and autofix
 - Autofix without requiring reruns of all rules
 - WASM builds
 
-# Speed
+## Speed
 
 RSLint is designed to be the fastest JavaScript linter ever made, it accomplishes this in various ways:
 
@@ -54,7 +66,7 @@ RSLint is designed to be the fastest JavaScript linter ever made, it accomplishe
 - (WIP) Incrementaly reparsing and relinting files
 - (WIP) Having native file watching support using incremental parsing
 
-# Roadmap
+## Roadmap
 
 RSLint's goal is to provide extremely fast and user friendly linting for the whole js ecosystem. There are tons of things to do to bring it up to par with existing linters. This is a list of planned features and things to do ranked in order of highest to lowest priority (this is by no definition final, things will change):
 
@@ -73,3 +85,7 @@ RSLint's goal is to provide extremely fast and user friendly linting for the who
 - [ ] JS Plugins
 - [ ] WASM Plugins
 - [x] Documentation website
+
+## License
+
+This project is Licensed under the [MIT license](http://opensource.org/licenses/MIT).
