@@ -805,15 +805,31 @@ fn shebang() {
         "#! /bin/node",
         SHEBANG:12
     }
+
     assert_lex! {
         "#!/bin/node\n",
         SHEBANG:11,
         WHITESPACE:1
     }
+
     assert_lex! {
         "#!/usr/bin/env deno\u{2028}",
         SHEBANG:19,
         WHITESPACE:3
+    }
+
+    assert_lex! {
+        "#0",
+        ERROR_TOKEN:1,
+        NUMBER:1
+    }
+
+    assert_lex! {
+        "0#!/bin/deno",
+        NUMBER:1,
+        ERROR_TOKEN:1,
+        BANG:1,
+        REGEX:9
     }
 }
 
