@@ -100,6 +100,11 @@ fn shebang() {
         SHEBANG:11,
         WHITESPACE:1
     }
+    assert_lex! {
+        "#!/usr/bin/env deno\u{2028}",
+        SHEBANG:19,
+        WHITESPACE:3
+    }
 }
 
 #[test]
