@@ -12,7 +12,6 @@ Please see the [website](https://rdambrosio016.github.io/RSLint/) for installati
 
 - Optional chaining is not parsed correctly
 - Empty template literals panic
-- Shebangs are not parsed correctly (but the parser can recover)
 - A lot of error recoveries do not work and result in infinite recursion
 
 ### Financial Contributors
