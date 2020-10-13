@@ -95,21 +95,25 @@ fn convert<'d, 'f: 'd>(
     let mut snippets = vec![];
 
     for sug in &diagnostic.suggestions {
-        let (file_id, span, replacement) = (
-            sug.substitution.0.file,
-            sug.substitution.0.span.clone(),
-            sug.substitution.1.as_str(),
-        );
-
-        let label = format!("{}: `{}`", sug.msg, replacement);
+        let (file_id, span) = (sug.substitution.0.file, sug.substitution.0.span.clone());
 
         let snippet = Snippet {
             title: Some(Annotation {
-                label: Some(&label),
+                label: Some(&sug.label),
                 id: None,
                 annotation_type: AnnotationType::Help,
             }),
-            slices: vec![],
+            slices: vec![snippet::Slice {
+                source: files.source(file_id),
+                line_start: files.line_index(span.start),
+                origin: Some(files.name(file_id)),
+                annotations: vec![snippet::SourceAnnotation {
+                    range: (span.start, span.end),
+                    label: "",
+                    annotation_type: AnnotationType::Help,
+                }],
+                fold: true,
+            }],
             footer: vec![],
             opt: FormatOptions {
                 color,
@@ -118,12 +122,6 @@ fn convert<'d, 'f: 'd>(
         };
         snippets.push(snippet);
     }
-
-    //let suggestions = diagnostic.suggestions.iter().map(|sug| {
-    //snippet::Slice {
-    //source
-    //}
-    //})
 
     let snippet = Snippet {
         title: Some(Annotation {

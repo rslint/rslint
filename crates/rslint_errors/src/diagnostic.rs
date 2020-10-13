@@ -1,5 +1,6 @@
 use crate::{
     file::{FileId, FileSpan, Span},
+    suggestion::CodeSuggestionBuilder,
     Applicability, CodeSuggestion, Severity,
 };
 
@@ -125,11 +126,15 @@ impl Diagnostic {
         suggestion: String,
         applicability: Applicability,
     ) -> Self {
-        self.suggestions.push(CodeSuggestion {
+        let label = format!("{}: {}", msg, &suggestion);
+        let suggestion = CodeSuggestionBuilder {
+            label,
             substitution: (FileSpan::new(self.file_id, span), suggestion),
-            msg: msg.into(),
             applicability,
-        });
+            msg_builder: |s: &str| &s[0..msg.len()],
+        }
+        .build();
+        self.suggestions.push(suggestion);
         self
     }
 
