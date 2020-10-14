@@ -1,6 +1,5 @@
 use crate::{
     file::{FileId, FileSpan, Span},
-    suggestion::CodeSuggestionBuilder,
     Applicability, CodeSuggestion, Severity,
 };
 
@@ -46,7 +45,7 @@ impl Diagnostic {
 
     /// Creates a new [`Diagnostic`] that will be used in a builder-like way
     /// to modify labels, and suggestions.
-    pub fn new(file_id: FileId, severity: Severity, title: String) -> Self {
+    pub fn new(file_id: FileId, severity: Severity, title: impl Into<String>) -> Self {
         Self::new_with_code(file_id, severity, title, None)
     }
 
@@ -55,14 +54,14 @@ impl Diagnostic {
     pub fn new_with_code(
         file_id: FileId,
         severity: Severity,
-        title: String,
+        title: impl Into<String>,
         code: Option<String>,
     ) -> Self {
         Self {
             file_id,
             code,
             severity,
-            title,
+            title: title.into(),
             children: vec![],
             suggestions: vec![],
             footer: vec![],
@@ -106,6 +105,37 @@ impl Diagnostic {
         self.label(Severity::Info, span, msg)
     }
 
+    /// Prints out a message that suggests a possible solution, that is in another
+    /// file as this `Diagnostic`, to the error.
+    ///
+    /// If the message plus the suggestion is longer than 25 chars,
+    /// the suggestion is displayed as a new children of this `Diagnostic`,
+    /// otherwise it will be inlined with the other labels.
+    ///
+    /// A suggestion is displayed like:
+    /// ```no_rust
+    /// try adding a `;`: console.log();
+    /// ```
+    /// or in a separate multiline suggestion
+    ///
+    /// The message should not contain the `:` because it's added automatically.
+    /// The suggestion will automatically be wrapped inside two backticks.
+    pub fn suggestion_in_file(
+        mut self,
+        span: impl Span,
+        msg: &str,
+        suggestion: String,
+        applicability: Applicability,
+    ) -> Self {
+        let suggestion = CodeSuggestion {
+            substitution: (None, span.as_range(), suggestion),
+            applicability,
+            msg: msg.to_string(),
+        };
+        self.suggestions.push(suggestion);
+        self
+    }
+
     /// Prints out a message that suggests a possible solution to the error.
     ///
     /// If the message plus the suggestion is longer than 25 chars,
@@ -116,6 +146,7 @@ impl Diagnostic {
     /// ```no_rust
     /// try adding a `;`: console.log();
     /// ```
+    /// or in a separate multiline suggestion
     ///
     /// The message should not contain the `:` because it's added automatically.
     /// The suggestion will automatically be wrapped inside two backticks.
@@ -126,14 +157,11 @@ impl Diagnostic {
         suggestion: String,
         applicability: Applicability,
     ) -> Self {
-        let label = format!("{}: {}", msg, &suggestion);
-        let suggestion = CodeSuggestionBuilder {
-            label,
-            substitution: (FileSpan::new(self.file_id, span), suggestion),
+        let suggestion = CodeSuggestion {
+            substitution: (None, span.as_range(), suggestion),
             applicability,
-            msg_builder: |s: &str| &s[0..msg.len()],
-        }
-        .build();
+            msg: msg.to_string(),
+        };
         self.suggestions.push(suggestion);
         self
     }
