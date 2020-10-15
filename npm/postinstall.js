@@ -11,6 +11,7 @@ const os = require("os"); // Get OS Information
 // Base of the download link, github releases url
 const releaseURLBase = "https://github.com/RDambrosio016/RSLint/releases/download/v"; 
 const destinationDir = "./bin";
+const applicationName = "rslint";
 
 function main() {
     try {
@@ -26,13 +27,13 @@ function main() {
         // Build download link based on OS type and version taken from package.json
         const releaseURL = releaseURLBase + `${version}/rslint_cli-${osURLExtension}`;
 
-        console.log("\x1b[32m" + `Fetching prebuilt binary from ${releaseURL}`, "\x1b[0m");
+        console.log("\x1b[32m" + `Fetching prebuilt binary (${version}) from ${releaseURL}`, "\x1b[0m");
         // Make request to download link, the response will contain the redirect link in the headers
         method.get(releaseURL, (redirectResponse) => {
-            // When request finishes and we have all the data, continue
-            // Make request to the actual binary file link
+            // Make request to the actual binary file link from redirect link in headers
             method.get(redirectResponse.headers.location, binaryResponse => {
-                binaryResponse.pipe(fs.createWriteStream(`${destinationDir}/rslint${osURLExtension === "windows" ? ".exe" : "ps1"}`))
+                binaryResponse.pipe(fs.createWriteStream(`${destinationDir}/${applicationName}`))
+                binaryResponse.pipe(fs.createWriteStream(`${destinationDir}/${applicationName}${osURLExtension === "windows" ? ".exe" : "ps1"}`))
                 console.log("\x1b[32m" + `Successfully downloaded prebuilt binaries`, "\x1b[0m")
             });
 
