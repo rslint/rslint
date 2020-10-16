@@ -28,7 +28,6 @@ declare_lint! {
 
 #[typetag::serde]
 impl CstRule for NoNewSymbol {
-    #[allow(clippy::blocks_in_if_conditions)]
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == NEW_EXPR
         {
