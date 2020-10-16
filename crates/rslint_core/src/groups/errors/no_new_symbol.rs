@@ -4,7 +4,9 @@ use SyntaxKind::*;
 
 declare_lint! {
     /**
-    `Symbol` shouldn't be constructed using `new` keyword, instead
+    Disallow constructing `Symbol` using `new`.
+
+    `Symbol` shouldn't be constructed using `new` keyword since it results in a `TypeError`, instead
     it should be called as a function.
 
     ## Incorrect code examples
@@ -41,6 +43,8 @@ impl CstRule for NoNewSymbol {
                     ).primary(
                         new_expr.new_token().unwrap().text_range(),
                         "this operator is redundant...",
+                    ).note(
+                        format!("help: call it as a function instead: `{}`", color("Symbol()"))
                     );
 
                 ctx.add_err(err);
