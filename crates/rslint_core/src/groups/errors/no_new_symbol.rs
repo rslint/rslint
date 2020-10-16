@@ -31,16 +31,21 @@ impl CstRule for NoNewSymbol {
     #[allow(clippy::blocks_in_if_conditions)]
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == NEW_EXPR
-            && node.to::<NewExpr>().object()?.syntax().text() == "Symbol"
         {
-            let err = ctx
-                .err(
-                    self.name(),
-                    "`Symbol` cannot be called as a constructor.",
-                )
-                .primary(range, "");
+            let new_expr = node.to::<NewExpr>();
 
-            ctx.add_err(err);
+            if new_expr.object()?.syntax().text() == "Symbol" {
+                let err = ctx
+                    .err(
+                        self.name(),
+                        "`Symbol` cannot be called as a constructor.",
+                    ).primary(
+                        new_expr.new_token().unwrap().text_range(),
+                        "this operator is redundant...",
+                    );
+
+                ctx.add_err(err);
+            }
         }
         None
     }
