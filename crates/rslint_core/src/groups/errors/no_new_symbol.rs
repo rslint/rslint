@@ -41,8 +41,8 @@ impl CstRule for NoNewSymbol {
                         self.name(),
                         "`Symbol` cannot be called as a constructor.",
                     ).primary(
-                        new_expr.new_token().unwrap().text_range(),
-                        "this operator is redundant...",
+                        node,
+                        "",
                     ).note(
                         format!("help: call it as a function instead: `{}`", color("Symbol()"))
                     );
