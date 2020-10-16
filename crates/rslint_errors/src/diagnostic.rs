@@ -6,15 +6,16 @@ use crate::{
 /// A diagnostic message that can give information
 /// like errors or warnings.
 pub struct Diagnostic {
-    pub(crate) file_id: FileId,
+    pub file_id: FileId,
 
-    pub(crate) severity: Severity,
-    pub(crate) code: Option<String>,
-    pub(crate) title: String,
+    pub severity: Severity,
+    pub code: Option<String>,
+    pub title: String,
 
-    pub(crate) children: Vec<SubDiagnostic>,
-    pub(crate) suggestions: Vec<CodeSuggestion>,
-    pub(crate) footer: Vec<Footer>,
+    pub primary: Option<SubDiagnostic>,
+    pub children: Vec<SubDiagnostic>,
+    pub suggestions: Vec<CodeSuggestion>,
+    pub footer: Vec<Footer>,
 }
 
 impl Diagnostic {
@@ -62,6 +63,7 @@ impl Diagnostic {
             code,
             severity,
             title: title.into(),
+            primary: None,
             children: vec![],
             suggestions: vec![],
             footer: vec![],
@@ -94,8 +96,13 @@ impl Diagnostic {
     /// Attaches a primary label to this [`Diagnostic`].
     ///
     /// A primary is just a label with the [`Error`](Severity::Error) severity.
-    pub fn primary(self, span: impl Span, msg: String) -> Self {
-        self.label(Severity::Error, span, msg)
+    pub fn primary(mut self, span: impl Span, msg: String) -> Self {
+        self.primary = Some(SubDiagnostic {
+            severity: Severity::Error,
+            msg,
+            span: FileSpan::new(self.file_id, span),
+        });
+        self
     }
 
     /// Attaches a secondary label to this [`Diagnostic`].
@@ -187,14 +194,14 @@ impl Diagnostic {
 /// a suggestion that will be displayed under the actual error.
 #[derive(Debug, Clone)]
 pub struct SubDiagnostic {
-    pub(crate) severity: Severity,
-    pub(crate) msg: String,
-    pub(crate) span: FileSpan,
+    pub severity: Severity,
+    pub msg: String,
+    pub span: FileSpan,
 }
 
 /// A note or help that is displayed under the diagnostic.
 #[derive(Debug, Clone)]
 pub struct Footer {
-    pub(crate) label: String,
-    pub(crate) severity: Severity,
+    pub label: String,
+    pub severity: Severity,
 }

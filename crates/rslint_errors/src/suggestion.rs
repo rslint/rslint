@@ -8,7 +8,7 @@ use std::ops::Range;
 pub struct CodeSuggestion {
     /// If the `FileId` is `None`, it's in the same file as
     /// his parent.
-    pub(crate) substitution: (Option<FileId>, Range<usize>, String),
-    pub(crate) applicability: Applicability,
-    pub(crate) msg: String,
+    pub substitution: (Option<FileId>, Range<usize>, String),
+    pub applicability: Applicability,
+    pub msg: String,
 }

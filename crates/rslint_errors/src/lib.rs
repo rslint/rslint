@@ -1,19 +1,14 @@
 pub mod file;
 
 mod diagnostic;
+mod emit;
 mod suggestion;
 
 pub use diagnostic::{Diagnostic, SubDiagnostic};
+pub use emit::Emitter;
 pub use suggestion::CodeSuggestion;
 
-use annotate_snippets::{
-    display_list::{DisplayList, FormatOptions},
-    snippet::{self, Annotation, AnnotationType, Snippet},
-};
-use std::{
-    collections::{hash_map::Entry, HashMap, VecDeque},
-    io::{self, Write},
-};
+use annotate_snippets::snippet;
 
 /// Indicicates how a tool should manage this suggestion.
 #[derive(Clone, Copy, Debug)]

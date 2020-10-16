@@ -24,7 +24,7 @@ impl FileSpan {
 /// that are identified by a unique identifier.
 pub trait Files {
     /// Returns the name of the file identified by the id.
-    fn name(&self, id: FileId) -> &str;
+    fn name(&self, id: FileId) -> Option<&str>;
 
     /// Returns the source of the file identified by the id.
     fn source(&self, id: FileId) -> &str;
@@ -42,7 +42,7 @@ pub trait Files {
     ///     Err(next_line) => next_line - 1,
     /// }
     /// ```
-    fn line_index(&self, byte_index: usize) -> usize;
+    fn line_index(&self, file_id: FileId, byte_index: usize) -> usize;
 }
 
 /// Computes the byte indicies of every line start.
