@@ -66,7 +66,7 @@ The `rules` field can take 4 keys, these are:
 - `allow`: an array of strings of rules which are explicitly allowed and will not be run.
 - `errors`: an object where each key is a rule name, and the value is the rule's configuration options (or `{}` if no config). These rules will be treated as errors.
 - `warnings`: same as `errors` but the rules will be treated as warnings.
-- `groups`: an array of strings where each string is the name of a [rule group](./rules). All of the rules of each group will be treated as errors.
+- `groups`: an array of strings where each string is the name of a [rule group](../rules). All of the rules of each group will be treated as errors.
 
 Rule names can be in any case, e.g. `no-empty`, `noEmpty`, `NoEmpty`, and `no_empty` all work. However it is strongly reccomended to keep a consistent case!
 
