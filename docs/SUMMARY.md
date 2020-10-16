@@ -25,6 +25,7 @@
     - [no-extra-semi](rules/errors/no-extra-semi.md)
     - [no-inner-declarations](rules/errors/no-inner-declarations.md)
     - [no-irregular-whitespace](rules/errors/no-irregular-whitespace.md)
+    - [no-new-symbol](rules/errors/no-new-symbol.md)
     - [no-prototype-builtins](rules/errors/no-prototype-builtins.md)
     - [no-setter-return](rules/errors/no-setter-return.md)
     - [no-sparse-arrays](rules/errors/no-sparse-arrays.md)

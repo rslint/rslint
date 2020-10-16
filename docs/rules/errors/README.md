@@ -24,6 +24,7 @@ unexpected behavior.
 | [no-extra-semi](./no-extra-semi.md) | Disallow unneeded semicolons. |
 | [no-inner-declarations](./no-inner-declarations.md) | Disallow variable and function declarations in nested blocks. |
 | [no-irregular-whitespace](./no-irregular-whitespace.md) | Disallow weird/irregular whitespace. |
+| [no-new-symbol](./no-new-symbol.md) | Disallow constructing `Symbol` using `new`. |
 | [no-prototype-builtins](./no-prototype-builtins.md) | Disallow direct use of `Object.prototype` builtins directly. |
 | [no-setter-return](./no-setter-return.md) | Disallow setters to return values. |
 | [no-sparse-arrays](./no-sparse-arrays.md) | Disallow sparse arrays. |
