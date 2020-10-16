@@ -118,6 +118,18 @@ pub trait Span {
     fn as_range(&self) -> Range<usize>;
 }
 
+impl Into<Range<usize>> for &dyn Span {
+    fn into(self) -> Range<usize> {
+        self.as_range()
+    }
+}
+
+impl Into<Range<usize>> for &mut dyn Span {
+    fn into(self) -> Range<usize> {
+        self.as_range()
+    }
+}
+
 impl<T: Span> Span for &T {
     fn as_range(&self) -> Range<usize> {
         (*self).as_range()

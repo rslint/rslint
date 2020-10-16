@@ -1,7 +1,8 @@
 use crate::{
-    file::{FileId, FileSpan, Span},
+    file::{FileId, FileSpan},
     Applicability, CodeSuggestion, Severity,
 };
+use std::ops::Range;
 
 /// A diagnostic message that can give information
 /// like errors or warnings.
@@ -84,7 +85,7 @@ impl Diagnostic {
     /// Attaches a label to this [`Diagnostic`].
     ///
     /// The given span has to be in the file that was provided while creating this [`Diagnostic`].
-    pub fn label(mut self, severity: Severity, span: impl Span, msg: String) -> Self {
+    pub fn label(mut self, severity: Severity, span: impl Into<Range<usize>>, msg: String) -> Self {
         self.children.push(SubDiagnostic {
             severity,
             msg,
@@ -96,7 +97,7 @@ impl Diagnostic {
     /// Attaches a primary label to this [`Diagnostic`].
     ///
     /// A primary is just a label with the [`Error`](Severity::Error) severity.
-    pub fn primary(mut self, span: impl Span, msg: String) -> Self {
+    pub fn primary(mut self, span: impl Into<Range<usize>>, msg: String) -> Self {
         self.primary = Some(SubDiagnostic {
             severity: Severity::Error,
             msg,
@@ -108,7 +109,7 @@ impl Diagnostic {
     /// Attaches a secondary label to this [`Diagnostic`].
     ///
     /// A secondary is just a label with the [`Info`](Severity::Info) severity.
-    pub fn secondary(self, span: impl Span, msg: String) -> Self {
+    pub fn secondary(self, span: impl Into<Range<usize>>, msg: String) -> Self {
         self.label(Severity::Info, span, msg)
     }
 
@@ -129,13 +130,13 @@ impl Diagnostic {
     /// The suggestion will automatically be wrapped inside two backticks.
     pub fn suggestion_in_file(
         mut self,
-        span: impl Span,
+        span: impl Into<Range<usize>>,
         msg: &str,
         suggestion: String,
         applicability: Applicability,
     ) -> Self {
         let suggestion = CodeSuggestion {
-            substitution: (None, span.as_range(), suggestion),
+            substitution: (None, span.into(), suggestion),
             applicability,
             msg: msg.to_string(),
         };
@@ -159,13 +160,13 @@ impl Diagnostic {
     /// The suggestion will automatically be wrapped inside two backticks.
     pub fn suggestion(
         mut self,
-        span: impl Span,
+        span: impl Into<Range<usize>>,
         msg: &str,
         suggestion: String,
         applicability: Applicability,
     ) -> Self {
         let suggestion = CodeSuggestion {
-            substitution: (None, span.as_range(), suggestion),
+            substitution: (None, span.into(), suggestion),
             applicability,
             msg: msg.to_string(),
         };

@@ -1,4 +1,3 @@
-pub use rslint_core::Span;
 use std::ops::Range;
 
 /// An id that points into a file database.
@@ -12,10 +11,10 @@ pub struct FileSpan {
 }
 
 impl FileSpan {
-    pub fn new(file: FileId, span: impl Span) -> Self {
+    pub fn new(file: FileId, span: impl Into<Range<usize>>) -> Self {
         Self {
             file,
-            span: span.as_range(),
+            span: span.into(),
         }
     }
 }
