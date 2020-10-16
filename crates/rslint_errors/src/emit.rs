@@ -111,6 +111,8 @@ impl Emitter {
                 };
                 suggestions.push(suggestion);
             } else {
+                use std::cmp;
+
                 let label = msg.to_string();
                 let source = {
                     let mut source = self.files.source(file.unwrap_or(d.file_id)).to_string();
@@ -118,11 +120,22 @@ impl Emitter {
                     source
                 };
 
+                let (start, end) = (
+                    start,
+                    cmp::min(start + replacement.len().max(1), source.len()),
+                );
+
+                let start = if start > source.len() - 1 {
+                    cmp::max(start, source.len()) - 1
+                } else {
+                    start
+                };
+
                 let suggestion = Suggestion::Additional {
                     label,
                     source,
                     file: file.clone(),
-                    span: (start, start + replacement.len()),
+                    span: dbg!((start, end)),
                 };
                 suggestions.push(suggestion);
             }
