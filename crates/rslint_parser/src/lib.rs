@@ -98,7 +98,7 @@ pub use rslint_syntax::*;
 
 /// The type of error emitted by the parser, this includes warnings, notes, and errors.  
 /// It also includes labels and possibly notes
-pub type ParserError = codespan_reporting::diagnostic::Diagnostic<usize>;
+pub type ParserError = rslint_errors::Diagnostic;
 
 use rslint_lexer::color;
 use std::ops::Range;

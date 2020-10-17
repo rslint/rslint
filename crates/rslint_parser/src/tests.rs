@@ -1,6 +1,4 @@
 use crate::{parse_module, ParserError};
-use codespan_reporting::files::SimpleFiles;
-use codespan_reporting::term::{emit, termcolor::Buffer, Config};
 use expect_test::expect_file;
 use std::fs;
 use std::path::{Path, PathBuf};

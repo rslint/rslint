@@ -1164,12 +1164,12 @@ dependencies = [
 name = "rslint_parser"
 version = "0.1.3"
 dependencies = [
- "codespan-reporting",
  "criterion",
  "expect-test",
  "lexical",
  "num-bigint",
  "rayon",
+ "rslint_errors",
  "rslint_lexer",
  "rslint_rowan",
  "rslint_syntax",

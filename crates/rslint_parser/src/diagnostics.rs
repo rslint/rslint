@@ -1,7 +1,7 @@
 //! Simple diagnostics builder for building codespan diagnostics
 
 use crate::ParserError;
-use codespan_reporting::diagnostic::*;
+use rslint_errors::{Diagnostic, Severity};
 use std::ops::Range;
 
 /// A builder for generating codespan diagnostics
@@ -14,24 +14,20 @@ impl ErrorBuilder {
     /// Make a new builder with error severity
     pub fn error(file_id: usize, message: &str) -> Self {
         Self {
-            inner: Diagnostic::error()
-                .with_code("SyntaxError")
-                .with_message(message),
+            inner: Diagnostic::error(file_id, "SyntaxError", message),
             file_id,
         }
     }
 
     pub fn warning(file_id: usize, message: &str) -> Self {
         Self {
-            inner: Diagnostic::warning()
-                .with_code("ParserWarning")
-                .with_message(message),
+            inner: Diagnostic::warning(file_id, "ParserWarning", message),
             file_id,
         }
     }
 
     /// Make a new builder with a predefined diagnostic
-    pub fn new(file_id: usize, diagnostic: Diagnostic<usize>) -> Self {
+    pub fn new(file_id: usize, diagnostic: Diagnostic) -> Self {
         Self {
             inner: diagnostic,
             file_id,
@@ -45,35 +41,37 @@ impl ErrorBuilder {
     }
 
     /// Add a primary label to the diagnostic
-    pub fn primary(mut self, range: impl Into<Range<usize>>, message: impl AsRef<str>) -> Self {
-        self.inner.labels.append(&mut vec![
-            Label::primary(self.file_id, range.into()).with_message(message.as_ref())
-        ]);
+    pub fn primary(mut self, range: impl Into<Range<usize>>, message: impl Into<String>) -> Self {
+        self.inner.primary(range.into(), message);
         self
     }
 
     /// Add a secondary label to this diagnostic
-    pub fn secondary(mut self, range: impl Into<Range<usize>>, message: impl AsRef<str>) -> Self {
-        self.inner.labels.append(&mut vec![
-            Label::secondary(self.file_id, range.into()).with_message(message.as_ref())
-        ]);
+    pub fn secondary(mut self, range: impl Into<Range<usize>>, message: impl Into<String>) -> Self {
+        self.inner.secondary(range.into(), message);
         self
     }
 
-    /// Add a help message to the bottom of the diagnostic (usually a `Help:` or `Note:` message)
+    /// Add a help message to the bottom of the diagnostic, that is prefixed by a "help:".
     pub fn help(mut self, message: &str) -> Self {
-        self.inner.notes.append(&mut vec![message.to_string()]);
+        self.inner.footer_help(message);
+        self
+    }
+
+    /// Add a help message to the bottom of the diagnostic, that is prefixed by a "note:".
+    pub fn note(mut self, message: &str) -> Self {
+        self.inner.footer_note(message);
         self
     }
 
     /// Consume the builder and return its diagnostic
-    pub fn end(self) -> Diagnostic<usize> {
+    pub fn end(self) -> Diagnostic {
         self.inner
     }
 }
 
-impl From<ErrorBuilder> for Diagnostic<usize> {
-    fn from(builder: ErrorBuilder) -> Diagnostic<usize> {
+impl From<ErrorBuilder> for Diagnostic {
+    fn from(builder: ErrorBuilder) -> Diagnostic {
         builder.end()
     }
 }

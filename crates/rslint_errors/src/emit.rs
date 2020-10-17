@@ -198,6 +198,16 @@ impl Emitter {
             }
         }
 
+        let footer = d
+            .footer
+            .iter()
+            .map(|footer| snippet::Annotation {
+                id: None,
+                label: Some(&footer.label),
+                annotation_type: footer.severity.into(),
+            })
+            .collect::<Vec<_>>();
+
         let snippet = snippet::Snippet {
             title: Some(snippet::Annotation {
                 label: Some(&d.title),
@@ -205,7 +215,7 @@ impl Emitter {
                 annotation_type: d.severity.into(),
             }),
             slices: slices.into_iter().map(|(_, v)| v).collect(),
-            footer: todo!(),
+            footer,
             opt: dl::FormatOptions {
                 color: self.color,
                 ..Default::default()
