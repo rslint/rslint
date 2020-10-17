@@ -211,7 +211,7 @@ impl Emitter {
         let snippet = snippet::Snippet {
             title: Some(snippet::Annotation {
                 label: Some(&d.title),
-                id: d.code.as_deref(),
+                id: d.code.as_deref().filter(|code| !code.is_empty()),
                 annotation_type: d.severity.into(),
             }),
             slices: slices.into_iter().map(|(_, v)| v).collect(),

@@ -8,7 +8,7 @@ license = "MIT"
 repository = "https://github.com/RDambrosio016/RSLint"
 
 [dependencies]
-codespan-reporting = "0.9.5"
+rslint_errors = { version = "0.1.0", path = "../rslint_errors" }
 rslint_syntax = { version = "0.1.0", path = "../rslint_syntax" }
 unicode-xid = "0.2.1"
 atty = { version = "0.2.14", optional = true }

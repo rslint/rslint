@@ -1131,9 +1131,9 @@ version = "0.1.2"
 dependencies = [
  "ansi_term 0.12.1",
  "atty",
- "codespan-reporting",
  "quickcheck",
  "quickcheck_macros",
+ "rslint_errors",
  "rslint_syntax",
  "unicode-xid",
 ]
