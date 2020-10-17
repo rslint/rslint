@@ -1,5 +1,6 @@
 use crate::{parse_module, ParserError};
 use expect_test::expect_file;
+use rslint_errors::{file::SimpleFiles, Emitter};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -31,14 +32,35 @@ fn parser_tests() {
         let mut files = SimpleFiles::new();
         files.add(
             path.file_name().unwrap().to_string_lossy().to_string(),
-            text,
+            text.to_string(),
         );
         let mut ret = format!("{:#?}", parse.syntax());
 
         for diag in parse.errors() {
-            let mut buf = Buffer::no_color();
+            use std::{cell::RefCell, rc::Rc};
 
-            emit(&mut buf, &Config::default(), &files, diag).expect("failed to emit diagnostic");
+            let buf = Rc::new(RefCell::new(vec![]));
+            struct BufWriter {
+                buf: Rc<RefCell<Vec<u8>>>,
+            }
+
+            impl std::io::Write for BufWriter {
+                fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+                    self.buf.borrow_mut().write(buf)
+                }
+
+                fn flush(&mut self) -> std::io::Result<()> {
+                    Ok(())
+                }
+            }
+
+            let write = BufWriter { buf: buf.clone() };
+            let mut emitter = Emitter::new(Box::new(write), &files, false);
+            emitter
+                .emit_diagnostic(diag)
+                .expect("failed to emit diagnostic");
+
+            let buf = buf.borrow();
             ret.push_str(&format!(
                 "--\n{}",
                 std::str::from_utf8(buf.as_slice()).expect("non utf8 in error buffer")

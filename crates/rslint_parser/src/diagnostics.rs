@@ -42,25 +42,25 @@ impl ErrorBuilder {
 
     /// Add a primary label to the diagnostic
     pub fn primary(mut self, range: impl Into<Range<usize>>, message: impl Into<String>) -> Self {
-        self.inner.primary(range.into(), message);
+        self.inner = self.inner.primary(range.into(), message);
         self
     }
 
     /// Add a secondary label to this diagnostic
     pub fn secondary(mut self, range: impl Into<Range<usize>>, message: impl Into<String>) -> Self {
-        self.inner.secondary(range.into(), message);
+        self.inner = self.inner.secondary(range.into(), message);
         self
     }
 
     /// Add a help message to the bottom of the diagnostic, that is prefixed by a "help:".
     pub fn help(mut self, message: &str) -> Self {
-        self.inner.footer_help(message);
+        self.inner = self.inner.footer_help(message);
         self
     }
 
     /// Add a help message to the bottom of the diagnostic, that is prefixed by a "note:".
     pub fn note(mut self, message: &str) -> Self {
-        self.inner.footer_note(message);
+        self.inner = self.inner.footer_note(message);
         self
     }
 

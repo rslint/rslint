@@ -7,28 +7,28 @@ use crate::{
 };
 use annotate_snippets::{display_list as dl, snippet};
 use std::{
-    collections::HashMap,
+    collections::{hash_map::Entry, HashMap},
     io::{self, BufWriter, Write},
     ops::Range,
 };
 
 /// The emitter is responsible for emitting
 /// diagnostics to a given output.
-pub struct Emitter {
+pub struct Emitter<'files> {
     color: bool,
-    files: Box<dyn Files>,
+    files: &'files dyn Files,
     out: Box<dyn Write>,
 }
 
-impl Emitter {
+impl<'files> Emitter<'files> {
     /// Creates a new `Emitter`.
-    pub fn new(out: Box<dyn Write>, files: Box<dyn Files>, color: bool) -> Self {
+    pub fn new(out: Box<dyn Write>, files: &'files dyn Files, color: bool) -> Self {
         Self { color, files, out }
     }
 
     /// Creates a new `Emitter` that will output the diagnostics
     /// to stdout.
-    pub fn stdout(files: Box<dyn Files>, color: bool) -> Self {
+    pub fn stdout(files: &'files dyn Files, color: bool) -> Self {
         let out = io::stdout();
         let out = BufWriter::new(out);
         Self::new(Box::new(out), files, color)
@@ -36,40 +36,49 @@ impl Emitter {
 
     /// Creates a new `Emitter` that will output the diagnostics
     /// to stderr.
-    pub fn stderr(files: Box<dyn Files>, color: bool) -> Self {
+    pub fn stderr(files: &'files dyn Files, color: bool) -> Self {
         let out = io::stderr();
         let out = BufWriter::new(out);
         Self::new(Box::new(out), files, color)
     }
 }
 
-impl Emitter {
+impl Emitter<'_> {
+    /// Emit a diagnostic and write it to the output of this `Emitter`.
+    ///
+    /// Diagnostics that have no primary label, will be displayed without any spans.
+    /// Not even secondary ones.
     pub fn emit_diagnostic(&mut self, d: &Diagnostic) -> io::Result<()> {
-        if d.primary.is_none() {
-            return Ok(());
-        }
-
         let mut slices: HashMap<FileId, snippet::Slice<'_>> = HashMap::new();
 
         for child in d.primary.iter().chain(&d.children) {
             let Range { start, end } = child.span.span;
 
-            let entry = slices
-                .entry(child.span.file)
-                .or_insert_with(|| snippet::Slice {
-                    source: self.files.source(d.file_id),
-                    origin: self.files.name(d.file_id),
-                    line_start: self.files.line_index(d.file_id, start).max(1),
-                    annotations: vec![],
-                    fold: true,
-                });
+            let source = self.files.source(d.file_id);
+            let line_start = self.files.line_index(d.file_id, start);
+
+            let entry = slices.entry(child.span.file);
+            let mut triple = (source, line_start, entry);
+            let slice = match triple {
+                (Some(source), Some(line_start), Entry::Vacant(entry)) => {
+                    entry.insert(snippet::Slice {
+                        source,
+                        origin: self.files.name(d.file_id),
+                        line_start: line_start.max(1),
+                        annotations: vec![],
+                        fold: true,
+                    })
+                }
+                (_, _, Entry::Occupied(ref mut entry)) => entry.get_mut(),
+                _ => continue,
+            };
 
             let annotation = snippet::SourceAnnotation {
                 range: (start, end),
                 label: &child.msg,
                 annotation_type: child.severity.into(),
             };
-            entry.annotations.push(annotation);
+            slice.annotations.push(annotation);
         }
 
         enum Suggestion {
@@ -114,10 +123,12 @@ impl Emitter {
                 use std::cmp;
 
                 let label = msg.to_string();
-                let source = {
-                    let mut source = self.files.source(file.unwrap_or(d.file_id)).to_string();
+                let source = if let Some(source) = self.files.source(file.unwrap_or(d.file_id)) {
+                    let mut source = source.to_string();
                     source.replace_range(start..end, replacement);
                     source
+                } else {
+                    continue;
                 };
 
                 let (start, end) = (
@@ -146,9 +157,12 @@ impl Emitter {
         for sug in suggestions.iter() {
             match sug {
                 Suggestion::Inline { label, file, span } => {
-                    let entry = slices
-                        .get_mut(&file)
-                        .expect("invalid file id provided for suggestion");
+                    let entry = if let Some(entry) = slices.get_mut(&file) {
+                        entry
+                    } else {
+                        continue;
+                    };
+
                     let annotation = snippet::SourceAnnotation {
                         range: span.clone(),
                         label,
@@ -168,12 +182,17 @@ impl Emitter {
                         annotation_type: snippet::AnnotationType::Help,
                     };
 
+                    let line_start = if let Some(start) =
+                        self.files.line_index(file.unwrap_or(d.file_id), *start)
+                    {
+                        start.max(1)
+                    } else {
+                        continue;
+                    };
+
                     let slice = snippet::Slice {
                         source,
-                        line_start: self
-                            .files
-                            .line_index(file.unwrap_or(d.file_id), *start)
-                            .max(1),
+                        line_start,
                         origin: file.and_then(|file| self.files.name(file)),
                         annotations: vec![annotation],
                         fold: true,

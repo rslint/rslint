@@ -1,5 +1,5 @@
 use rslint_rowan::{Language, SyntaxElement, SyntaxNode, SyntaxToken, TextRange};
-use std::ops::Range;
+use std::{collections::HashMap, ops::Range};
 
 /// A value which can be used as the range inside of a diagnostic.
 ///
@@ -83,7 +83,7 @@ pub trait Files {
     fn name(&self, id: FileId) -> Option<&str>;
 
     /// Returns the source of the file identified by the id.
-    fn source(&self, id: FileId) -> &str;
+    fn source(&self, id: FileId) -> Option<&str>;
 
     /// The index of the line at the byte index.
     ///
@@ -98,7 +98,83 @@ pub trait Files {
     ///     Err(next_line) => next_line - 1,
     /// }
     /// ```
-    fn line_index(&self, file_id: FileId, byte_index: usize) -> usize;
+    fn line_index(&self, file_id: FileId, byte_index: usize) -> Option<usize>;
+}
+
+/// A file database that contains only one file.
+#[derive(Clone, Debug)]
+pub struct SimpleFile {
+    name: String,
+    source: String,
+    line_starts: Vec<usize>,
+}
+
+impl SimpleFile {
+    /// Create a new file with the name and source.
+    pub fn new(name: String, source: String) -> Self {
+        Self {
+            line_starts: line_starts(&source).collect(),
+            name,
+            source,
+        }
+    }
+}
+
+impl Files for SimpleFile {
+    fn name(&self, _id: FileId) -> Option<&str> {
+        Some(&self.source)
+    }
+
+    fn source(&self, _id: FileId) -> Option<&str> {
+        Some(&self.source)
+    }
+
+    fn line_index(&self, _file_id: FileId, byte_index: usize) -> Option<usize> {
+        Some(
+            self.line_starts
+                .binary_search(&byte_index)
+                .unwrap_or_else(|next_line| next_line - 1),
+        )
+    }
+}
+
+/// A file database that stores multiple files.
+#[derive(Clone, Debug, Default)]
+pub struct SimpleFiles {
+    files: HashMap<FileId, SimpleFile>,
+    id: usize,
+}
+
+impl SimpleFiles {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Adds a file to this database and returns the id for the new file.
+    pub fn add(&mut self, name: String, source: String) -> FileId {
+        let id = self.id;
+        self.id += 1;
+        self.files.insert(id, SimpleFile::new(name, source));
+        id
+    }
+
+    pub fn get(&self, id: FileId) -> Option<&SimpleFile> {
+        self.files.get(&id)
+    }
+}
+
+impl Files for SimpleFiles {
+    fn name(&self, id: FileId) -> Option<&str> {
+        self.files.get(&id)?.name(id)
+    }
+
+    fn source(&self, id: FileId) -> Option<&str> {
+        self.files.get(&id)?.source(id)
+    }
+
+    fn line_index(&self, id: FileId, byte_index: usize) -> Option<usize> {
+        self.files.get(&id)?.line_index(id, byte_index)
+    }
 }
 
 /// Computes the byte indicies of every line start.

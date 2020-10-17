@@ -1,11 +1,9 @@
 //! The structure responsible for managing IO and the files implementation for codespan.
 
-use codespan_reporting::files::Files;
 use glob::Paths;
 use hashbrown::HashMap;
-use std::borrow::Cow;
+use rslint_errors::file::{FileId, Files};
 use std::fs::read_to_string;
-use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::Builder;
@@ -27,36 +25,24 @@ pub struct FileWalker {
     pub files: HashMap<usize, JsFile>,
 }
 
-impl<'a> Files<'a> for FileWalker {
-    type Name = Cow<'a, str>;
-    type Source = Cow<'a, str>;
-    type FileId = usize;
-
-    fn name(&'a self, id: Self::FileId) -> Option<Cow<'a, str>> {
+impl Files for FileWalker {
+    fn name(&self, id: FileId) -> Option<&str> {
         let entry = self.files.get(&id)?;
-        Some(
-            entry
-                .path
-                .as_ref()
-                .map(|p| p.to_string_lossy())
-                .unwrap_or_else(|| (&entry.name).into()),
-        )
+        let name = entry
+            .path
+            .as_ref()
+            .and_then(|path| path.to_str())
+            .unwrap_or_else(|| entry.name.as_str());
+        Some(name)
     }
 
-    fn source(&'a self, id: Self::FileId) -> Option<Cow<'a, str>> {
+    fn source(&self, id: FileId) -> Option<&str> {
         let entry = self.files.get(&id)?;
-        Some((&entry.source).into())
+        Some(&entry.source)
     }
 
-    fn line_index(&self, id: Self::FileId, byte_index: usize) -> Option<usize> {
-        self.files.get(&id)?.line_index(byte_index)
-    }
-
-    fn line_range(&self, id: Self::FileId, line_index: usize) -> Option<Range<usize>> {
-        let line_start = self.line_start(id, line_index)?;
-        let next_line_start = self.line_start(id, line_index + 1)?;
-
-        Some(line_start..next_line_start)
+    fn line_index(&self, id: FileId, byte_index: usize) -> Option<usize> {
+        Some(self.files.get(&id)?.line_index(byte_index))
     }
 }
 
@@ -135,6 +121,7 @@ pub struct JsFile {
     pub name: String,
     /// The path in disk if this is a concrete file.
     pub path: Option<PathBuf>,
+
     /// The codespan id assigned to this file used to refer back to it.
     pub id: usize,
     /// Whether this is a js or mjs file (script vs module).
@@ -189,10 +176,10 @@ impl JsFile {
         }
     }
 
-    pub fn line_index(&self, byte_index: usize) -> Option<usize> {
+    pub fn line_index(&self, byte_index: usize) -> usize {
         match self.line_starts.binary_search(&byte_index) {
-            Ok(line) => Some(line),
-            Err(next_line) => Some(next_line - 1),
+            Ok(line) => line,
+            Err(next_line) => next_line - 1,
         }
     }
 
