@@ -205,7 +205,7 @@ impl Emitter {
                 annotation_type: d.severity.into(),
             }),
             slices: slices.into_iter().map(|(_, v)| v).collect(),
-            footer: vec![],
+            footer: todo!(),
             opt: dl::FormatOptions {
                 color: self.color,
                 ..Default::default()

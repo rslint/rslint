@@ -104,16 +104,16 @@ impl CstRule for UseIsnan {
                     )
                 }
                 .primary(expr.range(), "")
-                .note("note: `NaN` is not equal to anything including itself");
+                .footer_note("note: `NaN` is not equal to anything including itself");
 
                 // telling the user to use isNaN for `<`, `>`, etc is a bit misleading so we won't do it if that is the case
                 if op == op!(==) || op == op!(===) {
-                    err = err.note(format!(
+                    err = err.footer_note(format!(
                         "help: use `isNaN` instead: `{}`",
                         color(&format!("isNaN({})", opposite))
                     ))
                 } else if op == op!(!=) || op == op!(!==) {
-                    err = err.note(format!(
+                    err = err.footer_note(format!(
                         "help: use `isNaN` instead: `{}`",
                         color(&format!("!isNaN({})", opposite))
                     ))
@@ -131,7 +131,7 @@ impl CstRule for UseIsnan {
                             "a switch statement with a test of `NaN` will never match",
                         )
                         .primary(expr.range(), "")
-                        .note("note: `NaN` is not equal to anything including itself");
+                        .footer_note("note: `NaN` is not equal to anything including itself");
 
                     ctx.add_err(err);
                 }
@@ -143,7 +143,7 @@ impl CstRule for UseIsnan {
                     let err = ctx
                         .err(self.name(), "a case with a test of `NaN` will never match")
                         .primary(expr.range(), "")
-                        .note("note: `NaN` is not equal to anything including itself");
+                        .footer_note("note: `NaN` is not equal to anything including itself");
 
                     ctx.add_err(err);
                 }
@@ -177,7 +177,7 @@ impl CstRule for UseIsnan {
                             "an index check with `NaN` will always return `-1`",
                         )
                         .primary(expr.range(), "")
-                        .note("help: index checks use `===` internally, which will never match because `NaN` is not equal to anything");
+                        .footer_note("help: index checks use `===` internally, which will never match because `NaN` is not equal to anything");
 
                     ctx.add_err(err);
                 }

@@ -71,7 +71,7 @@ fn issue_err(expr: ast::Expr, ctx: &mut RuleCtx, op: SyntaxToken) {
             op,
             "...because this comparison passes for both `-0` and `+0`",
         )
-        .note(format!(
+        .footer_note(format!(
             "help: try using this: `{}`",
             color(&format!("Object.is({}, -0)", expr.syntax().text()))
         ));

@@ -3,9 +3,8 @@
 
 #![allow(unused_variables, unused_imports)]
 
-use crate::{Diagnostic, DiagnosticBuilder};
-use codespan_reporting::diagnostic::Severity;
 use dyn_clone::DynClone;
+use rslint_errors::{Diagnostic, Severity};
 use rslint_parser::{SyntaxNode, SyntaxNodeExt, SyntaxToken};
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
@@ -108,17 +107,17 @@ pub struct RuleCtx {
 
 impl RuleCtx {
     /// Make a new diagnostic builder.
-    pub fn err(&mut self, code: impl AsRef<str>, message: impl AsRef<str>) -> DiagnosticBuilder {
-        DiagnosticBuilder::error(self.file_id, code.as_ref(), message.as_ref())
+    pub fn err(&mut self, code: impl Into<String>, message: impl Into<String>) -> Diagnostic {
+        Diagnostic::error(self.file_id, code.into(), message.into())
     }
 
-    pub fn add_err(&mut self, diagnostic: impl Into<Diagnostic>) {
-        self.diagnostics.push(diagnostic.into())
+    pub fn add_err(&mut self, diagnostic: Diagnostic) {
+        self.diagnostics.push(diagnostic)
     }
 }
 
 /// The result of running a single rule on a syntax tree.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub struct RuleResult {
     pub diagnostics: Vec<Diagnostic>,
 }
@@ -159,7 +158,7 @@ where
         let mut outcome = Outcome::Success;
         for diagnostic in diagnostics {
             match diagnostic.borrow().severity {
-                Severity::Error | Severity::Bug => outcome = Outcome::Failure,
+                Severity::Error => outcome = Outcome::Failure,
                 Severity::Warning if outcome != Outcome::Failure => outcome = Outcome::Warning,
                 _ => {}
             }

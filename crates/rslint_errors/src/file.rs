@@ -1,4 +1,61 @@
+use rslint_rowan::{Language, SyntaxElement, SyntaxNode, SyntaxToken, TextRange};
 use std::ops::Range;
+
+/// A value which can be used as the range inside of a diagnostic.
+///
+/// This is essentially a hack to allow us to use SyntaxElement, SyntaxNode, etc directly
+pub trait Span {
+    fn as_range(&self) -> Range<usize>;
+}
+
+impl<T: Span> Span for &T {
+    fn as_range(&self) -> Range<usize> {
+        (*self).as_range()
+    }
+}
+
+impl<T: Span> Span for &mut T {
+    fn as_range(&self) -> Range<usize> {
+        (**self).as_range()
+    }
+}
+
+impl<T: Clone> Span for Range<T>
+where
+    T: Into<usize>,
+{
+    fn as_range(&self) -> Range<usize> {
+        self.start.clone().into()..self.end.clone().into()
+    }
+}
+
+impl<T: Language> Span for SyntaxNode<T> {
+    fn as_range(&self) -> Range<usize> {
+        self.text_range().into()
+    }
+}
+
+impl<T: Language> Span for SyntaxToken<T> {
+    fn as_range(&self) -> Range<usize> {
+        self.text_range().into()
+    }
+}
+
+impl<T: Language> Span for SyntaxElement<T> {
+    fn as_range(&self) -> Range<usize> {
+        match self {
+            SyntaxElement::Node(n) => n.text_range(),
+            SyntaxElement::Token(t) => t.text_range(),
+        }
+        .into()
+    }
+}
+
+impl Span for TextRange {
+    fn as_range(&self) -> Range<usize> {
+        self.clone().into()
+    }
+}
 
 /// An id that points into a file database.
 pub type FileId = usize;
@@ -11,10 +68,10 @@ pub struct FileSpan {
 }
 
 impl FileSpan {
-    pub fn new(file: FileId, span: impl Into<Range<usize>>) -> Self {
+    pub fn new(file: FileId, span: impl Span) -> Self {
         Self {
             file,
-            span: span.into(),
+            span: span.as_range(),
         }
     }
 }

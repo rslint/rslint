@@ -2,7 +2,7 @@
 
 #[doc(no_inline)]
 pub use crate::{
-    declare_lint, rule_tests, util, CstRule, Diagnostic, DiagnosticBuilder, Label, Outcome,
+    declare_lint, rule_tests, util, CstRule, Diagnostic, Outcome,
     RuleCtx, RuleResult,
 };
 

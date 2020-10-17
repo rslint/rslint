@@ -68,8 +68,8 @@ impl CstRule for NoCondAssign {
                     cond.syntax(),
                     "this condition results in unexpected behavior",
                 )
-                .note(format!("help: try using `{}`", color("===")))
-                .note(format!(
+                .footer_note(format!("help: try using `{}`", color("===")))
+                .footer_note(format!(
                     "note: this makes the condition equivalent to `{}`",
                     color(&help_expr(cond.syntax()))
                 ));

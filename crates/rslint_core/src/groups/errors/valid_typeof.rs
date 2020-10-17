@@ -45,7 +45,7 @@ const VALID_TYPES: [&str; 8] = [
 ];
 
 impl ValidTypeof {
-    fn error_from_value(&self, value: impl AsRef<str>, ctx: &mut RuleCtx) -> DiagnosticBuilder {
+    fn error_from_value(&self, value: impl AsRef<str>, ctx: &mut RuleCtx) -> Diagnostic {
         let value = value.as_ref();
 
         if value.len() < 20 {
@@ -109,7 +109,7 @@ impl CstRule for ValidTypeof {
                 .primary(literal_range, "");
 
             let err = if let Some(suggestion) = suggestion {
-                err.note(format!(
+                err.footer_note(format!(
                     "help: a type with a similair name exists: `{}`",
                     suggestion
                 ))

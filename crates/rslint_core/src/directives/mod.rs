@@ -16,7 +16,7 @@ mod parser;
 
 pub use self::parser::*;
 
-use crate::{rule_tests, CstRule, CstRuleStore, Diagnostic, DiagnosticBuilder, SyntaxNode};
+use crate::{rule_tests, CstRule, CstRuleStore, Diagnostic, SyntaxNode};
 use rslint_parser::util::*;
 
 // TODO: More complex warnings, things like ignoring node directives because of file level directives
@@ -57,7 +57,7 @@ pub fn apply_top_level_directives(
 
     if let Some(range) = cleared {
         for ignored_range in ignored {
-            let warn = DiagnosticBuilder::warning(
+            let warn = Diagnostic::warning(
                 file_id,
                 "linter",
                 "ignoring redundant rule ignore directive",
@@ -65,7 +65,7 @@ pub fn apply_top_level_directives(
             .secondary(range, "this directive ignores all rules")
             .primary(ignored_range, "this directive is ignored");
 
-            diagnostics.push(warn.into());
+            diagnostics.push(warn);
         }
     }
 }

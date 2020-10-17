@@ -6,6 +6,7 @@ mod suggestion;
 
 pub use diagnostic::{Diagnostic, SubDiagnostic};
 pub use emit::Emitter;
+pub use file::Span;
 pub use suggestion::CodeSuggestion;
 
 use annotate_snippets::snippet;

@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 annotate-snippets = { version = "0.9.0", features = ["color"] }
+rslint_rowan = "0.10.0"

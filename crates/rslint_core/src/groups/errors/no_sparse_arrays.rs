@@ -36,8 +36,9 @@ impl CstRule for NoSparseArrays {
             for elem in elems {
                 err = err.primary(elem, "");
             }
-            err = err
-                .note("note: the sparse elements will become elements with a value of `undefined`");
+            err = err.footer_note(
+                "note: the sparse elements will become elements with a value of `undefined`",
+            );
             ctx.add_err(err);
         }
         None

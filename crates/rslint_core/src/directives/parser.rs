@@ -1,5 +1,4 @@
-use crate::{util::find_best_match_for_name, CstRule, CstRuleStore, Diagnostic, DiagnosticBuilder};
-use codespan_reporting::diagnostic::Severity;
+use crate::{util::find_best_match_for_name, CstRule, CstRuleStore, Diagnostic, Severity};
 use rslint_lexer::Lexer as RawLexer;
 use rslint_parser::{
     util::Comment, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTokenExt, TextRange, T,
@@ -99,8 +98,8 @@ impl<'store> DirectiveParser<'store> {
             .collect())
     }
 
-    fn err(&self, message: impl AsRef<str>) -> DiagnosticBuilder {
-        DiagnosticBuilder::error(self.file_id, "directives", message.as_ref())
+    fn err(&self, message: impl AsRef<str>) -> Diagnostic {
+        Diagnostic::error(self.file_id, message.as_ref(), "directives")
     }
 
     fn bake_raw_directive(&self, directive: RawDirective) -> DirectiveParseResult {
@@ -181,7 +180,7 @@ impl<'store> DirectiveParser<'store> {
                     raw,
                     None,
                 ) {
-                    err = err.note(format!("help: did you mean `{}`?", suggestion));
+                    err = err.footer_note(format!("help: did you mean `{}`?", suggestion));
                 }
                 diagnostics.push(err.into());
             }
@@ -310,7 +309,7 @@ impl<'store> DirectiveParser<'store> {
                 if let Some(suggestion) =
                     find_best_match_for_name(COMMANDS.iter().cloned(), text, None)
                 {
-                    err = err.note(format!("help: did you mean `{}`", suggestion));
+                    err = err.footer_note(format!("help: did you mean `{}`", suggestion));
                 }
                 Err(err.into())
             }
@@ -375,8 +374,8 @@ impl<'src> Lexer<'src> {
         self.raw.peek().map(|(t, _)| t).cloned()
     }
 
-    fn err(&self, msg: impl AsRef<str>) -> DiagnosticBuilder {
-        DiagnosticBuilder::error(self.file_id, "linter", msg.as_ref())
+    fn err(&self, msg: impl AsRef<str>) -> Diagnostic {
+        Diagnostic::error(self.file_id, msg.as_ref(), "linter")
     }
 
     fn range(&self, token: rslint_lexer::Token) -> Range<usize> {
@@ -392,13 +391,11 @@ impl<'src> Lexer<'src> {
         let next: rslint_lexer::Token = self.next().ok_or_else(|| {
             self.err("Expected a word when parsing a directive, but the comment ends prematurely")
                 .primary(end..end + 1, "comment ends here")
-                .finish()
         })?;
         if next.kind != T![ident] && !next.kind.is_keyword() {
             return Err(self
                 .err("Expected a word when parsing a directive, but found none")
-                .primary(self.range(next), "expected a word here")
-                .into());
+                .primary(self.range(next), "expected a word here"));
         }
         let range = self.range(next);
 
@@ -415,7 +412,6 @@ impl<'src> Lexer<'src> {
                 "Expected a rule name when parsing a directive, but the comment ends prematurely",
             )
             .primary(end..end + 1, "comment ends here")
-            .finish()
         })?;
         let start = self.range(next).start + 1;
         let mut tok = next;

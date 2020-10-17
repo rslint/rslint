@@ -1,11 +1,11 @@
 use crate::{
-    file::{FileId, FileSpan},
+    file::{FileId, FileSpan, Span},
     Applicability, CodeSuggestion, Severity,
 };
-use std::ops::Range;
 
 /// A diagnostic message that can give information
 /// like errors or warnings.
+#[derive(Debug, Clone)]
 pub struct Diagnostic {
     pub file_id: FileId,
 
@@ -21,28 +21,28 @@ pub struct Diagnostic {
 
 impl Diagnostic {
     /// Creates a new [`Diagnostic`] with the `Error` severity.
-    pub fn error(file_id: FileId, title: String, code: Option<String>) -> Self {
-        Self::new_with_code(file_id, Severity::Error, title, code)
+    pub fn error(file_id: FileId, code: impl Into<String>, title: impl Into<String>) -> Self {
+        Self::new_with_code(file_id, Severity::Error, title, Some(code.into()))
     }
 
     /// Creates a new [`Diagnostic`] with the `Warning` severity.
-    pub fn warning(file_id: FileId, title: String, code: Option<String>) -> Self {
-        Self::new_with_code(file_id, Severity::Warning, title, code)
+    pub fn warning(file_id: FileId, code: impl Into<String>, title: impl Into<String>) -> Self {
+        Self::new_with_code(file_id, Severity::Warning, title, Some(code.into()))
     }
 
     /// Creates a new [`Diagnostic`] with the `Help` severity.
-    pub fn help(file_id: FileId, title: String, code: Option<String>) -> Self {
-        Self::new_with_code(file_id, Severity::Help, title, code)
+    pub fn help(file_id: FileId, code: impl Into<String>, title: impl Into<String>) -> Self {
+        Self::new_with_code(file_id, Severity::Help, title, Some(code.into()))
     }
 
     /// Creates a new [`Diagnostic`] with the `Note` severity.
-    pub fn note(file_id: FileId, title: String, code: Option<String>) -> Self {
-        Self::new_with_code(file_id, Severity::Note, title, code)
+    pub fn note(file_id: FileId, code: impl Into<String>, title: impl Into<String>) -> Self {
+        Self::new_with_code(file_id, Severity::Note, title, Some(code.into()))
     }
 
     /// Creates a new [`Diagnostic`] with the `Info` severity.
-    pub fn info(file_id: FileId, title: String, code: Option<String>) -> Self {
-        Self::new_with_code(file_id, Severity::Info, title, code)
+    pub fn info(file_id: FileId, code: impl Into<String>, title: impl Into<String>) -> Self {
+        Self::new_with_code(file_id, Severity::Info, title, Some(code.into()))
     }
 
     /// Creates a new [`Diagnostic`] that will be used in a builder-like way
@@ -71,6 +71,12 @@ impl Diagnostic {
         }
     }
 
+    /// Overwrites the severity of this diagnostic.
+    pub fn severity(mut self, severity: Severity) -> Self {
+        self.severity = severity;
+        self
+    }
+
     /// Attaches a label to this [`Diagnostic`], that will point to another file
     /// that is provided.
     pub fn label_in_file(mut self, severity: Severity, span: FileSpan, msg: String) -> Self {
@@ -85,10 +91,10 @@ impl Diagnostic {
     /// Attaches a label to this [`Diagnostic`].
     ///
     /// The given span has to be in the file that was provided while creating this [`Diagnostic`].
-    pub fn label(mut self, severity: Severity, span: impl Into<Range<usize>>, msg: String) -> Self {
+    pub fn label(mut self, severity: Severity, span: impl Span, msg: impl Into<String>) -> Self {
         self.children.push(SubDiagnostic {
             severity,
-            msg,
+            msg: msg.into(),
             span: FileSpan::new(self.file_id, span),
         });
         self
@@ -97,10 +103,10 @@ impl Diagnostic {
     /// Attaches a primary label to this [`Diagnostic`].
     ///
     /// A primary is just a label with the [`Error`](Severity::Error) severity.
-    pub fn primary(mut self, span: impl Into<Range<usize>>, msg: String) -> Self {
+    pub fn primary(mut self, span: impl Span, msg: impl Into<String>) -> Self {
         self.primary = Some(SubDiagnostic {
             severity: Severity::Error,
-            msg,
+            msg: msg.into(),
             span: FileSpan::new(self.file_id, span),
         });
         self
@@ -109,7 +115,7 @@ impl Diagnostic {
     /// Attaches a secondary label to this [`Diagnostic`].
     ///
     /// A secondary is just a label with the [`Info`](Severity::Info) severity.
-    pub fn secondary(self, span: impl Into<Range<usize>>, msg: String) -> Self {
+    pub fn secondary(self, span: impl Span, msg: impl Into<String>) -> Self {
         self.label(Severity::Info, span, msg)
     }
 
@@ -130,13 +136,13 @@ impl Diagnostic {
     /// The suggestion will automatically be wrapped inside two backticks.
     pub fn suggestion_in_file(
         mut self,
-        span: impl Into<Range<usize>>,
+        span: impl Span,
         msg: &str,
-        suggestion: String,
+        suggestion: impl Into<String>,
         applicability: Applicability,
     ) -> Self {
         let suggestion = CodeSuggestion {
-            substitution: (None, span.into(), suggestion),
+            substitution: (None, span.as_range(), suggestion.into()),
             applicability,
             msg: msg.to_string(),
         };
@@ -160,13 +166,13 @@ impl Diagnostic {
     /// The suggestion will automatically be wrapped inside two backticks.
     pub fn suggestion(
         mut self,
-        span: impl Into<Range<usize>>,
+        span: impl Span,
         msg: &str,
-        suggestion: String,
+        suggestion: impl Into<String>,
         applicability: Applicability,
     ) -> Self {
         let suggestion = CodeSuggestion {
-            substitution: (None, span.into(), suggestion),
+            substitution: (None, span.as_range(), suggestion.into()),
             applicability,
             msg: msg.to_string(),
         };
@@ -175,18 +181,21 @@ impl Diagnostic {
     }
 
     /// Adds a footer to this `Diagnostic`, which will be displayed under the actual error.
-    pub fn footer(mut self, severity: Severity, label: String) -> Self {
-        self.footer.push(Footer { label, severity });
+    pub fn footer(mut self, severity: Severity, label: impl Into<String>) -> Self {
+        self.footer.push(Footer {
+            label: label.into(),
+            severity,
+        });
         self
     }
 
     /// Adds a footer to this `Diagnostic`, with the `Help` severity.
-    pub fn footer_help(self, label: String) -> Self {
+    pub fn footer_help(self, label: impl Into<String>) -> Self {
         self.footer(Severity::Help, label)
     }
 
     /// Adds a footer to this `Diagnostic`, with the `Note` severity.
-    pub fn footer_note(self, label: String) -> Self {
+    pub fn footer_note(self, label: impl Into<String>) -> Self {
         self.footer(Severity::Note, label)
     }
 }

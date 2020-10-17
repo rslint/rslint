@@ -1108,9 +1108,9 @@ dependencies = [
 name = "rslint_core"
 version = "0.1.1"
 dependencies = [
- "codespan-reporting",
  "dyn-clone",
  "rayon",
+ "rslint_errors",
  "rslint_lexer",
  "rslint_parser",
  "serde",
@@ -1122,6 +1122,7 @@ name = "rslint_errors"
 version = "0.1.0"
 dependencies = [
  "annotate-snippets",
+ "rslint_rowan",
 ]
 
 [[package]]

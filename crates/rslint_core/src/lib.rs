@@ -1,4 +1,3 @@
-mod diagnostic;
 mod rule;
 mod store;
 mod testing;
@@ -9,11 +8,10 @@ pub mod rule_prelude;
 pub mod util;
 
 pub use self::{
-    diagnostic::{DiagnosticBuilder, Span},
     rule::{CstRule, Outcome, Rule, RuleCtx, RuleLevel, RuleResult},
     store::CstRuleStore,
 };
-pub use codespan_reporting::diagnostic::{Label, Severity};
+pub use rslint_errors::{Diagnostic, Severity, Span};
 
 use crate::directives::skip_node;
 pub use crate::directives::{apply_top_level_directives, Directive, DirectiveParser};
@@ -21,9 +19,6 @@ use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
 use std::collections::HashMap;
-
-/// The type of errors, warnings, and notes emitted by the linter.
-pub type Diagnostic = codespan_reporting::diagnostic::Diagnostic<usize>;
 
 /// The result of linting a file.
 #[derive(Debug)]
