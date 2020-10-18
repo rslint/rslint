@@ -104,7 +104,7 @@ impl Emitter<'_> {
         } in &d.suggestions
         {
             let Range { start, end } = range.clone();
-            let inline = msg.len() + replacement.len() + 2 <= 25;
+            let inline = msg.len() <= 25;
 
             if inline {
                 let label = if replacement.is_empty() {
@@ -146,7 +146,7 @@ impl Emitter<'_> {
                     label,
                     source,
                     file: *file,
-                    span: dbg!((start, end)),
+                    span: (start, end),
                 };
                 suggestions.push(suggestion);
             }
@@ -217,15 +217,20 @@ impl Emitter<'_> {
             }
         }
 
-        let footer = d
-            .footers
-            .iter()
-            .map(|footer| snippet::Annotation {
-                id: None,
-                label: Some(&footer.msg),
-                annotation_type: footer.severity.into(),
-            })
-            .collect::<Vec<_>>();
+        let mut footer = Some(
+            d.footers
+                .iter()
+                .map(|footer| snippet::Annotation {
+                    id: None,
+                    label: Some(&footer.msg),
+                    annotation_type: footer.severity.into(),
+                })
+                .collect::<Vec<_>>(),
+        );
+
+        if let Some(last) = suggestion_snippets.last_mut() {
+            last.footer = footer.take().into_iter().flatten().collect();
+        }
 
         let snippet = snippet::Snippet {
             title: Some(snippet::Annotation {
@@ -234,7 +239,7 @@ impl Emitter<'_> {
                 annotation_type: d.severity.into(),
             }),
             slices: slices.into_iter().map(|(_, v)| v).collect(),
-            footer,
+            footer: footer.into_iter().flatten().collect(),
             opt: dl::FormatOptions {
                 color: self.color,
                 ..Default::default()
