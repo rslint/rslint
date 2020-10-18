@@ -147,7 +147,7 @@ impl<'store> DirectiveParser<'store> {
                     )
                     .primary(range.clone(), "this ignore is redundant");
 
-                diagnostics.push(warn.into());
+                diagnostics.push(warn);
             } else {
                 unique.insert(raw, range);
             }
@@ -162,7 +162,7 @@ impl<'store> DirectiveParser<'store> {
                         .severity(Severity::Warning)
                         .primary(range.to_owned(), "");
 
-                    diagnostics.push(warn.into());
+                    diagnostics.push(warn);
                 } else {
                     rules.push(rule);
                 }
@@ -182,7 +182,7 @@ impl<'store> DirectiveParser<'store> {
                 ) {
                     err = err.footer_help(format!("did you mean `{}`?", suggestion));
                 }
-                diagnostics.push(err.into());
+                diagnostics.push(err);
             }
         }
         (diagnostics, rules)
@@ -252,8 +252,7 @@ impl<'store> DirectiveParser<'store> {
                     .primary(
                         lexer.cur..lexer.cur + lexer.peek_no_whitespace().unwrap().len,
                         "",
-                    )
-                    .into());
+                    ));
             } else {
                 lexer.next();
             }
@@ -311,7 +310,7 @@ impl<'store> DirectiveParser<'store> {
                 {
                     err = err.footer_help(format!("did you mean `{}`", suggestion));
                 }
-                Err(err.into())
+                Err(err)
             }
         }
     }
