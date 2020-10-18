@@ -6,6 +6,7 @@ use crate::{
 /// A diagnostic message that can give information
 /// like errors or warnings.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Diagnostic {
     pub file_id: FileId,
 
@@ -203,6 +204,7 @@ impl Diagnostic {
 /// Everything that can be added to a diagnostic, like
 /// a suggestion that will be displayed under the actual error.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SubDiagnostic {
     pub severity: Severity,
     pub msg: String,
@@ -211,6 +213,7 @@ pub struct SubDiagnostic {
 
 /// A note or help that is displayed under the diagnostic.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Footer {
     pub label: String,
     pub severity: Severity,

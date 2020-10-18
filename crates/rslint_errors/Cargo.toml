@@ -1,10 +1,11 @@
 [package]
 name = "rslint_errors"
 version = "0.1.0"
-authors = ["Justus K <justus.k@protonmail.com>"]
+authors = ["RSLint developers"]
 edition = "2018"
 
 [dependencies]
 rslint_rowan = "0.10.0"
 unicode-width = "0.1.8"
 yansi-term = "0.1.2"
+serde = { version = "1.0.117", optional = true, features = ["derive"] }

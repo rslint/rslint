@@ -18,6 +18,7 @@ use annotate_snippets::snippet;
 
 /// Indicicates how a tool should manage this suggestion.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum Applicability {
     /// The suggestion is definitely what the user intended.
     /// This suggestion should be automatically applied.
@@ -35,6 +36,7 @@ pub enum Applicability {
 
 /// Types of severity.
 #[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum Severity {
     Error,
     Warning,

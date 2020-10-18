@@ -62,6 +62,7 @@ pub type FileId = usize;
 
 /// A range that is indexed in a specific file.
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct FileSpan {
     pub file: FileId,
     pub span: Range<usize>,
