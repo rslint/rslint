@@ -124,7 +124,7 @@ impl CstRule for NoInnerDeclarations {
                     "move the declaration to the body of this function",
                 );
             } else {
-                err = err.footer_note("help: move the declaration to the program root");
+                err = err.footer_help("move the declaration to the program root");
             }
 
             ctx.add_err(err);

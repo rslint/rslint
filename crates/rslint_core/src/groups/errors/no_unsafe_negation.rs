@@ -64,10 +64,7 @@ impl CstRule for NoUnsafeNegation {
                             ),
                         )
                         .secondary(rest_range, "`!` is not negating this expression")
-                        .footer_note(format!(
-                            "help: try this: `!({})`",
-                            color(&no_op_text.to_string())
-                        ));
+                        .footer_help(format!("try this: `!({})`", color(&no_op_text.to_string())));
 
                     ctx.add_err(err);
                 }

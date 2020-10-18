@@ -109,8 +109,8 @@ impl CstRule for ValidTypeof {
                 .primary(literal_range, "");
 
             let err = if let Some(suggestion) = suggestion {
-                err.footer_note(format!(
-                    "help: a type with a similair name exists: `{}`",
+                err.footer_help(format!(
+                    "a type with a similair name exists: `{}`",
                     suggestion
                 ))
             } else {

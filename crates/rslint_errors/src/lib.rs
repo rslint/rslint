@@ -16,8 +16,26 @@ pub(crate) use annotate_snippets::*;
 
 use annotate_snippets::snippet;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+pub enum DiagnosticTag {
+    Unnecessary,
+    Deprecated,
+    Both,
+}
+
+impl DiagnosticTag {
+    pub fn is_unecessary(&self) -> bool {
+        matches!(self, DiagnosticTag::Unnecessary | DiagnosticTag::Both)
+    }
+
+    pub fn is_deprecated(&self) -> bool {
+        matches!(self, DiagnosticTag::Deprecated | DiagnosticTag::Both)
+    }
+}
+
 /// Indicicates how a tool should manage this suggestion.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum Applicability {
     /// The suggestion is definitely what the user intended.
@@ -35,7 +53,7 @@ pub enum Applicability {
 }
 
 /// Types of severity.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum Severity {
     Error,

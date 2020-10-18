@@ -52,7 +52,7 @@ impl Emitter<'_> {
         let mut slices: HashMap<FileId, snippet::Slice<'_>> = HashMap::new();
 
         for child in d.primary.iter().chain(&d.children) {
-            let Range { start, end } = child.span.span;
+            let Range { start, end } = child.span.range;
 
             let source = self.files.source(d.file_id);
             let line_start = self.files.line_index(d.file_id, start);
@@ -218,11 +218,11 @@ impl Emitter<'_> {
         }
 
         let footer = d
-            .footer
+            .footers
             .iter()
             .map(|footer| snippet::Annotation {
                 id: None,
-                label: Some(&footer.label),
+                label: Some(&footer.msg),
                 annotation_type: footer.severity.into(),
             })
             .collect::<Vec<_>>();

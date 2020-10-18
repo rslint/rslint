@@ -39,8 +39,8 @@ pub fn run(glob: String, verbose: bool) {
 
         let diagnostic = if let Some(found) = regex.find(&old) {
             msg.replace_range(found.range(), "");
-            Diagnostic::error(0, "config", &msg).footer_note(format!(
-                "help: did you mean '{}'?",
+            Diagnostic::error(0, "config", &msg).footer_help(format!(
+                "did you mean '{}'?",
                 regex.captures(&old).unwrap().get(1).unwrap().as_str()
             ))
         } else {

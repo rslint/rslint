@@ -76,8 +76,8 @@ fn suggestion(prop: String, object: String, expr: CallExpr, err: Diagnostic) -> 
     };
 
     let suggestion_expr = format!("Object.prototype.{}.call({}{})", prop, object, arg);
-    err.footer_note(format!("help: use this instead: `{}`", color(&suggestion_expr)))
-        .footer_note("note: the method may be shadowed and cause random bugs and denial of service vulnerabilities")
+    err.footer_help(format!("use this instead: `{}`", color(&suggestion_expr)))
+        .footer_note("the method may be shadowed and cause random bugs and denial of service vulnerabilities")
 }
 
 rule_tests! {

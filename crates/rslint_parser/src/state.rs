@@ -120,7 +120,7 @@ impl ParserState {
                     err = err.secondary(prev_range, "strict mode is previous declared here");
                 }
                 StrictMode::Module => {
-                    err = err.help("note: modules are always strict mode");
+                    err = err.note("modules are always strict mode");
                 }
                 StrictMode::Class(prev_range) => {
                     err = err.secondary(prev_range, "class bodies are always strict mode");

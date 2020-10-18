@@ -1,6 +1,6 @@
 use crate::{
     file::{FileId, FileSpan, Span},
-    Applicability, CodeSuggestion, Severity,
+    Applicability, CodeSuggestion, DiagnosticTag, Severity,
 };
 
 /// A diagnostic message that can give information
@@ -13,11 +13,12 @@ pub struct Diagnostic {
     pub severity: Severity,
     pub code: Option<String>,
     pub title: String,
+    pub tag: Option<DiagnosticTag>,
 
     pub primary: Option<SubDiagnostic>,
     pub children: Vec<SubDiagnostic>,
     pub suggestions: Vec<CodeSuggestion>,
-    pub footer: Vec<Footer>,
+    pub footers: Vec<Footer>,
 }
 
 impl Diagnostic {
@@ -66,15 +67,42 @@ impl Diagnostic {
             severity,
             title: title.into(),
             primary: None,
+            tag: None,
             children: vec![],
             suggestions: vec![],
-            footer: vec![],
+            footers: vec![],
         }
     }
 
     /// Overwrites the severity of this diagnostic.
     pub fn severity(mut self, severity: Severity) -> Self {
         self.severity = severity;
+        self
+    }
+
+    /// Marks this diagnostic as deprecated code, which will
+    /// be displayed in the language server.
+    ///
+    /// This does not have any influence on the diagnostic rendering.
+    pub fn deprecated(mut self) -> Self {
+        self.tag = if matches!(self.tag, Some(DiagnosticTag::Unnecessary)) {
+            Some(DiagnosticTag::Both)
+        } else {
+            Some(DiagnosticTag::Deprecated)
+        };
+        self
+    }
+
+    /// Marks this diagnostic as unnecessary code, which will
+    /// be displayed in the language server.
+    ///
+    /// This does not have any influence on the diagnostic rendering.
+    pub fn unnecessary(mut self) -> Self {
+        self.tag = if matches!(self.tag, Some(DiagnosticTag::Deprecated)) {
+            Some(DiagnosticTag::Both)
+        } else {
+            Some(DiagnosticTag::Unnecessary)
+        };
         self
     }
 
@@ -182,22 +210,22 @@ impl Diagnostic {
     }
 
     /// Adds a footer to this `Diagnostic`, which will be displayed under the actual error.
-    pub fn footer(mut self, severity: Severity, label: impl Into<String>) -> Self {
-        self.footer.push(Footer {
-            label: label.into(),
+    pub fn footer(mut self, severity: Severity, msg: impl Into<String>) -> Self {
+        self.footers.push(Footer {
+            msg: msg.into(),
             severity,
         });
         self
     }
 
     /// Adds a footer to this `Diagnostic`, with the `Help` severity.
-    pub fn footer_help(self, label: impl Into<String>) -> Self {
-        self.footer(Severity::Help, label)
+    pub fn footer_help(self, msg: impl Into<String>) -> Self {
+        self.footer(Severity::Help, msg)
     }
 
     /// Adds a footer to this `Diagnostic`, with the `Note` severity.
-    pub fn footer_note(self, label: impl Into<String>) -> Self {
-        self.footer(Severity::Note, label)
+    pub fn footer_note(self, msg: impl Into<String>) -> Self {
+        self.footer(Severity::Note, msg)
     }
 }
 
@@ -215,6 +243,6 @@ pub struct SubDiagnostic {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct Footer {
-    pub label: String,
+    pub msg: String,
     pub severity: Severity,
 }

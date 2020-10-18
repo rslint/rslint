@@ -180,7 +180,7 @@ impl<'store> DirectiveParser<'store> {
                     raw,
                     None,
                 ) {
-                    err = err.footer_note(format!("help: did you mean `{}`?", suggestion));
+                    err = err.footer_help(format!("did you mean `{}`?", suggestion));
                 }
                 diagnostics.push(err.into());
             }
@@ -309,7 +309,7 @@ impl<'store> DirectiveParser<'store> {
                 if let Some(suggestion) =
                     find_best_match_for_name(COMMANDS.iter().cloned(), text, None)
                 {
-                    err = err.footer_note(format!("help: did you mean `{}`", suggestion));
+                    err = err.footer_help(format!("did you mean `{}`", suggestion));
                 }
                 Err(err.into())
             }
