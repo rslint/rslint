@@ -153,6 +153,7 @@ impl Emitter<'_> {
         }
 
         let mut suggestion_snippets = vec![];
+        let mut additional_footers = vec![];
 
         for sug in suggestions.iter() {
             match sug {
@@ -165,9 +166,14 @@ impl Emitter<'_> {
 
                     let annotation = snippet::SourceAnnotation {
                         range: *span,
-                        label,
-                        annotation_type: snippet::AnnotationType::Help,
+                        label: "",
+                        annotation_type: snippet::AnnotationType::Error,
                     };
+                    additional_footers.push(snippet::Annotation {
+                        id: None,
+                        label: Some(label),
+                        annotation_type: snippet::AnnotationType::Help,
+                    });
                     entry.annotations.push(annotation);
                 }
                 Suggestion::Additional {
@@ -239,7 +245,11 @@ impl Emitter<'_> {
                 annotation_type: d.severity.into(),
             }),
             slices: slices.into_iter().map(|(_, v)| v).collect(),
-            footer: footer.into_iter().flatten().collect(),
+            footer: footer
+                .into_iter()
+                .flatten()
+                .chain(additional_footers)
+                .collect(),
             opt: dl::FormatOptions {
                 color: self.color,
                 ..Default::default()
