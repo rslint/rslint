@@ -1,11 +1,11 @@
 //! Implementation of converting, and emitting diagnostics
 //! using `annotate-snippets-rs`.
 
+use crate::annotate_snippets::{display_list as dl, snippet};
 use crate::{
     file::{FileId, Files},
     CodeSuggestion, Diagnostic,
 };
-use annotate_snippets::{display_list as dl, snippet};
 use std::{
     collections::{hash_map::Entry, HashMap},
     io::{self, BufWriter, Write},

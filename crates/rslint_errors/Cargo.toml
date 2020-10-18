@@ -5,5 +5,6 @@ authors = ["Justus K <justus.k@protonmail.com>"]
 edition = "2018"
 
 [dependencies]
-annotate-snippets = { version = "0.9.0", features = ["color"] }
 rslint_rowan = "0.10.0"
+unicode-width = "0.1.8"
+yansi-term = "0.1.2"

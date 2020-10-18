@@ -105,7 +105,7 @@ impl Diagnostic {
     /// A primary is just a label with the [`Error`](Severity::Error) severity.
     pub fn primary(mut self, span: impl Span, msg: impl Into<String>) -> Self {
         self.primary = Some(SubDiagnostic {
-            severity: Severity::Error,
+            severity: self.severity,
             msg: msg.into(),
             span: FileSpan::new(self.file_id, span),
         });
@@ -116,7 +116,7 @@ impl Diagnostic {
     ///
     /// A secondary is just a label with the [`Info`](Severity::Info) severity.
     pub fn secondary(self, span: impl Span, msg: impl Into<String>) -> Self {
-        self.label(Severity::Warning, span, msg)
+        self.label(Severity::Info, span, msg)
     }
 
     /// Prints out a message that suggests a possible solution, that is in another

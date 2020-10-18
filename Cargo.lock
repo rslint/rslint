@@ -25,16 +25,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "annotate-snippets"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c96c3d1062ea7101741480185a6a1275eab01cbe8b20e378d1311bc056d2e08"
-dependencies = [
- "unicode-width",
- "yansi-term",
-]
-
-[[package]]
 name = "ansi_term"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -211,7 +201,6 @@ version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e0762455306b1ed42bc651ef6a2197aabda5e1d4a43c34d5eab5c1a3634e81d"
 dependencies = [
- "serde",
  "termcolor",
  "unicode-width",
 ]
@@ -1089,16 +1078,17 @@ dependencies = [
 name = "rslint_cli"
 version = "0.1.1"
 dependencies = [
- "codespan-reporting",
  "glob",
  "hashbrown",
  "heck",
  "rayon",
  "regex",
  "rslint_core",
+ "rslint_errors",
  "rslint_lexer",
  "serde",
  "structopt",
+ "termcolor",
  "toml",
  "ureq",
  "walkdir",
@@ -1121,8 +1111,9 @@ dependencies = [
 name = "rslint_errors"
 version = "0.1.0"
 dependencies = [
- "annotate-snippets",
  "rslint_rowan",
+ "unicode-width",
+ "yansi-term",
 ]
 
 [[package]]
@@ -1695,9 +1686,9 @@ checksum = "e83e153d1053cbb5a118eeff7fd5be06ed99153f00dbcd8ae310c5fb2b22edc0"
 
 [[package]]
 name = "unicode-width"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "caaa9d531767d1ff2150b9332433f32a24622147e5ebb1f26409d5da67afd479"
+checksum = "9337591893a19b88d8d87f2cec1e73fad5cdfd10e5a6f349f498ad6ea2ffb1e3"
 
 [[package]]
 name = "unicode-xid"

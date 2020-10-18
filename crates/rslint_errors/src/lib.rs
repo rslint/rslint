@@ -1,3 +1,6 @@
+#![deny(rust_2018_idioms)]
+
+pub mod annotate_snippets;
 pub mod file;
 
 mod diagnostic;
@@ -8,6 +11,8 @@ pub use diagnostic::{Diagnostic, SubDiagnostic};
 pub use emit::Emitter;
 pub use file::Span;
 pub use suggestion::CodeSuggestion;
+
+pub(crate) use annotate_snippets::*;
 
 use annotate_snippets::snippet;
 
