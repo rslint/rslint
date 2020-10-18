@@ -82,11 +82,7 @@ impl Emitter<'_> {
         }
 
         enum Suggestion {
-            Inline {
-                label: String,
-                file: FileId,
-                span: (usize, usize),
-            },
+            Inline(String),
             Additional {
                 label: String,
                 source: String,
@@ -113,11 +109,7 @@ impl Emitter<'_> {
                     format!("{}: {}", msg, replacement)
                 };
 
-                let suggestion = Suggestion::Inline {
-                    label,
-                    file: file.unwrap_or(d.file_id),
-                    span: (start, end),
-                };
+                let suggestion = Suggestion::Inline(label);
                 suggestions.push(suggestion);
             } else {
                 use std::cmp;
@@ -157,24 +149,12 @@ impl Emitter<'_> {
 
         for sug in suggestions.iter() {
             match sug {
-                Suggestion::Inline { label, file, span } => {
-                    let entry = if let Some(entry) = slices.get_mut(&file) {
-                        entry
-                    } else {
-                        continue;
-                    };
-
-                    let annotation = snippet::SourceAnnotation {
-                        range: *span,
-                        label: "",
-                        annotation_type: snippet::AnnotationType::Error,
-                    };
+                Suggestion::Inline(label) => {
                     additional_footers.push(snippet::Annotation {
                         id: None,
                         label: Some(label),
                         annotation_type: snippet::AnnotationType::Help,
                     });
-                    entry.annotations.push(annotation);
                 }
                 Suggestion::Additional {
                     label,
