@@ -39,20 +39,20 @@ MODULE@0..32
   WHITESPACE@31..32 "\n"
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ var_decl_err.js:1:8
-  │
-1 │ var a =;
-  │        ^ Expected an expression here
-
+ --> var_decl_err.js:1:8
+  |
+1 | var a =;
+  |        ^ Expected an expression here
+  |
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ var_decl_err.js:2:1
-  │
-2 │ const a = 5 let b = 5;
-  │ ------------^^^ An explicit or implicit semicolon is expected here...
-  │ │            
-  │ ...Which is required to end this statement
-
+ --> var_decl_err.js:2:13
+  |
+1 | var a =;
+2 | const a = 5 let b = 5;
+  |             ^^^ An explicit or implicit semicolon is expected here...
+  | ------------ ...Which is required to end this statement
+  |
 --
 var a =;
 const a = 5 let b = 5;

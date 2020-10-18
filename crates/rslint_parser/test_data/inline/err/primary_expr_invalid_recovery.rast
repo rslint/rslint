@@ -23,11 +23,11 @@ MODULE@0..18
     SEMICOLON@16..17 ";"
   WHITESPACE@17..18 "\n"
 --
-error: Unexpected token `\`
-  ┌─ primary_expr_invalid_recovery.js:1:9
-  │
-1 │ let a = \; foo();
-  │         ^
-
+error: unexpected token `\`
+ --> primary_expr_invalid_recovery.js:1:9
+  |
+1 | let a = \; foo();
+  |         ^
+  |
 --
 let a = \; foo();

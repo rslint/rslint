@@ -51,32 +51,35 @@ MODULE@0..40
   WHITESPACE@39..40 "\n"
 --
 error[SyntaxError]: expected `'('` but instead found `;`
-  ┌─ for_stmt_err.js:1:5
-  │
-1 │ for ;; {}
-  │     ^ unexpected
-
+ --> for_stmt_err.js:1:5
+  |
+1 | for ;; {}
+  |     ^ unexpected
+  |
 --
 error[SyntaxError]: expected `')'` but instead found `for`
-  ┌─ for_stmt_err.js:2:1
-  │
-2 │ for let i = 5; i < 10; i++ {}
-  │ ^^^ unexpected
-
+ --> for_stmt_err.js:2:1
+  |
+1 | for ;; {}
+2 | for let i = 5; i < 10; i++ {}
+  | ^^^ unexpected
+  |
 --
 error[SyntaxError]: expected `'('` but instead found `let`
-  ┌─ for_stmt_err.js:2:5
-  │
-2 │ for let i = 5; i < 10; i++ {}
-  │     ^^^ unexpected
-
+ --> for_stmt_err.js:2:5
+  |
+1 | for ;; {}
+2 | for let i = 5; i < 10; i++ {}
+  |     ^^^ unexpected
+  |
 --
 error[SyntaxError]: expected `')'` but instead found `{`
-  ┌─ for_stmt_err.js:2:28
-  │
-2 │ for let i = 5; i < 10; i++ {}
-  │                            ^ unexpected
-
+ --> for_stmt_err.js:2:28
+  |
+1 | for ;; {}
+2 | for let i = 5; i < 10; i++ {}
+  |                            ^ unexpected
+  |
 --
 for ;; {}
 for let i = 5; i < 10; i++ {}

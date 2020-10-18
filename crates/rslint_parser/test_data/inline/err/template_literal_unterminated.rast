@@ -18,11 +18,12 @@ MODULE@0..20
           R_CURLY@14..15 "}"
         TEMPLATE_CHUNK@15..20 " bar\n"
 --
-error: Unterminated template literal
-  ┌─ template_literal_unterminated.js:2:1
-  │
-2 │ 
-  │ ^
-
+error: unterminated template literal
+ --> template_literal_unterminated.js:2:1
+  |
+1 | let a = `${foo} bar
+2 |  
+  | ^
+  |
 --
 let a = `${foo} bar

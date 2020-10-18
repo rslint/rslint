@@ -22,48 +22,46 @@ MODULE@0..14
   WHITESPACE@13..14 "\n"
 --
 error[SyntaxError]: Expected an identifier or pattern, but found none
-  ┌─ paren_or_arrow_expr_invalid_params.js:1:2
-  │
-1 │ (5 + 5) => {}
-  │  ^
-
+ --> paren_or_arrow_expr_invalid_params.js:1:2
+  |
+1 | (5 + 5) => {}
+  |  ^
+  |
 --
 error[SyntaxError]: expected `')'` but instead found `5`
-  ┌─ paren_or_arrow_expr_invalid_params.js:1:6
-  │
-1 │ (5 + 5) => {}
-  │      ^ unexpected
-
+ --> paren_or_arrow_expr_invalid_params.js:1:6
+  |
+1 | (5 + 5) => {}
+  |      ^ unexpected
+  |
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ paren_or_arrow_expr_invalid_params.js:1:7
-  │
-1 │ (5 + 5) => {}
-  │       ^ Expected an expression here
-
+ --> paren_or_arrow_expr_invalid_params.js:1:7
+  |
+1 | (5 + 5) => {}
+  |       ^ Expected an expression here
+  |
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ paren_or_arrow_expr_invalid_params.js:1:1
-  │
-1 │ (5 + 5) => {}
-  │ ------^
-  │ │     │
-  │ │     An explicit or implicit semicolon is expected here...
-  │ ...Which is required to end this statement
-
+ --> paren_or_arrow_expr_invalid_params.js:1:7
+  |
+1 | (5 + 5) => {}
+  |       ^ An explicit or implicit semicolon is expected here...
+  | ------- ...Which is required to end this statement
+  |
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
-  ┌─ paren_or_arrow_expr_invalid_params.js:1:7
-  │
-1 │ (5 + 5) => {}
-  │       ^ Expected a statement or declaration here
-
+ --> paren_or_arrow_expr_invalid_params.js:1:7
+  |
+1 | (5 + 5) => {}
+  |       ^ Expected a statement or declaration here
+  |
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
-  ┌─ paren_or_arrow_expr_invalid_params.js:1:9
-  │
-1 │ (5 + 5) => {}
-  │         ^^ Expected a statement or declaration here
-
+ --> paren_or_arrow_expr_invalid_params.js:1:9
+  |
+1 | (5 + 5) => {}
+  |         ^^ Expected a statement or declaration here
+  |
 --
 (5 + 5) => {}

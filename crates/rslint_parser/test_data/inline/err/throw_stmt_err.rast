@@ -16,14 +16,13 @@ MODULE@0..28
   WHITESPACE@27..28 "\n"
 --
 error[SyntaxError]: Linebreaks between a throw statement and the error to be thrown are not allowed
-  ┌─ throw_stmt_err.js:2:1
-  │
-2 │ new Error("oh no :(")
-  │ ^^^
-  │ │
-  │ A linebreak is not allowed here
-  │ Help: did you mean to throw this?
-
+ --> throw_stmt_err.js:2:1
+  |
+1 | throw
+2 | new Error("oh no :(")
+  | ^^^ A linebreak is not allowed here
+  | --- Help: did you mean to throw this?
+  |
 --
 throw
 new Error("oh no :(")

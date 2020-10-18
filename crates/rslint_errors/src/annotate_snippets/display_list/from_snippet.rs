@@ -2,11 +2,11 @@
 use super::*;
 use crate::{formatter::get_term_style, snippet};
 
-struct CursorLines<'a>(&'a str);
+struct CursorLines<'a>(&'a str, bool);
 
 impl<'a> CursorLines<'a> {
-    fn new(src: &str) -> CursorLines<'_> {
-        CursorLines(src)
+    fn new(src: &str, additional_line: bool) -> CursorLines<'_> {
+        CursorLines(src, additional_line)
     }
 }
 
@@ -21,7 +21,12 @@ impl<'a> Iterator for CursorLines<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.0.is_empty() {
-            None
+            if self.1 {
+                self.1 = false;
+                Some((" ", EndLine::EOF))
+            } else {
+                None
+            }
         } else {
             self.0
                 .find('\n')
@@ -39,7 +44,7 @@ impl<'a> Iterator for CursorLines<'a> {
                     ret
                 })
                 .or_else(|| {
-                    let ret = Some((&self.0[..], EndLine::EOF));
+                    let ret = Some((&self.0[..], if self.1 { EndLine::LF } else { EndLine::EOF }));
                     self.0 = "";
                     ret
                 })
@@ -271,31 +276,38 @@ fn fold_body(mut body: Vec<DisplayLine<'_>>) -> Vec<DisplayLine<'_>> {
 }
 
 fn format_body(
-    slice: snippet::Slice<'_>,
+    mut slice: snippet::Slice<'_>,
     need_empty_header: bool,
     has_footer: bool,
     margin: Option<Margin>,
 ) -> Vec<DisplayLine<'_>> {
     let source_len = slice.source.chars().count();
-    if let Some(bigger) = slice.annotations.iter().find_map(|x| {
-        if source_len < x.range.1 {
-            Some(x.range)
-        } else {
-            None
-        }
-    }) {
-        panic!(
-            "SourceAnnotation range `{:?}` is bigger than source length `{}`",
-            bigger, source_len
-        )
-    }
+    let biggest_range = slice
+        .annotations
+        .iter_mut()
+        .filter_map(|x| {
+            if source_len < x.range.1 {
+                Some(&mut x.range)
+            } else {
+                None
+            }
+        })
+        .max();
+
+    let additional_line = if let Some(range) = biggest_range {
+        range.0 = range.0.max(source_len);
+        range.1 = range.1.max(source_len);
+        true
+    } else {
+        false
+    };
 
     let mut body = vec![];
     let mut current_line = slice.line_start;
     let mut current_index = 0;
     let mut line_index_ranges = vec![];
 
-    for (line, end_line) in CursorLines::new(slice.source) {
+    for (line, end_line) in CursorLines::new(slice.source, additional_line) {
         let line_length = line.chars().count();
         let line_range = (current_index, current_index + line_length);
         body.push(DisplayLine::Source {

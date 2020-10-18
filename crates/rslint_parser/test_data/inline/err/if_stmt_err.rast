@@ -54,53 +54,59 @@ MODULE@0..61
   WHITESPACE@60..61 "\n"
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
-  ┌─ if_stmt_err.js:1:11
-  │
-1 │ if (true) else {}
-  │           ^^^^ Expected a statement or declaration here
-
+ --> if_stmt_err.js:1:11
+  |
+1 | if (true) else {}
+  |           ^^^^ Expected a statement or declaration here
+  |
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
-  ┌─ if_stmt_err.js:2:11
-  │
-2 │ if (true) else
-  │           ^^^^ Expected a statement or declaration here
-
+ --> if_stmt_err.js:2:11
+  |
+1 | if (true) else {}
+2 | if (true) else
+  |           ^^^^ Expected a statement or declaration here
+  |
 --
 error[SyntaxError]: expected `'('` but instead found `else`
-  ┌─ if_stmt_err.js:3:4
-  │
-3 │ if else {}
-  │    ^^^^ unexpected
-
+ --> if_stmt_err.js:2:4
+  |
+...
+4 | if else {}
+  |    ^^^^ unexpected
+  |
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ if_stmt_err.js:3:4
-  │
-3 │ if else {}
-  │    ^^^^ Expected an expression here
-
+ --> if_stmt_err.js:2:4
+  |
+...
+4 | if else {}
+  |    ^^^^ Expected an expression here
+  |
 --
 error[SyntaxError]: expected `')'` but instead found `else`
-  ┌─ if_stmt_err.js:3:4
-  │
-3 │ if else {}
-  │    ^^^^ unexpected
-
+ --> if_stmt_err.js:2:4
+  |
+...
+4 | if else {}
+  |    ^^^^ unexpected
+  |
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
-  ┌─ if_stmt_err.js:3:4
-  │
-3 │ if else {}
-  │    ^^^^ Expected a statement or declaration here
-
+ --> if_stmt_err.js:2:4
+  |
+...
+4 | if else {}
+  |    ^^^^ Expected a statement or declaration here
+  |
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ if_stmt_err.js:4:5
-  │
-4 │ if () {} else {}
-  │     ^ Expected an expression here
-
+ --> if_stmt_err.js:3:5
+  |
+...
+6 | if () {} else {}
+  |     ^ Expected an expression here
+  |
 --
 if (true) else {}
 if (true) else

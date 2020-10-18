@@ -25,12 +25,11 @@ MODULE@0..26
   WHITESPACE@25..26 "\n"
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ async_arrow_expr_await_parameter.js:1:1
-  │
-1 │ let a = async await => {}
-  │ --------------^^^^^ An explicit or implicit semicolon is expected here...
-  │ │              
-  │ ...Which is required to end this statement
-
+ --> async_arrow_expr_await_parameter.js:1:15
+  |
+1 | let a = async await => {}
+  |               ^^^^^ An explicit or implicit semicolon is expected here...
+  | -------------- ...Which is required to end this statement
+  |
 --
 let a = async await => {}

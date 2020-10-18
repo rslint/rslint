@@ -23,32 +23,29 @@ MODULE@0..19
       ERROR@19..19
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ bracket_expr_err.js:1:5
-  │
-1 │ foo[]
-  │     ^ Expected an expression here
-
+ --> bracket_expr_err.js:1:5
+  |
+1 | foo[]
+  |     ^ Expected an expression here
+  |
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ bracket_expr_err.js:2:7
-  │
-2 │ foo?.[]
-  │       ^ Expected an expression here
-
+ --> bracket_expr_err.js:2:7
+  |
+1 | foo[]
+2 | foo?.[]
+  |       ^ Expected an expression here
+  |
 --
 error[SyntaxError]: Expected an expression, but found none
-  ┌─ bracket_expr_err.js:4:1
-  │
-4 │ 
-  │ ^ Expected an expression here
-
+--> bracket_expr_err.js:3:1
+ |
+ |
 --
 error[SyntaxError]: expected `']'` but instead the file ends
-  ┌─ bracket_expr_err.js:4:1
-  │
-4 │ 
-  │ ^ the file ends here
-
+--> bracket_expr_err.js:3:1
+ |
+ |
 --
 foo[]
 foo?.[]

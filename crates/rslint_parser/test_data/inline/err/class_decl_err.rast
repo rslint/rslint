@@ -35,60 +35,55 @@ MODULE@0..53
         PARAMETER_LIST@53..53
 --
 error[SyntaxError]: class declarations must have a name
-  ┌─ class_decl_err.js:1:7
-  │
-1 │ class {}
-  │       ^
-
+ --> class_decl_err.js:1:7
+  |
+1 | class {}
+  |       ^
+  |
 --
 error[SyntaxError]: class declarations must have a name
-  ┌─ class_decl_err.js:2:7
-  │
-2 │ class extends bar {}
-  │       ^^^^^^^
-
+ --> class_decl_err.js:2:7
+  |
+1 | class {}
+2 | class extends bar {}
+  |       ^^^^^^^
+  |
 --
 error[SyntaxError]: class declarations must have a name
-  ┌─ class_decl_err.js:3:7
-  │
-3 │ class extends {}
-  │       ^^^^^^^
-
+ --> class_decl_err.js:2:7
+  |
+...
+4 | class extends {}
+  |       ^^^^^^^
+  |
 --
 error[SyntaxError]: expected `'{'` but instead found `class`
-  ┌─ class_decl_err.js:4:1
-  │
-4 │ class
-  │ ^^^^^ unexpected
-
+ --> class_decl_err.js:3:1
+  |
+...
+6 | class
+  | ^^^^^ unexpected
+  |
 --
 error[SyntaxError]: expected `'('` but instead the file ends
-  ┌─ class_decl_err.js:5:1
-  │
-5 │ 
-  │ ^ the file ends here
-
+--> class_decl_err.js:4:1
+ |
+ |
 --
 error[SyntaxError]: expected `')'` but instead the file ends
-  ┌─ class_decl_err.js:5:1
-  │
-5 │ 
-  │ ^ the file ends here
-
+--> class_decl_err.js:4:1
+ |
+ |
 --
 error[SyntaxError]: expected a block statement but instead found ``
-  ┌─ class_decl_err.js:5:1
-  │
-5 │ 
-  │ ^
-
+--> class_decl_err.js:4:1
+ |
+ |
 --
 error[SyntaxError]: expected `'}'` but instead the file ends
-  ┌─ class_decl_err.js:5:1
-  │
-5 │ 
-  │ ^ the file ends here
-
+--> class_decl_err.js:4:1
+ |
+ |
 --
 class {}
 class extends bar {}

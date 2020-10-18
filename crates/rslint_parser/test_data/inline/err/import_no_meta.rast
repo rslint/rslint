@@ -15,18 +15,19 @@ MODULE@0..24
   WHITESPACE@23..24 "\n"
 --
 error[SyntaxError]: Expected `meta` following an import keyword, but found `foo`
-  ┌─ import_no_meta.js:1:8
-  │
-1 │ import.foo
-  │        ^^^
-
+ --> import_no_meta.js:1:8
+  |
+1 | import.foo
+  |        ^^^
+  |
 --
 error[SyntaxError]: Expected `meta` following an import keyword, but found `metaa`
-  ┌─ import_no_meta.js:2:8
-  │
-2 │ import.metaa
-  │        ^^^^^
-
+ --> import_no_meta.js:2:8
+  |
+1 | import.foo
+2 | import.metaa
+  |        ^^^^^
+  |
 --
 import.foo
 import.metaa
