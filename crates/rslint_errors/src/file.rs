@@ -141,7 +141,7 @@ impl SimpleFile {
 
 impl Files for SimpleFile {
     fn name(&self, _id: FileId) -> Option<&str> {
-        Some(&self.source)
+        Some(&self.name)
     }
 
     fn source(&self, _id: FileId) -> Option<&str> {
