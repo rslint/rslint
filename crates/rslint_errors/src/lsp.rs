@@ -20,14 +20,14 @@ pub fn convert_to_lsp_diagnostic(
         .filter(|label| label.span.file == document_id)
         .collect::<Vec<_>>();
 
-    children.sort_by(|a, b| a.span.span.clone().cmp(b.span.span.clone()));
+    children.sort_by(|a, b| a.span.range.clone().cmp(b.span.range.clone()));
     let mut primary_label = None;
 
     for child in children {
-        let range = match byte_span_to_range(files, document_id, child.span.span.clone()) {
+        let range = match byte_span_to_range(files, document_id, child.span.range.clone()) {
             Err(Error::ColumnOutOfBounds { max, .. }) => {
-                let start = std::cmp::min(max, child.span.span.start);
-                let end = std::cmp::min(max, child.span.span.end);
+                let start = std::cmp::min(max, child.span.range.start);
+                let end = std::cmp::min(max, child.span.range.end);
                 byte_span_to_range(files, document_id, start..end)
             }
             range => range,
@@ -48,10 +48,10 @@ pub fn convert_to_lsp_diagnostic(
     }
 
     let mut message = diagnostic.title;
-    for footer in diagnostic.footer {
+    for footer in diagnostic.footers {
         let start = format!("\n{:#?}: ", footer.severity).to_ascii_lowercase();
         message.push_str(&start);
-        message.push_str(&footer.label);
+        message.push_str(&footer.msg);
     }
 
     Some(lsp_types::Diagnostic {
