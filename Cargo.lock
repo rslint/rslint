@@ -185,27 +185,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "codespan-lsp"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd2a7c4491d90cd55cd2004e76883c8782179485917e491651b72ea231b75aae"
-dependencies = [
- "codespan-reporting",
- "lsp-types",
- "url",
-]
-
-[[package]]
-name = "codespan-reporting"
-version = "0.9.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e0762455306b1ed42bc651ef6a2197aabda5e1d4a43c34d5eab5c1a3634e81d"
-dependencies = [
- "termcolor",
- "unicode-width",
-]
-
-[[package]]
 name = "const-random"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1111,6 +1090,7 @@ dependencies = [
 name = "rslint_errors"
 version = "0.1.0"
 dependencies = [
+ "lsp-types",
  "rslint_rowan",
  "serde",
  "unicode-width",
@@ -1136,8 +1116,6 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "clap",
- "codespan-lsp",
- "codespan-reporting",
  "dashmap",
  "env_logger",
  "futures",
@@ -1145,6 +1123,7 @@ dependencies = [
  "log",
  "rayon",
  "rslint_core",
+ "rslint_errors",
  "rslint_parser",
  "serde_json",
  "thiserror",
@@ -1599,9 +1578,9 @@ dependencies = [
 
 [[package]]
 name = "tower-lsp"
-version = "0.13.1"
+version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a17297f73c118d71cde4c823100ec63fa0477fbd4e565a7e2ffd4d4f1c1fafda"
+checksum = "a75aeada84f07dfc4e81bc58a36a12b22c01c418af2180587cf80f9f3228acad"
 dependencies = [
  "async-trait",
  "auto_impl",

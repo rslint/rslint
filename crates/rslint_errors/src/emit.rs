@@ -145,7 +145,7 @@ impl Emitter<'_> {
                 let suggestion = Suggestion::Additional {
                     label,
                     source,
-                    file: file.clone(),
+                    file: *file,
                     span: dbg!((start, end)),
                 };
                 suggestions.push(suggestion);
@@ -164,7 +164,7 @@ impl Emitter<'_> {
                     };
 
                     let annotation = snippet::SourceAnnotation {
-                        range: span.clone(),
+                        range: *span,
                         label,
                         annotation_type: snippet::AnnotationType::Help,
                     };

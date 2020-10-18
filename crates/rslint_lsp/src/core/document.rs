@@ -1,7 +1,7 @@
 //! Core definitions related to documents.
 
 use crate::core::language::{Language, LanguageId};
-use codespan_reporting::files::SimpleFiles;
+use rslint_errors::file::SimpleFiles;
 use rslint_parser::{ast, parse_module, parse_text, GreenNode, Parse, ParserError};
 use std::convert::TryFrom;
 use tower_lsp::lsp_types::*;
@@ -37,7 +37,7 @@ impl DocumentParse for Parse<ast::Script> {
 /// The current state of a document.
 pub struct Document {
     /// The files database containing the document.
-    pub files: SimpleFiles<Url, String>,
+    pub files: SimpleFiles,
     /// The file id of the document.
     pub file_id: usize,
     /// The language type of the document (e.g., JavaScript (script) or JavaScript (module)).
@@ -62,7 +62,7 @@ impl Document {
         };
 
         let mut files = SimpleFiles::new();
-        let file_id = files.add(uri, text.clone());
+        let file_id = files.add(uri.to_string(), text.clone());
 
         let parse = if language == Language::JavaScriptModule {
             Box::new(parse_module(&text, file_id)) as Box<dyn DocumentParse>

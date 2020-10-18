@@ -2,6 +2,8 @@
 
 pub mod annotate_snippets;
 pub mod file;
+#[cfg(feature = "lsp")]
+pub mod lsp;
 
 mod diagnostic;
 mod emit;

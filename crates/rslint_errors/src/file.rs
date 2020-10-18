@@ -66,8 +66,8 @@ impl Span for TextRange {
 pub type FileId = usize;
 
 /// A range that is indexed in a specific file.
-#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FileSpan {
     pub file: FileId,
     pub range: Range<usize>,
@@ -105,6 +105,9 @@ pub trait Files {
     /// }
     /// ```
     fn line_index(&self, file_id: FileId, byte_index: usize) -> Option<usize>;
+
+    /// The byte range of line in the source of the file.
+    fn line_range(&self, id: FileId, line_index: usize) -> Option<Range<usize>>;
 }
 
 /// A file database that contains only one file.
@@ -124,11 +127,21 @@ impl SimpleFile {
             source,
         }
     }
+
+    fn line_start(&self, line_index: usize) -> Option<usize> {
+        use std::cmp::Ordering;
+
+        match line_index.cmp(&self.line_starts.len()) {
+            Ordering::Less => self.line_starts.get(line_index).cloned(),
+            Ordering::Equal => Some(self.source.len()),
+            Ordering::Greater => None,
+        }
+    }
 }
 
 impl Files for SimpleFile {
     fn name(&self, _id: FileId) -> Option<&str> {
-        Some(&self.name)
+        Some(&self.source)
     }
 
     fn source(&self, _id: FileId) -> Option<&str> {
@@ -141,6 +154,13 @@ impl Files for SimpleFile {
                 .binary_search(&byte_index)
                 .unwrap_or_else(|next_line| next_line - 1),
         )
+    }
+
+    fn line_range(&self, _: FileId, line_index: usize) -> Option<Range<usize>> {
+        let line_start = self.line_start(line_index)?;
+        let next_line_start = self.line_start(line_index + 1)?;
+
+        Some(line_start..next_line_start)
     }
 }
 
@@ -180,6 +200,10 @@ impl Files for SimpleFiles {
 
     fn line_index(&self, id: FileId, byte_index: usize) -> Option<usize> {
         self.files.get(&id)?.line_index(id, byte_index)
+    }
+
+    fn line_range(&self, file_id: FileId, line_index: usize) -> Option<Range<usize>> {
+        self.files.get(&file_id)?.line_range(file_id, line_index)
     }
 }
 

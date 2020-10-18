@@ -4,6 +4,7 @@ use glob::Paths;
 use hashbrown::HashMap;
 use rslint_errors::file::{FileId, Files};
 use std::fs::read_to_string;
+use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::Builder;
@@ -43,6 +44,10 @@ impl Files for FileWalker {
 
     fn line_index(&self, id: FileId, byte_index: usize) -> Option<usize> {
         Some(self.files.get(&id)?.line_index(byte_index))
+    }
+
+    fn line_range(&self, file_id: FileId, line_index: usize) -> Option<Range<usize>> {
+        self.files.get(&file_id)?.line_range(line_index)
     }
 }
 
@@ -186,5 +191,12 @@ impl JsFile {
     pub fn line_col_to_index(&self, line: usize, column: usize) -> Option<usize> {
         let start = self.line_start(line)?;
         Some(start + column)
+    }
+
+    fn line_range(&self, line_index: usize) -> Option<Range<usize>> {
+        let line_start = self.line_start(line_index)?;
+        let next_line_start = self.line_start(line_index + 1)?;
+
+        Some(line_start..next_line_start)
     }
 }
