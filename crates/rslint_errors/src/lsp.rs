@@ -3,7 +3,10 @@
 use crate::file::Files;
 use crate::*;
 
-use lsp_types::{DiagnosticRelatedInformation, DiagnosticSeverity, Location, NumberOrString, Url};
+use lsp_types::{
+    DiagnosticRelatedInformation, DiagnosticSeverity, DiagnosticTag as LspTag, Location,
+    NumberOrString, Url,
+};
 
 pub fn convert_to_lsp_diagnostic(
     diagnostic: Diagnostic,
@@ -54,6 +57,16 @@ pub fn convert_to_lsp_diagnostic(
         message.push_str(&footer.msg);
     }
 
+    let tags = if let Some(tag) = diagnostic.tag {
+        Some(match tag {
+            DiagnosticTag::Deprecated => vec![LspTag::Deprecated],
+            DiagnosticTag::Unnecessary => vec![LspTag::Unnecessary],
+            DiagnosticTag::Both => vec![LspTag::Deprecated, LspTag::Unnecessary],
+        })
+    } else {
+        None
+    };
+
     Some(lsp_types::Diagnostic {
         range: primary_label?,
         severity: Some(severity_to_lsp_severity(diagnostic.severity)),
@@ -61,7 +74,7 @@ pub fn convert_to_lsp_diagnostic(
         source,
         message,
         related_information: Some(related_information),
-        tags: None,
+        tags,
     })
 }
 
