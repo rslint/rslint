@@ -272,7 +272,6 @@ impl Emitter<'_> {
         for snippet in strings {
             writeln!(self.out, "{}", snippet)?;
         }
-        writeln!(self.out, "\n")?;
         Ok(())
     }
 }
