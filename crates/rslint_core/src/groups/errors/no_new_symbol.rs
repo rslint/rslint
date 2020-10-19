@@ -13,7 +13,7 @@ declare_lint! {
 
     ```js
     // This call results in TypeError
-    const fooSymbol = new Symbol("foo"); 
+    const fooSymbol = new Symbol("foo");
     ```
 
     ## Correct code examples
@@ -31,20 +31,18 @@ declare_lint! {
 #[typetag::serde]
 impl CstRule for NoNewSymbol {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
-        if node.kind() == NEW_EXPR
-        {
+        if node.kind() == NEW_EXPR {
             let new_expr = node.to::<NewExpr>();
 
             if new_expr.object()?.syntax().text() == "Symbol" {
                 let err = ctx
-                    .err(
-                        self.name(),
-                        "`Symbol` cannot be called as a constructor.",
-                    ).primary(
+                    .err(self.name(), "`Symbol` cannot be called as a constructor.")
+                    .primary(node, "")
+                    .suggestion(
                         node,
-                        "",
-                    ).note(
-                        format!("help: call it as a function instead: `{}`", color("Symbol()"))
+                        "help: call it as a function instead",
+                        "Symbol()",
+                        Applicability::MaybeIncorrect,
                     );
 
                 ctx.add_err(err);

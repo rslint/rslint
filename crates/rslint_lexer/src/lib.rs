@@ -196,7 +196,7 @@ impl<'src> Lexer<'src> {
     }
 
     // Read a `\u{000...}` escape sequence, this expects the cur char to be the `{`
-    fn read_codepoint_escape(&mut self) -> Result<Option<char>, Diagnostic> {
+    fn read_codepoint_escape(&mut self) -> Result<char, Diagnostic> {
         let start = self.cur + 1;
         self.read_hexnumber();
 
@@ -228,9 +228,9 @@ impl<'src> Lexer<'src> {
                 if let Some(chr) = res {
                     Ok(chr)
                 } else {
-                    let err = Diagnostic::error()
-                        .with_message("invalid codepoint for unicode escape")
-                        .with_labels(vec![Label::primary(self.file_id, start..self.cur)]);
+                    let err =
+                        Diagnostic::error(self.file_id, "", "invalid codepoint for unicode escape")
+                            .primary(start..self.cur, "");
 
                     Err(err)
                 }
@@ -736,10 +736,9 @@ impl<'src> Lexer<'src> {
         let start = self.cur;
         self.next();
         if start != 0 {
-            let err = Diagnostic::error()
-                .with_message("`#` must be at the beginning of the file")
-                .with_labels(vec![Label::primary(self.file_id, start..(start + 1))
-                    .with_message("but it's found here")]);
+            let err =
+                Diagnostic::error(self.file_id, "", "`#` must be at the beginning of the file")
+                    .primary(start..(start + 1), "but it's found here");
             return (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err));
         }
 
@@ -754,9 +753,12 @@ impl<'src> Lexer<'src> {
             }
             tok!(SHEBANG, self.cur)
         } else {
-            let err = Diagnostic::error()
-                .with_message("expected `!` following a `#`, but found none")
-                .with_labels(vec![Label::primary(self.file_id, 0..1).with_message("")]);
+            let err = Diagnostic::error(
+                self.file_id,
+                "",
+                "expected `!` following a `#`, but found none",
+            )
+            .primary(0usize..1usize, "");
 
             (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err))
         }

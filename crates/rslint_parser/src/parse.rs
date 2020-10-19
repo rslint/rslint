@@ -5,7 +5,7 @@ use crate::{
     AstNode, Event, GreenNode, LosslessTreeSink, LossyTreeSink, ParserError, SyntaxNode,
     TokenSource,
 };
-use codespan_reporting::diagnostic::Severity;
+use rslint_errors::Severity;
 use std::marker::PhantomData;
 
 /// A utility struct for managing the result of a parser job
