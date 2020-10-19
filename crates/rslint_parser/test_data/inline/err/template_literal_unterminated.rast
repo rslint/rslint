@@ -19,10 +19,8 @@ MODULE@0..20
         TEMPLATE_CHUNK@15..20 " bar\n"
 --
 error: unterminated template literal
- --> template_literal_unterminated.js:2:1
-  |
-2 |  
-  | ^
-  |
+--> template_literal_unterminated.js:2:1
+ |
+ |
 --
 let a = `${foo} bar
