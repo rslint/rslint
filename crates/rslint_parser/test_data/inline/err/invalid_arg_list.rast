@@ -40,7 +40,6 @@ error[SyntaxError]: expected `')'` but instead found `;`
 error[SyntaxError]: expected `')'` but instead found `var`
  --> invalid_arg_list.js:2:9
   |
-1 | foo(a,b;
 2 | foo(a,b var
   |         ^^^ unexpected
   |
@@ -48,14 +47,13 @@ error[SyntaxError]: expected `')'` but instead found `var`
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
  --> invalid_arg_list.js:2:9
   |
-1 | foo(a,b;
 2 | foo(a,b var
   |         ^^^ An explicit or implicit semicolon is expected here...
   | ----------- ...Which is required to end this statement
   |
 --
 error[SyntaxError]: Expected an identifier or pattern, but found none
---> invalid_arg_list.js:1:1
+--> invalid_arg_list.js:3:1
  |
  |
 --

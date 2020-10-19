@@ -60,7 +60,6 @@ error[SyntaxError]: expected `'('` but instead found `;`
 error[SyntaxError]: expected `')'` but instead found `for`
  --> for_stmt_err.js:2:1
   |
-1 | for ;; {}
 2 | for let i = 5; i < 10; i++ {}
   | ^^^ unexpected
   |
@@ -68,7 +67,6 @@ error[SyntaxError]: expected `')'` but instead found `for`
 error[SyntaxError]: expected `'('` but instead found `let`
  --> for_stmt_err.js:2:5
   |
-1 | for ;; {}
 2 | for let i = 5; i < 10; i++ {}
   |     ^^^ unexpected
   |
@@ -76,7 +74,6 @@ error[SyntaxError]: expected `'('` but instead found `let`
 error[SyntaxError]: expected `')'` but instead found `{`
  --> for_stmt_err.js:2:28
   |
-1 | for ;; {}
 2 | for let i = 5; i < 10; i++ {}
   |                            ^ unexpected
   |

@@ -51,7 +51,6 @@ error[SyntaxError]: Expected an identifier or keyword
 error[SyntaxError]: Expected an identifier or keyword
  --> object_expr_error_prop_name.js:2:10
   |
-1 | let a = { /: 6, /: /foo/ }
 2 | let a = {{}}
   |          ^ Expected an identifier or keyword here
   |
@@ -59,7 +58,6 @@ error[SyntaxError]: Expected an identifier or keyword
 error[SyntaxError]: Expected a statement or declaration, but found none
  --> object_expr_error_prop_name.js:2:12
   |
-1 | let a = { /: 6, /: /foo/ }
 2 | let a = {{}}
   |            ^ Expected a statement or declaration here
   |

@@ -21,7 +21,6 @@ error[SyntaxError]: Illegal return statement outside of a function
 error[SyntaxError]: Illegal return statement outside of a function
  --> return_stmt_err.js:2:1
   |
-1 | return;
 2 | return foo;
   | ^^^^^^^^^^^
   |

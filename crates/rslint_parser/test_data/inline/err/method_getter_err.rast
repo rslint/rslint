@@ -21,7 +21,6 @@ MODULE@0..22
 error[SyntaxError]: Expected an identifier or keyword
  --> method_getter_err.js:2:6
   |
-1 | class foo {
 2 |  get {}
   |      ^ Expected an identifier or keyword here
   |
@@ -29,7 +28,6 @@ error[SyntaxError]: Expected an identifier or keyword
 error[SyntaxError]: expected `'('` but instead found `{`
  --> method_getter_err.js:2:6
   |
-1 | class foo {
 2 |  get {}
   |      ^ unexpected
   |
@@ -37,7 +35,6 @@ error[SyntaxError]: expected `'('` but instead found `{`
 error[SyntaxError]: expected `')'` but instead found `{`
  --> method_getter_err.js:2:6
   |
-1 | class foo {
 2 |  get {}
   |      ^ unexpected
   |

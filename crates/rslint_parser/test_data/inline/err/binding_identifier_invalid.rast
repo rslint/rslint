@@ -82,7 +82,6 @@ error[SyntaxError]: Illegal use of `await` as an identifier in an async context
 error[SyntaxError]: Illegal use of `yield` as an identifier in generator function
  --> binding_identifier_invalid.js:3:8
   |
-...
 3 |    let yield = 5;
   |        ^^^^^
   |
@@ -90,7 +89,6 @@ error[SyntaxError]: Illegal use of `yield` as an identifier in generator functio
 error[SyntaxError]: Illegal use of `eval` as an identifier in strict mode
  --> binding_identifier_invalid.js:5:5
   |
-...
 5 | let eval = 5;
   |     ^^^^
   |

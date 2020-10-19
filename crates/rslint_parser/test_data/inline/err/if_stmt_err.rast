@@ -63,7 +63,6 @@ error[SyntaxError]: Expected a statement or declaration, but found none
 error[SyntaxError]: Expected a statement or declaration, but found none
  --> if_stmt_err.js:2:11
   |
-1 | if (true) else {}
 2 | if (true) else
   |           ^^^^ Expected a statement or declaration here
   |
@@ -71,7 +70,6 @@ error[SyntaxError]: Expected a statement or declaration, but found none
 error[SyntaxError]: expected `'('` but instead found `else`
  --> if_stmt_err.js:3:4
   |
-...
 3 | if else {}
   |    ^^^^ unexpected
   |
@@ -79,7 +77,6 @@ error[SyntaxError]: expected `'('` but instead found `else`
 error[SyntaxError]: Expected an expression, but found none
  --> if_stmt_err.js:3:4
   |
-...
 3 | if else {}
   |    ^^^^ Expected an expression here
   |
@@ -87,7 +84,6 @@ error[SyntaxError]: Expected an expression, but found none
 error[SyntaxError]: expected `')'` but instead found `else`
  --> if_stmt_err.js:3:4
   |
-...
 3 | if else {}
   |    ^^^^ unexpected
   |
@@ -95,7 +91,6 @@ error[SyntaxError]: expected `')'` but instead found `else`
 error[SyntaxError]: Expected a statement or declaration, but found none
  --> if_stmt_err.js:3:4
   |
-...
 3 | if else {}
   |    ^^^^ Expected a statement or declaration here
   |
@@ -103,7 +98,6 @@ error[SyntaxError]: Expected a statement or declaration, but found none
 error[SyntaxError]: Expected an expression, but found none
  --> if_stmt_err.js:4:5
   |
-...
 4 | if () {} else {}
   |     ^ Expected an expression here
   |

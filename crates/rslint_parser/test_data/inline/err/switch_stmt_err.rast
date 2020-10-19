@@ -35,23 +35,22 @@ error[SyntaxError]: expected `')'` but instead found `{`
 error[SyntaxError]: expected `'('` but instead found `{`
  --> switch_stmt_err.js:2:8
   |
-1 | switch foo {}
 2 | switch {}
   |        ^ unexpected
   |
 --
 error[SyntaxError]: expected `')'` but instead the file ends
---> switch_stmt_err.js:1:1
+--> switch_stmt_err.js:3:1
  |
  |
 --
 error[SyntaxError]: expected `'{'` but instead the file ends
---> switch_stmt_err.js:1:1
+--> switch_stmt_err.js:3:1
  |
  |
 --
 error[SyntaxError]: expected `'}'` but instead the file ends
---> switch_stmt_err.js:1:1
+--> switch_stmt_err.js:3:1
  |
  |
 --

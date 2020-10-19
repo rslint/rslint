@@ -32,18 +32,17 @@ error[SyntaxError]: Expected an expression, but found none
 error[SyntaxError]: Expected an expression, but found none
  --> bracket_expr_err.js:2:7
   |
-1 | foo[]
 2 | foo?.[]
   |       ^ Expected an expression here
   |
 --
 error[SyntaxError]: Expected an expression, but found none
---> bracket_expr_err.js:1:1
+--> bracket_expr_err.js:4:1
  |
  |
 --
 error[SyntaxError]: expected `']'` but instead the file ends
---> bracket_expr_err.js:1:1
+--> bracket_expr_err.js:4:1
  |
  |
 --

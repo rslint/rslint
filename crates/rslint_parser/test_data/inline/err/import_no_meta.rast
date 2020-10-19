@@ -24,7 +24,6 @@ error[SyntaxError]: Expected `meta` following an import keyword, but found `foo`
 error[SyntaxError]: Expected `meta` following an import keyword, but found `metaa`
  --> import_no_meta.js:2:8
   |
-1 | import.foo
 2 | import.metaa
   |        ^^^^^
   |

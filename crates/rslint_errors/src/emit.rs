@@ -53,18 +53,48 @@ impl Emitter<'_> {
     pub fn emit_diagnostic(&mut self, d: &Diagnostic) -> io::Result<()> {
         let mut slices: HashMap<FileId, snippet::Slice<'_>> = HashMap::new();
 
-        for child in d.primary.iter().chain(&d.children) {
-            let Range { start, end } = child.span.range;
+        let children = || d.primary.iter().chain(&d.children);
+        let source_from_to = |file, from, to| {
+            let start_line = self.files.line_index(file, from)?;
+            let end_line = self.files.line_index(file, to)?;
 
-            let source = self.files.source(d.file_id);
+            self.files
+                .line_range(file, start_line)
+                .and_then(|range| (range.start, self.files.line_range(file, end_line)?.end).into())
+        };
+
+        let start_line = children().map(|child| child.span.range.start).min();
+        let end_line = children().map(|child| child.span.range.end).max();
+
+        let source_range = start_line
+            .zip(end_line)
+            .and_then(|(from, to)| source_from_to(d.file_id, from, to));
+
+        let source = self.files.source(d.file_id).map(|source| {
+            if let Some((from, to)) = source_range {
+                &source[from..to]
+            } else {
+                source
+            }
+        });
+        let source = source.expect("no source code for file is availabe");
+
+        for child in children() {
+            let Range { start, end } = child.span.range;
+            let offset = source_range.unwrap().0;
+
+            let start = start - offset;
+            let end = end - offset;
 
             let entry = slices.entry(child.span.file);
-            let mut tuple = (source, entry);
-            let slice = match tuple {
-                (Some(source), Entry::Vacant(entry)) => entry.insert(snippet::Slice {
+            let line_index = self.files.line_index(d.file_id, start_line.unwrap());
+            let mut triple = (line_index, entry);
+
+            let slice = match triple {
+                (Some(line_start), Entry::Vacant(entry)) => entry.insert(snippet::Slice {
                     source,
                     origin: self.files.name(d.file_id),
-                    line_start: 1,
+                    line_start: line_start + 1,
                     annotations: vec![],
                     fold: true,
                 }),
@@ -87,6 +117,7 @@ impl Emitter<'_> {
                 source: String,
                 file: Option<FileId>,
                 span: (usize, usize),
+                line_start: usize,
                 labels: Vec<Range<usize>>,
             },
         }
@@ -113,7 +144,7 @@ impl Emitter<'_> {
                 SuggestionChange::String(string) => string.clone(),
             };
 
-            let Range { start, end } = range.clone();
+            let Range { mut start, mut end } = range.clone();
             if let SuggestionStyle::Inline | SuggestionStyle::HideCode = style {
                 let label = if replacement.is_empty() || *style == SuggestionStyle::HideCode {
                     msg.clone()
@@ -127,13 +158,25 @@ impl Emitter<'_> {
                 use std::cmp;
 
                 let label = msg.to_string();
-                let source = if let Some(source) = self.files.source(*file) {
+                let (source, offset) = if let Some(source) = self.files.source(*file) {
+                    let (source_start, source_end) = source_from_to(*file, start, end)
+                        .expect("failed to get source range for file");
+                    start -= source_start;
+                    end -= source_start;
+
+                    let source = &source[source_start..source_end];
                     let mut source = source.to_string();
                     source.replace_range(start..end, &replacement);
-                    source
+                    (source, source_start)
                 } else {
                     continue;
                 };
+
+                let labels = labels
+                    .iter()
+                    .cloned()
+                    .map(|range| range.start - offset..range.end - offset)
+                    .collect::<Vec<_>>();
 
                 let (start, end) = (
                     start,
@@ -151,7 +194,8 @@ impl Emitter<'_> {
                     source,
                     file: Some(*file).filter(|id| *id != d.file_id),
                     span: (start, end),
-                    labels: labels.to_owned(),
+                    line_start: self.files.line_index(*file, start + offset).unwrap() + 1,
+                    labels,
                 };
                 suggestions.push(suggestion);
             }
@@ -173,6 +217,7 @@ impl Emitter<'_> {
                     label,
                     source,
                     span: (start, end),
+                    line_start,
                     file,
                     labels,
                 } => {
@@ -187,7 +232,7 @@ impl Emitter<'_> {
 
                     let slice = snippet::Slice {
                         source,
-                        line_start: 1,
+                        line_start: *line_start,
                         origin: file.and_then(|file| self.files.name(file)),
                         annotations: if annotations.is_empty() {
                             vec![snippet::SourceAnnotation {

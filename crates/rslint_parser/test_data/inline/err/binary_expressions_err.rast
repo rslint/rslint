@@ -51,7 +51,6 @@ error[SyntaxError]: Expected an expression, but found none
 error[SyntaxError]: Expected an expression for the right hand side of a `+`, but found an operator instead
  --> binary_expressions_err.js:2:7
   |
-1 | foo(foo +);
 2 | foo + * 2;
   |       ^ But this operator was encountered instead
   |     - This operator requires a right hand side value

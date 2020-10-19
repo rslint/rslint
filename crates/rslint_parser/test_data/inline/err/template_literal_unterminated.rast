@@ -21,7 +21,6 @@ MODULE@0..20
 error: unterminated template literal
  --> template_literal_unterminated.js:2:1
   |
-1 | let a = `${foo} bar
 2 |  
   | ^
   |

@@ -47,7 +47,6 @@ error[SyntaxError]: expected `:` but instead found `baz`
 error[SyntaxError]: expected `:` but instead found `baz`
  --> conditional_expr_err.js:2:11
   |
-1 | foo ? bar baz
 2 | foo ? bar baz ? foo : bar
   |           ^^^ unexpected
   |
