@@ -6,17 +6,6 @@ use super::stmt::block_stmt;
 use crate::{SyntaxKind::*, *};
 use std::collections::HashMap;
 
-pub const BASE_METHOD_RECOVERY_SET: TokenSet = token_set![
-    T!['['],
-    T![ident],
-    T![yield],
-    T![await],
-    T![;],
-    T!['}'],
-    NUMBER,
-    STRING
-];
-
 /// A function declaration, this could be async and or a generator. This takes a marker
 /// because you need to first advance over async or start a marker and feed it in.
 // test function_decl
@@ -84,38 +73,14 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
             let m = p.start();
             p.bump_any();
             pattern(p);
-            let complete = m.complete(p, REST_PATTERN);
-            if p.at(T![=]) {
-                let m = p.start();
-                p.bump_any();
-                assign_expr(&mut *p);
-                let err = p
-                    .err_builder("rest elements may not have default initializers")
-                    .primary(complete.range(p), "");
-
-                p.error(err);
-                m.complete(p, ERROR);
-            }
-            // FIXME: this should be handled better, we should keep trying to parse params but issue an error for each one
-            // which would allow for better recovery from `foo, ...bar, foo`
-            if p.at(T![,]) {
-                let m = p.start();
-                let range = p.cur_tok().range;
-                p.bump_any();
-                m.complete(p, ERROR);
-                let err = p
-                    .err_builder("rest elements may not have trailing commas")
-                    .primary(range, "");
-
-                p.error(err);
-            }
+            m.complete(p, REST_PATTERN);
             break;
-        } else {
-            // test_err formal_params_no_binding_element
-            // function foo(true) {}
-            if binding_element(p).is_none() {
-                p.err_recover_no_err(EXPR_RECOVERY_SET.union(token_set![T![,]]), true);
-            }
+        }
+
+        // test_err formal_params_no_binding_element
+        // function foo(true) {}
+        if binding_element(p).is_none() {
+            p.err_recover_no_err(EXPR_RECOVERY_SET.union(token_set![T![,]]), true);
         }
     }
 
@@ -195,11 +160,11 @@ fn class_body(p: &mut Parser) -> CompletedMarker {
             _ if p.cur_src() == "static" => {
                 let inner = p.start();
                 p.bump_any();
-                method(p, None, BASE_METHOD_RECOVERY_SET.union(token_set![T![;]]));
+                method(p, None);
                 inner.complete(p, STATIC_METHOD);
             }
             _ => {
-                method(p, None, BASE_METHOD_RECOVERY_SET.union(token_set![T![;]]));
+                method(p, None);
             }
         }
     }
@@ -208,11 +173,7 @@ fn class_body(p: &mut Parser) -> CompletedMarker {
 }
 
 /// A method definition, this takes an optional markers for object props
-pub fn method(
-    p: &mut Parser,
-    marker: impl Into<Option<Marker>>,
-    recovery_set: impl Into<Option<TokenSet>>,
-) -> Option<CompletedMarker> {
+pub fn method(p: &mut Parser, marker: impl Into<Option<Marker>>) -> Option<CompletedMarker> {
     let m = marker.into().unwrap_or_else(|| p.start());
     let old = p.state.to_owned();
     p.state.in_function = true;
@@ -300,11 +261,7 @@ pub fn method(
                 .err_builder("Expected a method definition, but found none")
                 .primary(p.cur_tok(), "");
 
-            p.err_recover(
-                err,
-                recovery_set.into().unwrap_or(BASE_METHOD_RECOVERY_SET),
-                true,
-            );
+            p.err_recover(err, EXPR_RECOVERY_SET, true);
             return None;
         }
     };

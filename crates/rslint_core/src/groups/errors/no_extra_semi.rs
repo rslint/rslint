@@ -10,13 +10,13 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```js
+    ```ignore
     if (foo) {
         ;
     }
     ```
 
-    ```js
+    ```ignore
     class Foo {
         constructor() {};
     }

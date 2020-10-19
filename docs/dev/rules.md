@@ -5,7 +5,7 @@
 Let's walk through how we would implement a rule, for this example let's implement eslint's `no-extra-semi`.
 
 First, we must decide the correct group for the rule, we will place it in `errors` for this example.
-Therefore, lets create a file under `rslint_core/src/groups/errors` called `no_extra_semi.rs`.
+Therefore, lets create a file under `rslint_core/src/groups/errors` called `no_extra_semi.rs`. 
 
 Then, go to the `mod.rs` file of the group, and at the end of the `group!` declaration add the rule:
 
@@ -13,9 +13,9 @@ Then, go to the `mod.rs` file of the group, and at the end of the `group!` decla
 no_extra_semi::NoExtraSemi
 ```
 
-Don't worry if you get errors, theyll be fixed soon.
+Don't worry if you get errors, theyll be fixed soon. 
 
-RSLint defines a [rule_prelude](https://github.com/RDambrosio016/RSLint/blob/master/crates/rslint_core/src/rule_prelude.rs) module, which contains commonly used
+RSLint defines a [rule_prelude](../../rslint_core/src/rule_prelude.rs) module, which contains commonly used
 items by rules, which saves a ton of painful imports.
 
 the prelude includes a `declare_lint` macro, this macro is a way of easily declaring a new rule, it is also used by
@@ -39,7 +39,7 @@ declare_lint! {
 }
 ```
 
-### Implementing CstRule
+### Implementing CstRule 
 
 The next step is to implement the `CstRule` trait, youll have to first use the `#[typetag::serde]` attribute on the impl. The reasoning behind this is rslint does configuration by deserializing trait objects themselves, which can only be done with typetag:
 
@@ -76,22 +76,22 @@ impl CstRule for NoExtraSemi {
 }
 ```
 
-This is where untyped nodes shine, we want to allow empty statements if the parent is a loop, labelled statement, or with statement. We can very easily do this by making a const of syntax kinds we will check. `SyntaxKind` is an enum which lists every possible kind of node or token. For convenience we will add a `use SyntaxKind::*`, all syntax kinds are screaming snake case, so there should not be any conflicts.
+This is where untyped nodes shine, we want to allow empty statements if the parent is a loop, labelled statement, or with statement. We can very easily do this by making a const of syntax kinds we will check. `SyntaxKind` is an enum which lists every possible kind of node or token. For convenience we will add a `use SyntaxKind::*`, all syntax kinds are screaming snake case, so there should not be any conflicts. 
 
 ```rust
 const ALLOWED: [SyntaxKind; 8] = [
-  FOR_STMT,
-  FOR_IN_STMT,
-  FOR_OF_STMT,
-  WHILE_STMT,
-  DO_WHILE_STMT,
-  IF_STMT,
-  LABELLED_STMT,
+  FOR_STMT, 
+  FOR_IN_STMT, 
+  FOR_OF_STMT, 
+  WHILE_STMT, 
+  DO_WHILE_STMT, 
+  IF_STMT, 
+  LABELLED_STMT, 
   WITH_STMT
 ];
 ```
 
-We can then simply check if the parent is allowed using `map_or`:
+We can then simply check if the parent is allowed using `map_or`: 
 
 ```rust
 #[typetag::serde]
@@ -121,7 +121,7 @@ impl CstRule for NoExtraSemi {
 }
 ```
 
-Simple errors with only a message are boring and unhelpful, we want to point to the location of the error, and add notes and labels saying what is wrong. We can do this using the `primary`, `secondary`, and `note` methods on the builder. `primary` and `secondary` take a range for the label and a message. `primary` is the primary (red) label and location of the error, there should only be one of these. `secondary` labels are blue labels which provide more context, these are used for explaining more complex errors or providing context, if you want to see a practical use of them look at `for-direction`.
+Simple errors with only a message are boring and unhelpful, we want to point to the location of the error, and add notes and labels saying what is wrong. We can do this using the `primary`, `secondary`, and `note` methods on the builder. `primary` and `secondary` take a range for the label and a message. `primary` is the primary (red) label and location of the error, there should only be one of these. `secondary` labels are blue labels which provide more context, these are used for explaining more complex errors or providing context, if you want to see a practical use of them look at `for-direction`. 
 
 For this example let's add a primary label which tells the user to delete the semicolon:
 
@@ -178,21 +178,21 @@ rule_tests! {
 }
 ```
 
-## Documentation
+## Documentation 
 
 For documentation, it is done through the lint_declaration macro. All you need to do is add a doc comment before the struct name. Documentation is decently large, so you should generally use `/** */` comments over `///` comments. You must include a small description of the rule, then a newline for docgen to use for the top level rules table for each group. Each rule should also generally include an `## Invalid Code Examples` header.
 
 let's add docs for our rule:
 
-````rs
+~~~rs
 declare_lint! {
   /**
-  Disallow unneeded semicolons.
+  Disallow unneeded semicolons. 
 
-  Unneeded semicolons are often caused by typing mistakes, while this is not an error, it
+  Unneeded semicolons are often caused by typing mistakes, while this is not an error, it 
   can cause confusion when reading the code. This rule disallows empty statements (extra semicolons).
 
-  ## Invalid Code Examples
+  ## Invalid Code Examples 
 
   ```ignore
   if (foo) {
@@ -211,6 +211,6 @@ declare_lint! {
   errors,
   "no-extra-semi"
 }
-````
+~~~
 
 And finally, run the docgen with `cargo docgen` or `cargo xtask docgen`. This will create the appropriate file in the rules docs and update readmes.

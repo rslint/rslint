@@ -11,7 +11,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```js
+    ```ignore
     let foo = {
         bar: 1,
         baz: 2,

@@ -7,13 +7,13 @@ Disallow direct use of `Object.prototype` builtins directly.
 
 ES 5.1 added `Object.create` which allows creation of object with a custom prototype. This
 pattern is frequently used for objects used as Maps. However this pattern can lead to errors
-if something else relies on prototype properties/methods.
+if something else relies on prototype properties/methods. 
 
 Moreover, the methods could be shadowed, this can lead to random bugs and denial of service
 vulnerabilities. For example, calling `hasOwnProperty` directly on parsed json could lead to vulnerabilities.
 Instead, you should use get the method directly from the object using `Object.prototype.prop.call(item, args)`.
 
-## Invalid Code Examples
+## Invalid Code Examples 
 
 ```js
 var bar = foo.hasOwnProperty("bar");
@@ -23,7 +23,7 @@ var bar = foo.isPrototypeOf(bar);
 var bar = foo.propertyIsEnumerable("bar");
 ```
 
-## Correct Code Examples
+## Correct Code Examples 
 
 ```js
 var bar = Object.prototype.hasOwnProperty.call(foo, "bar");
@@ -116,4 +116,4 @@ propertyIsEnumberable(foo, 'bar');
 ```
 </details>
 
-[Source](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups/errors/no_prototype_builtins.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_prototype_builtins.rs)

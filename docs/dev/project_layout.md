@@ -1,7 +1,7 @@
-# Project Layout
+# Project Layout 
 
 RSLint is a monorepo (workspace), this allows us to distinctly separate logic and redistibute some of that logic as crates.
-The actual bulk of linting is done in `rslint_core`, which is where all rules are implemented.
+The actual bulk of linting is done in `rslint_core`, which is where all rules are implemented. 
 
 ## Linting Flow
 
@@ -18,8 +18,7 @@ Config parsing                                      Scope analysis
 
 ## rslint_cli
 
-Linting starts with [`rslint_cli`](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_cli). Its jobs include the following:
-
+Linting starts with [`rslint_cli`](../../rslint_cli). Its jobs include the following:
 - CLI arg parsing
 - Configuration parsing
 - File loading
@@ -28,7 +27,7 @@ Linting starts with [`rslint_cli`](https://github.com/RDambrosio016/RSLint/tree/
 
 The crate starts by trying to load the configuration file, this is done by spawning a thread which will try to load
 the `rslintrc.toml` file and returning a handle to it. Then it will instantiate the `FileWalker`, this is the structure
-which manages loading files from disk, it does so concurrently by spawning one thread per file being loaded.
+which manages loading files from disk, it does so concurrently by spawning one thread per file being loaded. 
 
 From then on it will collect the rules it needs to run from the config, and it will call the `lint_file` function from the `rslint_core` crate.
 
@@ -36,18 +35,18 @@ From then on it will collect the rules it needs to run from the config, and it w
 
 This is the crate where all the magic happens, it contains every rule plus general utilities. `rslint_core` should never know about CLI logic.
 The point of separating the core linter logic and the cli logic is to allow rust users to run the linter on pieces of code without having to worry
-about the overhead of CLI/binary logic.
+about the overhead of CLI/binary logic. 
 
 The core structure (well, trait) of `rslint_core` is `CstRule`. `CstRule` is a trait describing a rule which is run on the concrete syntax tree of a single
-file. A rule can operate on nodes, tokens, or the root node of a tree. You will notice there is no mention of a visitor anywhere, you can learn why [here](./syntax.md).
+file. A rule can operate on nodes, tokens, or the root node of a tree. You will notice there is no mention of a visitor anywhere, you can learn why [here](./syntax.md). 
 
-It is **very** important that each rule be Send and Sync, because rules are run highly parallel. (the linter will eventually have a type of rule which is run on all of the CSTs of each file). Most rules run on nodes, therefore use `check_node`, however, some need to check the token or the root, which is why `check_token` and `check_root` exist.
+It is **very** important that each rule be Send and Sync, because rules are run highly parallel. (the linter will eventually have a type of rule which is run on all of the CSTs of each file). Most rules run on nodes, therefore use `check_node`, however, some need to check the token or the root, which is why `check_token` and `check_root` exist. 
 
-As for running rules, the linter starts by taking the source code, and parsing it into a syntax tree using [`rslint_parser`](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_parser). It then uses rayon to run every rule in the `CstRuleStore` in parallel. Syntax nodes are not thread safe because they are backed by an Rc, however we can pass a pointer to a green tree and reconstruct the root syntax node. For each descendant in the root node the linter runs each rule in parallel, each rule gets a new context instance, this instance will be used by the rule to attach diagnostics to it.
+As for running rules, the linter starts by taking the source code, and parsing it into a syntax tree using [`rslint_parser`](../../rslint_parser). It then uses rayon to run every rule in the `CstRuleStore` in parallel. Syntax nodes are not thread safe because they are backed by an Rc, however we can pass a pointer to a green tree and reconstruct the root syntax node. For each descendant in the root node the linter runs each rule in parallel, each rule gets a new context instance, this instance will be used by the rule to attach diagnostics to it. 
 
 ## rslint_lexer
 
-`rslint_lexer` is a standard JavaScript lexer, it can also do ANSI syntax highlighting. The lexer is lookup table based, and it contains a decent amount of unsafe to make it stupidly fast, if you are working on it you should be quite careful and include safety comments for any unsafe usage.
+`rslint_lexer` is a standard JavaScript lexer, it can also do ANSI syntax highlighting. The lexer is lookup table based, and it contains a decent amount of unsafe to make it stupidly fast, if you are working on it you should be quite careful and include safety comments for any unsafe usage. 
 
 ## rslint_parser
 

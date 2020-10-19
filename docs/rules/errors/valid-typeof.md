@@ -67,4 +67,4 @@ typeof bar === typeof qux
 ```
 </details>
 
-[Source](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups/errors/valid_typeof.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/valid_typeof.rs)

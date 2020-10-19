@@ -15,7 +15,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```js
+    ```ignore
     if (foo == NaN) {
         // unreachable
     }
@@ -27,7 +27,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```js
+    ```ignore
     if (isNaN(foo)) {
         /* */
     }

@@ -5,7 +5,6 @@ use crate::{
     AstNode, Event, GreenNode, LosslessTreeSink, LossyTreeSink, ParserError, SyntaxNode,
     TokenSource,
 };
-use codespan_reporting::diagnostic::Severity;
 use std::marker::PhantomData;
 
 /// A utility struct for managing the result of a parser job
@@ -99,7 +98,7 @@ impl<T: AstNode> Parse<T> {
 
     /// Convert this parse into a result
     pub fn ok(self) -> Result<T, Vec<ParserError>> {
-        if !self.errors.iter().any(|d| d.severity == Severity::Error) {
+        if self.errors.is_empty() {
             Ok(self.tree())
         } else {
             Err(self.errors)

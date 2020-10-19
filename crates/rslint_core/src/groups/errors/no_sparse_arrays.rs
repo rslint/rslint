@@ -6,7 +6,7 @@ declare_lint! {
 
     Sparse arrays are arrays with empty slots, they are denoted by extra commas, such as:
 
-    ```js
+    ```ignore
     let foo = [,,];
     let foo = [bar,, baz];
     ```
@@ -16,7 +16,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```js
+    ```ignore
     let foo = [,];
     let bar = [foo,, bar];
     ```

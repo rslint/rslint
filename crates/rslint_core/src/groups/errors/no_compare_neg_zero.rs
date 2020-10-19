@@ -10,7 +10,7 @@ declare_lint! {
 
     ## Incorrect Code Examples
 
-    ```js
+    ```ignore
     if (x === -0) {
            // ^^ this comparison works for both -0 and +0
     }
@@ -18,13 +18,13 @@ declare_lint! {
 
     ## Correct code examples
 
-    ```js
+    ```ignore
     if (x === 0) {
         /* */
     }
     ```
 
-    ```js
+    ```ignore
     if (Object.is(x, -0)) {
         /* */
     }

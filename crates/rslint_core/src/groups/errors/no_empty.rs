@@ -11,11 +11,11 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```js
+    ```ignore
     {}
     ```
 
-    ```js
+    ```ignore
     if (foo) {
 
     }
@@ -23,7 +23,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```js
+    ```ignore
     if (foo) {
         /* todo */
     }

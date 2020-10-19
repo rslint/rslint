@@ -1,11 +1,16 @@
-# Linter Configuration
+# Linter Configuration 
 
-RSLint is fully configurable, you can configure the linter through a `rslintrc.toml` file in the linting directory.
+RSLint is fully configurable, you can configure the linter through a `rslintrc.toml` file in the linting directory. 
+
+## Table of Contents 
+
+1. [Syntax](##Syntax)
+2. [Rules](##Rules)
 
 ## Syntax
 
-RSLint uses [TOML](https://toml.io/en/) as its standard configuration format. TOML is a simple, minimal, human friendly format similar to INI.
-TOML was chosen over JSON for clarity, simplicity, and ease of use.
+RSLint uses [TOML](https://toml.io/en/) as its standard configuration format. TOML is a simple, minimal, human friendly format similar to INI. 
+TOML was chosen over JSON for clarity, simplicity, and ease of use. 
 
 Here are a few examples of a TOML configuration as opposed to a JSON configuration:
 
@@ -23,7 +28,7 @@ Here are a few examples of a TOML configuration as opposed to a JSON configurati
 }
 ```
 
-TOML equivalent:
+TOML equivalent: 
 
 ```toml
 [rules]
@@ -38,7 +43,7 @@ for-direction = {}
 getter-return = {}
 ```
 
-TOML syntax also allows for:
+TOML syntax also allows for: 
 
 ```toml
 [rules]
@@ -56,23 +61,23 @@ getter-return = {}
 ```
 
 TOML further allows for comments using `# This is a comment` which allows you to explain reasonings behind
-configuration fields.
+configuration fields. 
 
-## Rules
+## Rules 
 
-You can configure what rules the linter runs using the `rules` field.
+You can configure what rules the linter runs using the `rules` field. 
 The `rules` field can take 4 keys, these are:
 
-- `allow`: an array of strings of rules which are explicitly allowed and will not be run.
+- `allow`: an array of strings of rules which are explicitly allowed and will not be run. 
 - `errors`: an object where each key is a rule name, and the value is the rule's configuration options (or `{}` if no config). These rules will be treated as errors.
 - `warnings`: same as `errors` but the rules will be treated as warnings.
-- `groups`: an array of strings where each string is the name of a [rule group](../rules). All of the rules of each group will be treated as errors.
+- `groups`: an array of strings where each string is the name of a [rule group](./rules). All of the rules of each group will be treated as errors.
 
 Rule names can be in any case, e.g. `no-empty`, `noEmpty`, `NoEmpty`, and `no_empty` all work. However it is strongly reccomended to keep a consistent case!
 
-These fields above are listed in terms of precedence.
+These fields above are listed in terms of precedence. 
 
-For instance:
+For instance: 
 
 ```toml
 [rules]
@@ -89,11 +94,11 @@ no-empty = {}
 In this case `no-empty` would not be run, because `allow` always takes precedence. If allow was not there then the `no-empty` in `rules.errors` would
 be run. if that was not there then the configuration in `rules.warnings` would be used. if that was not there then the rule would be run at error level because it is included in `errors`.
 
-The linter will warn you if a rule config is being ignored because of precedence.
+The linter will warn you if a rule config is being ignored because of precedence. 
 
-### Examples
+### Examples 
 
-Enabling all rules in the `errors` group:
+Enabling all rules in the `errors` group: 
 
 ```toml
 [rules]
@@ -126,7 +131,7 @@ for-direction = {}
 no-empty = { disallowEmptyFunctions = true }
 ```
 
-or
+or 
 
 ```toml
 [rules.errors]

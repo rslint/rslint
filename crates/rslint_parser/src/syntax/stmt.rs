@@ -835,8 +835,22 @@ fn catch_clause(p: &mut Parser) {
     let m = p.start();
     p.expect(T![catch]);
 
-    if p.eat(T!['(']) {
-        pattern(p);
+    // This allows u to recover from `catch something) {` more effectively
+    if p.eat(T!['(']) || !p.at(T!['{']) {
+        if !p.at(IDENT) {
+            let err = p
+                .err_builder(
+                    "Expected an identifier for the error in a catch clause, but found none",
+                )
+                .primary(p.cur_tok().range, "Expected an identifier here");
+
+            p.error(err);
+        } else {
+            let name = p.start();
+            p.bump_any();
+            name.complete(p, NAME);
+        }
+
         p.expect(T![')']);
     }
 

@@ -1,6 +1,0 @@
-[book]
-authors = ["RSLint developers"]
-language = "en"
-multilingual = false
-title = "RSLint docs"
-src = "docs"

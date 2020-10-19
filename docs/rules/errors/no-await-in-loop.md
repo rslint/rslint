@@ -59,4 +59,4 @@ async () => {
 ```
 </details>
 
-[Source](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups/errors/no_await_in_loop.rs)
+[Source](../../../crates/rslint_core/src/groups/errors/no_await_in_loop.rs)

@@ -16,7 +16,6 @@ pub fn script(p: &mut Parser) -> CompletedMarker {
         "Using the script parsing function for modules is erroneous"
     );
     let m = p.start();
-    p.eat(T![shebang]);
     block_items(p, true, true, None);
     m.complete(p, SyntaxKind::SCRIPT)
 }
@@ -31,7 +30,6 @@ pub fn module(p: &mut Parser) -> CompletedMarker {
         "Using the module parsing function for scripts is erroneous"
     );
     let m = p.start();
-    p.eat(T![shebang]);
     block_items(p, true, true, None);
     m.complete(p, SyntaxKind::MODULE)
 }

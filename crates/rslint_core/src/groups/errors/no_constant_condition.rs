@@ -13,7 +13,7 @@ declare_lint! {
 
     ## Incorrect Code Examples
 
-    ```js
+    ```ignore
     if (true) {
         //    ^ this block is always used
     } else {
@@ -21,7 +21,7 @@ declare_lint! {
     }
     ```
 
-    ```js
+    ```ignore
     // This loop endlessly runs
     for(foo = 5; 5; foo++) {
 
@@ -30,7 +30,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```js
+    ```ignore
     if (foo) {
         /* */
     }
