@@ -12,7 +12,7 @@ declare_lint! {
     This behaviour will be denied by this rule.
 
     ## Invalid Code Examples
-    ```ignore
+    ```js
     typeof foo === "strnig"
     typeof foo == "undefimed"
     typeof bar != "nunber"

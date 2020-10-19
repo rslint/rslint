@@ -20,7 +20,7 @@ declare_lint! {
 
     ## Incorrect code examples
 
-    ```ignore
+    ```js
     let foo = {
         set a(value) {
             this.val = value;
@@ -61,7 +61,7 @@ declare_lint! {
 
     ## Correct code examples
 
-    ```ignore
+    ```js
     let foo = {
         set a(value) {
             this.val = value;

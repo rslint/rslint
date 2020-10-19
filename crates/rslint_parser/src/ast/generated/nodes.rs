@@ -10,6 +10,7 @@ pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
 impl Script {
+    pub fn shebang_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![shebang]) }
     pub fn items(&self) -> AstChildren<Stmt> { support::children(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -17,6 +18,7 @@ pub struct Module {
     pub(crate) syntax: SyntaxNode,
 }
 impl Module {
+    pub fn shebang_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![shebang]) }
     pub fn items(&self) -> AstChildren<ModuleItem> { support::children(&self.syntax) }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -341,7 +343,7 @@ pub struct CatchClause {
 impl CatchClause {
     pub fn catch_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![catch]) }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
-    pub fn error(&self) -> Option<Name> { support::child(&self.syntax) }
+    pub fn error(&self) -> Option<Pattern> { support::child(&self.syntax) }
     pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
     pub fn cons(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
 }

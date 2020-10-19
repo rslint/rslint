@@ -9,7 +9,7 @@ declare_lint! {
     Getters are special properties introduced in ES5 which call a function when a property is accessed.
     The value returned will be the value returned for the property access:
 
-    ```ignore
+    ```js
     let obj = {
         // Using object literal syntax
         get foo() {
@@ -30,7 +30,7 @@ declare_lint! {
 
     ## Incorrect code examples
 
-    ```ignore
+    ```js
     // The getter does not always return a value, it would not return anything
     // if bar is falsey
     let obj = {
@@ -44,7 +44,7 @@ declare_lint! {
 
     ## Correct code examples
 
-    ```ignore
+    ```js
     // The getter always returns a value
     let obj = {
         get foo() {

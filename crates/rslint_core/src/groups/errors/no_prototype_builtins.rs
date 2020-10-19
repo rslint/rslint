@@ -15,7 +15,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```ignore
+    ```js
     var bar = foo.hasOwnProperty("bar");
 
     var bar = foo.isPrototypeOf(bar);
@@ -25,7 +25,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```ignore
+    ```js
     var bar = Object.prototype.hasOwnProperty.call(foo, "bar");
 
     var bar = Object.prototype.isPrototypeOf.call(foo, bar);

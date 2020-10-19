@@ -10,8 +10,9 @@ MODULE@0..47
       CATCH_KW@7..12 "catch"
       WHITESPACE@12..13 " "
       L_PAREN@13..14 "("
-      NAME@14..15
-        IDENT@14..15 "e"
+      SINGLE_PATTERN@14..15
+        NAME@14..15
+          IDENT@14..15 "e"
       R_PAREN@15..16 ")"
       WHITESPACE@16..17 " "
       BLOCK_STMT@17..19

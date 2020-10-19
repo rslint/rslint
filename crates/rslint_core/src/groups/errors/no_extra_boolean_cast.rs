@@ -11,7 +11,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```ignore
+    ```js
     if (!!foo) {}
     while (!!foo) {}
 
