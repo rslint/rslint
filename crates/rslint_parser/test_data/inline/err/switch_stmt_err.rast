@@ -41,17 +41,17 @@ error[SyntaxError]: expected `'('` but instead found `{`
   |
 --
 error[SyntaxError]: expected `')'` but instead the file ends
---> switch_stmt_err.js:2:1
+--> switch_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `'{'` but instead the file ends
---> switch_stmt_err.js:2:1
+--> switch_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `'}'` but instead the file ends
---> switch_stmt_err.js:2:1
+--> switch_stmt_err.js:1:1
  |
  |
 --

@@ -69,42 +69,42 @@ error[SyntaxError]: Expected a statement or declaration, but found none
   |
 --
 error[SyntaxError]: expected `'('` but instead found `else`
- --> if_stmt_err.js:2:4
+ --> if_stmt_err.js:3:4
   |
 ...
-4 | if else {}
+3 | if else {}
   |    ^^^^ unexpected
   |
 --
 error[SyntaxError]: Expected an expression, but found none
- --> if_stmt_err.js:2:4
+ --> if_stmt_err.js:3:4
   |
 ...
-4 | if else {}
+3 | if else {}
   |    ^^^^ Expected an expression here
   |
 --
 error[SyntaxError]: expected `')'` but instead found `else`
- --> if_stmt_err.js:2:4
+ --> if_stmt_err.js:3:4
   |
 ...
-4 | if else {}
+3 | if else {}
   |    ^^^^ unexpected
   |
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
- --> if_stmt_err.js:2:4
+ --> if_stmt_err.js:3:4
   |
 ...
-4 | if else {}
+3 | if else {}
   |    ^^^^ Expected a statement or declaration here
   |
 --
 error[SyntaxError]: Expected an expression, but found none
- --> if_stmt_err.js:3:5
+ --> if_stmt_err.js:4:5
   |
 ...
-6 | if () {} else {}
+4 | if () {} else {}
   |     ^ Expected an expression here
   |
 --

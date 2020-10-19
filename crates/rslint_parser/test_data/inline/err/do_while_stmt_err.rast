@@ -48,80 +48,80 @@ error[SyntaxError]: Expected an expression, but found none
   |
 --
 error[SyntaxError]: expected `'('` but instead found `true`
- --> do_while_stmt_err.js:2:10
+ --> do_while_stmt_err.js:3:10
   |
 ...
-4 | do while true
+3 | do while true
   |          ^^^^ unexpected
   |
 --
 error[SyntaxError]: expected `')'` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `WHILE_KW` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `'('` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: Expected an expression, but found none
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `')'` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `WHILE_KW` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `'('` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: Expected an expression, but found none
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `')'` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `WHILE_KW` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `'('` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: Expected an expression, but found none
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `')'` but instead the file ends
---> do_while_stmt_err.js:3:1
+--> do_while_stmt_err.js:1:1
  |
  |
 --

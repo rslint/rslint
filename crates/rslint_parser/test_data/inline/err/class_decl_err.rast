@@ -50,38 +50,38 @@ error[SyntaxError]: class declarations must have a name
   |
 --
 error[SyntaxError]: class declarations must have a name
- --> class_decl_err.js:2:7
+ --> class_decl_err.js:3:7
   |
 ...
-4 | class extends {}
+3 | class extends {}
   |       ^^^^^^^
   |
 --
 error[SyntaxError]: expected `'{'` but instead found `class`
- --> class_decl_err.js:3:1
+ --> class_decl_err.js:4:1
   |
 ...
-6 | class
+4 | class
   | ^^^^^ unexpected
   |
 --
 error[SyntaxError]: expected `'('` but instead the file ends
---> class_decl_err.js:4:1
+--> class_decl_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `')'` but instead the file ends
---> class_decl_err.js:4:1
+--> class_decl_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected a block statement but instead found ``
---> class_decl_err.js:4:1
+--> class_decl_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `'}'` but instead the file ends
---> class_decl_err.js:4:1
+--> class_decl_err.js:1:1
  |
  |
 --

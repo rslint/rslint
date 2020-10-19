@@ -65,34 +65,34 @@ error[SyntaxError]: expected `'('` but instead found `{`
   |
 --
 error[SyntaxError]: expected `')'` but instead found `while`
- --> while_stmt_err.js:2:1
+ --> while_stmt_err.js:3:1
   |
 ...
-4 | while (true {}
+3 | while (true {}
   | ^^^^^ unexpected
   |
 --
 error[SyntaxError]: expected `')'` but instead found `{`
- --> while_stmt_err.js:2:13
+ --> while_stmt_err.js:3:13
   |
 ...
-4 | while (true {}
+3 | while (true {}
   |             ^ unexpected
   |
 --
 error[SyntaxError]: expected `'('` but instead found `true`
- --> while_stmt_err.js:3:7
+ --> while_stmt_err.js:4:7
   |
 ...
-6 | while true) }
+4 | while true) }
   |       ^^^^ unexpected
   |
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
- --> while_stmt_err.js:3:13
+ --> while_stmt_err.js:4:13
   |
 ...
-6 | while true) }
+4 | while true) }
   |             ^ Expected a statement or declaration here
   |
 --

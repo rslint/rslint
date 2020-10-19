@@ -55,7 +55,7 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
   |
 --
 error[SyntaxError]: Expected an identifier or pattern, but found none
---> invalid_arg_list.js:2:1
+--> invalid_arg_list.js:1:1
  |
  |
 --

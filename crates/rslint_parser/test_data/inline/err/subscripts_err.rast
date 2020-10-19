@@ -24,10 +24,10 @@ MODULE@0..20
       TEMPLATE_CHUNK@18..20 "b\n"
 --
 error: unterminated template literal
- --> subscripts_err.js:2:1
+ --> subscripts_err.js:3:1
   |
 ...
-4 |  
+3 |  
   | ^
   |
 --

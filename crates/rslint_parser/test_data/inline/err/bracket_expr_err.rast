@@ -38,12 +38,12 @@ error[SyntaxError]: Expected an expression, but found none
   |
 --
 error[SyntaxError]: Expected an expression, but found none
---> bracket_expr_err.js:3:1
+--> bracket_expr_err.js:1:1
  |
  |
 --
 error[SyntaxError]: expected `']'` but instead the file ends
---> bracket_expr_err.js:3:1
+--> bracket_expr_err.js:1:1
  |
  |
 --

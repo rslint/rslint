@@ -72,13 +72,13 @@ MODULE@0..102
   WHITESPACE@101..102 "\n"
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  --> function_decl_err.js:5:7
-   |
+ --> function_decl_err.js:6:7
+  |
 ...
-10 | yield foo;
-   |       ^^^ An explicit or implicit semicolon is expected here...
-   | --------- ...Which is required to end this statement
-   |
+6 | yield foo;
+  |       ^^^ An explicit or implicit semicolon is expected here...
+  | --------- ...Which is required to end this statement
+  |
 --
 function() {}
 function *() {}
