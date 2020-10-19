@@ -55,21 +55,18 @@ impl Emitter<'_> {
             let Range { start, end } = child.span.range;
 
             let source = self.files.source(d.file_id);
-            let line_start = self.files.line_index(d.file_id, start);
 
             let entry = slices.entry(child.span.file);
-            let mut triple = (source, line_start, entry);
-            let slice = match triple {
-                (Some(source), Some(line_start), Entry::Vacant(entry)) => {
-                    entry.insert(snippet::Slice {
-                        source,
-                        origin: self.files.name(d.file_id),
-                        line_start: line_start.max(1),
-                        annotations: vec![],
-                        fold: true,
-                    })
-                }
-                (_, _, Entry::Occupied(ref mut entry)) => entry.get_mut(),
+            let mut tuple = (source, entry);
+            let slice = match tuple {
+                (Some(source), Entry::Vacant(entry)) => entry.insert(snippet::Slice {
+                    source,
+                    origin: self.files.name(d.file_id),
+                    line_start: 1,
+                    annotations: vec![],
+                    fold: true,
+                }),
+                (_, Entry::Occupied(ref mut entry)) => entry.get_mut(),
                 _ => continue,
             };
 
@@ -168,17 +165,9 @@ impl Emitter<'_> {
                         annotation_type: snippet::AnnotationType::Help,
                     };
 
-                    let line_start = if let Some(start) =
-                        self.files.line_index(file.unwrap_or(d.file_id), *start)
-                    {
-                        start.max(1)
-                    } else {
-                        continue;
-                    };
-
                     let slice = snippet::Slice {
                         source,
-                        line_start,
+                        line_start: 1,
                         origin: file.and_then(|file| self.files.name(file)),
                         annotations: vec![annotation],
                         fold: true,

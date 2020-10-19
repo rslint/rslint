@@ -129,12 +129,6 @@ fn format_slice(
     result
 }
 
-#[inline]
-// TODO: option_zip
-fn zip_opt<A, B>(a: Option<A>, b: Option<B>) -> Option<(A, B)> {
-    a.and_then(|a| b.map(|b| (a, b)))
-}
-
 fn format_header<'a>(
     origin: Option<&'a str>,
     main_range: Option<usize>,
@@ -148,20 +142,21 @@ fn format_header<'a>(
         DisplayHeaderType::Continuation
     };
 
-    if let Some((main_range, path)) = zip_opt(main_range, origin) {
+    if let Some((main_range, path)) = main_range.zip(origin) {
         let mut col = 1;
 
         for item in body {
             if let DisplayLine::Source {
                 line: DisplaySourceLine::Content { range, .. },
+                lineno,
                 ..
             } = item
             {
+                row = lineno.unwrap_or_else(|| row + 1);
                 if main_range >= range.0 && main_range <= range.1 {
                     col = main_range - range.0 + 1;
                     break;
                 }
-                row += 1;
             }
         }
 
@@ -217,7 +212,7 @@ fn fold_body(mut body: Vec<DisplayLine<'_>>) -> Vec<DisplayLine<'_>> {
                         .take(fold_start + pre_len)
                         .skip(fold_start)
                     {
-                        lines.push(Line::Source(i));
+                        lines.push(Line::Fold(i));
                     }
                     lines.push(Line::Fold(idx));
                     for (i, _) in body
@@ -265,8 +260,6 @@ fn fold_body(mut body: Vec<DisplayLine<'_>>) -> Vec<DisplayLine<'_>> {
                     new_body.push(DisplayLine::Fold {
                         inline_marks: inline_marks.clone(),
                     })
-                } else {
-                    unreachable!()
                 }
             }
         }
