@@ -3,9 +3,11 @@
 
 use crate::annotate_snippets::{display_list as dl, snippet};
 use crate::{
-    file::{FileId, Files},
-    CodeSuggestion, Diagnostic,
+    file::{FileId, FileSpan, Files},
+    suggestion::*,
+    Diagnostic,
 };
+use rslint_text_edit::*;
 use std::{
     collections::{hash_map::Entry, HashMap},
     io::{self, BufWriter, Write},
@@ -88,23 +90,36 @@ impl Emitter<'_> {
                 source: String,
                 file: Option<FileId>,
                 span: (usize, usize),
+                labels: Vec<Range<usize>>,
             },
         }
 
         let mut suggestions = vec![];
 
         for CodeSuggestion {
-            substitution: (file, range, replacement),
+            substitution,
+            span: FileSpan { file, range },
+            style,
+            labels,
             msg,
             ..
         } in &d.suggestions
         {
-            let Range { start, end } = range.clone();
-            let inline = msg.len() <= 25;
+            let replacement = match substitution {
+                SuggestionChange::Indels(indels) => {
+                    let mut old = self.files.source(*file).expect("Non existant file id")
+                        [range.clone()]
+                    .to_owned();
+                    apply_indels(&indels, &mut old);
+                    old
+                }
+                SuggestionChange::String(string) => string.clone(),
+            };
 
-            if inline {
-                let label = if replacement.is_empty() {
-                    msg.to_string()
+            let Range { start, end } = range.clone();
+            if let SuggestionStyle::Inline | SuggestionStyle::HideCode = style {
+                let label = if replacement.is_empty() || *style == SuggestionStyle::HideCode {
+                    msg.clone()
                 } else {
                     format!("{}: {}", msg, replacement)
                 };
@@ -115,9 +130,9 @@ impl Emitter<'_> {
                 use std::cmp;
 
                 let label = msg.to_string();
-                let source = if let Some(source) = self.files.source(file.unwrap_or(d.file_id)) {
+                let source = if let Some(source) = self.files.source(*file) {
                     let mut source = source.to_string();
-                    source.replace_range(start..end, replacement);
+                    source.replace_range(start..end, &replacement);
                     source
                 } else {
                     continue;
@@ -137,8 +152,9 @@ impl Emitter<'_> {
                 let suggestion = Suggestion::Additional {
                     label,
                     source,
-                    file: *file,
+                    file: Some(*file).filter(|id| *id != d.file_id),
                     span: (start, end),
+                    labels: labels.to_owned(),
                 };
                 suggestions.push(suggestion);
             }
@@ -161,13 +177,8 @@ impl Emitter<'_> {
                     source,
                     span: (start, end),
                     file,
+                    labels,
                 } => {
-                    let annotation = snippet::SourceAnnotation {
-                        range: (*start, *end),
-                        label: "",
-                        annotation_type: snippet::AnnotationType::Help,
-                    };
-
                     let line_start = if let Some(start) =
                         self.files.line_index(file.unwrap_or(d.file_id), *start)
                     {
@@ -175,12 +186,28 @@ impl Emitter<'_> {
                     } else {
                         continue;
                     };
+                    let annotations: Vec<_> = labels
+                        .iter()
+                        .map(|x| snippet::SourceAnnotation {
+                            range: (x.start, x.end),
+                            label: "",
+                            annotation_type: snippet::AnnotationType::Info,
+                        })
+                        .collect();
 
                     let slice = snippet::Slice {
                         source,
                         line_start,
                         origin: file.and_then(|file| self.files.name(file)),
-                        annotations: vec![annotation],
+                        annotations: if annotations.is_empty() {
+                            vec![snippet::SourceAnnotation {
+                                range: (*start, *end),
+                                label: "",
+                                annotation_type: snippet::AnnotationType::Info,
+                            }]
+                        } else {
+                            annotations
+                        },
                         fold: true,
                     };
 
@@ -245,6 +272,7 @@ impl Emitter<'_> {
         for snippet in strings {
             writeln!(self.out, "{}", snippet)?;
         }
+        writeln!(self.out, "\n")?;
         Ok(())
     }
 }

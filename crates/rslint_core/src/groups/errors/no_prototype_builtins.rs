@@ -75,9 +75,18 @@ fn suggestion(prop: String, object: String, expr: CallExpr, err: Diagnostic) -> 
         "".to_string()
     };
 
-    let suggestion_expr = format!("Object.prototype.{}.call({}{})", prop, object, arg);
-    err.footer_help(format!("use this instead: `{}`", color(&suggestion_expr)))
-        .footer_note("the method may be shadowed and cause random bugs and denial of service vulnerabilities")
+    let start = format!("Object.prototype.{}.call", prop);
+    let suggestion_expr = format!("{}({}{})", start, object, arg);
+    err.suggestion_with_labels(
+        expr.syntax(),
+        "get the function from the prototype of `Object` and call it",
+        suggestion_expr,
+        Applicability::Always,
+        vec![0..start.len()],
+    )
+    .footer_note(
+        "the method may be shadowed and cause random bugs and denial of service vulnerabilities",
+    )
 }
 
 rule_tests! {
