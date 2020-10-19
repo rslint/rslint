@@ -209,5 +209,9 @@ impl Files for SimpleFiles {
 
 /// Computes the byte indicies of every line start.
 pub fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
-    std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
+    std::iter::once(0).chain(
+        source
+            .match_indices(&['\n', '\r', '\u{2028}', '\u{2029}'][..])
+            .map(|(i, _)| i + 1),
+    )
 }
