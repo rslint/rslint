@@ -23,6 +23,7 @@ group! {
     no_extra_semi::NoExtraSemi,
     no_inner_declarations::NoInnerDeclarations,
     no_irregular_whitespace::NoIrregularWhitespace,
+    no_new_symbol::NoNewSymbol,
     no_prototype_builtins::NoPrototypeBuiltins,
     no_sparse_arrays::NoSparseArrays,
     no_unexpected_multiline::NoUnexpectedMultiline,

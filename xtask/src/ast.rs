@@ -306,10 +306,12 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
     tokens: &["Whitespace", "Comment", "String"],
     nodes: &ast_nodes! {
         struct Script {
+            T![shebang],
             items: [Stmt],
         }
 
         struct Module {
+            T![shebang],
             items: [ModuleItem],
         }
 
@@ -542,7 +544,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct CatchClause {
             T![catch],
             T!['('],
-            error: Name,
+            error: Pattern,
             T![')'],
             cons: BlockStmt
         }

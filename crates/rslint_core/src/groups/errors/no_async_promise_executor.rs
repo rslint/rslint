@@ -14,7 +14,7 @@ declare_lint! {
 
     ## Incorrect code examples
 
-    ```ignore
+    ```js
     let foo = new Promise(async (resolve, reject) => {
         doSomething(bar, (err, res)) => {
            /* */
@@ -22,7 +22,7 @@ declare_lint! {
     });
     ```
 
-    ```ignore
+    ```js
     let foo = new Promise(async function(resolve, reject) => {
         /* */
     });
@@ -32,7 +32,7 @@ declare_lint! {
 
     Use a normal non-async function.
 
-    ```ignore
+    ```js
     let foo = new Promise(function(resolve, reject) => {
         /* */
     })

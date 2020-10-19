@@ -1,6 +1,6 @@
 [package]
 name = "rslint_cli"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["RSLint developers"]
 edition = "2018"
 description = "CLI crate and glue for the rslint project"

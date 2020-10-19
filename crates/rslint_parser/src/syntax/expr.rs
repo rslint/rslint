@@ -7,7 +7,7 @@ use super::decl::{arrow_body, class_decl, formal_parameters, function_decl, meth
 use super::pat::pattern;
 use super::util::*;
 use crate::{
-    ast::{BinExpr, BinOp, Expr, UnaryExpr},
+    ast::{BinExpr, BinOp, Expr, GroupingExpr, UnaryExpr},
     SyntaxKind::*,
     *,
 };
@@ -32,7 +32,9 @@ pub const ASSIGN_TOKENS: TokenSet = token_set![
     T![^=],
     T![&&=],
     T![||=],
-    T![??=]
+    T![??=],
+    T![/=],
+    T![>>=]
 ];
 
 pub const STARTS_EXPR: TokenSet = token_set![
@@ -106,6 +108,18 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
     assign_expr_recursive(&mut *guard, target, token_cur, event_cur)
 }
 
+fn is_valid_target(p: &mut Parser, target: Expr) -> bool {
+    match target.syntax().kind() {
+        DOT_EXPR | BRACKET_EXPR | NAME_REF => true,
+        GROUPING_EXPR => target
+            .syntax()
+            .to::<GroupingExpr>()
+            .inner()
+            .map_or(false, |t| is_valid_target(p, t)),
+        _ => false,
+    }
+}
+
 // test assign_expr
 // foo += bar = b ??= 3;
 // foo -= bar;
@@ -118,9 +132,10 @@ fn assign_expr_recursive(
     token_cur: usize,
     event_cur: usize,
 ) -> Option<CompletedMarker> {
+    // TODO: dont always reparse as pattern since it will yield wonky errors for `(foo = true) = bar`
     if p.at_ts(ASSIGN_TOKENS) {
         if p.at(T![=]) {
-            if ![DOT_EXPR, BRACKET_EXPR, NAME_REF].contains(&target.kind()) {
+            if !is_valid_target(p, p.parse_marker(&target)) {
                 p.rewind(token_cur);
                 p.drain_events(p.cur_event_pos() - event_cur);
                 target = pattern(p)?;
@@ -586,7 +601,18 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
             pattern(&mut *temp);
             let complete = m.complete(&mut *temp, REST_PATTERN);
             spread_range = Some(complete.range(&*temp));
-            temp.expect(T![')']);
+            if !temp.eat(T![')']) {
+                if temp.eat(T![=]) {
+                    // formal params will handle this error
+                    assign_expr(&mut *temp);
+                    temp.expect(T![')']);
+                } else {
+                    let err = temp.err_builder(&format!("expect a closing parenthesis after a spread element, but instead found `{}`", temp.cur_src()))
+                    .primary(temp.cur_tok().range, "");
+
+                    temp.err_recover(err, EXPR_RECOVERY_SET, false);
+                }
+            }
             break;
         }
         assign_expr(&mut *temp);
@@ -997,7 +1023,7 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
         //  }
         // }
         T![ident] if (p.cur_src() == "get" || p.cur_src() == "set") && !p.nth_at(1, T![:]) => {
-            method(p, None)
+            method(p, None, None)
         }
         // test object_expr_async_method
         // let a = {
@@ -1009,7 +1035,7 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
                 && !p.has_linebreak_before_n(1)
                 && (STARTS_OBJ_PROP.contains(p.nth(1)) || p.nth_at(1, T![*])) =>
         {
-            method(p, None)
+            method(p, None, None)
         }
         // test object_expr_spread_prop
         // let a = {...foo}
@@ -1022,7 +1048,7 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
             // test object_expr_generator_method
             // let b = { *foo() {} }
             let m = p.start();
-            method(p, m)
+            method(p, m, None)
         }
         _ => {
             let prop = object_prop_name(p, false);
@@ -1040,7 +1066,7 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
             //  foo() {},
             // }
             if p.at(T!['(']) {
-                method(p, m)
+                method(p, m, None)
             } else {
                 // test_err object_expr_error_prop_name
                 // let a = { /: 6, /: /foo/ }

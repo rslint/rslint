@@ -12,7 +12,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```ignore
+    ```js
     function foo() {
         if (bar) {
             // Move this to foo's body, outside the if statement
@@ -21,7 +21,7 @@ declare_lint! {
     }
     ```
 
-    ```ignore
+    ```js
     if (bar) {
         var foo = 5;
     }
@@ -29,7 +29,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```ignore
+    ```js
     function foo() {}
 
     var bar = 5;
