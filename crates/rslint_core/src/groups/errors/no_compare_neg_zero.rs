@@ -47,21 +47,21 @@ impl CstRule for NoCompareNegZero {
                 .filter(|e| unsafe_comparison(e))
                 .and_then(|_| bin.rhs())
             {
-                issue_err(expr, ctx, op.clone(), &node);
+                issue_err(expr, ctx, op.clone(), node);
             }
             if let Some(expr) = bin
                 .rhs()
                 .filter(|e| unsafe_comparison(e))
                 .and_then(|_| bin.lhs())
             {
-                issue_err(expr, ctx, op, &node)
+                issue_err(expr, ctx, op, node)
             }
         }
         None
     }
 }
 
-fn issue_err(expr: ast::Expr, ctx: &mut RuleCtx, op: SyntaxToken, node: &SyntaxNode) {
+fn issue_err(expr: ast::Expr, ctx: &mut RuleCtx, op: SyntaxToken, parent: &SyntaxNode) {
     let err = ctx
         .err(
             "no-compare-neg-zero",
@@ -80,6 +80,9 @@ fn issue_err(expr: ast::Expr, ctx: &mut RuleCtx, op: SyntaxToken, node: &SyntaxN
             format!("Object.is({}, -0)", expr.syntax().text()),
             Applicability::MaybeIncorrect,
         );
+
+    ctx.fix()
+        .replace(parent, format!("Object.is({}, -0)", expr.text()));
 
     ctx.add_err(err);
 }

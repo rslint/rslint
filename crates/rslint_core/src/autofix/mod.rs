@@ -2,7 +2,8 @@
 
 mod apply;
 
-use crate::Span;
+use crate::{Span, SyntaxKind};
+use rslint_lexer::{Lexer, Token};
 use rslint_parser::{ast, AstNode, SyntaxNode, SyntaxNodeExt};
 use rslint_text_edit::Indel;
 use std::borrow::Borrow;
@@ -50,7 +51,7 @@ impl Fixer {
     pub fn wrap(&mut self, span: impl Span, wrapping: Wrapping) -> &mut Self {
         let range = span.as_range();
         self.indels.push(Indel::insert(
-            (range.start.saturating_sub(1) as u32).into(),
+            (range.start as u32).into(),
             wrapping.start_char().to_string(),
         ));
         self.indels.push(Indel::insert(
@@ -107,6 +108,40 @@ impl Fixer {
         self.indels
             .push(Indel::insert(span.as_text_range().end(), text.to_string()));
         self
+    }
+
+    pub fn eat_trailing_whitespace(&mut self, span: impl Span) -> &mut Self {
+        let mut lexer = Lexer::from_str(&self.src[span.as_range().end..], 0);
+        if let Some((
+            Token {
+                kind: SyntaxKind::WHITESPACE,
+                len,
+            },
+            _,
+        )) = lexer.next()
+        {
+            let range = span.as_range();
+            self.delete(range.end..range.end + len)
+        } else {
+            self
+        }
+    }
+
+    pub fn eat_leading_whitespace(&mut self, span: impl Span) -> &mut Self {
+        let mut lexer = Lexer::from_str(&self.src[..span.as_range().start], 0);
+        if let Some((
+            Token {
+                kind: SyntaxKind::WHITESPACE,
+                len,
+            },
+            _,
+        )) = lexer.next()
+        {
+            let range = span.as_range();
+            self.delete(range.end..range.end + len)
+        } else {
+            self
+        }
     }
 }
 

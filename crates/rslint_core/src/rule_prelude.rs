@@ -4,7 +4,7 @@
 pub use crate::{
     autofix::{Fixer, Unwrappable, Wrapping},
     declare_lint, rule_tests, util, CstRule, Diagnostic, DiagnosticBuilder, Label, Outcome,
-    RuleCtx, RuleResult,
+    RuleCtx, RuleResult, Span,
 };
 
 #[doc(no_inline)]
