@@ -212,7 +212,7 @@ fn fold_body(mut body: Vec<DisplayLine<'_>>) -> Vec<DisplayLine<'_>> {
                         .take(fold_start + pre_len)
                         .skip(fold_start)
                     {
-                        lines.push(Line::Fold(i));
+                        lines.push(Line::Source(i));
                     }
                     lines.push(Line::Fold(idx));
                     for (i, _) in body
@@ -260,6 +260,8 @@ fn fold_body(mut body: Vec<DisplayLine<'_>>) -> Vec<DisplayLine<'_>> {
                     new_body.push(DisplayLine::Fold {
                         inline_marks: inline_marks.clone(),
                     })
+                } else {
+                    unreachable!()
                 }
             }
         }
@@ -288,7 +290,7 @@ fn format_body(
         .max();
 
     let additional_line = if let Some(range) = biggest_range {
-        range.0 = range.0.max(source_len);
+        range.0 = range.0.min(source_len);
         range.1 = range.1.max(source_len);
         true
     } else {

@@ -63,11 +63,11 @@ impl Emitter<'_> {
                 .and_then(|range| (range.start, self.files.line_range(file, end_line)?.end).into())
         };
 
-        let start_line = children().map(|child| child.span.range.start).min();
-        let end_line = children().map(|child| child.span.range.end).max();
+        let start_idx = children().map(|child| child.span.range.start).min();
+        let end_idx = children().map(|child| child.span.range.end).max();
 
-        let source_range = start_line
-            .zip(end_line)
+        let source_range = start_idx
+            .zip(end_idx)
             .and_then(|(from, to)| source_from_to(d.file_id, from, to));
 
         let source = self.files.source(d.file_id).map(|source| {
@@ -87,7 +87,7 @@ impl Emitter<'_> {
             let end = end - offset;
 
             let entry = slices.entry(child.span.file);
-            let line_index = self.files.line_index(d.file_id, start_line.unwrap());
+            let line_index = self.files.line_index(d.file_id, start_idx.unwrap());
             let mut triple = (line_index, entry);
 
             let slice = match triple {
@@ -103,7 +103,7 @@ impl Emitter<'_> {
             };
 
             let annotation = snippet::SourceAnnotation {
-                range: (start, end),
+                range: (start, end.min(source.len())),
                 label: &child.msg,
                 annotation_type: child.severity.into(),
             };
