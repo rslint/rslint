@@ -6,9 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Switched from codespan-reporting to a custom errors crate
+
+### Added
+
+- Added handling of shebang where the parser consumes shebang if exists at the start
+
+### Fixed
+
+- Fixed handling of `/=` and `>>=`
+
+## [0.2.0] - 2020-10-8
+
+### Changed
+
+- Changed `CATCH_CLAUSE`'s error to be a Pattern according to the ECMAScript spec
+- Changed `Parse::ok` to yield `Ok(T)` instead of `Err(T)` if there are only warnings
+
+### Added
+
+- Added an explicit error handler for `...foo = bar`
+
 ### Fixed
 
 - Fixed infinite recursion with nested curly braces in object literals (`let a = {{}}`)
+- Fixed infinite recursion with initializers in spread elements
+- Fixed infinite recursion in array and object patterns with invalid tokens
+- Fixed grouping expression not being allowed as assignment targets
+- Fixed `arguments` being flagged as an invalid ident in non-strict mode
 
 ## [0.1.3] - 2020-10-5
 

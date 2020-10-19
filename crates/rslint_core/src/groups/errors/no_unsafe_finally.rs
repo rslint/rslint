@@ -12,7 +12,7 @@ declare_lint! {
 
     ## Incorrect Code Examples
 
-    ```ignore
+    ```js
     // We expect 10 to be returned, but 5 is actually returned
     function foo() {
         try {
@@ -28,7 +28,7 @@ declare_lint! {
 
     Throwing errors inside try statements
 
-    ```ignore
+    ```js
     // We expect an error to be thrown, then 5 to be returned, but the error is not thrown
     function foo() {
         try {

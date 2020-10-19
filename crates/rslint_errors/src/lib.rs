@@ -12,7 +12,7 @@ mod suggestion;
 pub use diagnostic::{Diagnostic, SubDiagnostic};
 pub use emit::Emitter;
 pub use file::Span;
-pub use suggestion::CodeSuggestion;
+pub use suggestion::*;
 
 pub(crate) use annotate_snippets::*;
 
@@ -47,7 +47,7 @@ pub enum Applicability {
     /// The suggestion should result in valid Rust code if it is applied.
     MaybeIncorrect,
     /// The suggestion contains placeholders like `(...)` or `{ /* fields */ }`.
-    /// The suggestion cannot be applied automatically because it will not result in valid Rust code.
+    /// The suggestion cannot be applied automatically because it will not result in valid JavaScript/TypeScript code.
     /// The user will need to fill in the placeholders.
     HasPlaceholders,
     /// The applicability of the suggestion is unknown.

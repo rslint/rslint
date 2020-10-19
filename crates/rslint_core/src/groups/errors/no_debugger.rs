@@ -10,7 +10,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```ignore
+    ```js
     function doSomething() {
         debugger;
         doSomethingElse();
@@ -28,7 +28,7 @@ impl CstRule for NoDebugger {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         if node.kind() == SyntaxKind::DEBUGGER_STMT {
             let err = ctx
-                .err(self.name(), "Debugger statements are not allowed")
+                .err(self.name(), "debugger statements are not allowed")
                 .primary(node, "");
 
             ctx.add_err(err);

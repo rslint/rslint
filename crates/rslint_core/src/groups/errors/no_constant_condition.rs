@@ -13,7 +13,7 @@ declare_lint! {
 
     ## Incorrect Code Examples
 
-    ```ignore
+    ```js
     if (true) {
         //    ^ this block is always used
     } else {
@@ -21,7 +21,7 @@ declare_lint! {
     }
     ```
 
-    ```ignore
+    ```js
     // This loop endlessly runs
     for(foo = 5; 5; foo++) {
 
@@ -30,7 +30,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```ignore
+    ```js
     if (foo) {
         /* */
     }
@@ -74,7 +74,7 @@ impl CstRule for NoConstantCondition {
             _ => return None,
         };
 
-        let mut err = ctx.err(self.name(), "Unexpected constant condition");
+        let mut err = ctx.err(self.name(), "unexpected constant condition");
         if let Some(condition_value) = util::simple_bool_coerce(cond.clone()) {
             err = util::simple_const_condition_context(node.clone(), condition_value, err);
         } else {

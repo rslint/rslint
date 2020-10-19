@@ -14,13 +14,13 @@ declare_lint! {
 
     ## Incorrect Code Examples
 
-    ```ignore
+    ```js
     for (var i = 0; i < 10; i--) {
         /* infinite loop */
     }
     ```
 
-    ```ignore
+    ```js
     for (var i = 10; i >= 20; i++) {
         /* unreachable */
     }
@@ -28,7 +28,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```ignore
+    ```js
     for (var i = 0; i < 10; i++) {
 
     }

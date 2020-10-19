@@ -109,29 +109,6 @@ impl<'src> Lexer<'src> {
         }
     }
 
-    /// Strip away the possible shebang sequence of a source
-    /// **This is not automatically done by the lexer**
-    pub fn strip_shebang(&mut self) {
-        if let Some(b"#!") = self.bytes.get(0..2) {
-            // Safety: Calling strip_shebang in the middle of lexing can potentially cause undefined behavior
-            // because the cursor is a byte index, advancing blindly into a utf8 boundary is a big oopsie and
-            // can lead to undefined behavior, therefore we must return if the lexer is not at the start
-            if self.cur != 0 {
-                return;
-            }
-
-            self.next();
-            while self.next().is_some() {
-                let chr = self.get_unicode_char();
-                self.cur += chr.len_utf8() - 1;
-
-                if is_linebreak(chr) {
-                    return;
-                }
-            }
-        }
-    }
-
     // Bump the lexer and return the token given in
     fn eat(&mut self, tok: LexerReturn) -> LexerReturn {
         self.next();
@@ -219,7 +196,7 @@ impl<'src> Lexer<'src> {
     }
 
     // Read a `\u{000...}` escape sequence, this expects the cur char to be the `{`
-    fn read_codepoint_escape(&mut self) -> Result<Option<char>, Diagnostic> {
+    fn read_codepoint_escape(&mut self) -> Result<char, Diagnostic> {
         let start = self.cur + 1;
         self.read_hexnumber();
 
@@ -246,7 +223,18 @@ impl<'src> Lexer<'src> {
         };
 
         match u32::from_str_radix(digits_str, 16) {
-            Ok(digits) if digits <= 0x10FFFF => Ok(std::char::from_u32(digits)),
+            Ok(digits) if digits <= 0x10FFFF => {
+                let res = std::char::from_u32(digits);
+                if let Some(chr) = res {
+                    Ok(chr)
+                } else {
+                    let err =
+                        Diagnostic::error(self.file_id, "", "invalid codepoint for unicode escape")
+                            .primary(start..self.cur, "");
+
+                    Err(err)
+                }
+            }
 
             _ => {
                 let err = Diagnostic::error(
@@ -431,8 +419,16 @@ impl<'src> Lexer<'src> {
                 res
             }
             BSL if self.bytes.get(self.cur + 1) == Some(&b'u') => {
+                let start = self.cur;
                 self.next();
-                if let Ok(c) = self.read_unicode_escape(false) {
+                let res = if self.bytes.get(self.cur + 1).copied() == Some(b'{') {
+                    self.next();
+                    self.read_codepoint_escape()
+                } else {
+                    self.read_unicode_escape(true)
+                };
+
+                if let Ok(c) = res {
                     if is_id_continue(c) {
                         self.cur += c.len_utf8() - 1;
                         true
@@ -441,7 +437,7 @@ impl<'src> Lexer<'src> {
                         false
                     }
                 } else {
-                    self.cur -= 1;
+                    self.cur = start;
                     false
                 }
             }
@@ -736,6 +732,39 @@ impl<'src> Lexer<'src> {
     }
 
     #[inline]
+    fn read_shebang(&mut self) -> LexerReturn {
+        let start = self.cur;
+        self.next();
+        if start != 0 {
+            let err =
+                Diagnostic::error(self.file_id, "", "`#` must be at the beginning of the file")
+                    .primary(start..(start + 1), "but it's found here");
+            return (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err));
+        }
+
+        if let Some(b'!') = self.bytes.get(1) {
+            while self.next().is_some() {
+                let chr = self.get_unicode_char();
+
+                if is_linebreak(chr) {
+                    return tok!(SHEBANG, self.cur);
+                }
+                self.cur += chr.len_utf8() - 1;
+            }
+            tok!(SHEBANG, self.cur)
+        } else {
+            let err = Diagnostic::error(
+                self.file_id,
+                "",
+                "expected `!` following a `#`, but found none",
+            )
+            .primary(0usize..1usize, "");
+
+            (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err))
+        }
+    }
+
+    #[inline]
     fn read_slash(&mut self) -> LexerReturn {
         let start = self.cur;
         match self.bytes.get(self.cur + 1) {
@@ -768,6 +797,10 @@ impl<'src> Lexer<'src> {
                     self.cur += chr.len_utf8() - 1;
                 }
                 tok!(COMMENT, self.cur - start)
+            }
+            Some(b'=') => {
+                self.advance(2);
+                tok!(SLASHEQ, self.cur - start)
             }
             _ if self.state.expr_allowed => self.read_regex(),
             _ => self.eat(tok![/]),
@@ -968,13 +1001,17 @@ impl<'src> Lexer<'src> {
     fn resolve_greater_than(&mut self) -> LexerReturn {
         match self.next() {
             Some(b'>') => {
-                if let Some(b'>') = self.next() {
+                let next = self.next().copied();
+                if let Some(b'>') = next {
                     if let Some(b'=') = self.next() {
                         self.next();
                         tok!(USHREQ, 4)
                     } else {
                         tok!(USHR, 3)
                     }
+                } else if next == Some(b'=') {
+                    self.next();
+                    tok!(SHREQ, 2)
                 } else {
                     tok!(SHR, 2)
                 }
@@ -1087,6 +1124,7 @@ impl<'src> Lexer<'src> {
                 tok!(WHITESPACE, self.cur - start)
             }
             EXL => self.resolve_bang(),
+            HAS => self.read_shebang(),
             PRC => self.bin_or_assign(T![%], T![%=]),
             AMP => self.resolve_amp(),
             PNO => self.eat(tok!(L_PAREN, 1)),
@@ -1117,7 +1155,14 @@ impl<'src> Lexer<'src> {
             BSL => {
                 if self.bytes.get(self.cur + 1) == Some(&b'u') {
                     self.next();
-                    match self.read_unicode_escape(true) {
+                    let res = if self.bytes.get(self.cur + 1).copied() == Some(b'{') {
+                        self.next();
+                        self.read_codepoint_escape()
+                    } else {
+                        self.read_unicode_escape(true)
+                    };
+
+                    match res {
                         Ok(chr) => {
                             if is_id_start(chr) {
                                 self.consume_ident();
@@ -1324,6 +1369,7 @@ enum Dispatch {
     EXL,
     QOT,
     IDT,
+    HAS,
     PRC,
     AMP,
     PNO,
@@ -1376,7 +1422,7 @@ static DISPATCHER: [Dispatch; 256] = [
     //   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F   //
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, WHS, WHS, WHS, WHS, WHS, ERR, ERR, // 0
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
-    WHS, EXL, QOT, ERR, IDT, PRC, AMP, QOT, PNO, PNC, MUL, PLS, COM, MIN, PRD, SLH, // 2
+    WHS, EXL, QOT, HAS, IDT, PRC, AMP, QOT, PNO, PNC, MUL, PLS, COM, MIN, PRD, SLH, // 2
     ZER, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LSS, EQL, MOR, QST, // 3
     ERR, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, // 4
     IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, BTO, BSL, BTC, CRT, IDT, // 5

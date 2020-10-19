@@ -13,7 +13,7 @@ declare_lint! {
 
     ## Incorrect Code Exapmles
 
-    ```ignore
+    ```js
     async function foo(xs) {
         const results = [];
         for (const x of xs) {
@@ -26,7 +26,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```ignore
+    ```js
     async function foo(xs) {
         const results = [];
         for (const x of xs) {

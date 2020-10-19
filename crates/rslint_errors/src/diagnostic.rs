@@ -1,7 +1,9 @@
+use crate::suggestion::SuggestionChange;
 use crate::{
     file::{FileId, FileSpan, Span},
-    Applicability, CodeSuggestion, DiagnosticTag, Severity,
+    Applicability, CodeSuggestion, DiagnosticTag, Severity, SuggestionStyle,
 };
+use rslint_text_edit::*;
 
 /// A diagnostic message that can give information
 /// like errors or warnings.
@@ -17,6 +19,7 @@ pub struct Diagnostic {
 
     pub primary: Option<SubDiagnostic>,
     pub children: Vec<SubDiagnostic>,
+    #[cfg_attr(feature = "serde", serde(skip))]
     pub suggestions: Vec<CodeSuggestion>,
     pub footers: Vec<Footer>,
 }
@@ -164,19 +167,22 @@ impl Diagnostic {
     /// The message should not contain the `:` because it's added automatically.
     /// The suggestion will automatically be wrapped inside two backticks.
     pub fn suggestion_in_file(
-        mut self,
+        self,
         span: impl Span,
         msg: &str,
         suggestion: impl Into<String>,
         applicability: Applicability,
+        file: FileId,
     ) -> Self {
-        let suggestion = CodeSuggestion {
-            substitution: (None, span.as_range(), suggestion.into()),
-            applicability,
-            msg: msg.to_string(),
-        };
-        self.suggestions.push(suggestion);
-        self
+        self.suggestion_inner(span, msg, suggestion, applicability, None, file)
+    }
+
+    fn auto_suggestion_style(span: &impl Span, msg: &str) -> SuggestionStyle {
+        if span.as_range().len() + msg.len() > 25 {
+            SuggestionStyle::Full
+        } else {
+            SuggestionStyle::Inline
+        }
     }
 
     /// Prints out a message that suggests a possible solution to the error.
@@ -194,16 +200,189 @@ impl Diagnostic {
     /// The message should not contain the `:` because it's added automatically.
     /// The suggestion will automatically be wrapped inside two backticks.
     pub fn suggestion(
-        mut self,
+        self,
         span: impl Span,
         msg: &str,
         suggestion: impl Into<String>,
         applicability: Applicability,
     ) -> Self {
+        let file = self.file_id;
+        self.suggestion_inner(span, msg, suggestion, applicability, None, file)
+    }
+
+    /// Add a suggestion which is always shown in the [Full](SuggestionStyle::Full) style.
+    pub fn suggestion_full(
+        self,
+        span: impl Span,
+        msg: &str,
+        suggestion: impl Into<String>,
+        applicability: Applicability,
+    ) -> Self {
+        let file = self.file_id;
+        self.suggestion_inner(
+            span,
+            msg,
+            suggestion,
+            applicability,
+            SuggestionStyle::Full,
+            file,
+        )
+    }
+
+    /// Add a suggestion which is always shown in the [Inline](SuggestionStyle::Inline) style.
+    pub fn suggestion_inline(
+        self,
+        span: impl Span,
+        msg: &str,
+        suggestion: impl Into<String>,
+        applicability: Applicability,
+    ) -> Self {
+        let file = self.file_id;
+        self.suggestion_inner(
+            span,
+            msg,
+            suggestion,
+            applicability,
+            SuggestionStyle::Inline,
+            file,
+        )
+    }
+
+    /// Add a suggestion which does not have a suggestion code.
+    pub fn suggestion_no_code(
+        self,
+        span: impl Span,
+        msg: &str,
+        applicability: Applicability,
+    ) -> Self {
+        let file = self.file_id;
+        self.suggestion_inner(
+            span,
+            msg,
+            "",
+            applicability,
+            SuggestionStyle::HideCode,
+            file,
+        )
+    }
+
+    pub fn indel_suggestion(
+        mut self,
+        indels: impl IntoIterator<Item = Indel>,
+        span: impl Span,
+        msg: &str,
+        applicability: Applicability,
+    ) -> Self {
+        let span = FileSpan {
+            file: self.file_id,
+            range: span.as_range(),
+        };
+        let indels = indels.into_iter().collect::<Vec<_>>();
+        let labels = indels
+            .iter()
+            .filter(|x| !x.insert.is_empty())
+            .map(|x| x.delete.as_range().start..x.delete.as_range().start + x.insert.len())
+            .collect();
+
         let suggestion = CodeSuggestion {
-            substitution: (None, span.as_range(), suggestion.into()),
+            substitution: SuggestionChange::Indels(indels),
             applicability,
             msg: msg.to_string(),
+            labels,
+            span,
+            style: SuggestionStyle::Full,
+        };
+        self.suggestions.push(suggestion);
+        self
+    }
+
+    /// Add a suggestion with info labels which point to places in the suggestion.
+    ///
+    /// **The label ranges are relative to the start of the span, not relative to the original code**
+    pub fn suggestion_with_labels(
+        mut self,
+        span: impl Span,
+        msg: &str,
+        suggestion: impl Into<String>,
+        applicability: Applicability,
+        labels: impl IntoIterator<Item = impl Span>,
+    ) -> Self {
+        let span = FileSpan {
+            file: self.file_id,
+            range: span.as_range(),
+        };
+
+        let labels = labels
+            .into_iter()
+            .map(|x| {
+                let range = x.as_range();
+                span.range.start + range.start..span.range.start + range.end
+            })
+            .collect::<Vec<_>>();
+        let suggestion = CodeSuggestion {
+            substitution: SuggestionChange::String(suggestion.into()),
+            applicability,
+            msg: msg.to_string(),
+            labels,
+            span,
+            style: SuggestionStyle::Full,
+        };
+        self.suggestions.push(suggestion);
+        self
+    }
+
+    /// Add a suggestion with info labels which point to places in the suggestion.
+    ///
+    /// **The label ranges are relative to the source code, not relative to the original code**
+    pub fn suggestion_with_src_labels(
+        mut self,
+        span: impl Span,
+        msg: &str,
+        suggestion: impl Into<String>,
+        applicability: Applicability,
+        labels: impl IntoIterator<Item = impl Span>,
+    ) -> Self {
+        let span = FileSpan {
+            file: self.file_id,
+            range: span.as_range(),
+        };
+
+        let labels = labels.into_iter().map(|x| x.as_range()).collect::<Vec<_>>();
+        let suggestion = CodeSuggestion {
+            substitution: SuggestionChange::String(suggestion.into()),
+            applicability,
+            msg: msg.to_string(),
+            labels,
+            span,
+            style: SuggestionStyle::Full,
+        };
+        self.suggestions.push(suggestion);
+        self
+    }
+
+    fn suggestion_inner(
+        mut self,
+        span: impl Span,
+        msg: &str,
+        suggestion: impl Into<String>,
+        applicability: Applicability,
+        style: impl Into<Option<SuggestionStyle>>,
+        file: FileId,
+    ) -> Self {
+        let style = style
+            .into()
+            .unwrap_or_else(|| Self::auto_suggestion_style(&span, msg));
+        let span = FileSpan {
+            file,
+            range: span.as_range(),
+        };
+        let suggestion = CodeSuggestion {
+            substitution: SuggestionChange::String(suggestion.into()),
+            applicability,
+            msg: msg.to_string(),
+            labels: vec![],
+            span,
+            style,
         };
         self.suggestions.push(suggestion);
         self
@@ -246,3 +425,35 @@ pub struct Footer {
     pub msg: String,
     pub severity: Severity,
 }
+
+// impl ToIndels for String {
+//     fn to_indels(self, old: &str) -> Vec<Indel> {
+//         let mut indels = Vec::new();
+//         let diff = diff(old, &self, "").1;
+//         let mut cur: TextSize = 0.into();
+//         for diff in diff {
+//             let indel = match diff {
+//                 Difference::Add(string) => {
+//                     let len = string.len();
+//                     let res = Indel::insert(cur, string);
+//                     cur += TextSize::from(len as u32);
+//                     res
+//                 }
+//                 Difference::Rem(string) => {
+//                     let res = Indel::delete(TextRange::new(
+//                         cur,
+//                         TextSize::from(u32::from(cur) + string.len() as u32),
+//                     ));
+//                     cur += TextSize::from(string.len() as u32);
+//                     res
+//                 }
+//                 Difference::Same(string) => {
+//                     cur += TextSize::from(string.len() as u32);
+//                     continue;
+//                 }
+//             };
+//             indels.push(indel);
+//         }
+//         indels
+//     }
+// }

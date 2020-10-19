@@ -15,7 +15,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```ignore
+    ```js
     if (foo == NaN) {
         // unreachable
     }
@@ -27,7 +27,7 @@ declare_lint! {
 
     ## Correct Code Examples
 
-    ```ignore
+    ```js
     if (isNaN(foo)) {
         /* */
     }
@@ -108,20 +108,25 @@ impl CstRule for UseIsnan {
 
                 // telling the user to use isNaN for `<`, `>`, etc is a bit misleading so we won't do it if that is the case
                 if op == op!(==) || op == op!(===) {
-                    err = err.footer_help(format!(
-                        "use `isNaN` instead: `{}`",
-                        color(&format!("isNaN({})", opposite))
-                    ))
+                    err = err.suggestion(
+                        expr.range(),
+                        "use `isNaN` instead",
+                        format!("isNaN({})", opposite),
+                        Applicability::Always,
+                    );
                 } else if op == op!(!=) || op == op!(!==) {
-                    err = err.footer_help(format!(
-                        "use `isNaN` instead: `{}`",
-                        color(&format!("!isNaN({})", opposite))
-                    ))
+                    err = err.suggestion(
+                        expr.range(),
+                        "use `isNaN` instead",
+                        format!("!isNaN({})", opposite),
+                        Applicability::Always,
+                    );
                 }
 
                 ctx.add_err(err);
             }
             SWITCH_STMT if self.enforce_for_switch_case => {
+                // TODO: a suggestion for this
                 let stmt = node.to::<SwitchStmt>();
                 let expr = stmt.test()?.condition()?;
                 if expr.text() == "NaN" {
@@ -137,6 +142,7 @@ impl CstRule for UseIsnan {
                 }
             }
             CASE_CLAUSE if self.enforce_for_switch_case => {
+                // TODO: suggestion for this
                 let case = node.to::<CaseClause>();
                 let expr = case.test()?;
                 if expr.text() == "NaN" {
@@ -149,6 +155,7 @@ impl CstRule for UseIsnan {
                 }
             }
             CALL_EXPR if self.enforce_for_index_of => {
+                // TODO: suggestion for this
                 let expr = node.to::<CallExpr>();
                 let callee = expr.callee()?;
                 let node = callee.syntax();

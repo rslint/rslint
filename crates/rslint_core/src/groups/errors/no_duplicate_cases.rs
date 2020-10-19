@@ -10,7 +10,7 @@ declare_lint! {
 
     ## Invalid Code Examples
 
-    ```ignore
+    ```js
     switch (a) {
         case 1:
             break;
@@ -23,7 +23,7 @@ declare_lint! {
     }
     ```
 
-    ```ignore
+    ```js
     switch (a) {
         case foo.bar:
             break;
@@ -50,7 +50,7 @@ impl CstRule for NoDuplicateCases {
                         let err = ctx
                             .err(
                                 self.name(),
-                                format!("Duplicate switch statement test `{}`", old.trimmed_text()),
+                                format!("duplicate switch statement test `{}`", old.trimmed_text()),
                             )
                             .secondary(
                                 old,

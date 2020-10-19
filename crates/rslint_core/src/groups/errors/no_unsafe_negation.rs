@@ -14,13 +14,13 @@ declare_lint! {
 
     ## Incorrect Code Examples
 
-    ```ignore
+    ```js
     if (!foo instanceof String) {
 
     }
     ```
 
-    ```ignore
+    ```js
     if (!bar in {}) {
 
     }
@@ -64,7 +64,13 @@ impl CstRule for NoUnsafeNegation {
                             ),
                         )
                         .secondary(rest_range, "`!` is not negating this expression")
-                        .footer_help(format!("try this: `!({})`", color(&no_op_text.to_string())));
+                        .suggestion_with_labels(
+                            expr.range(),
+                            "wrap the instanceof check in parentheses",
+                            format!("!({})", no_op_text),
+                            Applicability::MaybeIncorrect,
+                            vec![1..2, no_op_text.len() + 2..no_op_text.len() + 3],
+                        );
 
                     ctx.add_err(err);
                 }

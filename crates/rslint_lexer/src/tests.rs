@@ -83,13 +83,6 @@ fn losslessness(string: String) -> bool {
 }
 
 #[test]
-fn strip_shebang() {
-    let mut lex = Lexer::from_str("#! /bin/node \n\n", 0);
-    lex.strip_shebang();
-    assert_eq!(lex.cur, 13);
-}
-
-#[test]
 fn empty() {
     assert_lex! {
         "",
@@ -803,6 +796,40 @@ fn bigint_literals() {
         NUMBER:8,
         WHITESPACE:1,
         NUMBER:2
+    }
+}
+
+#[test]
+fn shebang() {
+    assert_lex! {
+        "#! /bin/node",
+        SHEBANG:12
+    }
+
+    assert_lex! {
+        "#!/bin/node\n",
+        SHEBANG:11,
+        WHITESPACE:1
+    }
+
+    assert_lex! {
+        "#!/usr/bin/env deno\u{2028}",
+        SHEBANG:19,
+        WHITESPACE:3
+    }
+
+    assert_lex! {
+        "#0",
+        ERROR_TOKEN:1,
+        NUMBER:1
+    }
+
+    assert_lex! {
+        "0#!/bin/deno",
+        NUMBER:1,
+        ERROR_TOKEN:1,
+        BANG:1,
+        REGEX:9
     }
 }
 

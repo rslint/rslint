@@ -8,7 +8,7 @@ declare_lint! {
 
     Assignment expressions return the value assigned:
 
-    ```ignore
+    ```js
     let foo = 5;
 
     console.log(foo = 8); // 8
@@ -21,7 +21,7 @@ declare_lint! {
 
     ## Incorrect Code Examples
 
-    ```ignore
+    ```js
     let foo = 5;
 
     if (foo = 6) {
@@ -60,7 +60,7 @@ impl CstRule for NoCondAssign {
                 .err(
                     self.name(),
                     format!(
-                        "Unexpected assignment inside a {} condition",
+                        "unexpected assignment inside a {} condition",
                         node.readable_stmt_name()
                     ),
                 )
@@ -68,7 +68,12 @@ impl CstRule for NoCondAssign {
                     cond.syntax(),
                     "this condition results in unexpected behavior",
                 )
-                .footer_help(format!("try using `{}`", color("===")))
+                .suggestion(
+                    cond.range(),
+                    "try using `===` to compare instead",
+                    "===",
+                    Applicability::MaybeIncorrect,
+                )
                 .footer_note(format!(
                     "this makes the condition equivalent to `{}`",
                     color(&help_expr(cond.syntax()))
