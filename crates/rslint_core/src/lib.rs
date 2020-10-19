@@ -34,7 +34,6 @@ mod testing;
 pub mod autofix;
 pub mod directives;
 pub mod groups;
-pub mod incremental;
 pub mod rule_prelude;
 pub mod util;
 

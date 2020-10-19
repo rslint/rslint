@@ -61,7 +61,6 @@ mod parser;
 mod token_set;
 mod diagnostics;
 mod event;
-mod incremental;
 mod lossless_tree_sink;
 mod lossy_tree_sink;
 mod numbers;
@@ -82,7 +81,6 @@ pub use crate::{
     ast::{AstNode, AstToken},
     diagnostics::ErrorBuilder,
     event::{process, Event},
-    incremental::Indel,
     lossless_tree_sink::LosslessTreeSink,
     lossy_tree_sink::LossyTreeSink,
     numbers::{BigInt, JsNum},

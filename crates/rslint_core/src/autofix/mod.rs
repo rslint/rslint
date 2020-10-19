@@ -3,10 +3,10 @@
 mod apply;
 
 use crate::Span;
-use rslint_parser::{ast, AstNode, Indel, SyntaxNode, SyntaxNodeExt};
+use rslint_parser::{ast, AstNode, SyntaxNode, SyntaxNodeExt};
+use rslint_text_edit::Indel;
 use std::borrow::Borrow;
 use std::sync::Arc;
-// use std::string::ToString;
 
 pub use apply::{recursively_apply_fixes, MAX_FIX_ITERATIONS};
 
@@ -54,7 +54,7 @@ impl Fixer {
             wrapping.start_char().to_string(),
         ));
         self.indels.push(Indel::insert(
-            (range.end.saturating_add(1) as u32).into(),
+            (range.end as u32).into(),
             wrapping.end_char().to_string(),
         ));
         self

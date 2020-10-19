@@ -2,7 +2,6 @@ mod cli;
 mod config;
 mod files;
 mod panic_hook;
-mod watch;
 
 pub use self::{cli::ExplanationRunner, config::*, files::*, panic_hook::*};
 pub use rslint_core::Outcome;
@@ -19,7 +18,6 @@ use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
 use rslint_core::{lint_file, CstRuleStore, LintResult, RuleLevel};
 use std::fs::write;
-use watch::start_watcher;
 
 pub(crate) const DOCS_LINK_BASE: &str =
     "https://raw.githubusercontent.com/RDambrosio016/RSLint/master/docs/rules";
@@ -33,7 +31,7 @@ pub fn codespan_config() -> Config {
 }
 
 #[allow(unused_must_use)]
-pub fn run(glob: String, verbose: bool, watch: bool, fix: bool) {
+pub fn run(glob: String, verbose: bool, fix: bool) {
     let res = glob::glob(&glob);
     if let Err(err) = res {
         lint_err!("Invalid glob pattern: {}", err);
@@ -105,33 +103,16 @@ pub fn run(glob: String, verbose: bool, watch: bool, fix: bool) {
         })
         .collect::<Vec<_>>();
 
-    if fix {
-        apply_fixes(&mut results, &mut walker);
-    }
-    print_results(&mut results, &walker, config.as_ref());
-
-    if watch {
-        use std::io::Write;
-        use termcolor::{Color, ColorSpec, WriteColor};
-
-        let mut stdout = StandardStream::stdout(ColorChoice::Always);
-        stdout.set_color(ColorSpec::new().set_fg(Some(Color::White)));
-        writeln!(&mut stdout, "\nWatching for file changes...\n");
-
-        let watcher_results = results
-            .clone()
-            .into_iter()
-            .zip(
-                results
-                    .iter()
-                    .map(|x| walker.files.get(&x.file_id).unwrap()),
-            )
-            .collect();
-        start_watcher(walker.clone(), watcher_results, config.as_ref());
-    }
+    let fix_count = if fix {
+        apply_fixes(&mut results, &mut walker)
+    } else {
+        0
+    };
+    print_results(&mut results, &walker, config.as_ref(), fix_count);
 }
 
-pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker) {
+pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker) -> usize {
+    let mut fix_count = 0;
     // TODO: should we aquire a file lock if we know we need to run autofix?
     for res in results {
         let file = walker.files.get_mut(&res.file_id).unwrap();
@@ -139,20 +120,46 @@ pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker) {
         if file.path.is_none() {
             continue;
         }
+        if res
+            .parser_diagnostics
+            .iter()
+            .any(|x| x.severity == Severity::Error)
+        {
+            lint_note!(
+                "skipping autofix for `{}` because it contains syntax errors",
+                file.path.as_ref().unwrap().to_string_lossy()
+            );
+            continue;
+        }
+        let original_problem_num = res
+            .rule_results
+            .iter()
+            .filter(|(_, x)| x.outcome() == Outcome::Warning || x.outcome() == Outcome::Failure)
+            .map(|(_, res)| res.diagnostics.len())
+            .sum::<usize>();
         let fixed = recursively_apply_fixes(res);
+        let new_problem_num = res
+            .rule_results
+            .iter()
+            .filter(|(_, x)| x.outcome() == Outcome::Warning || x.outcome() == Outcome::Failure)
+            .map(|(_, res)| res.diagnostics.len())
+            .sum::<usize>();
         let path = file.path.as_ref().unwrap();
         if let Err(err) = write(path, fixed.clone()) {
             lint_err!("failed to write to `{:#?}`: {}", path, err.to_string());
         } else {
             file.update_src(fixed);
+            fix_count += original_problem_num.saturating_sub(new_problem_num);
         }
     }
+    fix_count
 }
 
 pub(crate) fn print_results(
     results: &mut Vec<LintResult>,
     walker: &FileWalker,
     config: Option<&config::Config>,
+    fix_count: usize,
 ) {
     // Map each diagnostic to the correct level according to configured rule level
     for result in results.iter_mut() {
@@ -194,20 +201,29 @@ pub(crate) fn print_results(
         }
     }
 
-    output_overall(failures, warnings, successes);
+    output_overall(failures, warnings, successes, fix_count);
     if overall == Outcome::Failure {
         println!("\nhelp: for more information about the errors try the explain command: `rslint explain <rules>`");
     }
 }
 
 #[allow(unused_must_use)]
-fn output_overall(failures: usize, warnings: usize, successes: usize) {
+fn output_overall(failures: usize, warnings: usize, successes: usize, fix_count: usize) {
     println!(
-        "{}: {} fail, {} warn, {} success",
+        "{}: {} fail, {} warn, {} success{}",
         "Outcome".white(),
         failures.to_string().red(),
         warnings.to_string().yellow(),
-        successes.to_string().green()
+        successes.to_string().green(),
+        if fix_count > 0 {
+            format!(
+                ", {} issue{} fixed",
+                fix_count.to_string().green(),
+                if fix_count == 1 { "" } else { "s" }
+            )
+        } else {
+            "".to_string()
+        }
     );
 }
 
