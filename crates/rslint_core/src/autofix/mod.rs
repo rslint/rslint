@@ -128,7 +128,12 @@ impl Fixer {
     }
 
     pub fn eat_leading_whitespace(&mut self, span: impl Span) -> &mut Self {
-        let mut lexer = Lexer::from_str(&self.src[..span.as_range().start], 0);
+        let reversed = self.src[..span.as_range().start]
+            .chars()
+            .rev()
+            .collect::<String>();
+
+        let mut lexer = Lexer::from_str(&reversed, 0);
         if let Some((
             Token {
                 kind: SyntaxKind::WHITESPACE,
@@ -138,7 +143,7 @@ impl Fixer {
         )) = lexer.next()
         {
             let range = span.as_range();
-            self.delete(range.end..range.end + len)
+            self.delete(range.start - len..range.start)
         } else {
             self
         }
