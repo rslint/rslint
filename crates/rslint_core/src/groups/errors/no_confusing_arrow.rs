@@ -52,7 +52,7 @@ impl CstRule for NoConfusingArrow {
             let diagnostic = ctx
                 .err(
                     self.name(),
-                    "Arrow function used ambiguously with a conditional expression",
+                    "arrow function in ternary expression could be mistaken for a comparison",
                 )
                 .primary(
                     function_stmt.syntax(),
