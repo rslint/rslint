@@ -46,7 +46,7 @@ impl Default for NoConfusingArrow {
 impl CstRule for NoConfusingArrow {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         let function_stmt = node.try_to::<ArrowExpr>()?;
-        let expr = Expr::cast(function_stmt.body()?.syntax().to_owned())?;
+        let expr = function_stmt.body()?.syntax().try_to::<Expr>()?;
 
         if is_conditional(&expr) && !(self.allow_parens && is_parenthesised(&expr)) {
             let diagnostic = ctx
