@@ -74,10 +74,7 @@ fn is_conditional(expr: &Expr) -> bool {
 }
 
 fn is_parenthesised(expr: &Expr) -> bool {
-    match expr {
-        Expr::GroupingExpr(_) => true,
-        _ => false,
-    }
+    matches!(expr, Expr::GroupingExpr(_))
 }
 
 rule_tests! {
