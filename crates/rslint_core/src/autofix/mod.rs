@@ -5,6 +5,7 @@ mod apply;
 use crate::{Span, SyntaxKind};
 use rslint_lexer::{Lexer, Token};
 use rslint_parser::{ast, AstNode, SyntaxNode, SyntaxNodeExt};
+use rslint_text_edit::apply_indels;
 use rslint_text_edit::Indel;
 use std::borrow::Borrow;
 use std::sync::Arc;
@@ -24,6 +25,13 @@ impl Fixer {
             indels: vec![],
             src,
         }
+    }
+
+    /// Apply this fixer to its source code
+    pub fn apply(&self) -> String {
+        let mut new = (*self.src).clone();
+        apply_indels(&self.indels, &mut new);
+        new
     }
 
     /// Replace some area in the source code with a string

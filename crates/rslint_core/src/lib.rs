@@ -44,6 +44,7 @@ pub use self::{
 pub use rslint_errors::{Diagnostic, Severity, Span};
 
 use crate::directives::skip_node;
+#[doc(inline)]
 pub use crate::directives::{apply_top_level_directives, Directive, DirectiveParser};
 use dyn_clone::clone_box;
 use rayon::prelude::*;
@@ -87,6 +88,22 @@ impl LintResult<'_> {
     /// The overall outcome of linting this file (failure, warning, success, etc)
     pub fn outcome(&self) -> Outcome {
         self.diagnostics().into()
+    }
+
+    /// Attempt to automatically fix any fixable issues and return the fixed code.
+    ///
+    /// This will not run if there are syntax errors unless `dirty` is set to true.
+    pub fn fix(&mut self, dirty: bool) -> Option<String> {
+        if self
+            .parser_diagnostics
+            .iter()
+            .any(|x| x.severity == Severity::Error)
+            && !dirty
+        {
+            None
+        } else {
+            Some(autofix::recursively_apply_fixes(self))
+        }
     }
 }
 

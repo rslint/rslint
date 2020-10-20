@@ -9,6 +9,7 @@ use codespan_reporting::diagnostic::Severity;
 use dyn_clone::DynClone;
 use rslint_errors::{Diagnostic, Severity};
 use rslint_parser::{SyntaxNode, SyntaxNodeExt, SyntaxToken};
+use rslint_text_edit::apply_indels;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 use std::fmt::Debug;
@@ -157,6 +158,11 @@ impl RuleResult {
             diagnostics: [self.diagnostics, other.diagnostics].concat(),
             fixer: self.fixer.or(other.fixer),
         }
+    }
+
+    /// Attempt to fix the issue if the rule can be autofixed.
+    pub fn fix(&self) -> Option<String> {
+        self.fixer.as_ref().map(|x| x.apply())
     }
 }
 
