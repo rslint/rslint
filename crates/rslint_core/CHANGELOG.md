@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 - Added "no-new-symbol" rule
+- Added "no-confusing-arrow" rule
 
 ### Added
 - Added more documentation for some methods and structs
