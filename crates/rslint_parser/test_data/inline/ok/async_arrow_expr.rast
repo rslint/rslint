@@ -12,7 +12,8 @@ MODULE@0..102
       ARROW_EXPR@8..23
         IDENT@8..13 "async"
         WHITESPACE@13..14 " "
-        IDENT@14..17 "foo"
+        NAME@14..17
+          IDENT@14..17 "foo"
         WHITESPACE@17..18 " "
         FAT_ARROW@18..20 "=>"
         WHITESPACE@20..21 " "
