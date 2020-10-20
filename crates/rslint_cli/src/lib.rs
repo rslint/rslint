@@ -31,7 +31,7 @@ pub fn codespan_config() -> Config {
 }
 
 #[allow(unused_must_use)]
-pub fn run(glob: String, verbose: bool, fix: bool) {
+pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool) {
     let res = glob::glob(&glob);
     if let Err(err) = res {
         lint_err!("Invalid glob pattern: {}", err);
@@ -104,14 +104,14 @@ pub fn run(glob: String, verbose: bool, fix: bool) {
         .collect::<Vec<_>>();
 
     let fix_count = if fix {
-        apply_fixes(&mut results, &mut walker)
+        apply_fixes(&mut results, &mut walker, dirty)
     } else {
         0
     };
     print_results(&mut results, &walker, config.as_ref(), fix_count);
 }
 
-pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker) -> usize {
+pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty: bool) -> usize {
     let mut fix_count = 0;
     // TODO: should we aquire a file lock if we know we need to run autofix?
     for res in results {
@@ -124,6 +124,7 @@ pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker) -> us
             .parser_diagnostics
             .iter()
             .any(|x| x.severity == Severity::Error)
+            && !dirty
         {
             lint_note!(
                 "skipping autofix for `{}` because it contains syntax errors",

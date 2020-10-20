@@ -49,9 +49,12 @@ pub fn recursively_apply_fixes(result: &mut LintResult) -> String {
         );
         parsed = if script {
             let res = parse_text(&string, file_id);
+            // this needs to be updated for when fixes are applied "dirty" (when there are parser errors)
+            result.parser_diagnostics = res.errors().to_owned();
             res.syntax()
         } else {
             let res = parse_module(&string, file_id);
+            result.parser_diagnostics = res.errors().to_owned();
             res.syntax()
         };
 

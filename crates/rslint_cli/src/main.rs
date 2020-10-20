@@ -18,6 +18,9 @@ pub(crate) struct Options {
     /// Automatically attempt to fix any issues which can be fixed
     #[structopt(short, long)]
     fix: bool,
+    /// Attempt to run autofixes even if the code contains syntax errors (may produce weird fixes or more errors)
+    #[structopt(short = "D", long)]
+    dirty: bool,
 }
 
 #[derive(Debug, StructOpt)]
@@ -35,6 +38,6 @@ fn main() {
     if let Some(SubCommand::Explain { rules }) = opt.cmd {
         ExplanationRunner::new(rules).print();
     } else {
-        rslint_cli::run(opt.files, opt.verbose, opt.fix);
+        rslint_cli::run(opt.files, opt.verbose, opt.fix, opt.dirty);
     }
 }
