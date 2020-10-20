@@ -32,6 +32,7 @@ declare_lint! {
     errors,
     "no-confusing-arrow",
     /// Relaxes the rule and accepts parenthesis as a valid "confusion-preventing" syntax.
+    /// `true` by default.
     pub allow_parens: bool
 }
 

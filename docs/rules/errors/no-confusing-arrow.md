@@ -30,7 +30,7 @@ var x = (a) => 1 ? 2 : 3;
 ## Config
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `allowParens` | bool |  Relaxes the rule and accepts parenthesis as a valid "confusion-preventing" syntax. |
+| `allowParens` | bool |  Relaxes the rule and accepts parenthesis as a valid "confusion-preventing" syntax.<br>`true` by default. |
 
 <details>
  <summary> More incorrect examples </summary>
