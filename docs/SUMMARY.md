@@ -16,6 +16,7 @@
     - [no-await-in-loop](rules/errors/no-await-in-loop.md)
     - [no-compare-neg-zero](rules/errors/no-compare-neg-zero.md)
     - [no-cond-assign](rules/errors/no-cond-assign.md)
+    - [no-confusing-arrow](rules/errors/no-confusing-arrow.md)
     - [no-constant-condition](rules/errors/no-constant-condition.md)
     - [no-debugger](rules/errors/no-debugger.md)
     - [no-dupe-keys](rules/errors/no-dupe-keys.md)
