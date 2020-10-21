@@ -1,10 +1,10 @@
 //! CLI options
 
-use crate::{lint_err, DOCS_LINK_BASE, REPO_LINK};
+use crate::{lint_err, REPO_LINK};
 use ansi_term::Color::{Green, White, RGB};
 use regex::{Captures, Regex};
+use rslint_core::get_rule_docs;
 use rslint_lexer::{ansi_term, color};
-use ureq::get;
 
 /// A structure for converting user facing markdown docs to ANSI colored terminal explanations.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -21,7 +21,7 @@ impl ExplanationRunner {
         rules = rules
             .into_iter()
             .filter_map(|rule| {
-                let res = fetch_doc_file(&rule);
+                let res = get_rule_docs(&rule).map(|x| x.to_string());
                 if res.is_none() {
                     lint_err!("Invalid rule: {}", rule);
                 }
@@ -30,12 +30,6 @@ impl ExplanationRunner {
             .collect();
 
         Self { rules, rule_names }
-    }
-
-    pub fn strip_rule_preludes(&mut self) {
-        for rule in self.rules.iter_mut() {
-            rule.replace_range(0..70, "");
-        }
     }
 
     pub fn replace_headers(&mut self) {
@@ -96,7 +90,6 @@ impl ExplanationRunner {
     }
 
     pub fn render(&mut self) {
-        self.strip_rule_preludes();
         self.strip_config_or_extra_examples();
         self.replace_headers();
         self.replace_code_blocks();
@@ -111,23 +104,4 @@ impl ExplanationRunner {
             println!("{}", rule);
         }
     }
-}
-
-/// Try to resolve a rule name, then fetch its remote docs file.
-///
-/// # Panics
-/// Panics if the remote docs file cant be fetched for some reason.
-fn fetch_doc_file(rule: &str) -> Option<String> {
-    let resolved_rule = rslint_core::get_rule_by_name(rule)?;
-    Some(
-        get(&format!(
-            "{}/{}/{}.md",
-            DOCS_LINK_BASE,
-            resolved_rule.group(),
-            rule
-        ))
-        .call()
-        .into_string()
-        .expect("Failed to fetch remote rule docs file"),
-    )
 }

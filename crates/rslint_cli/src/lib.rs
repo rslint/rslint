@@ -13,8 +13,6 @@ use rslint_core::autofix::recursively_apply_fixes;
 use rslint_core::{lint_file, CstRuleStore, LintResult, RuleLevel};
 use std::fs::write;
 
-pub(crate) const DOCS_LINK_BASE: &str =
-    "https://raw.githubusercontent.com/RDambrosio016/RSLint/master/docs/rules";
 pub(crate) const REPO_LINK: &str = "https://github.com/RDambrosio016/RSLint";
 
 #[allow(unused_must_use)]

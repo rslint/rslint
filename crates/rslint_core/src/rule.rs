@@ -82,6 +82,10 @@ pub trait Rule: Debug + DynClone + Send + Sync {
     fn name(&self) -> &'static str;
     /// The name of the group this rule belongs to.
     fn group(&self) -> &'static str;
+    /// Optional docs for the rule, an empty string by default
+    fn docs(&self) -> &'static str {
+        ""
+    }
 }
 
 dyn_clone::clone_trait_object!(Rule);
@@ -211,6 +215,125 @@ impl Outcome {
     }
 }
 
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __pre_parse_docs_from_meta {
+    (
+        @$cb:tt
+        @[docs $($docs:tt)*]
+        @$other:tt
+        #[doc = $doc:expr]
+        $($rest:tt)*
+    ) => (
+        $crate::__pre_parse_docs_from_meta! {
+            @$cb
+            @[docs $($docs)* $doc]
+            @$other
+            $($rest)*
+        }
+    );
+
+    (
+        @$cb:tt
+        @$docs:tt
+        @[others $($others:tt)*]
+        #[$other:meta]
+        $($rest:tt)*
+    ) => (
+        $crate::__pre_parse_docs_from_meta! {
+            @$cb
+            @$docs
+            @[others $($others)* $other]
+            $($rest)*
+        }
+    );
+
+    (
+        @[cb $($cb:tt)*]
+        @[docs $($docs:tt)*]
+        @[others $($others:tt)*]
+        $($rest:tt)*
+    ) => (
+        $($cb)* ! {
+            #[doc = concat!($(indoc::indoc!($docs), "\n"),*)]
+            $(
+                #[$others]
+            )*
+            $($rest)*
+        }
+    );
+
+    (
+        $(:: $(@ $colon:tt)?)? $($cb:ident)::+ ! {
+            $($input:tt)*
+        }
+    ) => (
+        $crate::__pre_parse_docs_from_meta! {
+            @[cb $(:: $($colon)?)? $($cb)::+]
+            @[docs ]
+            @[others ]
+            $($input)*
+        }
+    );
+}
+
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __declare_lint_inner {
+    (
+        #[doc = $doc:expr]
+        $(#[$outer:meta])*
+        // The rule struct name
+        $name:ident,
+        $group:ident,
+        // A unique kebab-case name for the rule
+        $code:expr
+        $(,
+            // Any fields for the rule
+            $(
+                $(#[$inner:meta])*
+                $visibility:vis $key:ident : $val:ty
+            ),* $(,)?
+        )?
+    ) => {
+        use $crate::Rule;
+        use serde::{Deserialize, Serialize};
+
+        $(#[$outer])*
+        #[doc = $doc]
+        #[serde(rename_all = "camelCase")]
+        #[derive(Debug, Clone, Deserialize, Serialize)]
+        pub struct $name {
+            $(
+                $(
+                    $(#[$inner])*
+                    pub $key: $val
+                ),
+            *)?
+        }
+
+        impl $name {
+            pub fn new() -> Self {
+                Self::default()
+            }
+        }
+
+        impl Rule for $name {
+            fn name(&self) -> &'static str {
+                $code
+            }
+
+            fn group(&self) -> &'static str {
+                stringify!($group)
+            }
+
+            fn docs(&self) -> &'static str {
+                $doc
+            }
+        }
+    };
+}
+
 /// A macro to easily generate rule boilerplate code.
 ///
 /// ```ignore
@@ -254,50 +377,9 @@ impl Outcome {
 /// You must make sure each config field is Deserializable.
 #[macro_export]
 macro_rules! declare_lint {
-    (
-        $(#[$outer:meta])*
-        // The rule struct name
-        $name:ident,
-        $group:ident,
-        // A unique kebab-case name for the rule
-        $code:expr
-        $(,
-            // Any fields for the rule
-            $(
-                $(#[$inner:meta])*
-                $visibility:vis $key:ident : $val:ty
-            ),* $(,)?
-        )?
-    ) => {
-        use $crate::Rule;
-        use serde::{Deserialize, Serialize};
-
-        $(#[$outer])*
-        #[serde(rename_all = "camelCase")]
-        #[derive(Debug, Clone, Deserialize, Serialize)]
-        pub struct $name {
-            $(
-                $(
-                    $(#[$inner])*
-                    pub $key: $val
-                ),
-            *)?
-        }
-
-        impl $name {
-            pub fn new() -> Self {
-                Self::default()
-            }
-        }
-
-        impl Rule for $name {
-            fn name(&self) -> &'static str {
-                $code
-            }
-
-            fn group(&self) -> &'static str {
-                stringify!($group)
-            }
+    ($($input:tt)*) => {
+        $crate::__pre_parse_docs_from_meta! {
+            $crate::__declare_lint_inner! { $($input)* }
         }
     };
 }

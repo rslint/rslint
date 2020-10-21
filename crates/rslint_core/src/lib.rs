@@ -258,3 +258,11 @@ pub fn get_rule_suggestion(incorrect_rule_name: &str) -> Option<&str> {
         .map(|rule| rule.name());
     util::find_best_match_for_name(rules, incorrect_rule_name, None)
 }
+
+/// Get a rule and its documentation.
+///
+/// This will always be `Some` for valid rule names and it will be an empty string
+/// if the rule has no docs
+pub fn get_rule_docs(rule: &str) -> Option<&'static str> {
+    get_rule_by_name(rule).map(|rule| rule.docs())
+}
