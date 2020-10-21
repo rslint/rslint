@@ -4,10 +4,9 @@
 #![allow(unused_variables, unused_imports)]
 
 use crate::autofix::Fixer;
-use crate::{Diagnostic, DiagnosticBuilder};
-use codespan_reporting::diagnostic::Severity;
+use crate::Diagnostic;
 use dyn_clone::DynClone;
-use rslint_errors::{Diagnostic, Severity};
+use rslint_errors::Severity;
 use rslint_parser::{SyntaxNode, SyntaxNodeExt, SyntaxToken};
 use rslint_text_edit::apply_indels;
 use serde::{Deserialize, Serialize};

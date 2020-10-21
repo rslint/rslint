@@ -62,14 +62,15 @@ pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Res
 
             let verbose = false;
             let src = Arc::new(document.text.clone());
-            let rule_results: HashMap<&str, rslint_core::RuleResult> = new_store
+            let rule_diagnostics: HashMap<&str, Vec<rslint_errors::Diagnostic>> = new_store
                 .rules
                 .par_iter()
                 .map(|rule| {
                     let root = SyntaxNode::new_root(document.parse.green());
                     (
                         rule.name(),
-                        run_rule(&**rule, file_id, root, verbose, &directives, src.clone()),
+                        run_rule(&**rule, file_id, root, verbose, &directives, src.clone())
+                            .diagnostics,
                     )
                 })
                 .collect();

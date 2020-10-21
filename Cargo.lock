@@ -1324,7 +1324,6 @@ dependencies = [
 name = "rslint_cli"
 version = "0.1.2"
 dependencies = [
- "codespan-reporting",
  "colored",
  "glob",
  "hashbrown",

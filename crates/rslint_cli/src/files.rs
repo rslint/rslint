@@ -1,7 +1,6 @@
 //! The structure responsible for managing IO and the files implementation for codespan.
 
 use crate::lint_warn;
-use codespan_reporting::files::Files;
 use glob::Paths;
 use hashbrown::HashMap;
 use rslint_errors::file::{FileId, Files};

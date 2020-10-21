@@ -75,7 +75,7 @@ fn issue_err(expr: ast::Expr, ctx: &mut RuleCtx, op: SyntaxToken, parent: &Synta
             "...because this comparison passes for both `-0` and `+0`",
         )
         .suggestion(
-            node,
+            parent,
             "try using `Object.is` instead",
             format!("Object.is({}, -0)", expr.syntax().text()),
             Applicability::MaybeIncorrect,

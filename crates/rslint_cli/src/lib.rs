@@ -7,12 +7,6 @@ pub use self::{cli::ExplanationRunner, config::*, files::*, panic_hook::*};
 pub use rslint_core::Outcome;
 pub use rslint_errors::{Diagnostic, Severity};
 
-use codespan_reporting::diagnostic::Severity;
-use codespan_reporting::term::Config;
-use codespan_reporting::term::{
-    emit,
-    termcolor::{self, ColorChoice, StandardStream},
-};
 use colored::*;
 use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
@@ -22,13 +16,6 @@ use std::fs::write;
 pub(crate) const DOCS_LINK_BASE: &str =
     "https://raw.githubusercontent.com/RDambrosio016/RSLint/master/docs/rules";
 pub(crate) const REPO_LINK: &str = "https://github.com/RDambrosio016/RSLint";
-
-pub fn codespan_config() -> Config {
-    let mut base = Config::default();
-    base.chars.multi_top_left = '┌';
-    base.chars.multi_bottom_left = '└';
-    base
-}
 
 #[allow(unused_must_use)]
 pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool) {
@@ -192,13 +179,7 @@ pub(crate) fn print_results(
 
     for result in results.iter_mut() {
         for diagnostic in result.diagnostics() {
-            emit(
-                &mut StandardStream::stderr(ColorChoice::Always),
-                &codespan_config(),
-                walker,
-                diagnostic,
-            )
-            .expect("Failed to throw diagnostic");
+            emit_diagnostic(diagnostic, &walker);
         }
     }
 

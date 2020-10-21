@@ -26,7 +26,6 @@
 //! ⚠️ note however that many rules rely on checking tokens or the root and running on single nodes
 //! may yield incorrect results, you should only do this if you know about the rule's implementation.
 
-mod diagnostic;
 mod rule;
 mod store;
 mod testing;
