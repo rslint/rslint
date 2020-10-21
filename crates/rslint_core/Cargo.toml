@@ -1,6 +1,6 @@
 [package]
 name = "rslint_core"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["RSLint developers"]
 edition = "2018"
 description = "The core linter housing all of the rules for the rslint project"
