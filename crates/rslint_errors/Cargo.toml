@@ -3,9 +3,11 @@ name = "rslint_errors"
 version = "0.1.0"
 authors = ["RSLint developers"]
 edition = "2018"
+license = "MIT"
+description = "Pretty error reporting library based on codespan-reporting built for the RSLint project"
 
 [dependencies]
-rslint_rowan = { version = "0.10.0", optional = true }
+rslint_rowan = "0.10.0"
 unicode-width = "0.1.8"
 yansi-term = "0.1.2"
 serde = { version = "1.0.117", optional = true, features = ["derive"] }
@@ -15,5 +17,4 @@ rslint_text_edit = { version = "0.1", path = "../rslint_text_edit" }
 termcolor = "1"
 
 [features]
-rowan = ["rslint_rowan"]
 lsp = ["lsp-types"]

@@ -1,4 +1,3 @@
-#[cfg(feature = "rowan")]
 use rslint_rowan::{Language, SyntaxElement, SyntaxNode, SyntaxToken, TextRange};
 use std::{collections::HashMap, ops::Range};
 
@@ -30,21 +29,18 @@ where
     }
 }
 
-#[cfg(feature = "rowan")]
 impl<T: Language> Span for SyntaxNode<T> {
     fn as_range(&self) -> Range<usize> {
         self.text_range().into()
     }
 }
 
-#[cfg(feature = "rowan")]
 impl<T: Language> Span for SyntaxToken<T> {
     fn as_range(&self) -> Range<usize> {
         self.text_range().into()
     }
 }
 
-#[cfg(feature = "rowan")]
 impl<T: Language> Span for SyntaxElement<T> {
     fn as_range(&self) -> Range<usize> {
         match self {
@@ -55,7 +51,6 @@ impl<T: Language> Span for SyntaxElement<T> {
     }
 }
 
-#[cfg(feature = "rowan")]
 impl Span for TextRange {
     fn as_range(&self) -> Range<usize> {
         self.clone().into()
