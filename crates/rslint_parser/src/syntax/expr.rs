@@ -768,9 +768,11 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                     if p.at(T!['(']) {
                         formal_parameters(p);
                     } else {
+                        let m = p.start();
                         // test_err async_arrow_expr_await_parameter
                         // let a = async await => {}
                         p.bump_remap(T![ident]);
+                        m.complete(p, NAME);
                     }
                     p.expect(T![=>]);
                     arrow_body(&mut *p.with_state(ParserState {
@@ -797,7 +799,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             // foo;
             // yield;
             // await;
-            let ident = identifier_reference(p)?;
+            let mut ident = identifier_reference(p)?;
             if p.state.potential_arrow_start && p.at(T![=>]) && !p.has_linebreak_before_n(0) {
                 // test arrow_expr_single_param
                 // foo => {}
@@ -805,6 +807,9 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                 // await => {}
                 // foo =>
                 // {}
+
+                // parameters are binding so we need to change the kind from NAME_REF to NAME
+                ident.change_kind(p, NAME);
                 let m = ident.precede(p);
                 p.bump_any();
                 arrow_body(p);
