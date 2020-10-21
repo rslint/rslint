@@ -37,33 +37,15 @@ fn parser_tests() {
         let mut ret = format!("{:#?}", parse.syntax());
 
         for diag in parse.errors() {
-            use std::{cell::RefCell, rc::Rc};
-
-            let buf = Rc::new(RefCell::new(vec![]));
-            struct BufWriter {
-                buf: Rc<RefCell<Vec<u8>>>,
-            }
-
-            impl std::io::Write for BufWriter {
-                fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-                    self.buf.borrow_mut().write(buf)
-                }
-
-                fn flush(&mut self) -> std::io::Result<()> {
-                    Ok(())
-                }
-            }
-
-            let write = BufWriter { buf: buf.clone() };
-            let mut emitter = Emitter::new(Box::new(write), &files, false);
+            let mut write = rslint_errors::termcolor::Buffer::no_color();
+            let mut emitter = Emitter::new(&files);
             emitter
-                .emit_diagnostic(diag)
+                .emit_with_writer(diag, &mut write)
                 .expect("failed to emit diagnostic");
 
-            let buf = buf.borrow();
             ret.push_str(&format!(
                 "--\n{}",
-                std::str::from_utf8(buf.as_slice()).expect("non utf8 in error buffer")
+                std::str::from_utf8(write.as_slice()).expect("non utf8 in error buffer")
             ));
         }
         ret.push_str(&format!("--\n{}", text));

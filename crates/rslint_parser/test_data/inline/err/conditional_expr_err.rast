@@ -38,18 +38,18 @@ MODULE@0..40
   WHITESPACE@39..40 "\n"
 --
 error[SyntaxError]: expected `:` but instead found `baz`
- --> conditional_expr_err.js:1:11
-  |
-1 | foo ? bar baz
-  |           ^^^ unexpected
-  |
+  ┌─ conditional_expr_err.js:1:11
+  │
+1 │ foo ? bar baz
+  │           ^^^ unexpected
+
 --
 error[SyntaxError]: expected `:` but instead found `baz`
- --> conditional_expr_err.js:2:11
-  |
-2 | foo ? bar baz ? foo : bar
-  |           ^^^ unexpected
-  |
+  ┌─ conditional_expr_err.js:2:11
+  │
+2 │ foo ? bar baz ? foo : bar
+  │           ^^^ unexpected
+
 --
 foo ? bar baz
 foo ? bar baz ? foo : bar

@@ -23,11 +23,11 @@ MODULE@0..34
   WHITESPACE@33..34 "\n"
 --
 error[SyntaxError]: Illegal use of an import declaration not at the top level
- --> export_decl_not_top_level.js:2:9
-  |
-2 |  export { pain } from "life";
-  |         ^^^^^^^^^^^^^^^^^^^^ move this declaration to the top level
-  |
+  ┌─ export_decl_not_top_level.js:2:9
+  │
+2 │  export { pain } from "life";
+  │         ^^^^^^^^^^^^^^^^^^^^ move this declaration to the top level
+
 --
 {
  export { pain } from "life";

@@ -19,40 +19,46 @@ MODULE@0..24
   WHITESPACE@23..24 "\n"
 --
 error[SyntaxError]: expected `'('` but instead found `foo`
- --> switch_stmt_err.js:1:8
-  |
-1 | switch foo {}
-  |        ^^^ unexpected
-  |
+  ┌─ switch_stmt_err.js:1:8
+  │
+1 │ switch foo {}
+  │        ^^^ unexpected
+
 --
 error[SyntaxError]: expected `')'` but instead found `{`
- --> switch_stmt_err.js:1:12
-  |
-1 | switch foo {}
-  |            ^ unexpected
-  |
+  ┌─ switch_stmt_err.js:1:12
+  │
+1 │ switch foo {}
+  │            ^ unexpected
+
 --
 error[SyntaxError]: expected `'('` but instead found `{`
- --> switch_stmt_err.js:2:8
-  |
-2 | switch {}
-  |        ^ unexpected
-  |
+  ┌─ switch_stmt_err.js:2:8
+  │
+2 │ switch {}
+  │        ^ unexpected
+
 --
 error[SyntaxError]: expected `')'` but instead the file ends
---> switch_stmt_err.js:3:1
- |
- |
+  ┌─ switch_stmt_err.js:3:1
+  │
+3 │ 
+  │ ^ the file ends here
+
 --
 error[SyntaxError]: expected `'{'` but instead the file ends
---> switch_stmt_err.js:3:1
- |
- |
+  ┌─ switch_stmt_err.js:3:1
+  │
+3 │ 
+  │ ^ the file ends here
+
 --
 error[SyntaxError]: expected `'}'` but instead the file ends
---> switch_stmt_err.js:3:1
- |
- |
+  ┌─ switch_stmt_err.js:3:1
+  │
+3 │ 
+  │ ^ the file ends here
+
 --
 switch foo {}
 switch {}

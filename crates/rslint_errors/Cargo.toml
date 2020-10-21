@@ -12,6 +12,7 @@ serde = { version = "1.0.117", optional = true, features = ["derive"] }
 lsp-types = { version = ">=0.79, <0.82", optional = true }
 text-diff = "0.4.0"
 rslint_text_edit = { version = "0.1", path = "../rslint_text_edit" }
+termcolor = "1"
 
 [features]
 rowan = ["rslint_rowan"]

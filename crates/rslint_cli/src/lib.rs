@@ -167,9 +167,9 @@ pub fn remap_diagnostics_to_level(diagnostics: &mut Vec<Diagnostic>, level: Rule
 pub fn emit_diagnostic(diagnostic: &Diagnostic, walker: &FileWalker) {
     use rslint_errors::Emitter;
 
-    let mut emitter = Emitter::stderr(walker, true);
+    let mut emitter = Emitter::new(walker);
     emitter
-        .emit_diagnostic(&diagnostic)
+        .emit_stderr(&diagnostic, true)
         .expect("failed to throw linter diagnostic")
 }
 
@@ -180,9 +180,9 @@ macro_rules! lint_diagnostic {
 
     let diag = $crate::Diagnostic::$severity(1, "", format!($($format_args)*));
     let file = rslint_errors::file::SimpleFile::new("".into(), "".into());
-    let mut emitter = Emitter::stderr(&file, true);
+    let mut emitter = Emitter::new(&file);
     emitter
-        .emit_diagnostic(&diag)
+        .emit_stderr(&diag, true)
         .expect("failed to throw linter diagnostic")
     }
 }

@@ -7,8 +7,7 @@ use rslint_text_edit::*;
 
 /// A diagnostic message that can give information
 /// like errors or warnings.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Diagnostic {
     pub file_id: FileId,
 
@@ -19,7 +18,6 @@ pub struct Diagnostic {
 
     pub primary: Option<SubDiagnostic>,
     pub children: Vec<SubDiagnostic>,
-    #[cfg_attr(feature = "serde", serde(skip))]
     pub suggestions: Vec<CodeSuggestion>,
     pub footers: Vec<Footer>,
 }
@@ -43,11 +41,6 @@ impl Diagnostic {
     /// Creates a new [`Diagnostic`] with the `Note` severity.
     pub fn note(file_id: FileId, code: impl Into<String>, title: impl Into<String>) -> Self {
         Self::new_with_code(file_id, Severity::Note, title, Some(code.into()))
-    }
-
-    /// Creates a new [`Diagnostic`] with the `Info` severity.
-    pub fn info(file_id: FileId, code: impl Into<String>, title: impl Into<String>) -> Self {
-        Self::new_with_code(file_id, Severity::Info, title, Some(code.into()))
     }
 
     /// Creates a new [`Diagnostic`] that will be used in a builder-like way
@@ -148,7 +141,7 @@ impl Diagnostic {
     ///
     /// A secondary is just a label with the [`Info`](Severity::Info) severity.
     pub fn secondary(self, span: impl Span, msg: impl Into<String>) -> Self {
-        self.label(Severity::Info, span, msg)
+        self.label(Severity::Note, span, msg)
     }
 
     /// Prints out a message that suggests a possible solution, that is in another
@@ -410,8 +403,7 @@ impl Diagnostic {
 
 /// Everything that can be added to a diagnostic, like
 /// a suggestion that will be displayed under the actual error.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct SubDiagnostic {
     pub severity: Severity,
     pub msg: String,
@@ -419,41 +411,8 @@ pub struct SubDiagnostic {
 }
 
 /// A note or help that is displayed under the diagnostic.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct Footer {
     pub msg: String,
     pub severity: Severity,
 }
-
-// impl ToIndels for String {
-//     fn to_indels(self, old: &str) -> Vec<Indel> {
-//         let mut indels = Vec::new();
-//         let diff = diff(old, &self, "").1;
-//         let mut cur: TextSize = 0.into();
-//         for diff in diff {
-//             let indel = match diff {
-//                 Difference::Add(string) => {
-//                     let len = string.len();
-//                     let res = Indel::insert(cur, string);
-//                     cur += TextSize::from(len as u32);
-//                     res
-//                 }
-//                 Difference::Rem(string) => {
-//                     let res = Indel::delete(TextRange::new(
-//                         cur,
-//                         TextSize::from(u32::from(cur) + string.len() as u32),
-//                     ));
-//                     cur += TextSize::from(string.len() as u32);
-//                     res
-//                 }
-//                 Difference::Same(string) => {
-//                     cur += TextSize::from(string.len() as u32);
-//                     continue;
-//                 }
-//             };
-//             indels.push(indel);
-//         }
-//         indels
-//     }
-// }

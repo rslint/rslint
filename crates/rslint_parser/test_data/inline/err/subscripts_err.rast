@@ -24,31 +24,35 @@ MODULE@0..20
       TEMPLATE_CHUNK@18..20 "b\n"
 --
 error: unterminated template literal
---> subscripts_err.js:3:1
- |
- |
+  ┌─ subscripts_err.js:3:1
+  │
+3 │ 
+  │ ^
+
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
- --> subscripts_err.js:1:6
-  |
-1 | foo()?.baz[].
-  |      ^^ An explicit or implicit semicolon is expected here...
-  | ------- ...Which is required to end this statement
-  |
+  ┌─ subscripts_err.js:1:6
+  │
+1 │ foo()?.baz[].
+  │ -----^^
+  │ │    │
+  │ │    An explicit or implicit semicolon is expected here...
+  │ ...Which is required to end this statement
+
 --
 error[SyntaxError]: Expected a statement or declaration, but found none
- --> subscripts_err.js:1:6
-  |
-1 | foo()?.baz[].
-  |      ^^ Expected a statement or declaration here
-  |
+  ┌─ subscripts_err.js:1:6
+  │
+1 │ foo()?.baz[].
+  │      ^^ Expected a statement or declaration here
+
 --
 error[SyntaxError]: Expected an expression, but found none
- --> subscripts_err.js:1:12
-  |
-1 | foo()?.baz[].
-  |            ^ Expected an expression here
-  |
+  ┌─ subscripts_err.js:1:12
+  │
+1 │ foo()?.baz[].
+  │            ^ Expected an expression here
+
 --
 foo()?.baz[].
 BAR`b

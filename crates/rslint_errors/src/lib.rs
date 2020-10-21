@@ -1,10 +1,10 @@
 #![deny(rust_2018_idioms)]
 
-pub mod annotate_snippets;
 pub mod file;
 #[cfg(feature = "lsp")]
 pub mod lsp;
 
+mod codespan;
 mod diagnostic;
 mod emit;
 mod suggestion;
@@ -14,9 +14,8 @@ pub use emit::Emitter;
 pub use file::Span;
 pub use suggestion::*;
 
-pub(crate) use annotate_snippets::*;
-
-use annotate_snippets::snippet;
+pub use codespan::diagnostic::Severity;
+pub use termcolor;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
@@ -52,29 +51,4 @@ pub enum Applicability {
     HasPlaceholders,
     /// The applicability of the suggestion is unknown.
     Unspecified,
-}
-
-/// Types of severity.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize))]
-pub enum Severity {
-    Error,
-    Warning,
-    Help,
-    Note,
-    Info,
-}
-
-impl Into<snippet::AnnotationType> for Severity {
-    fn into(self) -> snippet::AnnotationType {
-        use snippet::AnnotationType::*;
-
-        match self {
-            Severity::Error => Error,
-            Severity::Warning => Warning,
-            Severity::Help => Help,
-            Severity::Note => Note,
-            Severity::Info => Info,
-        }
-    }
 }

@@ -16,10 +16,10 @@ MODULE@0..22
   WHITESPACE@21..22 "\n"
 --
 error[SyntaxError]: Expected an identifier or pattern, but found none
- --> formal_params_no_binding_element.js:1:14
-  |
-1 | function foo(true) {}
-  |              ^^^^
-  |
+  ┌─ formal_params_no_binding_element.js:1:14
+  │
+1 │ function foo(true) {}
+  │              ^^^^
+
 --
 function foo(true) {}

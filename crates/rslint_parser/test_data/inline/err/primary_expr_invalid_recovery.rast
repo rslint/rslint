@@ -24,10 +24,10 @@ MODULE@0..18
   WHITESPACE@17..18 "\n"
 --
 error: unexpected token `\`
- --> primary_expr_invalid_recovery.js:1:9
-  |
-1 | let a = \; foo();
-  |         ^
-  |
+  ┌─ primary_expr_invalid_recovery.js:1:9
+  │
+1 │ let a = \; foo();
+  │         ^
+
 --
 let a = \; foo();

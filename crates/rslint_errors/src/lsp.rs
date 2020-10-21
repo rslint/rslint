@@ -80,10 +80,10 @@ pub fn convert_to_lsp_diagnostic(
 
 pub fn severity_to_lsp_severity(severity: Severity) -> DiagnosticSeverity {
     match severity {
-        Severity::Error => DiagnosticSeverity::Error,
+        Severity::Error | Severity::Bug => DiagnosticSeverity::Error,
         Severity::Warning => DiagnosticSeverity::Warning,
         Severity::Help => DiagnosticSeverity::Hint,
-        Severity::Info | Severity::Note => DiagnosticSeverity::Information,
+        Severity::Note => DiagnosticSeverity::Information,
     }
 }
 
