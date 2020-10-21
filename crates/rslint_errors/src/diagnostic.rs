@@ -126,8 +126,6 @@ impl Diagnostic {
     }
 
     /// Attaches a primary label to this [`Diagnostic`].
-    ///
-    /// A primary is just a label with the [`Error`](Severity::Error) severity.
     pub fn primary(mut self, span: impl Span, msg: impl Into<String>) -> Self {
         self.primary = Some(SubDiagnostic {
             severity: self.severity,
@@ -138,8 +136,6 @@ impl Diagnostic {
     }
 
     /// Attaches a secondary label to this [`Diagnostic`].
-    ///
-    /// A secondary is just a label with the [`Info`](Severity::Info) severity.
     pub fn secondary(self, span: impl Span, msg: impl Into<String>) -> Self {
         self.label(Severity::Note, span, msg)
     }
