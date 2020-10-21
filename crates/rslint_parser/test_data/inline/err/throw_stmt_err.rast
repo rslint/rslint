@@ -21,8 +21,8 @@ error[SyntaxError]: Linebreaks between a throw statement and the error to be thr
 2 │ new Error("oh no :(")
   │ ^^^
   │ │
-  │ A linebreak is not allowed here
   │ Help: did you mean to throw this?
+  │ A linebreak is not allowed here
 
 --
 throw

@@ -48,8 +48,9 @@ impl CstRule for NoExtraSemi {
                 .map_or(true, |parent| !ALLOWED.contains(&parent.kind()))
         {
             let err = ctx
-                .err(self.name(), "Unnecessary semicolon")
-                .primary(node, "help: delete this semicolon");
+                .err(self.name(), "unnecessary semicolon")
+                .primary(node, "")
+                .suggestion(node, "delete the semicolon", "", Applicability::Always);
 
             ctx.add_err(err);
         }

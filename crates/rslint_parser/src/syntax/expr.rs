@@ -264,7 +264,7 @@ fn binary_expr_recursive(
                 let err = p.err_builder("The nullish coalescing operator (??) cannot be mixed with logical operators (|| and &&)")
                     .secondary(left_ref.range(p), "Because this expression would first be evaluated...")
                     .primary(op_tok.range.to_owned(), "...Then it would be used for the left hand side value of this operator, which is most likely unwanted behavior")
-                    .help(&format!("Note: if this is expected, indicate precedence by wrapping `{}` in parentheses", color(left_ref.text(p))));
+                    .note(&format!("if this is expected, indicate precedence by wrapping `{}` in parentheses", color(left_ref.text(p))));
 
                 p.error(err);
             }
@@ -305,7 +305,7 @@ fn binary_expr_recursive(
             let range = TextRange::new(start.start(), marker.range(p).end());
             let text = &format!("{}({})", p.source(op), p.source(range));
 
-            err = err.help(&format!("Help: did you mean `{}`?", color(text)));
+            err = err.help(&format!("did you mean `{}`?", color(text)));
             p.error(err);
         }
     }
@@ -324,7 +324,7 @@ fn binary_expr_recursive(
             let err = p.err_builder("The nullish coalescing operator (??) cannot be mixed with logical operators (|| and &&)")
                     .secondary(rhs_range, "Because this expression would first be evaluated...")
                     .primary(op_tok.range, "...Then it would be used for the right hand side value of this operator, which is most likely unwanted behavior")
-                    .help(&format!("Note: if this is expected, indicate precedence by wrapping `{}` in parentheses", color(parsed.rhs().unwrap().syntax().text().to_string().trim())));
+                    .note(&format!("if this is expected, indicate precedence by wrapping `{}` in parentheses", color(parsed.rhs().unwrap().syntax().text().to_string().trim())));
 
             p.error(err);
         }
@@ -334,7 +334,7 @@ fn binary_expr_recursive(
             let err = p.err_builder("The nullish coalescing operator (??) cannot be mixed with logical operators (|| and &&)")
                 .secondary(right_ref.offset_range(p, parsed.lhs().unwrap().syntax().text_range()), "Because this expression would first be evaluated...")
                 .primary(right_ref.offset_range(p, parsed.op_token().unwrap().text_range()), "...Then it would be used for the left hand side value of this operator, which is most likely unwanted behavior")
-                .help(&format!("Note: if this is expected, indicate precedence by wrapping `{}` in parentheses", color(parsed.lhs().unwrap().syntax().text().to_string().trim())));
+                .note(&format!("if this is expected, indicate precedence by wrapping `{}` in parentheses", color(parsed.lhs().unwrap().syntax().text().to_string().trim())));
 
             p.error(err);
         }

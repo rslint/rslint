@@ -74,7 +74,7 @@ impl CstRule for NoConstantCondition {
             _ => return None,
         };
 
-        let mut err = ctx.err(self.name(), "Unexpected constant condition");
+        let mut err = ctx.err(self.name(), "unexpected constant condition");
         if let Some(condition_value) = util::simple_bool_coerce(cond.clone()) {
             err = util::simple_const_condition_context(node.clone(), condition_value, err);
         } else {

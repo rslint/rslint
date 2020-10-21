@@ -72,7 +72,7 @@ MODULE@0..102
   WHITESPACE@101..102 "\n"
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ function_decl_err.js:6:1
+  ┌─ function_decl_err.js:6:7
   │
 6 │ yield foo;
   │ ------^^^

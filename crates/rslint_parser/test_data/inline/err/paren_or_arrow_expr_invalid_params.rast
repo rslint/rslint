@@ -43,7 +43,7 @@ error[SyntaxError]: Expected an expression, but found none
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ paren_or_arrow_expr_invalid_params.js:1:1
+  ┌─ paren_or_arrow_expr_invalid_params.js:1:7
   │
 1 │ (5 + 5) => {}
   │ ------^

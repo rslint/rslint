@@ -60,7 +60,7 @@ impl CstRule for NoCondAssign {
                 .err(
                     self.name(),
                     format!(
-                        "Unexpected assignment inside a {} condition",
+                        "unexpected assignment inside a {} condition",
                         node.readable_stmt_name()
                     ),
                 )
@@ -68,9 +68,14 @@ impl CstRule for NoCondAssign {
                     cond.syntax(),
                     "this condition results in unexpected behavior",
                 )
-                .note(format!("help: try using `{}`", color("===")))
-                .note(format!(
-                    "note: this makes the condition equivalent to `{}`",
+                .suggestion(
+                    cond.range(),
+                    "try using `===` to compare instead",
+                    "===",
+                    Applicability::MaybeIncorrect,
+                )
+                .footer_note(format!(
+                    "this makes the condition equivalent to `{}`",
                     color(&help_expr(cond.syntax()))
                 ));
 

@@ -46,7 +46,7 @@ error[SyntaxError]: Expected an expression, but found none
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ var_decl_err.js:2:1
+  ┌─ var_decl_err.js:2:13
   │
 2 │ const a = 5 let b = 5;
   │ ------------^^^ An explicit or implicit semicolon is expected here...

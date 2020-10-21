@@ -6,7 +6,7 @@
 //! This is a simple wrapper around the `rowan` crate which does most of the heavy lifting and is language agnostic.
 
 use crate::{Parse, SmolStr, SyntaxKind};
-use codespan_reporting::diagnostic::Diagnostic;
+use rslint_errors::Diagnostic;
 use rslint_rowan::{GreenNodeBuilder, Language};
 
 pub use rslint_rowan::GreenNode;
@@ -37,12 +37,12 @@ pub use rslint_rowan::{Direction, NodeOrToken};
 /// Simple wrapper around a rslint_rowan [`GreenNodeBuilder`]
 #[derive(Default, Debug)]
 pub struct SyntaxTreeBuilder {
-    errors: Vec<Diagnostic<usize>>,
+    errors: Vec<Diagnostic>,
     inner: GreenNodeBuilder<'static>,
 }
 
 impl SyntaxTreeBuilder {
-    pub(crate) fn finish_raw(self) -> (GreenNode, Vec<Diagnostic<usize>>) {
+    pub(crate) fn finish_raw(self) -> (GreenNode, Vec<Diagnostic>) {
         let green = self.inner.finish();
         (green, self.errors)
     }
@@ -66,7 +66,7 @@ impl SyntaxTreeBuilder {
         self.inner.finish_node()
     }
 
-    pub fn error(&mut self, error: Diagnostic<usize>) {
+    pub fn error(&mut self, error: Diagnostic) {
         self.errors.push(error)
     }
 }

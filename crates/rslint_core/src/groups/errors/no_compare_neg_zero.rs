@@ -47,34 +47,39 @@ impl CstRule for NoCompareNegZero {
                 .filter(|e| unsafe_comparison(e))
                 .and_then(|_| bin.rhs())
             {
-                issue_err(expr, ctx, op.clone());
+                issue_err(expr, ctx, op.clone(), &node);
             }
             if let Some(expr) = bin
                 .rhs()
                 .filter(|e| unsafe_comparison(e))
                 .and_then(|_| bin.lhs())
             {
-                issue_err(expr, ctx, op)
+                issue_err(expr, ctx, op, &node)
             }
         }
         None
     }
 }
 
-fn issue_err(expr: ast::Expr, ctx: &mut RuleCtx, op: SyntaxToken) {
+fn issue_err(expr: ast::Expr, ctx: &mut RuleCtx, op: SyntaxToken, node: &SyntaxNode) {
     let err = ctx
         .err(
             "no-compare-neg-zero",
-            "Comparison against `-0` with `{}` yields unexpected behavior",
+            format!(
+                "comparison against `-0` with `{}` yields unexpected behavior",
+                expr.text()
+            ),
         )
         .primary(
             op,
             "...because this comparison passes for both `-0` and `+0`",
         )
-        .note(format!(
-            "help: try using this: `{}`",
-            color(&format!("Object.is({}, -0)", expr.syntax().text()))
-        ));
+        .suggestion(
+            node,
+            "try using `Object.is` instead",
+            format!("Object.is({}, -0)", expr.syntax().text()),
+            Applicability::MaybeIncorrect,
+        );
 
     ctx.add_err(err);
 }

@@ -82,7 +82,7 @@ impl CstRule for NoExtraBooleanCast {
     }
 }
 
-fn reason_labels(builder: DiagnosticBuilder, reason: Reason) -> DiagnosticBuilder {
+fn reason_labels(builder: Diagnostic, reason: Reason) -> Diagnostic {
     match reason {
         Reason::ExplicitBoolean(node) => builder.secondary(
             node.trimmed_range(),

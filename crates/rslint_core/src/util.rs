@@ -242,8 +242,8 @@ fn short_circuits(expr: Expr, op: BinOp) -> bool {
 pub fn simple_const_condition_context(
     parent: SyntaxNode,
     condition_value: bool,
-    mut diagnostic: DiagnosticBuilder,
-) -> DiagnosticBuilder {
+    mut diagnostic: Diagnostic,
+) -> Diagnostic {
     // TODO: we can likely clean this up a lot
     match parent.kind() {
         COND_EXPR => {

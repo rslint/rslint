@@ -10,7 +10,7 @@ pub(crate) mod document {
         },
         provider,
     };
-    use codespan_reporting::files::SimpleFiles;
+    use rslint_errors::file::SimpleFiles;
     use rslint_parser::{parse_module, parse_text};
     use std::sync::Arc;
     use tower_lsp::lsp_types::*;
@@ -31,7 +31,7 @@ pub(crate) mod document {
         // the server will block.
         {
             let mut files = SimpleFiles::new();
-            let file_id = files.add(uri.clone(), text.clone());
+            let file_id = files.add(uri.to_string(), text.clone());
 
             let mut document = session.get_mut_document(&uri).await?;
             document.files = files;

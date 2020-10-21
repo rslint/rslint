@@ -45,7 +45,7 @@ error[SyntaxError]: expected `')'` but instead found `var`
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ invalid_arg_list.js:2:1
+  ┌─ invalid_arg_list.js:2:9
   │
 2 │ foo(a,b var
   │ --------^^^

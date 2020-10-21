@@ -23,12 +23,12 @@ pub use token::Token;
 #[cfg(feature = "highlight")]
 pub use highlight::*;
 
-use codespan_reporting::diagnostic::{Diagnostic, Label};
+use rslint_errors::Diagnostic;
 use state::LexerState;
 use tables::derived_property::*;
 
 pub use rslint_syntax::*;
-pub type LexerReturn = (Token, Option<Diagnostic<usize>>);
+pub type LexerReturn = (Token, Option<Diagnostic>);
 
 // Simple macro for unwinding a loop
 macro_rules! unwind_loop {
@@ -196,7 +196,7 @@ impl<'src> Lexer<'src> {
     }
 
     // Read a `\u{000...}` escape sequence, this expects the cur char to be the `{`
-    fn read_codepoint_escape(&mut self) -> Result<char, Diagnostic<usize>> {
+    fn read_codepoint_escape(&mut self) -> Result<char, Diagnostic> {
         let start = self.cur + 1;
         self.read_hexnumber();
 
@@ -204,10 +204,8 @@ impl<'src> Lexer<'src> {
             // We should not yield diagnostics on a unicode char boundary. That wont make codespan panic
             // but it may cause a panic for other crates which just consume the diagnostics
             let invalid = self.get_unicode_char();
-            let err = Diagnostic::error().with_message("Expected hex digits for a unicode code point escape, but encountered an invalid character")
-                .with_labels(vec![
-                    Label::primary(self.file_id, self.cur..(invalid.len_utf8()))
-                ]);
+            let err = Diagnostic::error(self.file_id, "", "expected hex digits for a unicode code point escape, but encountered an invalid character")
+                .primary(self.cur .. invalid.len_utf8(), "");
 
             return Err(err);
         }
@@ -230,21 +228,22 @@ impl<'src> Lexer<'src> {
                 if let Some(chr) = res {
                     Ok(chr)
                 } else {
-                    let err = Diagnostic::error()
-                        .with_message("invalid codepoint for unicode escape")
-                        .with_labels(vec![Label::primary(self.file_id, start..self.cur)]);
+                    let err =
+                        Diagnostic::error(self.file_id, "", "invalid codepoint for unicode escape")
+                            .primary(start..self.cur, "");
 
                     Err(err)
                 }
             }
 
             _ => {
-                let err = Diagnostic::error()
-                    .with_message("Out of bounds codepoint for unicode codepoint escape sequence")
-                    .with_labels(vec![Label::primary(self.file_id, start..self.cur)])
-                    .with_notes(vec![
-                        "Note: Codepoints range from 0 to 0x10FFFF (1114111)".to_string()
-                    ]);
+                let err = Diagnostic::error(
+                    self.file_id,
+                    "",
+                    "out of bounds codepoint for unicode codepoint escape sequence",
+                )
+                .primary(start..self.cur, "")
+                .footer_note("Codepoints range from 0 to 0x10FFFF (1114111)");
 
                 Err(err)
             }
@@ -253,16 +252,18 @@ impl<'src> Lexer<'src> {
 
     // Read a `\u0000` escape sequence, this expects the current char to be the `u`, it also does not skip over the escape sequence
     // The pos after this method is the last hex digit
-    fn read_unicode_escape(&mut self, advance: bool) -> Result<char, Diagnostic<usize>> {
+    fn read_unicode_escape(&mut self, advance: bool) -> Result<char, Diagnostic> {
         debug_assert_eq!(self.bytes[self.cur], b'u');
 
-        let diagnostic = Diagnostic::error()
-            .with_message("Invalid digits after unicode escape sequence")
-            .with_labels(vec![Label::primary(
-                self.file_id,
-                (self.cur - 1)..(self.cur + 1),
-            )
-            .with_message("Expected 4 hex digits following this")]);
+        let diagnostic = Diagnostic::error(
+            self.file_id,
+            "",
+            "invalid digits after unicode escape sequence",
+        )
+        .primary(
+            self.cur - 1..self.cur + 1,
+            "expected 4 hex digits following this",
+        );
 
         for idx in 0..4 {
             match self.next_bounded() {
@@ -303,16 +304,15 @@ impl<'src> Lexer<'src> {
 
     // Validate a `\x00 escape sequence, this expects the current char to be the `x`, it also does not skip over the escape sequence
     // The pos after this method is the last hex digit
-    fn validate_hex_escape(&mut self) -> Option<Diagnostic<usize>> {
+    fn validate_hex_escape(&mut self) -> Option<Diagnostic> {
         debug_assert_eq!(self.bytes[self.cur], b'x');
 
-        let diagnostic = Diagnostic::error()
-            .with_message("Invalid digits after hex escape sequence")
-            .with_labels(vec![Label::primary(
-                self.file_id,
-                (self.cur - 1)..(self.cur + 1),
-            )
-            .with_message("Expected 2 hex digits following this")]);
+        let diagnostic =
+            Diagnostic::error(self.file_id, "", "invalid digits after hex escape sequence")
+                .primary(
+                    (self.cur - 1)..(self.cur + 1),
+                    "Expected 2 hex digits following this",
+                );
 
         for _ in 0..2 {
             match self.next_bounded() {
@@ -325,7 +325,7 @@ impl<'src> Lexer<'src> {
     }
 
     // Validate a `\..` escape sequence and advance the lexer based on it
-    fn validate_escape_sequence(&mut self) -> Option<Diagnostic<usize>> {
+    fn validate_escape_sequence(&mut self) -> Option<Diagnostic> {
         let cur = self.cur;
         if let Some(escape) = self.bytes.get(self.cur + 1) {
             match escape {
@@ -349,11 +349,10 @@ impl<'src> Lexer<'src> {
                 }
             }
         } else {
-            Some(Diagnostic::error().with_labels(vec![
-                Label::primary(self.file_id, cur..(cur + 1)).with_message(
-                    "Expected an escape sequence following a backslash, but found none",
-                ),
-            ]))
+            Some(Diagnostic::error(self.file_id, "", "").primary(
+                cur..cur + 1,
+                "expected an escape sequence following a backslash, but found none",
+            ))
         }
     }
 
@@ -375,7 +374,7 @@ impl<'src> Lexer<'src> {
 
     // Consume a string literal and advance the lexer, and returning a list of errors that occurred when reading the string
     // This could include unterminated string and invalid escape sequences
-    fn read_str_literal(&mut self) -> Option<Diagnostic<usize>> {
+    fn read_str_literal(&mut self) -> Option<Diagnostic> {
         // Safety: this is only ever called from lex_token, which is guaranteed to be called on a char position
         let quote = unsafe { *self.bytes.get_unchecked(self.cur) };
         let start = self.cur;
@@ -394,13 +393,9 @@ impl<'src> Lexer<'src> {
             }
         }
 
-        let unterminated = Diagnostic::error()
-            .with_message("Unterminated string literal")
-            .with_labels(vec![
-                Label::primary(self.file_id, self.cur..self.cur).with_message("Input ends here"),
-                Label::secondary(self.file_id, start..start + 1)
-                    .with_message("String literal starts here"),
-            ]);
+        let unterminated = Diagnostic::error(self.file_id, "", "unterminated string literal")
+            .primary(self.cur..self.cur, "input ends here")
+            .secondary(start..start + 1, "string literal starts here");
 
         Some(unterminated)
     }
@@ -720,10 +715,12 @@ impl<'src> Lexer<'src> {
         let err_start = self.cur;
         if self.cur < self.bytes.len() && self.cur_is_ident_start() {
             self.consume_ident();
-            let err = Diagnostic::error()
-                .with_message("Numbers cannot be followed by identifiers directly after")
-                .with_labels(vec![Label::primary(self.file_id, err_start..self.cur)
-                    .with_message("An identifier cannot appear here")]);
+            let err = Diagnostic::error(
+                self.file_id,
+                "",
+                "numbers cannot be followed by identifiers directly after",
+            )
+            .primary(err_start..self.cur, "an identifier cannot appear here");
 
             (
                 Token::new(SyntaxKind::ERROR_TOKEN, self.cur - start),
@@ -739,10 +736,9 @@ impl<'src> Lexer<'src> {
         let start = self.cur;
         self.next();
         if start != 0 {
-            let err = Diagnostic::error()
-                .with_message("`#` must be at the beginning of the file")
-                .with_labels(vec![Label::primary(self.file_id, start..(start + 1))
-                    .with_message("but it's found here")]);
+            let err =
+                Diagnostic::error(self.file_id, "", "`#` must be at the beginning of the file")
+                    .primary(start..(start + 1), "but it's found here");
             return (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err));
         }
 
@@ -757,9 +753,12 @@ impl<'src> Lexer<'src> {
             }
             tok!(SHEBANG, self.cur)
         } else {
-            let err = Diagnostic::error()
-                .with_message("expected `!` following a `#`, but found none")
-                .with_labels(vec![Label::primary(self.file_id, 0..1).with_message("")]);
+            let err = Diagnostic::error(
+                self.file_id,
+                "",
+                "expected `!` following a `#`, but found none",
+            )
+            .primary(0usize..1usize, "");
 
             (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err))
         }
@@ -781,14 +780,9 @@ impl<'src> Lexer<'src> {
                     }
                 }
 
-                let err = Diagnostic::error()
-                    .with_message("Unterminated block comment")
-                    .with_labels(vec![
-                        Label::primary(self.file_id, self.cur..self.cur + 1)
-                            .with_message("... but the file ends here"),
-                        Label::secondary(self.file_id, start..start + 2)
-                            .with_message("A block comment starts here..."),
-                    ]);
+                let err = Diagnostic::error(self.file_id, "", "unterminated block comment")
+                    .primary(self.cur..self.cur + 1, "... but the file ends here")
+                    .secondary(start..start + 2, "A block comment starts here");
 
                 (Token::new(SyntaxKind::COMMENT, self.cur - start), Some(err))
             }
@@ -814,11 +808,9 @@ impl<'src> Lexer<'src> {
     }
 
     #[inline]
-    fn flag_err(&self, flag: char) -> Diagnostic<usize> {
-        Diagnostic::error()
-            .with_message(&format!("Duplicate flag `{}`", flag))
-            .with_labels(vec![Label::primary(self.file_id, self.cur..self.cur + 1)
-                .with_message("This flag was already used")])
+    fn flag_err(&self, flag: char) -> Diagnostic {
+        Diagnostic::error(self.file_id, "", format!("duplicate flag `{}`", flag))
+            .primary(self.cur..self.cur + 1, "this flag was already used")
     }
 
     // TODO: Due to our return of (Token, Option<Error>) we cant issue more than one regex error
@@ -881,10 +873,8 @@ impl<'src> Lexer<'src> {
                                     let chr_start = self.cur;
                                     self.cur += self.get_unicode_char().len_utf8() - 1;
                                     if diagnostic.is_none() {
-                                        diagnostic = Some(Diagnostic::error()
-                                        .with_message("Invalid regex flag")
-                                        .with_labels(vec![Label::primary(self.file_id, chr_start..self.cur + 1)
-                                            .with_message("This is not a valid regex flag")]));
+                                        diagnostic = Some(Diagnostic::error(self.file_id, "", "invalid regex flag")
+                                            .primary(chr_start .. self.cur + 1, "this is not a valid regex flag"));
                                     }
                                 },
                                 _ => {
@@ -896,20 +886,16 @@ impl<'src> Lexer<'src> {
                 },
                 Some(b'\\') => {
                     if self.next_bounded().is_none() {
-                        let err = Diagnostic::error().with_message("Expected a character after a regex escape, but found none")
-                        .with_labels(vec![
-                            Label::primary(self.file_id, self.cur..self.cur + 1).with_message("Expected a character following this")
-                        ]);
+                        let err = Diagnostic::error(self.file_id, "", "expected a character after a regex escape, but found none")
+                            .primary(self.cur..self.cur + 1, "expected a character following this");
 
                         return (Token::new(SyntaxKind::REGEX, self.cur - start), Some(err));
                     }
                 },
                 None => {
-                    let err = Diagnostic::error().with_message("Unterminated regex literal")
-                        .with_labels(vec![
-                            Label::primary(self.file_id, self.cur..self.cur).with_message("...but the file ends here"),
-                            Label::secondary(self.file_id, start..start + 1).with_message("a regex literal starts here...")
-                        ]);
+                    let err = Diagnostic::error(self.file_id, "", "unterminated regex literal")
+                        .primary(self.cur..self.cur, "...but the file ends here")
+                        .secondary(start..start + 1, "a regex literal starts there...");
 
                     return (Token::new(SyntaxKind::REGEX, self.cur - start), Some(err));
                 },
@@ -1183,8 +1169,8 @@ impl<'src> Lexer<'src> {
 
                                 tok!(IDENT, self.cur - start)
                             } else {
-                                let err = Diagnostic::error().with_message("Unexpected unicode escape")
-                                    .with_labels(vec![Label::primary(self.file_id, start..self.cur)]).with_message("This escape is unexpected, as it does not designate the start of an identifier");
+                                let err = Diagnostic::error(self.file_id, "", "unexpected unicode escape")
+                                    .primary(start..self.cur, "this escape is unexpected, as it does not designate the start of an identifier");
 
                                 self.next();
                                 (
@@ -1199,9 +1185,12 @@ impl<'src> Lexer<'src> {
                         ),
                     }
                 } else {
-                    let err = Diagnostic::error()
-                        .with_message(&format!("Unexpected token `{}`", byte as char))
-                        .with_labels(vec![Label::primary(self.file_id, start..self.cur + 1)]);
+                    let err = Diagnostic::error(
+                        self.file_id,
+                        "",
+                        format!("unexpected token `{}`", byte as char),
+                    )
+                    .primary(start..self.cur + 1, "");
                     self.next();
 
                     (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err))
@@ -1257,9 +1246,12 @@ impl<'src> Lexer<'src> {
                         self.consume_ident();
                         tok!(IDENT, self.cur - start)
                     } else {
-                        let err = Diagnostic::error()
-                            .with_message(&format!("Unexpected token `{}`", chr as char))
-                            .with_labels(vec![Label::primary(self.file_id, start..self.cur + 1)]);
+                        let err = Diagnostic::error(
+                            self.file_id,
+                            "",
+                            format!("Unexpected token `{}`", chr as char),
+                        )
+                        .primary(start..self.cur + 1, "");
                         self.next();
 
                         (
@@ -1270,9 +1262,12 @@ impl<'src> Lexer<'src> {
                 }
             }
             _ => {
-                let err = Diagnostic::error()
-                    .with_message(&format!("Unexpected token `{}`", byte as char))
-                    .with_labels(vec![Label::primary(self.file_id, start..self.cur + 1)]);
+                let err = Diagnostic::error(
+                    self.file_id,
+                    "",
+                    format!("unexpected token `{}`", byte as char),
+                )
+                .primary(start..self.cur + 1, "");
                 self.next();
 
                 (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err))
@@ -1318,9 +1313,8 @@ impl<'src> Lexer<'src> {
             }
         }
 
-        let err = Diagnostic::error()
-            .with_message("Unterminated template literal")
-            .with_labels(vec![Label::primary(self.file_id, self.cur..self.cur + 1)]);
+        let err = Diagnostic::error(self.file_id, "", "unterminated template literal")
+            .primary(self.cur..self.cur + 1, "");
 
         (
             Token::new(SyntaxKind::TEMPLATE_CHUNK, self.cur - start),

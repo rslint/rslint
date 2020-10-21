@@ -50,7 +50,7 @@ impl CstRule for NoDuplicateCases {
                         let err = ctx
                             .err(
                                 self.name(),
-                                format!("Duplicate switch statement test `{}`", old.trimmed_text()),
+                                format!("duplicate switch statement test `{}`", old.trimmed_text()),
                             )
                             .secondary(
                                 old,

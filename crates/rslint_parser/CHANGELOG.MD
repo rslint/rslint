@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Switched from codespan-reporting to a custom errors crate
+
 ### Added
 
 - Added handling of shebang where the parser consumes shebang if exists at the start

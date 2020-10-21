@@ -57,7 +57,7 @@ impl CstRule for NoAsyncPromiseExecutor {
                         "Don't use async functions for promise executors",
                     )
                     .primary(range, "")
-                    .note("note: any errors thrown by the function will be lost");
+                    .footer_note("any errors thrown by the function will be lost");
 
                 ctx.add_err(err);
             }

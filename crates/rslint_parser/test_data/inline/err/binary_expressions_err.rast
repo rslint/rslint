@@ -49,7 +49,7 @@ error[SyntaxError]: Expected an expression, but found none
 
 --
 error[SyntaxError]: Expected an expression for the right hand side of a `+`, but found an operator instead
-  ┌─ binary_expressions_err.js:2:5
+  ┌─ binary_expressions_err.js:2:7
   │
 2 │ foo + * 2;
   │     - ^ But this operator was encountered instead

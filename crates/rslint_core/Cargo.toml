@@ -10,7 +10,8 @@ repository = "https://github.com/RDambrosio016/RSLint"
 [dependencies]
 rslint_parser = { path = "../rslint_parser", version = "0.2.0" }
 rslint_lexer = { path = "../rslint_lexer", version = "0.1.0" }
-codespan-reporting = { version = "0.9.5", features = ["serialization"] }
+rslint_errors = { path = "../rslint_errors", version = "0.1.0", features = ["rowan"] }
+rslint_text_edit = { path = "../rslint_text_edit", version = "0.1.0" }
 serde = { version = "1.0.115", features = ["derive"] }
 typetag = "0.1.5"
 rayon = "1.4.0"

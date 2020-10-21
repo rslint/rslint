@@ -4,27 +4,15 @@ mod files;
 mod panic_hook;
 
 pub use self::{cli::ExplanationRunner, config::*, files::*, panic_hook::*};
-pub use rslint_core::{Diagnostic, DiagnosticBuilder, Outcome};
+pub use rslint_core::Outcome;
+pub use rslint_errors::{Diagnostic, Severity};
 
-use codespan_reporting::diagnostic::Severity;
-use codespan_reporting::term::Config;
-use codespan_reporting::term::{
-    emit,
-    termcolor::{self, ColorChoice, StandardStream},
-};
 use rayon::prelude::*;
 use rslint_core::{lint_file, CstRuleStore, RuleLevel};
 
 pub(crate) const DOCS_LINK_BASE: &str =
     "https://raw.githubusercontent.com/RDambrosio016/RSLint/master/docs/rules";
 pub(crate) const REPO_LINK: &str = "https://github.com/RDambrosio016/RSLint";
-
-pub fn codespan_config() -> Config {
-    let mut base = Config::default();
-    base.chars.multi_top_left = '┌';
-    base.chars.multi_bottom_left = '└';
-    base
-}
 
 pub fn run(glob: String, verbose: bool) {
     let res = glob::glob(&glob);
@@ -51,15 +39,15 @@ pub fn run(glob: String, verbose: bool) {
 
         let diagnostic = if let Some(found) = regex.find(&old) {
             msg.replace_range(found.range(), "");
-            DiagnosticBuilder::error(0, "config", &msg).note(format!(
-                "help: did you mean '{}'?",
+            Diagnostic::error(0, "config", &msg).footer_help(format!(
+                "did you mean '{}'?",
                 regex.captures(&old).unwrap().get(1).unwrap().as_str()
             ))
         } else {
-            DiagnosticBuilder::error(0, "config", msg)
+            Diagnostic::error(0, "config", msg)
         };
 
-        return emit_diagnostic(diagnostic, &FileWalker::empty());
+        return emit_diagnostic(&diagnostic, &FileWalker::empty());
     } else {
         joined.unwrap().map(|res| res.unwrap())
     };
@@ -89,7 +77,7 @@ pub fn run(glob: String, verbose: bool) {
         })
         .filter_map(|res| {
             if let Err(diagnostic) = res {
-                emit_diagnostic(diagnostic, &walker);
+                emit_diagnostic(&diagnostic, &walker);
                 None
             } else {
                 res.ok()
@@ -123,13 +111,7 @@ pub fn run(glob: String, verbose: bool) {
 
     for result in results.into_iter() {
         for diagnostic in result.diagnostics() {
-            emit(
-                &mut StandardStream::stderr(ColorChoice::Always),
-                &codespan_config(),
-                &walker,
-                diagnostic,
-            )
-            .expect("Failed to throw diagnostic");
+            emit_diagnostic(diagnostic, &walker);
         }
     }
 
@@ -141,7 +123,7 @@ pub fn run(glob: String, verbose: bool) {
 
 fn output_overall(failures: usize, warnings: usize, successes: usize) {
     use std::io::Write;
-    use termcolor::{Color, ColorSpec, WriteColor};
+    use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
     stdout
@@ -174,7 +156,7 @@ fn output_overall(failures: usize, warnings: usize, successes: usize) {
 pub fn remap_diagnostics_to_level(diagnostics: &mut Vec<Diagnostic>, level: RuleLevel) {
     for diagnostic in diagnostics.iter_mut() {
         match diagnostic.severity {
-            Severity::Error | Severity::Bug if level == RuleLevel::Warning => {
+            Severity::Error if level == RuleLevel::Warning => {
                 diagnostic.severity = Severity::Warning
             }
             _ => {}
@@ -182,34 +164,26 @@ pub fn remap_diagnostics_to_level(diagnostics: &mut Vec<Diagnostic>, level: Rule
     }
 }
 
-pub fn emit_diagnostic(diagnostic: impl Into<Diagnostic>, walker: &FileWalker) {
-    use codespan_reporting::term::termcolor::ColorChoice::Always;
+pub fn emit_diagnostic(diagnostic: &Diagnostic, walker: &FileWalker) {
+    use rslint_errors::Emitter;
 
-    emit(
-        &mut termcolor::StandardStream::stderr(Always),
-        &crate::codespan_config(),
-        walker,
-        &diagnostic.into(),
-    )
-    .expect("Failed to throw linter diagnostic");
+    let mut emitter = Emitter::new(walker);
+    emitter
+        .emit_stderr(&diagnostic, true)
+        .expect("failed to throw linter diagnostic")
 }
 
 #[macro_export]
 macro_rules! lint_diagnostic {
     ($severity:ident, $($format_args:tt)*) => {
-        use $crate::DiagnosticBuilder;
-        use codespan_reporting::{
-            files::SimpleFiles,
-            term::{termcolor::{ColorChoice::Always, self}, emit}
-        };
+    use rslint_errors::Emitter;
 
-        let diag = DiagnosticBuilder::$severity(0, "", format!($($format_args)*));
-        emit(
-            &mut termcolor::StandardStream::stderr(Always),
-            &$crate::codespan_config(),
-            &SimpleFiles::<String, String>::new(),
-            &diag.into()
-        ).expect("Failed to throw linter diagnostic");
+    let diag = $crate::Diagnostic::$severity(1, "", format!($($format_args)*));
+    let file = rslint_errors::file::SimpleFile::new("".into(), "".into());
+    let mut emitter = Emitter::new(&file);
+    emitter
+        .emit_stderr(&diag, true)
+        .expect("failed to throw linter diagnostic")
     }
 }
 
@@ -233,6 +207,6 @@ macro_rules! lint_warn {
 #[macro_export]
 macro_rules! lint_note {
     ($($format_args:tt)*) => {{
-        $crate::lint_diagnostic!(note_diagnostic, $($format_args)*);
+        $crate::lint_diagnostic!(note, $($format_args)*);
     }};
 }

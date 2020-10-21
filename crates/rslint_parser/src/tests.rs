@@ -1,7 +1,6 @@
 use crate::{parse_module, ParserError};
-use codespan_reporting::files::SimpleFiles;
-use codespan_reporting::term::{emit, termcolor::Buffer, Config};
 use expect_test::expect_file;
+use rslint_errors::{file::SimpleFiles, Emitter};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -33,17 +32,20 @@ fn parser_tests() {
         let mut files = SimpleFiles::new();
         files.add(
             path.file_name().unwrap().to_string_lossy().to_string(),
-            text,
+            text.to_string(),
         );
         let mut ret = format!("{:#?}", parse.syntax());
 
         for diag in parse.errors() {
-            let mut buf = Buffer::no_color();
+            let mut write = rslint_errors::termcolor::Buffer::no_color();
+            let mut emitter = Emitter::new(&files);
+            emitter
+                .emit_with_writer(diag, &mut write)
+                .expect("failed to emit diagnostic");
 
-            emit(&mut buf, &Config::default(), &files, diag).expect("failed to emit diagnostic");
             ret.push_str(&format!(
                 "--\n{}",
-                std::str::from_utf8(buf.as_slice()).expect("non utf8 in error buffer")
+                std::str::from_utf8(write.as_slice()).expect("non utf8 in error buffer")
             ));
         }
         ret.push_str(&format!("--\n{}", text));

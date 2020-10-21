@@ -104,24 +104,29 @@ impl CstRule for UseIsnan {
                     )
                 }
                 .primary(expr.range(), "")
-                .note("note: `NaN` is not equal to anything including itself");
+                .footer_note("`NaN` is not equal to anything including itself");
 
                 // telling the user to use isNaN for `<`, `>`, etc is a bit misleading so we won't do it if that is the case
                 if op == op!(==) || op == op!(===) {
-                    err = err.note(format!(
-                        "help: use `isNaN` instead: `{}`",
-                        color(&format!("isNaN({})", opposite))
-                    ))
+                    err = err.suggestion(
+                        expr.range(),
+                        "use `isNaN` instead",
+                        format!("isNaN({})", opposite),
+                        Applicability::Always,
+                    );
                 } else if op == op!(!=) || op == op!(!==) {
-                    err = err.note(format!(
-                        "help: use `isNaN` instead: `{}`",
-                        color(&format!("!isNaN({})", opposite))
-                    ))
+                    err = err.suggestion(
+                        expr.range(),
+                        "use `isNaN` instead",
+                        format!("!isNaN({})", opposite),
+                        Applicability::Always,
+                    );
                 }
 
                 ctx.add_err(err);
             }
             SWITCH_STMT if self.enforce_for_switch_case => {
+                // TODO: a suggestion for this
                 let stmt = node.to::<SwitchStmt>();
                 let expr = stmt.test()?.condition()?;
                 if expr.text() == "NaN" {
@@ -131,24 +136,26 @@ impl CstRule for UseIsnan {
                             "a switch statement with a test of `NaN` will never match",
                         )
                         .primary(expr.range(), "")
-                        .note("note: `NaN` is not equal to anything including itself");
+                        .footer_note("`NaN` is not equal to anything including itself");
 
                     ctx.add_err(err);
                 }
             }
             CASE_CLAUSE if self.enforce_for_switch_case => {
+                // TODO: suggestion for this
                 let case = node.to::<CaseClause>();
                 let expr = case.test()?;
                 if expr.text() == "NaN" {
                     let err = ctx
                         .err(self.name(), "a case with a test of `NaN` will never match")
                         .primary(expr.range(), "")
-                        .note("note: `NaN` is not equal to anything including itself");
+                        .footer_note("`NaN` is not equal to anything including itself");
 
                     ctx.add_err(err);
                 }
             }
             CALL_EXPR if self.enforce_for_index_of => {
+                // TODO: suggestion for this
                 let expr = node.to::<CallExpr>();
                 let callee = expr.callee()?;
                 let node = callee.syntax();
@@ -177,7 +184,7 @@ impl CstRule for UseIsnan {
                             "an index check with `NaN` will always return `-1`",
                         )
                         .primary(expr.range(), "")
-                        .note("help: index checks use `===` internally, which will never match because `NaN` is not equal to anything");
+                        .footer_help("index checks use `===` internally, which will never match because `NaN` is not equal to anything");
 
                     ctx.add_err(err);
                 }

@@ -18,7 +18,7 @@ MODULE@0..20
           R_CURLY@14..15 "}"
         TEMPLATE_CHUNK@15..20 " bar\n"
 --
-error: Unterminated template literal
+error: unterminated template literal
   ┌─ template_literal_unterminated.js:2:1
   │
 2 │ 
