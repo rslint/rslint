@@ -36,7 +36,7 @@ pub enum SuggestionStyle {
     /// help: try this
     ///    |
     ///  2 | let a = 6;
-    ///   |     ^
+    ///    |    ^
     /// ```
     Full,
 }

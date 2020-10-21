@@ -124,9 +124,16 @@ pub struct Diagnostic<FileId> {
     pub labels: Vec<Label<FileId>>,
     /// Notes that are associated with the primary cause of the diagnostic.
     /// These can include line breaks for improved formatting.
-    pub notes: Vec<String>,
+    pub notes: Vec<Note>,
     pub anonymous: bool,
     pub render_extra_empty: bool,
+}
+
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serialization", derive(Serialize, Deserialize))]
+pub struct Note {
+    pub severity: Option<Severity>,
+    pub message: String,
 }
 
 impl<FileId> Diagnostic<FileId> {
@@ -193,12 +200,6 @@ impl<FileId> Diagnostic<FileId> {
     /// Add some labels to the diagnostic.
     pub fn with_labels(mut self, labels: Vec<Label<FileId>>) -> Diagnostic<FileId> {
         self.labels = labels;
-        self
-    }
-
-    /// Add some notes to the diagnostic.
-    pub fn with_notes(mut self, notes: Vec<String>) -> Diagnostic<FileId> {
-        self.notes = notes;
         self
     }
 }

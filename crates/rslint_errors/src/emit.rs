@@ -2,7 +2,7 @@
 //! using `codespan`.
 
 use crate::codespan;
-use crate::codespan::diagnostic::{Diagnostic as CodespanDiag, Label, LabelStyle, Severity};
+use crate::codespan::diagnostic::{Diagnostic as CodespanDiag, Label, LabelStyle, Note, Severity};
 use crate::codespan::files::Error;
 use crate::codespan::term::{
     emit,
@@ -177,7 +177,10 @@ impl Emitter<'_> {
             .footers
             .clone()
             .into_iter()
-            .map(|x| x.msg)
+            .map(|x| Note {
+                message: x.msg,
+                severity: Some(x.severity),
+            })
             .collect::<Vec<_>>();
 
         for (idx, suggestion) in d.suggestions.iter().enumerate() {
@@ -227,10 +230,16 @@ impl Emitter<'_> {
                     virtual_files.insert(idx, file);
                 }
                 SuggestionStyle::Inline => {
-                    notes.push(format!("help: {}: `{}`", suggestion.msg, replacement));
+                    notes.push(Note {
+                        message: format!("{}: `{}`", suggestion.msg, replacement),
+                        severity: Some(Severity::Help),
+                    });
                 }
                 SuggestionStyle::HideCode => {
-                    notes.push(format!("help: {}", suggestion.msg));
+                    notes.push(Note {
+                        message: suggestion.msg.clone(),
+                        severity: Some(Severity::Help),
+                    });
                 }
                 SuggestionStyle::DontShow => {}
             }

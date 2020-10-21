@@ -2,7 +2,7 @@ use std::io::{self, Write};
 use std::ops::Range;
 use termcolor::{ColorSpec, WriteColor};
 
-use super::super::diagnostic::{LabelStyle, Severity};
+use super::super::diagnostic::{LabelStyle, Note, Severity};
 use super::super::files::{Error, Location};
 use super::super::term::{Chars, Config, Styles};
 
@@ -638,18 +638,31 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
     /// = expected type `Int`
     ///      found type `String`
     /// ```
-    pub fn render_snippet_note(
-        &mut self,
-        outer_padding: usize,
-        message: &str,
-    ) -> Result<(), Error> {
-        for (note_line_index, line) in message.lines().enumerate() {
+    pub fn render_snippet_note(&mut self, outer_padding: usize, note: Note) -> Result<(), Error> {
+        for (note_line_index, line) in note.message.lines().enumerate() {
             self.outer_gutter(outer_padding)?;
             match note_line_index {
                 0 => {
                     self.set_color(&self.styles().note_bullet)?;
                     write!(self, "{}", self.chars().note_bullet)?;
                     self.reset()?;
+                    if let Some(severity) = note.severity {
+                        write!(self, " ");
+                        if severity == Severity::Note {
+                            self.set_color(&self.styles().header_help)?;
+                        } else {
+                            self.set_color(&self.styles().header(severity))?;
+                        }
+                        match severity {
+                            Severity::Bug => write!(self, "bug")?,
+                            Severity::Error => write!(self, "error")?,
+                            Severity::Warning => write!(self, "warning")?,
+                            Severity::Help => write!(self, "help")?,
+                            Severity::Note => write!(self, "note")?,
+                        }
+                        self.reset()?;
+                        write!(self, ":")?;
+                    }
                 }
                 _ => write!(self, " ")?,
             }

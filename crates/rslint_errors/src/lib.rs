@@ -43,7 +43,7 @@ pub enum Applicability {
     /// This suggestion should be automatically applied.
     Always,
     /// The suggestion may be what the user intended, but it is uncertain.
-    /// The suggestion should result in valid Rust code if it is applied.
+    /// The suggestion should result in valid JavaScript/TypeScript code if it is applied.
     MaybeIncorrect,
     /// The suggestion contains placeholders like `(...)` or `{ /* fields */ }`.
     /// The suggestion cannot be applied automatically because it will not result in valid JavaScript/TypeScript code.
