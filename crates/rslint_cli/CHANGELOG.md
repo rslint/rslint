@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2020-10-20
+
+### Added
+
+- Added `--fix` (`-f`) and `--dirty` (`-D`) for running autofix
+- Switched to rslint_errors for errors
+
 ### Changed
 
 - Switched from codespan-reporting to a custom errors crate

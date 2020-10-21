@@ -1,7 +1,7 @@
 [package]
 edition = "2018"
 name = "rslint_lexer"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["RSLint developers"]
 description = "An extremely fast ECMAScript lexer made for the rslint project"
 license = "MIT"
