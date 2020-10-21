@@ -46,6 +46,9 @@ impl CstRule for NoNewSymbol {
                     );
 
                 ctx.add_err(err);
+                ctx.fix()
+                    .delete(new_expr.new_token()?)
+                    .eat_trailing_whitespace(new_expr.new_token()?);
             }
         }
         None

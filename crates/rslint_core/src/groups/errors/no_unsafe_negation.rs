@@ -72,6 +72,7 @@ impl CstRule for NoUnsafeNegation {
                             vec![1..2, no_op_text.len() + 2..no_op_text.len() + 3],
                         );
 
+                    ctx.fix().wrap(node.add_start(1), Wrapping::Parens);
                     ctx.add_err(err);
                 }
             }

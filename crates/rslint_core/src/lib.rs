@@ -1,7 +1,36 @@
+//! The core runner for RSLint responsible for the bulk of the linter's work.
+//!
+//! The crate is not RSLint-specific and can be used from any project. The runner is responsible
+//! for taking a list of rules, and source code and running the linter on it. It is important to decouple
+//! the CLI work and the low level linting work from eachother to be able to reuse the linter facilities.
+//! Therefore, the core runner should never do anything `rslint_cli`-specific.
+//!
+//! The structure at the core of the crate is the [`CstRule`] and [`Rule`] traits.
+//! CST rules run on a single file and its concrete syntax tree produced by [`rslint_parser`].
+//! The rules have a couple of restrictions for clarity and speed, these include:
+//! - all cst rules must be [`Send`](std::marker::Send) and [`Sync`](std::marker::Sync) so they can be run in parallel
+//! - rules may never rely on the results of other rules, this is impossible because rules are run in parallel
+//! - rules should never make any network or file requests
+//!
+//! ## Using the runner
+//!
+//! To run the runner you must first create a [`CstRuleStore`], which is the structure used for storing what rules
+//! to run. Then you can use [`lint_file`].
+//!
+//! ## Running a single rule
+//!
+//! To run a single rule you can find the rule you want in the `groups` module and submodules within. Then
+//! to run a rule in full on a syntax tree you can use [`run_rule`].
+//!
+//! Rules can also be run on individual nodes using the functions on [`CstRule`].
+//! ⚠️ note however that many rules rely on checking tokens or the root and running on single nodes
+//! may yield incorrect results, you should only do this if you know about the rule's implementation.
+
 mod rule;
 mod store;
 mod testing;
 
+pub mod autofix;
 pub mod directives;
 pub mod groups;
 pub mod rule_prelude;
@@ -14,23 +43,30 @@ pub use self::{
 pub use rslint_errors::{Diagnostic, Severity, Span};
 
 use crate::directives::skip_node;
+#[doc(inline)]
 pub use crate::directives::{apply_top_level_directives, Directive, DirectiveParser};
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// The result of linting a file.
-#[derive(Debug)]
+// TODO: A lot of this stuff can be shoved behind a "linter options" struct
+#[derive(Debug, Clone)]
 pub struct LintResult<'s> {
     /// Any diagnostics (errors, warnings, etc) emitted from the parser
     pub parser_diagnostics: Vec<Diagnostic>,
     /// The store used for the lint run
     pub store: &'s CstRuleStore,
     /// The diagnostics emitted by each rule run
-    pub rule_diagnostics: HashMap<&'static str, Vec<Diagnostic>>,
+    pub rule_results: HashMap<&'static str, RuleResult>,
     /// Any warnings or errors emitted by the directive parser
     pub directive_diagnostics: Vec<Diagnostic>,
+    pub parsed: SyntaxNode,
+    pub file_id: usize,
+    pub verbose: bool,
+    pub fixed_code: Option<String>,
 }
 
 impl LintResult<'_> {
@@ -39,13 +75,34 @@ impl LintResult<'_> {
     pub fn diagnostics(&self) -> impl Iterator<Item = &Diagnostic> {
         self.parser_diagnostics
             .iter()
-            .chain(self.rule_diagnostics.values().map(|x| x.iter()).flatten())
+            .chain(
+                self.rule_results
+                    .values()
+                    .map(|x| x.diagnostics.iter())
+                    .flatten(),
+            )
             .chain(self.directive_diagnostics.iter())
     }
 
     /// The overall outcome of linting this file (failure, warning, success, etc)
     pub fn outcome(&self) -> Outcome {
         self.diagnostics().into()
+    }
+
+    /// Attempt to automatically fix any fixable issues and return the fixed code.
+    ///
+    /// This will not run if there are syntax errors unless `dirty` is set to true.
+    pub fn fix(&mut self, dirty: bool) -> Option<String> {
+        if self
+            .parser_diagnostics
+            .iter()
+            .any(|x| x.severity == Severity::Error)
+            && !dirty
+        {
+            None
+        } else {
+            Some(autofix::recursively_apply_fixes(self))
+        }
     }
 }
 
@@ -64,10 +121,25 @@ pub fn lint_file(
         let parse = parse_text(file_source.as_ref(), file_id);
         (parse.errors().to_owned(), parse.green())
     };
+    lint_file_inner(
+        SyntaxNode::new_root(green),
+        parser_diagnostics,
+        file_id,
+        store,
+        verbose,
+    )
+}
 
+/// used by lint_file and incrementally_relint to not duplicate code
+pub(crate) fn lint_file_inner(
+    node: SyntaxNode,
+    parser_diagnostics: Vec<Diagnostic>,
+    file_id: usize,
+    store: &CstRuleStore,
+    verbose: bool,
+) -> Result<LintResult, Diagnostic> {
     let mut new_store = store.clone();
-    let results = DirectiveParser::new(SyntaxNode::new_root(green.clone()), file_id, store)
-        .get_file_directives()?;
+    let results = DirectiveParser::new(node.clone(), file_id, store).get_file_directives()?;
     let mut directive_diagnostics = vec![];
 
     let directives = results
@@ -85,15 +157,21 @@ pub fn lint_file(
         file_id,
     );
 
-    let rule_diagnostics = new_store
+    let src = Arc::new(node.to_string());
+    let results = new_store
         .rules
         .par_iter()
         .map(|rule| {
-            let root = SyntaxNode::new_root(green.clone());
-
             (
                 rule.name(),
-                run_rule(&**rule, file_id, root, verbose, &directives),
+                run_rule(
+                    &**rule,
+                    file_id,
+                    node.clone(),
+                    verbose,
+                    &directives,
+                    src.clone(),
+                ),
             )
         })
         .collect();
@@ -101,8 +179,12 @@ pub fn lint_file(
     Ok(LintResult {
         parser_diagnostics,
         store,
-        rule_diagnostics,
+        rule_results: results,
         directive_diagnostics,
+        parsed: node,
+        file_id,
+        verbose,
+        fixed_code: None,
     })
 }
 
@@ -116,12 +198,15 @@ pub fn run_rule(
     root: SyntaxNode,
     verbose: bool,
     directives: &[Directive],
-) -> Vec<Diagnostic> {
+    src: Arc<String>,
+) -> RuleResult {
     assert!(root.kind() == SyntaxKind::SCRIPT || root.kind() == SyntaxKind::MODULE);
     let mut ctx = RuleCtx {
         file_id,
         verbose,
         diagnostics: vec![],
+        fixer: None,
+        src,
     };
 
     rule.check_root(&root, &mut ctx);
@@ -140,7 +225,7 @@ pub fn run_rule(
         };
         true
     });
-    ctx.diagnostics
+    RuleResult::new(ctx.diagnostics, ctx.fixer)
 }
 
 /// Get a rule by its kebab-case name.

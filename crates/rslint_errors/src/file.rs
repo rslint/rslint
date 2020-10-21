@@ -6,6 +6,63 @@ use std::{collections::HashMap, ops::Range};
 /// This is essentially a hack to allow us to use SyntaxElement, SyntaxNode, etc directly
 pub trait Span {
     fn as_range(&self) -> Range<usize>;
+
+    fn as_text_range(&self) -> TextRange {
+        TextRange::new(
+            (self.as_range().start as u32).into(),
+            (self.as_range().end as u32).into(),
+        )
+    }
+
+    /// Make a new span which extends to another span
+    ///
+    /// ```text
+    /// from      to
+    /// ^^^^^^^^^^^^
+    /// ```
+    fn join<T: Span>(&self, other: T) -> Range<usize> {
+        self.as_range().start..other.as_range().end
+    }
+
+    /// Make a new span which is between another span
+    ///
+    /// ```text
+    /// from      to
+    ///     ^^^^^^
+    /// ```
+    fn between<T: Span>(&self, other: T) -> Range<usize> {
+        self.as_range().end..other.as_range().start
+    }
+
+    /// Make a new span which extends until another span
+    ///
+    /// ```text
+    /// from      to
+    /// ^^^^^^^^^^
+    /// ```
+    fn until<T: Span>(&self, other: T) -> Range<usize> {
+        self.as_range().start..other.as_range().start
+    }
+
+    fn sub_start(&self, amount: usize) -> Range<usize> {
+        let range = self.as_range();
+        range.start - amount..range.end
+    }
+
+    fn add_start(&self, amount: usize) -> Range<usize> {
+        let range = self.as_range();
+        range.start + amount..range.end
+    }
+
+    fn sub_end(&self, amount: usize) -> Range<usize> {
+        let range = self.as_range();
+        range.start..range.end - amount
+    }
+
+    fn add_end(&self, amount: usize) -> Range<usize> {
+        let range = self.as_range();
+        range.start..range.end + amount
+    }
 }
 
 impl<T: Span> Span for &T {

@@ -22,6 +22,7 @@
 //! - Very easy tree traversal through [`SyntaxNode`](rslint_rowan::SyntaxNode).
 //! - Descriptive errors with multiple labels and notes.
 //! - Very cheap cloning, cloning an ast node or syntax node is the cost of adding a reference to an Rc.
+//! - Cheap incremental reparsing of changed text.
 //!
 //! The crate further includes utilities such as:
 //! - ANSI syntax highlighting of nodes (through [`util`]) or text through [`rslint_lexer`].
