@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Made "redundant strict mode declaration" have a primary label instead of a single secondary label
+
 ## [0.2.1] - 2020-10-20
 
 ### Changed

@@ -7,11 +7,13 @@ pub mod lsp;
 mod codespan;
 mod diagnostic;
 mod emit;
+mod formatters;
 mod suggestion;
 
 pub use diagnostic::{Diagnostic, SubDiagnostic};
 pub use emit::Emitter;
 pub use file::Span;
+pub use formatters::*;
 pub use suggestion::*;
 
 pub use codespan::diagnostic::Severity;

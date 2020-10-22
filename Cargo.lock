@@ -1261,6 +1261,7 @@ dependencies = [
 name = "rslint_errors"
 version = "0.1.2"
 dependencies = [
+ "colored",
  "lsp-types",
  "rslint_rowan",
  "rslint_text_edit",

@@ -127,7 +127,7 @@ impl ParserState {
                 }
             }
 
-            err = err.secondary(range, "this declaration is redundant");
+            err = err.primary(range, "this declaration is redundant");
             p.error(err);
         } else {
             self.strict = Some(StrictMode::Explicit(range));

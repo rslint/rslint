@@ -15,6 +15,7 @@ lsp-types = { version = ">=0.79, <0.82", optional = true }
 text-diff = "0.4.0"
 rslint_text_edit = { version = "0.1", path = "../rslint_text_edit" }
 termcolor = "1"
+colored = "2.0.0"
 
 [features]
 lsp = ["lsp-types"]
