@@ -119,6 +119,8 @@ impl<'files> Emitter<'files> {
 
 impl Emitter<'_> {
     /// Render and emit the diagnostic to stderr
+    ///
+    /// This method will lock stderr for the entire time it takes to emit the diagnostic.
     pub fn emit_stderr(&mut self, d: &Diagnostic, color: bool) -> Result<(), Error> {
         let out = StandardStream::stderr(if color {
             ColorChoice::Always
@@ -130,6 +132,8 @@ impl Emitter<'_> {
     }
 
     /// Render and emit the diagnostic to stdout
+    ///
+    /// This method will lock stdout for the entire time it takes to emit the diagnostic.
     pub fn emit_stdout(&mut self, d: &Diagnostic, color: bool) -> Result<(), Error> {
         let out = StandardStream::stdout(if color {
             ColorChoice::Always
