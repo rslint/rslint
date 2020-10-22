@@ -207,6 +207,7 @@ impl<'src> Lexer<'src> {
             let err = Diagnostic::error(self.file_id, "", "expected hex digits for a unicode code point escape, but encountered an invalid character")
                 .primary(self.cur .. invalid.len_utf8(), "");
 
+            self.cur -= 1;
             return Err(err);
         }
 
@@ -273,7 +274,7 @@ impl<'src> Lexer<'src> {
                     }
                     return Err(diagnostic);
                 }
-                Some(b) if !(*b as u8).is_ascii_hexdigit() => {
+                Some(b) if !b.is_ascii_hexdigit() => {
                     if !advance {
                         self.cur -= idx + 1;
                     }
