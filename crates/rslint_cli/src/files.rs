@@ -93,10 +93,15 @@ impl FileWalker {
                 let thread = Builder::new()
                     .name(format!("io-{}", file.file_name().to_string_lossy()))
                     .spawn(move || {
-                        (
-                            read_to_string(file.path()).expect("Failed to read file"),
-                            file.path().to_owned(),
-                        )
+                        let path = file.path();
+                        let content = match read_to_string(path) {
+                            Ok(v) => v,
+                            Err(err) => {
+                                crate::lint_err!("failed to read file {}: {}", path.display(), err);
+                                return None;
+                            }
+                        };
+                        Some((content, file.path().to_owned()))
                     })
                     .expect("Failed to spawn IO thread");
                 threads.push(thread);
@@ -106,7 +111,7 @@ impl FileWalker {
         let jsfiles = threads
             .into_iter()
             .map(|handle| handle.join())
-            .filter_map(Result::ok)
+            .flat_map(|res| res.ok().flatten())
             .map(|(src, path)| JsFile::new_concrete(src, path))
             .map(|file| (file.id, file))
             .collect();

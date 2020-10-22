@@ -5,7 +5,7 @@ mod panic_hook;
 
 pub use self::{cli::ExplanationRunner, config::*, files::*, panic_hook::*};
 pub use rslint_core::Outcome;
-pub use rslint_errors::{Diagnostic, Severity};
+pub use rslint_errors::{file, Diagnostic, Severity};
 
 use colored::*;
 use rayon::prelude::*;
@@ -26,33 +26,7 @@ pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool) {
     let handle = config::Config::new_threaded();
     let mut walker = FileWalker::from_glob(res.unwrap());
     let joined = handle.join();
-
-    let config = if let Ok(Some(Err(err))) = joined.as_ref() {
-        // this is a bit of a hack. we should do this in a better way in the future
-        // toml also seems to give incorrect column numbers so we can't use it currently
-        let regex = regex::Regex::new(r"\. did you mean '(.*?)'\?").unwrap();
-        let location_regex = regex::Regex::new(r"at line \d+").unwrap();
-        let mut msg = err
-            .to_string()
-            .split_at(location_regex.find(&err.to_string()).unwrap().range().start)
-            .0
-            .to_string();
-        let old = msg.clone();
-
-        let diagnostic = if let Some(found) = regex.find(&old) {
-            msg.replace_range(found.range(), "");
-            Diagnostic::error(0, "config", &msg).footer_help(format!(
-                "did you mean '{}'?",
-                regex.captures(&old).unwrap().get(1).unwrap().as_str()
-            ))
-        } else {
-            Diagnostic::error(0, "config", msg)
-        };
-
-        return emit_diagnostic(&diagnostic, &FileWalker::empty());
-    } else {
-        joined.unwrap().map(|res| res.unwrap())
-    };
+    let config = joined.expect("config thread paniced");
 
     let store = if let Some(cfg) = config.as_ref().and_then(|cfg| cfg.rules.as_ref()) {
         cfg.store()
@@ -177,7 +151,7 @@ pub(crate) fn print_results(
 
     for result in results.iter_mut() {
         for diagnostic in result.diagnostics() {
-            emit_diagnostic(diagnostic, &walker);
+            emit_diagnostic(diagnostic, walker);
         }
     }
 
@@ -221,7 +195,7 @@ pub fn remap_diagnostics_to_level(diagnostics: &mut Vec<Diagnostic>, level: Rule
     }
 }
 
-pub fn emit_diagnostic(diagnostic: &Diagnostic, walker: &FileWalker) {
+pub fn emit_diagnostic(diagnostic: &Diagnostic, walker: &dyn file::Files) {
     use rslint_errors::Emitter;
 
     let mut emitter = Emitter::new(walker);
