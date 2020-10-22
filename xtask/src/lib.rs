@@ -2,6 +2,7 @@
 
 pub mod ast;
 pub mod codegen;
+pub mod coverage;
 pub mod docgen;
 pub mod glue;
 
