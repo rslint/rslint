@@ -120,21 +120,23 @@ impl<'files> Emitter<'files> {
 impl Emitter<'_> {
     /// Render and emit the diagnostic to stderr
     pub fn emit_stderr(&mut self, d: &Diagnostic, color: bool) -> Result<(), Error> {
-        let mut out = StandardStream::stderr(if color {
+        let out = StandardStream::stderr(if color {
             ColorChoice::Always
         } else {
             ColorChoice::Never
         });
+        let mut out = out.lock();
         self.emit_with_writer(d, &mut out)
     }
 
     /// Render and emit the diagnostic to stdout
     pub fn emit_stdout(&mut self, d: &Diagnostic, color: bool) -> Result<(), Error> {
-        let mut out = StandardStream::stdout(if color {
+        let out = StandardStream::stdout(if color {
             ColorChoice::Always
         } else {
             ColorChoice::Never
         });
+        let mut out = out.lock();
         self.emit_with_writer(d, &mut out)
     }
 

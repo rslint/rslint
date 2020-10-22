@@ -6,6 +6,10 @@ use rslint_core::{
     get_group_rules_by_name, get_rule_by_name, get_rule_suggestion, CstRule, CstRuleStore,
     RuleLevel,
 };
+use rslint_errors::{
+    file::{Files, SimpleFile},
+    Diagnostic,
+};
 use serde::de::{
     value::MapAccessDeserializer, DeserializeSeed, Error, IntoDeserializer, MapAccess, Visitor,
 };
@@ -43,11 +47,38 @@ impl Config {
     /// Search for a config file in the current directory,
     /// return None if there is no config or if its unreadable.
     /// This returns a thread handle which was spawned for multithreaded IO.
-    pub fn new_threaded() -> JoinHandle<Option<Result<Self, toml::de::Error>>> {
+    pub fn new_threaded() -> JoinHandle<Option<Self>> {
         thread::spawn(|| {
-            let cur = current_dir().ok()?;
-            let file = cur.join(CONFIG_NAME);
-            Some(from_str(&read_to_string(file).ok()?))
+            let (source, path) = match current_dir()
+                .map(|path| path.join(CONFIG_NAME))
+                .and_then(|path| Ok((read_to_string(&path)?, path)))
+            {
+                Ok(val) => val,
+                Err(err) => {
+                    crate::lint_warn!("failed to read config, using default config: {}", err);
+                    return None;
+                }
+            };
+
+            match from_str(&source) {
+                Ok(config) => Some(config),
+                Err(err) => {
+                    let files = SimpleFile::new(path.to_string_lossy().into(), source);
+                    let d = if let Some(idx) = err
+                        .line_col()
+                        .and_then(|(line, col)| Some(files.line_range(0, line)?.start + col))
+                    {
+                        let pos_regex = regex::Regex::new(" at line \\d+ column \\d+$").unwrap();
+                        let msg = err.to_string();
+                        let msg = pos_regex.replace(&msg, "");
+                        Diagnostic::error(0, "config", msg).primary(idx..idx, "")
+                    } else {
+                        Diagnostic::error(0, "config", err.to_string())
+                    };
+                    crate::emit_diagnostic(&d, &files);
+                    None
+                }
+            }
         })
     }
 }
