@@ -224,6 +224,7 @@ pub fn method(
             block_stmt(p, true, None);
             m.complete(p, METHOD)
         }
+
         // test method_getter
         // class foo {
         //  get bar() {}
@@ -297,13 +298,13 @@ pub fn method(
         }
         _ => {
             let err = p
-                .err_builder("Expected a method definition, but found none")
+                .err_builder("expected a method definition, but found none")
                 .primary(p.cur_tok(), "");
 
             p.err_recover(
                 err,
                 recovery_set.into().unwrap_or(BASE_METHOD_RECOVERY_SET),
-                true,
+                false,
             );
             return None;
         }
