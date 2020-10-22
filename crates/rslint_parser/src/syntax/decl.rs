@@ -217,7 +217,7 @@ pub fn method(
     let old = p.state.to_owned();
     p.state.in_function = true;
     // FIXME: handle get* which is a property + a generator
-    let complete = match dbg!(p.cur()) {
+    let complete = match p.cur() {
         // FIXME: this is wrong and it wrongfully allows things like `class foo { (bar) {} }`
         T!['('] => {
             formal_parameters(p);
