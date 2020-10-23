@@ -1,8 +1,7 @@
 use pico_args::Arguments;
 use xtask::{
     codegen::{self, Mode},
-    coverage::run,
-    docgen,
+    coverage, docgen,
     glue::pushd,
     project_root, run_rustfmt, Result,
 };
@@ -34,8 +33,9 @@ fn main() -> Result<()> {
             Ok(())
         }
         "coverage" => {
-            args.finish()?;
-            run();
+            let free = args.free()?;
+            let query = free.get(0).map(String::as_str);
+            coverage::run(query);
             Ok(())
         }
         _ => {
