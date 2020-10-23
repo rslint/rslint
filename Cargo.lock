@@ -2019,6 +2019,7 @@ dependencies = [
  "quote",
  "rayon",
  "regex",
+ "rslint_errors",
  "rslint_parser",
  "serde",
  "serde_yaml",

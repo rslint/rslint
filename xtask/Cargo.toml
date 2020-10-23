@@ -19,6 +19,7 @@ serde =  { version = "1.0.116", features = ["derive"] }
 serde_yaml = "0.8.13"
 once_cell = "1.4.1"
 rslint_parser = { path = "../crates/rslint_parser", version = "0.2" }
+rslint_errors = { path = "../crates/rslint_errors", version = "0.1.0" }
 ascii_table = "3.0.1"
 colored = "2.0.0"
 rayon = "1.5.0"

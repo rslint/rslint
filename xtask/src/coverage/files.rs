@@ -2,7 +2,9 @@ use colored::Colorize;
 use indicatif::{ParallelProgressIterator, ProgressBar};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
+use rslint_parser::ParserError;
 use serde::Deserialize;
+use std::any::Any;
 use std::fs::read_to_string;
 use std::io;
 use std::path::PathBuf;
@@ -93,12 +95,21 @@ fn read_metadata(code: &str) -> io::Result<MetaData> {
     serde_yaml::from_str(yaml).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
-pub fn get_test_files() -> Vec<TestFile> {
+pub fn get_test_files(query: Option<&str>) -> Vec<TestFile> {
     let start = std::time::Instant::now();
 
     let files = WalkDir::new(BASE_PATH)
         .into_iter()
         .filter_map(Result::ok)
+        .filter(|file| {
+            if let Some(query) = query {
+                file.path()
+                    .to_str()
+                    .map_or(true, |path| path.contains(query))
+            } else {
+                true
+            }
+        })
         .collect::<Vec<_>>();
 
     let pb = ProgressBar::new(files.len() as u64);
@@ -126,15 +137,16 @@ pub fn get_test_files() -> Vec<TestFile> {
     files
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct TestResult {
     pub fail: Option<FailReason>,
     pub path: PathBuf,
+    pub code: String,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum FailReason {
     IncorrectlyPassed,
-    IncorrectlyErrored,
-    ParserPanic,
+    IncorrectlyErrored(Vec<ParserError>),
+    ParserPanic(Box<dyn Any + Send + 'static>),
 }
