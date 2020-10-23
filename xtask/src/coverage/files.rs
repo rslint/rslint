@@ -1,3 +1,6 @@
+use colored::Colorize;
+use indicatif::{ParallelProgressIterator, ProgressBar};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 use serde::Deserialize;
 use std::fs::read_to_string;
@@ -90,16 +93,37 @@ fn read_metadata(code: &str) -> io::Result<MetaData> {
     serde_yaml::from_str(yaml).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
-pub fn get_test_files() -> impl Iterator<Item = TestFile> {
-    WalkDir::new(BASE_PATH)
+pub fn get_test_files() -> Vec<TestFile> {
+    let start = std::time::Instant::now();
+
+    let files = WalkDir::new(BASE_PATH)
         .into_iter()
         .filter_map(Result::ok)
+        .collect::<Vec<_>>();
+
+    let pb = ProgressBar::new(files.len() as u64);
+    pb.set_message(&format!("{} test files", "Loading".bold().cyan()));
+    pb.set_style(super::default_bar_style());
+
+    let files = files
+        .into_par_iter()
+        .progress_with(pb.clone())
         .filter_map(|entry| {
             let code = read_to_string(entry.path()).ok()?;
             let meta = read_metadata(&code).ok()?;
             let path = entry.into_path();
             Some(TestFile { code, meta, path }).filter(|file| file.meta.features.is_empty())
         })
+        .collect();
+
+    pb.finish_and_clear();
+    println!(
+        "{} test files in {:.2}s",
+        "Loaded".bold().bright_green(),
+        start.elapsed().as_secs_f32()
+    );
+
+    files
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -112,5 +136,5 @@ pub struct TestResult {
 pub enum FailReason {
     IncorrectlyPassed,
     IncorrectlyErrored,
-    InfiniteRecursion,
+    ParserPanic,
 }

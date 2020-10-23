@@ -1,24 +1,64 @@
 mod files;
-mod tablegen;
 
+use ascii_table::{AsciiTable, Column};
+use colored::Colorize;
 use files::*;
+use indicatif::ParallelProgressIterator;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rslint_parser::{parse_module, parse_text};
 use std::path::PathBuf;
-use std::sync::mpsc::channel;
-use std::thread::Builder;
-use std::time::Duration;
-use tablegen::{Cell, Table};
-use termcolor::Color;
 
-pub fn run() {
-    let files = get_test_files().collect::<Vec<_>>();
+pub fn run(_query: Option<&str>) {
+    let files = get_test_files();
     let num_ran = files.len();
 
-    let res = files.into_iter().map(run_test_file).collect::<Vec<_>>();
+    let pb = indicatif::ProgressBar::new(num_ran as u64);
+    pb.set_message(&format!("{} tests", "Running".bold().cyan()));
+    pb.set_style(default_bar_style());
 
-    let infinitely_recursed = res
+    std::panic::set_hook(Box::new(|_| {}));
+    let start_tests = std::time::Instant::now();
+    let res = files
+        .into_par_iter()
+        .progress_with(pb.clone())
+        .map(|file| {
+            let res = run_test_file(file);
+
+            if let Some(ref fail) = res.fail {
+                let pb = pb.clone();
+                let reason = match fail {
+                    FailReason::IncorrectlyPassed => "incorrectly passed parsing",
+                    FailReason::IncorrectlyErrored => "incorrectly threw an error",
+                    FailReason::ParserPanic => "panicked while parsing",
+                };
+                let msg = format!(
+                    "{} '{}' {}",
+                    "Test".bold().red(),
+                    res.path
+                        .strip_prefix("xtask/src/coverage/test262/test/")
+                        .unwrap_or(&res.path)
+                        .display(),
+                    reason.bold()
+                );
+                pb.println(msg);
+            }
+
+            res
+        })
+        .collect::<Vec<_>>();
+    let _ = std::panic::take_hook();
+
+    pb.finish_and_clear();
+    println!(
+        "\n{} {} tests in {:.2}s\n",
+        "Ran".bold().bright_green(),
+        num_ran,
+        start_tests.elapsed().as_secs_f32()
+    );
+
+    let panicked = res
         .iter()
-        .filter(|res| res.fail == Some(FailReason::InfiniteRecursion))
+        .filter(|res| res.fail == Some(FailReason::ParserPanic))
         .count();
     let errored = res
         .iter()
@@ -26,65 +66,56 @@ pub fn run() {
         .count();
     let passed = res.iter().filter(|res| res.fail.is_none()).count();
 
-    let header = vec![
-        Cell::new("Tests ran"),
-        Cell::with_color("Passed", Color::Green),
-        Cell::with_color("Failed", Color::Red),
-        Cell::with_color("Panics", Color::Red),
-        Cell::with_color("Coverage", Color::Cyan),
-    ];
+    let mut table = AsciiTable::default();
 
-    let numbers = vec![num_ran, passed, errored, infinitely_recursed]
-        .into_iter()
-        .map(|x| Cell::new(x.to_string()))
-        .collect::<Vec<_>>();
+    let mut counter = 0usize;
+    let mut create_column = |name: colored::ColoredString| {
+        let mut column = Column::default();
+        column.header = name.to_string();
+        column.align = ascii_table::Align::Center;
+        table.columns.insert(counter, column);
+        counter += 1;
+    };
+
+    create_column("Tests ran".into());
+    create_column("Passed".green());
+    create_column("Failed".red());
+    create_column("Panics".red());
+    create_column("Coverage".cyan());
 
     let coverage = (passed as f64 / num_ran as f64) * 100.0;
-    Table::new(
-        header,
-        vec![[
-            numbers,
-            vec![Cell::new(format!("{}%", coverage.round().to_string()))],
-        ]
-        .concat()],
-        vec![],
-    )
-    .render();
-
-    let rows = res
-        .iter()
-        .filter(|res| res.fail == Some(FailReason::IncorrectlyErrored))
-        .map(|res| {
-            format!(
-                "{:#?}: should fail: {}",
-                res.path,
-                res.fail == Some(FailReason::IncorrectlyPassed)
-            )
-        });
-
-    println!("{}", rows.collect::<Vec<_>>().join("\n"));
+    let coverage = format!("{:.2}", coverage);
+    let numbers: Vec<&dyn std::fmt::Display> =
+        vec![&num_ran, &passed, &errored, &panicked, &coverage];
+    table.print(vec![numbers]);
 }
 
 pub fn run_test_file(file: TestFile) -> TestResult {
     let TestFile { code, meta, path } = file;
 
     if meta.flags.contains(&TestFlag::OnlyStrict) {
-        let res = exec_test(code, true, false, path.clone());
+        let res = exec_test(code, true, false);
         let fail = passed(res, meta);
         TestResult { fail, path }
     } else if meta.flags.contains(&TestFlag::NoStrict) || meta.flags.contains(&TestFlag::Raw) {
-        let res = exec_test(code, false, false, path.clone());
+        let res = exec_test(code, false, false);
         let fail = passed(res, meta);
         TestResult { fail, path }
     } else if meta.flags.contains(&TestFlag::Module) {
-        let res = exec_test(code, false, true, path.clone());
+        let res = exec_test(code, false, true);
         let fail = passed(res, meta);
         TestResult { fail, path }
     } else {
-        let l = exec_test(code.clone(), false, false, path.clone());
-        let r = exec_test(code, true, false, path.clone());
+        let l = exec_test(code.clone(), false, false);
+        let r = exec_test(code, true, false);
         merge_tests(l, r, meta, path)
     }
+}
+
+fn default_bar_style() -> indicatif::ProgressStyle {
+    indicatif::ProgressStyle::default_bar()
+        .template("{msg} [{bar:40}]")
+        .progress_chars("=> ")
 }
 
 fn merge_tests(l: ExecRes, r: ExecRes, meta: MetaData, path: PathBuf) -> TestResult {
@@ -99,7 +130,7 @@ fn passed(res: ExecRes, meta: MetaData) -> Option<FailReason> {
         .is_some();
 
     match res {
-        ExecRes::InfiniteRecursion => Some(FailReason::InfiniteRecursion),
+        ExecRes::ParserPanic => Some(FailReason::ParserPanic),
         ExecRes::ParseCorrectly if !should_fail => None,
         ExecRes::Errors if should_fail => None,
         ExecRes::ParseCorrectly if should_fail => Some(FailReason::IncorrectlyPassed),
@@ -110,36 +141,24 @@ fn passed(res: ExecRes, meta: MetaData) -> Option<FailReason> {
 
 enum ExecRes {
     Errors,
-    InfiniteRecursion,
     ParseCorrectly,
+    ParserPanic,
 }
 
-fn exec_test(mut code: String, strict: bool, module: bool, path: PathBuf) -> ExecRes {
+fn exec_test(mut code: String, strict: bool, module: bool) -> ExecRes {
     if strict {
         code.insert_str(0, "\"use strict\";\n");
     }
 
-    let (sender, receiver) = channel();
-    let _ = Builder::new().name(format!("{:#?}", path)).spawn(move || {
-        let parse_func: Box<dyn Fn() -> bool> = if module {
-            Box::new(|| {
-                let parse = parse_module(&code, 0);
-                parse.ok().is_ok()
-            })
+    let result = std::panic::catch_unwind(|| {
+        if module {
+            parse_module(&code, 0).ok().is_ok()
         } else {
-            Box::new(|| {
-                let parse = parse_text(&code, 0);
-                parse.ok().is_ok()
-            })
-        };
-
-        sender
-            .send(parse_func())
-            .expect("Failed to send to receiver");
+            parse_text(&code, 0).ok().is_ok()
+        }
     });
 
-    receiver
-        .recv_timeout(Duration::from_millis(500))
+    let result = result
         .map(|res| {
             if res {
                 ExecRes::ParseCorrectly
@@ -147,5 +166,7 @@ fn exec_test(mut code: String, strict: bool, module: bool, path: PathBuf) -> Exe
                 ExecRes::Errors
             }
         })
-        .unwrap_or(ExecRes::InfiniteRecursion)
+        .unwrap_or(ExecRes::ParserPanic);
+
+    result
 }
