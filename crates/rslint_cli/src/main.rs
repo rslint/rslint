@@ -21,6 +21,9 @@ pub(crate) struct Options {
     /// Attempt to run autofixes even if the code contains syntax errors (may produce weird fixes or more errors)
     #[structopt(short = "D", long)]
     dirty: bool,
+    /// The error formatter to use, either "short" or "long" (default)
+    #[structopt(short = "F", long)]
+    formatter: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -38,6 +41,6 @@ fn main() {
     if let Some(SubCommand::Explain { rules }) = opt.cmd {
         ExplanationRunner::new(rules).print();
     } else {
-        rslint_cli::run(opt.files, opt.verbose, opt.fix, opt.dirty);
+        rslint_cli::run(opt.files, opt.verbose, opt.fix, opt.dirty, opt.formatter);
     }
 }

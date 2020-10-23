@@ -4,6 +4,7 @@
   - [Configuration](user/config.md)
   - [Directives](user/directives.md)
   - [Autofix](user/autofix.md)
+  - [Formatters](user/formatters.md)
 - [Dev Docs](dev/README.md)
   - [Project Layout](dev/project_layout.md)
   - [Rules](dev/rules.md)

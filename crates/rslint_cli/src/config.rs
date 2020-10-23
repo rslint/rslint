@@ -28,19 +28,34 @@ pub const CONFIG_NAME: &str = "rslintrc.toml";
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub rules: Option<RulesConfig>,
+    #[serde(default)]
+    pub errors: ErrorsConfig,
 }
 
 #[serde(default)]
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct RulesConfig {
     #[serde(deserialize_with = "from_rule_objects")]
-    errors: Vec<Box<dyn CstRule>>,
+    pub errors: Vec<Box<dyn CstRule>>,
 
     #[serde(deserialize_with = "from_rule_objects")]
-    warnings: Vec<Box<dyn CstRule>>,
+    pub warnings: Vec<Box<dyn CstRule>>,
 
-    groups: Vec<String>,
-    allowed: Vec<String>,
+    pub groups: Vec<String>,
+    pub allowed: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ErrorsConfig {
+    pub formatter: String,
+}
+
+impl Default for ErrorsConfig {
+    fn default() -> Self {
+        Self {
+            formatter: "long".to_string(),
+        }
+    }
 }
 
 impl Config {

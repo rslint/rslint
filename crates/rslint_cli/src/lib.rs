@@ -5,18 +5,20 @@ mod panic_hook;
 
 pub use self::{cli::ExplanationRunner, config::*, files::*, panic_hook::*};
 pub use rslint_core::Outcome;
-pub use rslint_errors::{file, Diagnostic, Severity};
+pub use rslint_errors::{
+    file, file::Files, Diagnostic, Emitter, Formatter, LongFormatter, Severity, ShortFormatter,
+};
 
 use colored::*;
 use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
-use rslint_core::{lint_file, CstRuleStore, LintResult, RuleLevel};
+use rslint_core::{lint_file, util::find_best_match_for_name, CstRuleStore, LintResult, RuleLevel};
 use std::fs::write;
 
 pub(crate) const REPO_LINK: &str = "https://github.com/RDambrosio016/RSLint";
 
 #[allow(unused_must_use)]
-pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool) {
+pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool, formatter: Option<String>) {
     let res = glob::glob(&glob);
     if let Err(err) = res {
         lint_err!("Invalid glob pattern: {}", err);
@@ -33,6 +35,11 @@ pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool) {
     } else {
         CstRuleStore::new().builtins()
     };
+    let mut formatter = formatter
+        .or_else(|| config.as_ref().map(|c| c.errors.formatter.clone()))
+        .unwrap_or_else(|| String::from("long"));
+
+    verify_formatter(&mut formatter);
 
     if walker.files.is_empty() {
         lint_err!("No matching files found");
@@ -67,7 +74,13 @@ pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool) {
     } else {
         0
     };
-    print_results(&mut results, &walker, config.as_ref(), fix_count);
+    print_results(
+        &mut results,
+        &walker,
+        config.as_ref(),
+        fix_count,
+        &formatter,
+    );
 }
 
 pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty: bool) -> usize {
@@ -120,6 +133,7 @@ pub(crate) fn print_results(
     walker: &FileWalker,
     config: Option<&config::Config>,
     fix_count: usize,
+    formatter: &str,
 ) {
     // Map each diagnostic to the correct level according to configured rule level
     for result in results.iter_mut() {
@@ -150,14 +164,57 @@ pub(crate) fn print_results(
     let overall = Outcome::merge(results.iter().map(|res| res.outcome()));
 
     for result in results.iter_mut() {
-        for diagnostic in result.diagnostics() {
-            emit_diagnostic(diagnostic, walker);
-        }
+        emit_diagnostics(
+            formatter,
+            &result.diagnostics().cloned().collect::<Vec<_>>(),
+            walker,
+        );
     }
 
     output_overall(failures, warnings, successes, fix_count);
     if overall == Outcome::Failure {
         println!("\nhelp: for more information about the errors try the explain command: `rslint explain <rules>`");
+    }
+}
+
+pub fn verify_formatter(formatter: &mut String) {
+    if !matches!(formatter.as_str(), "short" | "long") {
+        if let Some(suggestion) =
+            find_best_match_for_name(vec!["short", "long"].into_iter(), formatter, None)
+        {
+            lint_err!(
+                "unknown formatter `{}`, using default formatter, did you mean `{}`?",
+                formatter,
+                suggestion
+            );
+        } else {
+            lint_err!("unknown formatter `{}`, using default formatter", formatter);
+        }
+        *formatter = "long".to_string();
+    }
+}
+
+pub fn emit_diagnostics(formatter: &str, diagnostics: &[Diagnostic], files: &dyn Files) {
+    match formatter {
+        "short" => {
+            if let Err(err) = ShortFormatter.emit_stderr(diagnostics, files) {
+                lint_err!("failed to emit diagnostic: {}", err);
+            }
+        }
+        "long" => {
+            if let Err(err) = LongFormatter.emit_stderr(diagnostics, files) {
+                lint_err!("failed to emit diagnostic: {}", err);
+            }
+        }
+        f => {
+            if let Some(suggestion) =
+                find_best_match_for_name(vec!["short", "long"].into_iter(), f, None)
+            {
+                lint_err!("unknown formatter `{}`, did you mean `{}`?", f, suggestion);
+            } else {
+                lint_err!("unknown formatter `{}`", f);
+            }
+        }
     }
 }
 
@@ -196,8 +253,6 @@ pub fn remap_diagnostics_to_level(diagnostics: &mut Vec<Diagnostic>, level: Rule
 }
 
 pub fn emit_diagnostic(diagnostic: &Diagnostic, walker: &dyn file::Files) {
-    use rslint_errors::Emitter;
-
     let mut emitter = Emitter::new(walker);
     emitter
         .emit_stderr(&diagnostic, true)

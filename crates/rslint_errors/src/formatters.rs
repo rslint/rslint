@@ -1,5 +1,6 @@
 use crate::termcolor::{ColorChoice, StandardStream, WriteColor};
 use crate::*;
+use codespan::files::Error;
 use colored::*;
 use file::Files;
 use std::collections::HashSet;
@@ -120,6 +121,32 @@ impl Formatter for ShortFormatter {
                 writeln!(writer)?;
             }
             writeln!(writer)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct LongFormatter;
+
+impl Formatter for LongFormatter {
+    fn emit_with_writer(
+        &mut self,
+        diagnostics: &[Diagnostic],
+        files: &dyn Files,
+        writer: &mut dyn WriteColor,
+    ) -> io::Result<()> {
+        for diag in diagnostics {
+            match Emitter::new(files).emit_with_writer(diag, writer) {
+                Ok(_) => {}
+                Err(err) => {
+                    if let Error::Io(io_err) = err {
+                        return Err(io_err);
+                    } else {
+                        panic!("{}", err)
+                    }
+                }
+            }
         }
         Ok(())
     }
