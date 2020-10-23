@@ -165,9 +165,9 @@ fn report_detailed_test(pb: &indicatif::ProgressBar, res: &TestResult) {
         FailReason::IncorrectlyErrored(errors) => {
             use rslint_errors::{file::SimpleFile, Emitter};
 
-            let header = format!(
+            let header =
                 "    This test threw errors but expected to pass parsing without errors:\n"
-            );
+                    .to_string();
             let file = SimpleFile::new(path.to_string(), res.code.clone());
             let mut emitter = Emitter::new(&file);
             let mut buf = rslint_errors::termcolor::Buffer::ansi();
