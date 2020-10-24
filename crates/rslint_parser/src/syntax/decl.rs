@@ -68,7 +68,7 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     let mut first = true;
 
-    p.expect(T!['(']);
+    p.state.allow_object_expr = p.expect(T!['(']);
 
     while !p.at(EOF) && !p.at(T![')']) {
         if first {
@@ -119,6 +119,7 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
         }
     }
 
+    p.state.allow_object_expr = true;
     p.expect(T![')']);
     m.complete(p, PARAMETER_LIST)
 }

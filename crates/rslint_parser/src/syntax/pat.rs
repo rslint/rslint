@@ -9,16 +9,16 @@ pub fn pattern(p: &mut Parser) -> Option<CompletedMarker> {
             m.complete(p, SINGLE_PATTERN)
         }
         T!['['] => array_binding_pattern(p),
-        T!['{'] => object_binding_pattern(p),
+        T!['{'] if p.state.allow_object_expr => object_binding_pattern(p),
         _ => {
             let err = p
                 .err_builder("Expected an identifier or pattern, but found none")
                 .primary(p.cur_tok(), "");
-            p.err_recover(
-                err,
-                token_set![T![ident], T![yield], T![await], T!['['], T!['{']],
-                false,
-            );
+            let mut ts = token_set![T![ident], T![yield], T![await], T!['['],];
+            if p.state.allow_object_expr {
+                ts = ts.union(token_set![T!['{']]);
+            }
+            p.err_recover(err, ts, false);
             return None;
         }
     })

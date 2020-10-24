@@ -823,7 +823,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
         // (foo)
         T!['('] => paren_or_arrow_expr(p, p.state.potential_arrow_start),
         T!['['] => array_expr(p),
-        T!['{'] => object_expr(p),
+        T!['{'] if p.state.allow_object_expr => object_expr(p),
         T![import] => {
             let m = p.start();
             p.bump_any();
