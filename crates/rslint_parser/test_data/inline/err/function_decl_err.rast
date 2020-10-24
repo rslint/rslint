@@ -1,4 +1,4 @@
-MODULE@0..102
+MODULE@0..114
   FN_DECL@0..13
     FUNCTION_KW@0..8 "function"
     PARAMETER_LIST@8..10
@@ -9,72 +9,156 @@ MODULE@0..102
       L_CURLY@11..12 "{"
       R_CURLY@12..13 "}"
   WHITESPACE@13..14 "\n"
-  FN_DECL@14..29
+  FN_DECL@14..36
     FUNCTION_KW@14..22 "function"
     WHITESPACE@22..23 " "
-    STAR@23..24 "*"
-    PARAMETER_LIST@24..26
-      L_PAREN@24..25 "("
-      R_PAREN@25..26 ")"
-    WHITESPACE@26..27 " "
-    BLOCK_STMT@27..29
-      L_CURLY@27..28 "{"
-      R_CURLY@28..29 "}"
-  WHITESPACE@29..30 "\n"
-  FN_DECL@30..49
-    IDENT@30..35 "async"
-    WHITESPACE@35..36 " "
-    FUNCTION_KW@36..44 "function"
-    PARAMETER_LIST@44..46
-      L_PAREN@44..45 "("
-      R_PAREN@45..46 ")"
-    WHITESPACE@46..47 " "
-    BLOCK_STMT@47..49
-      L_CURLY@47..48 "{"
-      R_CURLY@48..49 "}"
-  WHITESPACE@49..50 "\n"
-  FN_DECL@50..71
-    IDENT@50..55 "async"
-    WHITESPACE@55..56 " "
-    FUNCTION_KW@56..64 "function"
-    WHITESPACE@64..65 " "
-    STAR@65..66 "*"
-    PARAMETER_LIST@66..68
-      L_PAREN@66..67 "("
-      R_PAREN@67..68 ")"
-    WHITESPACE@68..69 " "
-    BLOCK_STMT@69..71
-      L_CURLY@69..70 "{"
-      R_CURLY@70..71 "}"
-  WHITESPACE@71..72 "\n"
-  FN_DECL@72..90
-    FUNCTION_KW@72..80 "function"
+    PARAMETER_LIST@23..36
+      ERROR@23..24
+        L_CURLY@23..24 "{"
+      ERROR@24..25
+        R_CURLY@24..25 "}"
+      WHITESPACE@25..26 "\n"
+      ERROR@26..34
+        FUNCTION_KW@26..34 "function"
+      WHITESPACE@34..35 " "
+      ERROR@35..36
+        STAR@35..36 "*"
+  EXPR_STMT@36..38
+    GROUPING_EXPR@36..38
+      L_PAREN@36..37 "("
+      R_PAREN@37..38 ")"
+  WHITESPACE@38..39 " "
+  BLOCK_STMT@39..41
+    L_CURLY@39..40 "{"
+    R_CURLY@40..41 "}"
+  WHITESPACE@41..42 "\n"
+  FN_DECL@42..61
+    IDENT@42..47 "async"
+    WHITESPACE@47..48 " "
+    FUNCTION_KW@48..56 "function"
+    PARAMETER_LIST@56..58
+      L_PAREN@56..57 "("
+      R_PAREN@57..58 ")"
+    WHITESPACE@58..59 " "
+    BLOCK_STMT@59..61
+      L_CURLY@59..60 "{"
+      R_CURLY@60..61 "}"
+  WHITESPACE@61..62 "\n"
+  FN_DECL@62..83
+    IDENT@62..67 "async"
+    WHITESPACE@67..68 " "
+    FUNCTION_KW@68..76 "function"
+    WHITESPACE@76..77 " "
+    STAR@77..78 "*"
+    PARAMETER_LIST@78..80
+      L_PAREN@78..79 "("
+      R_PAREN@79..80 ")"
     WHITESPACE@80..81 " "
-    STAR@81..82 "*"
-    NAME@82..85
-      IDENT@82..85 "foo"
-    PARAMETER_LIST@85..87
-      L_PAREN@85..86 "("
-      R_PAREN@86..87 ")"
-    WHITESPACE@87..88 " "
-    BLOCK_STMT@88..90
-      L_CURLY@88..89 "{"
-      R_CURLY@89..90 "}"
-  WHITESPACE@90..91 "\n"
-  EXPR_STMT@91..96
-    NAME_REF@91..96
-      IDENT@91..96 "yield"
-  WHITESPACE@96..97 " "
-  EXPR_STMT@97..101
-    NAME_REF@97..100
-      IDENT@97..100 "foo"
-    SEMICOLON@100..101 ";"
-  WHITESPACE@101..102 "\n"
+    BLOCK_STMT@81..83
+      L_CURLY@81..82 "{"
+      R_CURLY@82..83 "}"
+  WHITESPACE@83..84 "\n"
+  FN_DECL@84..102
+    FUNCTION_KW@84..92 "function"
+    WHITESPACE@92..93 " "
+    STAR@93..94 "*"
+    NAME@94..97
+      IDENT@94..97 "foo"
+    PARAMETER_LIST@97..99
+      L_PAREN@97..98 "("
+      R_PAREN@98..99 ")"
+    WHITESPACE@99..100 " "
+    BLOCK_STMT@100..102
+      L_CURLY@100..101 "{"
+      R_CURLY@101..102 "}"
+  WHITESPACE@102..103 "\n"
+  EXPR_STMT@103..108
+    NAME_REF@103..108
+      IDENT@103..108 "yield"
+  WHITESPACE@108..109 " "
+  EXPR_STMT@109..113
+    NAME_REF@109..112
+      IDENT@109..112 "foo"
+    SEMICOLON@112..113 ";"
+  WHITESPACE@113..114 "\n"
+--
+error[SyntaxError]: expected `'('` but instead found `{`
+  ┌─ function_decl_err.js:2:10
+  │
+2 │ function {}
+  │          ^ unexpected
+
+--
+error[SyntaxError]: Expected an identifier or pattern, but found none
+  ┌─ function_decl_err.js:2:10
+  │
+2 │ function {}
+  │          ^
+
+--
+error[SyntaxError]: expected `,` but instead found `}`
+  ┌─ function_decl_err.js:2:11
+  │
+2 │ function {}
+  │           ^ unexpected
+
+--
+error[SyntaxError]: Expected an identifier or pattern, but found none
+  ┌─ function_decl_err.js:2:11
+  │
+2 │ function {}
+  │           ^
+
+--
+error[SyntaxError]: expected `,` but instead found `*`
+  ┌─ function_decl_err.js:3:10
+  │
+3 │ function *() {}
+  │          ^ unexpected
+
+--
+error[SyntaxError]: Expected an identifier or pattern, but found none
+  ┌─ function_decl_err.js:3:10
+  │
+3 │ function *() {}
+  │          ^
+
+--
+error[SyntaxError]: expected `')'` but instead found `(`
+  ┌─ function_decl_err.js:3:11
+  │
+3 │ function *() {}
+  │           ^ unexpected
+
+--
+error[SyntaxError]: expected a block statement but instead found `(`
+  ┌─ function_decl_err.js:3:11
+  │
+3 │ function *() {}
+  │           ^
+
+--
+error[SyntaxError]: Expected an expression, but found none
+  ┌─ function_decl_err.js:3:12
+  │
+3 │ function *() {}
+  │            ^ Expected an expression here
+
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ function_decl_err.js:6:7
+  ┌─ function_decl_err.js:3:14
   │
-6 │ yield foo;
+3 │ function *() {}
+  │           ---^
+  │           │  │
+  │           │  An explicit or implicit semicolon is expected here...
+  │           ...Which is required to end this statement
+
+--
+error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
+  ┌─ function_decl_err.js:7:7
+  │
+7 │ yield foo;
   │ ------^^^
   │ │     │
   │ │     An explicit or implicit semicolon is expected here...
@@ -82,6 +166,7 @@ error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statem
 
 --
 function() {}
+function {}
 function *() {}
 async function() {}
 async function *() {}
