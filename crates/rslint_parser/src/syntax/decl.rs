@@ -31,6 +31,7 @@ pub const BASE_METHOD_RECOVERY_SET: TokenSet = token_set![
 pub fn function_decl(p: &mut Parser, m: Marker, fn_expr: bool) -> CompletedMarker {
     // test_err function_decl_err
     // function() {}
+    // function {}
     // function *() {}
     // async function() {}
     // async function *() {}
@@ -68,7 +69,7 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     let mut first = true;
 
-    p.expect(T!['(']);
+    p.state.allow_object_expr = p.expect(T!['(']);
 
     while !p.at(EOF) && !p.at(T![')']) {
         if first {
@@ -119,6 +120,7 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
         }
     }
 
+    p.state.allow_object_expr = true;
     p.expect(T![')']);
     m.complete(p, PARAMETER_LIST)
 }
@@ -145,6 +147,7 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
     // class extends bar {}
     // class extends {}
     // class
+    // class foo { set {} }
     let m = p.start();
     p.expect(T![class]);
     // class bodies are implicitly strict

@@ -156,7 +156,7 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                 );
 
             // We must explicitly handle this case or else infinite recursion can happen
-            if p.at(T!['}']) {
+            if p.at_ts(token_set![T!['}'], T![import], T![export]]) {
                 p.err_and_bump(err);
                 return None;
             }
@@ -459,12 +459,13 @@ pub(crate) fn block_items(
     p.state = old;
 }
 
-/// An expression wrapped in parentheses such as `()
+/// An expression wrapped in parentheses such as `()`
 pub fn condition(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
-    p.expect(T!['(']);
+    p.state.allow_object_expr = p.expect(T!['(']);
     expr(p);
     p.expect(T![')']);
+    p.state.allow_object_expr = true;
     m.complete(p, CONDITION)
 }
 
@@ -848,7 +849,7 @@ fn catch_clause(p: &mut Parser) {
         p.expect(T![')']);
     }
 
-    block_stmt(p, false, STMT_RECOVERY_SET.union(token_set!(T![finally])));
+    block_stmt(p, false, STMT_RECOVERY_SET);
     m.complete(p, CATCH_CLAUSE);
 }
 
