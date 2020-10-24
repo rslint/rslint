@@ -263,6 +263,15 @@ pub trait SyntaxNodeExt {
             }
         }
     }
+
+    /// Get a specific token in the node which matches a syntax kind.
+    ///
+    /// This does not consider tokens in descendant nodes
+    fn token_with_kind(&self, kind: SyntaxKind) -> Option<SyntaxToken> {
+        self.to_node()
+            .children_with_tokens()
+            .find_map(|t| t.into_token().filter(|it| it.kind() == kind))
+    }
 }
 
 impl SyntaxNodeExt for SyntaxNode {

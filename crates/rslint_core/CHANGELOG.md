@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added `util::StyleExt` for stylistic linting
+- Added `Fixer::delete_multiple`
+
+### Changed
+
+- Moved util from a file to its own directory
+
 ## [0.2.1] - 2020-10-21
 
 ### Added

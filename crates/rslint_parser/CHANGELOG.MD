@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed infinite recursion with `switch {` and
+
+```js
+try{}
+catch(){
+finally{}
+```
+
 ### Changed
 
 - Made "redundant strict mode declaration" have a primary label instead of a single secondary label

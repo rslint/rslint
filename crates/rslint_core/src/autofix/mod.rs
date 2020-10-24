@@ -156,6 +156,14 @@ impl Fixer {
             self
         }
     }
+
+    /// Delete multiple spans of code
+    pub fn delete_multiple(&mut self, spans: impl IntoIterator<Item = impl Span>) -> &mut Self {
+        for span in spans {
+            self.delete(span);
+        }
+        self
+    }
 }
 
 /// The different kinds of chars something could be wrapped inside of
