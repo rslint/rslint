@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - Changed codespan backend to render notes with severity correctly
+- Improved note rendering to account for severity length and indent correctly, as well as add a border
+  between lines if the note spans multiple lines
 
 ## [0.1.1]
 

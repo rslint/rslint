@@ -208,9 +208,8 @@ pub struct Chars {
     /// Defaults to: `'·'`.
     pub source_border_left_break: char,
 
-    /// The character to use for the note bullet.
-    /// Defaults to: `'='`.
-    pub note_bullet: char,
+    pub note_bullet_middle: char,
+    pub note_bullet_end: char,
 
     /// The character to use for marking a single-line primary label.
     /// Defaults to: `'^'`.
@@ -260,7 +259,8 @@ impl Default for Chars {
             source_border_left: '│',
             source_border_left_break: '·',
 
-            note_bullet: '=',
+            note_bullet_middle: '╪',
+            note_bullet_end: '╧',
 
             single_primary_caret: '^',
             single_secondary_caret: '-',

@@ -638,13 +638,27 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
     /// = expected type `Int`
     ///      found type `String`
     /// ```
-    pub fn render_snippet_note(&mut self, outer_padding: usize, note: Note) -> Result<(), Error> {
+    pub fn render_snippet_note(
+        &mut self,
+        outer_padding: usize,
+        note: Note,
+        has_another_note_after: bool,
+    ) -> Result<(), Error> {
+        let mut offset = 0;
         for (note_line_index, line) in note.message.lines().enumerate() {
-            self.outer_gutter(outer_padding)?;
             match note_line_index {
                 0 => {
+                    self.outer_gutter(outer_padding)?;
                     self.set_color(&self.styles().note_bullet)?;
-                    write!(self, "{}", self.chars().note_bullet)?;
+                    write!(
+                        self,
+                        "{}",
+                        if !has_another_note_after {
+                            self.chars().note_bullet_end
+                        } else {
+                            self.chars().note_bullet_middle
+                        }
+                    )?;
                     self.reset()?;
                     if let Some(severity) = note.severity {
                         write!(self, " ");
@@ -653,18 +667,36 @@ impl<'writer, 'config> Renderer<'writer, 'config> {
                         } else {
                             self.set_color(&self.styles().header(severity))?;
                         }
-                        match severity {
-                            Severity::Bug => write!(self, "bug")?,
-                            Severity::Error => write!(self, "error")?,
-                            Severity::Warning => write!(self, "warning")?,
-                            Severity::Help => write!(self, "help")?,
-                            Severity::Note => write!(self, "note")?,
-                        }
+                        let string = match severity {
+                            Severity::Bug => "bug",
+                            Severity::Error => "error",
+                            Severity::Warning => "warning",
+                            Severity::Help => "help",
+                            Severity::Note => "note",
+                        };
+                        offset += string.len();
+                        write!(self, "{}", string)?;
                         self.reset()?;
                         write!(self, ":")?;
+                        offset += 1;
                     }
                 }
-                _ => write!(self, " ")?,
+                _ => {
+                    if has_another_note_after {
+                        // write a gutter between a new line and the next note bullet if there is another note
+                        // so its not disjointed
+                        // ```
+                        // = help: foo bar baz
+                        // |         bar
+                        // = note: foo
+                        ///```
+                        self.outer_gutter(outer_padding)?;
+                        self.border_left()?;
+                    } else {
+                        self.outer_gutter(outer_padding)?;
+                    }
+                    write!(self, " {}", " ".repeat(offset))?
+                }
             }
             // Write line of message
             writeln!(self, " {}", line)?;

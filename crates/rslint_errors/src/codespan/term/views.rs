@@ -396,8 +396,12 @@ where
         // = expected type `Int`
         //      found type `String`
         // ```
-        for note in &self.diagnostic.notes {
-            renderer.render_snippet_note(outer_padding, note.to_owned())?;
+        for (idx, note) in self.diagnostic.notes.iter().enumerate() {
+            renderer.render_snippet_note(
+                outer_padding,
+                note.to_owned(),
+                idx != self.diagnostic.notes.len() - 1,
+            )?;
         }
         Ok(())
     }
@@ -473,8 +477,12 @@ where
             // = expected type `Int`
             //      found type `String`
             // ```
-            for note in &self.diagnostic.notes {
-                renderer.render_snippet_note(0, note.to_owned())?;
+            for (idx, note) in self.diagnostic.notes.iter().enumerate() {
+                renderer.render_snippet_note(
+                    0,
+                    note.to_owned(),
+                    idx != self.diagnostic.notes.len() - 1,
+                )?;
             }
         }
 
