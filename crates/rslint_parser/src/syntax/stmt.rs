@@ -849,7 +849,7 @@ fn catch_clause(p: &mut Parser) {
         p.expect(T![')']);
     }
 
-    block_stmt(p, false, STMT_RECOVERY_SET.union(token_set!(T![finally])));
+    block_stmt(p, false, STMT_RECOVERY_SET);
     m.complete(p, CATCH_CLAUSE);
 }
 

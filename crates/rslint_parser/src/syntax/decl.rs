@@ -31,6 +31,7 @@ pub const BASE_METHOD_RECOVERY_SET: TokenSet = token_set![
 pub fn function_decl(p: &mut Parser, m: Marker, fn_expr: bool) -> CompletedMarker {
     // test_err function_decl_err
     // function() {}
+    // function {}
     // function *() {}
     // async function() {}
     // async function *() {}
@@ -146,6 +147,7 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
     // class extends bar {}
     // class extends {}
     // class
+    // class foo { set {} }
     let m = p.start();
     p.expect(T![class]);
     // class bodies are implicitly strict
