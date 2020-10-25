@@ -1002,3 +1002,12 @@ fn issue_30() {
         R_CURLY:1
     }
 }
+
+#[test]
+fn fuzz_fail_7() {
+    assert_lex! {
+        "/\u{0}/ª\u{80}",
+        REGEX:5,
+        WHITESPACE:2
+    }
+}

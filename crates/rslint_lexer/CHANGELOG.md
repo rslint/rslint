@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed `/\u{0}/ª\u{80}` yielding ranges inside char boundaries
+
 ## [0.1.3] - 2020-10-20
 
 ### Changed

@@ -833,6 +833,7 @@ impl<'src> Lexer<'src> {
 
                         unwind_loop! {
                             let next = self.next_bounded().copied();
+                            let chr_start = self.cur;
                             match next {
                                Some(b'g') => {
                                    if g && diagnostic.is_none() {
@@ -871,8 +872,6 @@ impl<'src> Lexer<'src> {
                                     y = true;
                                 },
                                 Some(_) if self.cur_is_ident_part() => {
-                                    let chr_start = self.cur;
-                                    self.cur += self.get_unicode_char().len_utf8() - 1;
                                     if diagnostic.is_none() {
                                         diagnostic = Some(Diagnostic::error(self.file_id, "", "invalid regex flag")
                                             .primary(chr_start .. self.cur + 1, "this is not a valid regex flag"));
