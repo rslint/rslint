@@ -1,0 +1,12 @@
+[package]
+name = "rslint_macros"
+version = "0.1.0"
+authors = ["RSLint developers"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.7"
+syn = "1.0.48"

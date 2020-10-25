@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Added `util::StyleExt` for stylistic linting
 - Added `Fixer::delete_multiple`
+- Added more functions to `util::StyleExt`
+- Added `RuleCtx::dummy_ctx`
+- Added `Inferable` to define rules which can have their options inferred from nodes
 
 ### Changed
 

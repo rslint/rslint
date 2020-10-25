@@ -11,7 +11,32 @@ use ast::*;
 use rslint_parser::TextRange;
 use std::borrow::Borrow;
 use std::cmp;
+use std::cmp::{Eq, Ord, Reverse};
+use std::collections::{BinaryHeap, HashMap};
+use std::hash::Hash;
 use SyntaxKind::*;
+
+// rustfmt panics on this function for me
+#[rustfmt::skip]
+pub fn most_frequent<T>(items: Vec<T>) -> T
+where
+    T: Hash + Eq + Ord + Clone,
+{
+    let mut map = HashMap::new();
+    for x in items {
+        *map.entry(x).or_insert(0) += 1;
+    }
+
+    let mut heap = BinaryHeap::with_capacity(2);
+    for (x, count) in map.into_iter() {
+        heap.push(Reverse((count, x)));
+        if heap.len() > 1 {
+            heap.pop();
+        }
+    }
+    // TODO: remove this clone
+    heap.into_sorted_vec()[0].0.1.to_owned()
+}
 
 /// Expands an assignment to the returned value, e.g. `foo += 5` -> `foo + 5`, `foo = 6` -> `6`
 ///

@@ -10,6 +10,7 @@ repository = "https://github.com/RDambrosio016/RSLint"
 [dependencies]
 rslint_core = { path = "../rslint_core", version = "0.2.0" }
 rslint_errors = { path = "../rslint_errors", version = "0.1.0" }
+rslint_parser = { path = "../rslint_parser", version = "0.2" }
 termcolor = "1.1.0"
 walkdir = "2.3.1"
 glob = "0.3.0"

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- Added `util::contains_js_whitespace`
+
 ### Fixed
 
 - Fixed infinite recursion with `switch {` and

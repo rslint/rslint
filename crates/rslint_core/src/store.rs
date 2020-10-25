@@ -17,6 +17,7 @@ impl CstRuleStore {
     /// All built in rules from every group.
     pub fn builtins(mut self) -> Self {
         self.rules.extend(errors());
+        self.rules.extend(style());
         self
     }
 

@@ -1,12 +1,14 @@
 mod cli;
 mod config;
 mod files;
+mod infer;
 mod panic_hook;
 
 pub use self::{
     cli::{show_all_rules, ExplanationRunner},
     config::*,
     files::*,
+    infer::infer,
     panic_hook::*,
 };
 pub use rslint_core::Outcome;
@@ -31,7 +33,7 @@ pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool, formatter: Optio
     }
 
     let handle = config::Config::new_threaded();
-    let mut walker = FileWalker::from_glob(res.unwrap());
+    let mut walker = FileWalker::from_glob(res.unwrap().filter_map(Result::ok));
     let joined = handle.join();
     let config = joined.expect("config thread paniced");
 

@@ -33,6 +33,8 @@ pub(crate) enum SubCommand {
     /// Show all of the available rules
     // TODO: show only rules of particular groups
     Rules,
+    /// Try to infer the options of some rules from various files and print the results
+    Infer { files: Vec<String> },
 }
 
 fn main() {
@@ -41,11 +43,10 @@ fn main() {
 
     let opt = Options::from_args();
 
-    if let Some(SubCommand::Explain { rules }) = opt.cmd {
-        ExplanationRunner::new(rules).print();
-    } else if opt.cmd == Some(SubCommand::Rules) {
-        rslint_cli::show_all_rules();
-    } else {
-        rslint_cli::run(opt.files, opt.verbose, opt.fix, opt.dirty, opt.formatter);
+    match opt.cmd {
+        Some(SubCommand::Explain { rules }) => ExplanationRunner::new(rules).print(),
+        Some(SubCommand::Rules) => rslint_cli::show_all_rules(),
+        Some(SubCommand::Infer { files }) => rslint_cli::infer(files),
+        None => rslint_cli::run(opt.files, opt.verbose, opt.fix, opt.dirty, opt.formatter),
     }
 }

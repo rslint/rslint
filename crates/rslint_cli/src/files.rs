@@ -1,12 +1,12 @@
 //! The structure responsible for managing IO and the files implementation for codespan.
 
 use crate::lint_warn;
-use glob::Paths;
 use hashbrown::HashMap;
 use rslint_errors::file::{FileId, Files};
+use rslint_parser::{parse_module, parse_text, SyntaxNode};
 use std::fs::read_to_string;
 use std::ops::Range;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread::Builder;
 use walkdir::WalkDir;
@@ -22,7 +22,7 @@ const LINTED_FILES: [&str; 2] = ["js", "mjs"];
 /// The structure for managing IO to and from the core runner.
 /// The walker uses multithreaded IO, spawning a thread for every file being loaded.
 // TODO: use IO_Uring for linux
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct FileWalker {
     pub files: HashMap<usize, JsFile>,
 }
@@ -61,9 +61,16 @@ impl FileWalker {
 
     /// Make a new file walker from a compiled glob pattern. This also
     /// skips any unreadable files/dirs
-    pub fn from_glob(paths: Paths) -> Self {
+    pub fn from_glob(paths: impl IntoIterator<Item = impl AsRef<Path>>) -> Self {
+        let mut base = Self::default();
+        base.load_files(paths);
+        base
+    }
+
+    pub fn load_files(&mut self, paths: impl IntoIterator<Item = impl AsRef<Path>>) {
         let mut threads = Vec::new();
-        for entry in paths.filter_map(Result::ok) {
+        for entry in paths.into_iter() {
+            let entry = entry.as_ref();
             if IGNORED.contains(
                 &entry
                     .file_name()
@@ -108,7 +115,7 @@ impl FileWalker {
             }
         }
 
-        let jsfiles = threads
+        let jsfiles: HashMap<usize, JsFile> = threads
             .into_iter()
             .map(|handle| handle.join())
             .flat_map(|res| res.ok().flatten())
@@ -116,7 +123,7 @@ impl FileWalker {
             .map(|file| (file.id, file))
             .collect();
 
-        Self { files: jsfiles }
+        self.files.extend(jsfiles);
     }
 
     pub fn line_start(&self, id: usize, line_index: usize) -> Option<usize> {
@@ -230,5 +237,15 @@ impl JsFile {
         let next_line_start = self.line_start(line_index + 1)?;
 
         Some(line_start..next_line_start)
+    }
+
+    /// Parse this file into a syntax node, ignoring any errors produced. This
+    /// will use `parse_module` for `.mjs` and `parse_text` for `.js`
+    pub fn parse(&self) -> SyntaxNode {
+        if self.kind == JsFileKind::Module {
+            parse_module(&self.source, self.id).syntax()
+        } else {
+            parse_text(&self.source, self.id).syntax()
+        }
     }
 }

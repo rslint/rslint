@@ -37,7 +37,7 @@ pub mod rule_prelude;
 pub mod util;
 
 pub use self::{
-    rule::{CstRule, Outcome, Rule, RuleCtx, RuleLevel, RuleResult},
+    rule::{CstRule, Inferable, Outcome, Rule, RuleCtx, RuleLevel, RuleResult},
     store::CstRuleStore,
 };
 pub use rslint_errors::{Diagnostic, Severity, Span};
@@ -245,6 +245,7 @@ pub fn get_group_rules_by_name(group_name: &str) -> Option<Vec<Box<dyn CstRule>>
 
     Some(match group_name {
         "errors" => errors(),
+        "style" => style(),
         _ => return None,
     })
 }
@@ -265,4 +266,22 @@ pub fn get_rule_suggestion(incorrect_rule_name: &str) -> Option<&str> {
 /// if the rule has no docs
 pub fn get_rule_docs(rule: &str) -> Option<&'static str> {
     get_rule_by_name(rule).map(|rule| rule.docs())
+}
+
+macro_rules! trait_obj_helper {
+    ($($name:ident),* $(,)?) => {
+        vec![
+            $(
+                Box::new($name::default()) as Box<dyn Inferable>
+            ),*
+        ]
+    }
+}
+
+/// Get all of the built in rules which can have their options inferred using multiple syntax nodes
+/// see [`Inferable`] for more information.
+pub fn get_inferable_rules() -> Vec<Box<dyn Inferable>> {
+    use groups::style::*;
+
+    trait_obj_helper![BlockSpacing]
 }

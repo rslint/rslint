@@ -91,6 +91,14 @@ pub trait Rule: Debug + DynClone + Send + Sync {
 dyn_clone::clone_trait_object!(Rule);
 dyn_clone::clone_trait_object!(CstRule);
 
+/// A trait describing rules for which their configuration can be automatically deduced (inferred) using
+/// parsed syntax trees
+#[typetag::serde]
+pub trait Inferable: CstRule {
+    /// Infer the options for the rule from multiple nodes (which may be from different trees) and change them
+    fn infer(&mut self, nodes: &[SyntaxNode]);
+}
+
 /// The level configured for a rule.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum RuleLevel {
@@ -130,6 +138,18 @@ impl RuleCtx {
         let fixer = Fixer::new(self.src.clone());
         self.fixer = Some(fixer);
         self.fixer.as_mut().unwrap()
+    }
+
+    /// Create a context which is used to simply run a rule without needing to know about
+    /// the resulting fixer, therefore the ctx's source is not a valid source
+    pub(crate) fn dummy_ctx() -> Self {
+        Self {
+            file_id: 0,
+            verbose: false,
+            diagnostics: vec![],
+            fixer: None,
+            src: Arc::new(String::new()),
+        }
     }
 }
 
@@ -299,9 +319,9 @@ macro_rules! __declare_lint_inner {
         use $crate::Rule;
         use serde::{Deserialize, Serialize};
 
-        $(#[$outer])*
         #[doc = $doc]
         #[serde(rename_all = "camelCase")]
+        $(#[$outer])*
         #[derive(Debug, Clone, Deserialize, Serialize)]
         pub struct $name {
             $(

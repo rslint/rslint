@@ -1,8 +1,10 @@
 //! All of the groups of built in rules in the linter.
 
 pub mod errors;
+pub mod style;
 
 pub use errors::errors;
+pub use style::style;
 
 /// Macro for easily making a rule group hashmap.
 /// This will call `::new()` on each rule.  

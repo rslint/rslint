@@ -386,3 +386,15 @@ pub fn contains_js_linebreak(string: impl AsRef<str>) -> bool {
         || text.contains("\u{2028}")
         || text.contains("\u{2029}")
 }
+
+/// Check whether a string contains a valid js whitespace character
+// FIXME: this should account for stuff in the Zs unicode category
+pub fn contains_js_whitespace(string: impl AsRef<str>) -> bool {
+    let text = string.as_ref();
+    text.contains(' ')
+        || text.contains('\u{000B}')
+        || text.contains('\u{000C}')
+        || text.contains('\u{0020}')
+        || text.contains('\u{00A0}')
+        || text.contains('\u{FEFF}')
+}

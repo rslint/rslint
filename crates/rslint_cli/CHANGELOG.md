@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added ways of configuring the formatter used through CLI and config
 - Made all fields of config public
 - Added the `rules` subcommand to show all available rules
+- Added `JsFile::parse`
+- Changed the parameters of `FileWalker::from_glob` from `Paths` to a generic `IntoIterator`
+- Added the `infer` subcommand
+- Added the `infer` function
 
 ## [0.2.1] - 2020-10-21
 
