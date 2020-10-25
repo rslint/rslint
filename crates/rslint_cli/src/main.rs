@@ -26,10 +26,13 @@ pub(crate) struct Options {
     formatter: Option<String>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, PartialEq, Eq)]
 pub(crate) enum SubCommand {
     /// Explain a list of rules, ex: `explain getter-return, no-cond-assign`
     Explain { rules: Vec<String> },
+    /// Show all of the available rules
+    // TODO: show only rules of particular groups
+    Rules,
 }
 
 fn main() {
@@ -40,6 +43,8 @@ fn main() {
 
     if let Some(SubCommand::Explain { rules }) = opt.cmd {
         ExplanationRunner::new(rules).print();
+    } else if opt.cmd == Some(SubCommand::Rules) {
+        rslint_cli::show_all_rules();
     } else {
         rslint_cli::run(opt.files, opt.verbose, opt.fix, opt.dirty, opt.formatter);
     }

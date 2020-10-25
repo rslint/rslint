@@ -2,9 +2,11 @@
 
 use crate::{lint_err, REPO_LINK};
 use ansi_term::Color::{Green, White, RGB};
+use colored::Colorize;
 use regex::{Captures, Regex};
-use rslint_core::get_rule_docs;
+use rslint_core::{get_rule_docs, CstRuleStore};
 use rslint_lexer::{ansi_term, color};
+use std::collections::HashSet;
 
 /// A structure for converting user facing markdown docs to ANSI colored terminal explanations.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -104,4 +106,40 @@ impl ExplanationRunner {
             println!("{}", rule);
         }
     }
+}
+
+pub fn show_all_rules() {
+    let rules = CstRuleStore::new().builtins().rules;
+    let mut groups = HashSet::new();
+    rules.iter().for_each(|r| {
+        groups.insert(r.group());
+    });
+
+    for group in groups {
+        let group_rules = rules.iter().filter(|rule| rule.group() == group);
+        println!("{}:", group.bright_green());
+        let max_rule_len = group_rules
+            .clone()
+            .map(|r| r.name().len())
+            .max()
+            .unwrap_or(0);
+
+        for rule in group_rules {
+            println!(
+                " {}{} - {}",
+                rule.name().white(),
+                " ".repeat(max_rule_len - rule.name().len()),
+                rule.docs().lines().next().unwrap_or_default()
+            );
+        }
+        println!();
+    }
+    println!(
+        "{}: https://rdambrosio016.github.io/RSLint/rules/index.html",
+        "more info".bright_green()
+    );
+    println!(
+        "{}: use the explain command to show info about individual rules",
+        "help".bright_green()
+    );
 }

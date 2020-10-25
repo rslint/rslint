@@ -3,7 +3,12 @@ mod config;
 mod files;
 mod panic_hook;
 
-pub use self::{cli::ExplanationRunner, config::*, files::*, panic_hook::*};
+pub use self::{
+    cli::{show_all_rules, ExplanationRunner},
+    config::*,
+    files::*,
+    panic_hook::*,
+};
 pub use rslint_core::Outcome;
 pub use rslint_errors::{
     file, file::Files, Diagnostic, Emitter, Formatter, LongFormatter, Severity, ShortFormatter,
