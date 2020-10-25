@@ -5,11 +5,55 @@ use ast::{BlockStmt, SwitchStmt};
 use SyntaxKind::{BLOCK_STMT, L_CURLY, R_CURLY, SWITCH_STMT};
 
 declare_lint! {
+    /**
+    Enforce or disallow spaces inside of blocks after the opening and closing brackets.
+
+    This rule enforces consistent spacing inside blocks by enforcing the opening token and the next token
+    being on the same line. It also enforces consistent spacing with a closing token and the previous token being
+    on the same line.
+
+    ## Always
+
+    ### Incorrect code examples
+
+    ```js
+    function foo() {return true;}
+    if (foo) { bar = 0;}
+    function baz() {let i = 0;
+        return i;
+    }
+    ```
+
+    ### Correct code examples
+
+    ```js
+    function foo() { return true; }
+    if (foo) { bar = 0; }
+    ```
+
+    ## Never
+
+    ### Incorrect code examples
+
+    ```js
+    function foo() { return true; }
+    if (foo) { bar = 0;}
+    ```
+
+    ### Correct code examples
+
+    ```js
+    function foo() {return true;}
+    if (foo) {bar = 0;}
+    ```
+    */
     #[serde(default)]
     #[derive(rslint_macros::Mergeable)]
     BlockSpacing,
     style,
     "block-spacing",
+    /// The style of spacing, either "always" (default) to require one or more spaces, or
+    /// "never" to disallow spaces
     pub style: String
 }
 

@@ -37,3 +37,5 @@
     - [no-unsafe-negation](rules/errors/no-unsafe-negation.md)
     - [use-isnan](rules/errors/use-isnan.md)
     - [valid-typeof](rules/errors/valid-typeof.md)
+  - [style](rules/style/README.md)
+    - [block-spacing](rules/style/block-spacing.md)
