@@ -155,7 +155,7 @@ pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty
 }
 
 pub fn dump_ast(glob: String) {
-    for_each_file(glob, |walker, file| {
+    for_each_file(glob, |_, file| {
         let header = if let Some(path) = &file.path {
             format!("File {}", path.display())
         } else {
@@ -163,14 +163,7 @@ pub fn dump_ast(glob: String) {
         };
         println!("{}", header.red().bold());
 
-        let res = if file.kind == JsFileKind::Module {
-            rslint_parser::parse_module(&file.source, file.id).to_syntax()
-        } else {
-            rslint_parser::parse_text(&file.source, file.id).to_syntax()
-        };
-
-        println!("{:#?}", res.syntax());
-        emit_diagnostics("long", res.errors(), walker);
+        println!("{:#?}", file.parse());
     })
 }
 
