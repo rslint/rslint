@@ -18,7 +18,7 @@ pub use rslint_errors::{
 use colored::*;
 use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
-use rslint_core::{lint_file, util::find_best_match_for_name, CstRuleStore, LintResult, RuleLevel};
+use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
 use std::fs::write;
 use std::process;
@@ -26,8 +26,15 @@ use std::process;
 pub(crate) const REPO_LINK: &str = "https://github.com/RDambrosio016/RSLint";
 
 #[allow(unused_must_use)]
-pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool, formatter: Option<String>) {
-    let exit_code = run_inner(glob, verbose, fix, dirty, formatter);
+pub fn run(
+    glob: String,
+    verbose: bool,
+    fix: bool,
+    dirty: bool,
+    formatter: Option<String>,
+    no_global_config: bool,
+) {
+    let exit_code = run_inner(glob, verbose, fix, dirty, formatter, no_global_config);
     process::exit(exit_code);
 }
 
@@ -38,6 +45,7 @@ fn run_inner(
     fix: bool,
     dirty: bool,
     formatter: Option<String>,
+    no_global_config: bool,
 ) -> i32 {
     let res = glob::glob(&glob);
     if let Err(err) = res {
@@ -45,39 +53,14 @@ fn run_inner(
         return 2;
     }
 
-    let handle = config::Config::new_threaded();
+    let handle = config::Config::new_threaded(no_global_config, |_, _| {});
     let mut walker = FileWalker::from_glob(res.unwrap().filter_map(Result::ok));
     let joined = handle.join();
-    let config = joined.expect("config thread paniced");
+    let mut config = joined.expect("config thread paniced");
+    emit_diagnostics("short", &config.warnings(), &walker);
 
-    let mut formatter = formatter
-        .or_else(|| config.as_ref().ok().map(|c| c.errors.formatter.clone()))
-        .unwrap_or_else(|| String::from("long"));
-
-    let store = match config.as_ref() {
-        Ok(config) => {
-            let store = config
-                .rules
-                .as_ref()
-                .map(|store| {
-                    let store = store.store();
-                    let files = file::SimpleFile::empty();
-                    store.1.iter().for_each(|d| emit_diagnostic(d, &files));
-                    store.0
-                })
-                .unwrap_or_else(|| CstRuleStore::new().builtins());
-
-            store
-        }
-        Err((file, diagnostic)) => {
-            emit_diagnostic(
-                &diagnostic,
-                file.as_ref().unwrap_or(&file::SimpleFile::empty()),
-            );
-            CstRuleStore::new().builtins()
-        }
-    };
-
+    let mut formatter = formatter.unwrap_or_else(|| config.formatter());
+    let store = config.rules_store();
     verify_formatter(&mut formatter);
 
     if walker.files.is_empty() {
@@ -113,13 +96,7 @@ fn run_inner(
     } else {
         0
     };
-    print_results(
-        &mut results,
-        &walker,
-        config.ok().as_ref(),
-        fix_count,
-        &formatter,
-    );
+    print_results(&mut results, &walker, &config, fix_count, &formatter);
 
     // print_results remaps the result to the appropriate severity
     // so these diagnostic severities should be accurate
@@ -241,7 +218,7 @@ fn for_each_file(glob: String, action: impl Fn(&FileWalker, &JsFile)) {
 pub(crate) fn print_results(
     results: &mut Vec<LintResult>,
     walker: &FileWalker,
-    config: Option<&config::Config>,
+    config: &config::Config,
     fix_count: usize,
     formatter: &str,
 ) {
@@ -252,9 +229,7 @@ pub(crate) fn print_results(
             .iter_mut()
             .map(|x| (x.0, &mut x.1.diagnostics))
         {
-            if let Some(conf) = config.and_then(|cfg| cfg.rules.as_ref()) {
-                remap_diagnostics_to_level(diagnostics, conf.rule_level_by_name(rule_name));
-            }
+            remap_diagnostics_to_level(diagnostics, config.rule_level_by_name(rule_name));
         }
     }
 
