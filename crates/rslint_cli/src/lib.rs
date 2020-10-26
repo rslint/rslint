@@ -204,7 +204,7 @@ pub fn tokenize(glob: String) {
             rslint_parser::TokenSource::new(source.as_str(), tokens.as_slice()).for_each(|tok| {
                 println!("{:?}@{}..{}", tok.kind, tok.range.start, tok.range.end);
             });
-            println!("");
+            println!();
         },
     )
 }
