@@ -30,6 +30,9 @@ pub(crate) struct Options {
     /// Attempt to run autofixes even if the code contains syntax errors (may produce weird fixes or more errors)
     #[structopt(short = "D", long)]
     dirty: bool,
+    /// Disables the global config that is located in your global config directory.
+    #[structopt(long)]
+    no_global_config: bool,
     /// The error formatter to use, either "short" or "long" (default)
     #[structopt(short = "F", long)]
     formatter: Option<String>,
@@ -72,6 +75,13 @@ fn main() {
         (_, Some(SubCommand::Explain { rules })) => ExplanationRunner::new(rules).print(),
         (_, Some(SubCommand::Rules)) => rslint_cli::show_all_rules(),
         (_, Some(SubCommand::Infer { files })) => rslint_cli::infer(files),
-        (_, None) => rslint_cli::run(opt.files, opt.verbose, opt.fix, opt.dirty, opt.formatter),
+        (_, None) => rslint_cli::run(
+            opt.files,
+            opt.verbose,
+            opt.fix,
+            opt.dirty,
+            opt.formatter,
+            opt.no_global_config,
+        ),
     }
 }
