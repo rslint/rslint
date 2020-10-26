@@ -59,7 +59,7 @@ fn run_inner(
     let mut config = joined.expect("config thread paniced");
     emit_diagnostics("short", &config.warnings(), &walker);
 
-    let mut formatter = formatter.unwrap_or(config.formatter());
+    let mut formatter = formatter.unwrap_or_else(|| config.formatter());
     let store = config.rules_store();
     verify_formatter(&mut formatter);
 
