@@ -1286,6 +1286,7 @@ dependencies = [
  "notify",
  "rayon",
  "regex",
+ "rslint_config",
  "rslint_core",
  "rslint_errors",
  "rslint_lexer",
@@ -1295,6 +1296,18 @@ dependencies = [
  "termcolor",
  "toml",
  "walkdir",
+]
+
+[[package]]
+name = "rslint_config"
+version = "0.1.0"
+dependencies = [
+ "heck",
+ "regex",
+ "rslint_core",
+ "rslint_errors",
+ "serde",
+ "toml",
 ]
 
 [[package]]

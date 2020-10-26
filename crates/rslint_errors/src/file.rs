@@ -180,6 +180,11 @@ impl SimpleFile {
         }
     }
 
+    /// Returns a `SimpleFile` that has no name and no source.
+    pub fn empty() -> SimpleFile {
+        SimpleFile::new(String::new(), String::new())
+    }
+
     fn line_start(&self, line_index: usize) -> Option<usize> {
         use std::cmp::Ordering;
 

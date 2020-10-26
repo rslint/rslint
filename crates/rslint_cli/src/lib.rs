@@ -1,16 +1,15 @@
 mod cli;
-mod config;
 mod files;
 mod infer;
 mod panic_hook;
 
 pub use self::{
     cli::{show_all_rules, ExplanationRunner},
-    config::*,
     files::*,
     infer::infer,
     panic_hook::*,
 };
+pub use rslint_config as config;
 pub use rslint_core::Outcome;
 pub use rslint_errors::{
     file, file::Files, Diagnostic, Emitter, Formatter, LongFormatter, Severity, ShortFormatter,
@@ -37,14 +36,33 @@ pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool, formatter: Optio
     let joined = handle.join();
     let config = joined.expect("config thread paniced");
 
-    let store = if let Some(cfg) = config.as_ref().and_then(|cfg| cfg.rules.as_ref()) {
-        cfg.store()
-    } else {
-        CstRuleStore::new().builtins()
-    };
     let mut formatter = formatter
-        .or_else(|| config.as_ref().map(|c| c.errors.formatter.clone()))
+        .or_else(|| config.as_ref().ok().map(|c| c.errors.formatter.clone()))
         .unwrap_or_else(|| String::from("long"));
+
+    let store = match config.as_ref() {
+        Ok(config) => {
+            let store = config
+                .rules
+                .as_ref()
+                .map(|store| {
+                    let store = store.store();
+                    let files = file::SimpleFile::empty();
+                    store.1.iter().for_each(|d| emit_diagnostic(d, &files));
+                    store.0
+                })
+                .unwrap_or_else(|| CstRuleStore::new().builtins());
+
+            store
+        }
+        Err((file, diagnostic)) => {
+            emit_diagnostic(
+                &diagnostic,
+                file.as_ref().unwrap_or(&file::SimpleFile::empty()),
+            );
+            CstRuleStore::new().builtins()
+        }
+    };
 
     verify_formatter(&mut formatter);
 
@@ -84,7 +102,7 @@ pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool, formatter: Optio
     print_results(
         &mut results,
         &walker,
-        config.as_ref(),
+        config.ok().as_ref(),
         fix_count,
         &formatter,
     );

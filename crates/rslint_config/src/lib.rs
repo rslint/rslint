@@ -1,6 +1,5 @@
 //! Configuration file support.
 
-use crate::lint_warn;
 use heck::{CamelCase, KebabCase};
 use rslint_core::{
     get_group_rules_by_name, get_rule_by_name, get_rule_suggestion, CstRule, CstRuleStore,
@@ -60,9 +59,16 @@ impl Default for ErrorsConfig {
 
 impl Config {
     /// Search for a config file in the current directory,
-    /// return None if there is no config or if its unreadable.
-    /// This returns a thread handle which was spawned for multithreaded IO.
-    pub fn new_threaded() -> JoinHandle<Option<Self>> {
+    ///
+    /// # Returns
+    ///
+    /// The config as a `SimpleFile` and a `Diagnostic` if it fails
+    /// If the returned `SimpleFile` is `None`, the `Diagnostic` is a warning and can be
+    /// emitted without any files and the default config should be used.
+    ///
+    /// If the `SimpleFile` is `Some`, the `Diagnostic` is an error and should be reported to the
+    /// user.
+    pub fn new_threaded() -> JoinHandle<Result<Self, (Option<SimpleFile>, Diagnostic)>> {
         thread::spawn(|| {
             let (source, path) = match current_dir()
                 .map(|path| path.join(CONFIG_NAME))
@@ -70,28 +76,31 @@ impl Config {
             {
                 Ok(val) => val,
                 Err(err) => {
-                    crate::lint_warn!("failed to read config, using default config: {}", err);
-                    return None;
+                    let d = Diagnostic::warning(
+                        0,
+                        "config",
+                        format!("failed to read config, using default config: {}", err),
+                    );
+                    return Err((None, d));
                 }
             };
 
             match from_str(&source) {
-                Ok(config) => Some(config),
+                Ok(config) => Ok(config),
                 Err(err) => {
-                    let files = SimpleFile::new(path.to_string_lossy().into(), source);
+                    let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
                     let d = if let Some(idx) = err
                         .line_col()
-                        .and_then(|(line, col)| Some(files.line_range(0, line)?.start + col))
+                        .and_then(|(line, col)| Some(config_file.line_range(0, line)?.start + col))
                     {
                         let pos_regex = regex::Regex::new(" at line \\d+ column \\d+$").unwrap();
                         let msg = err.to_string();
                         let msg = pos_regex.replace(&msg, "");
-                        Diagnostic::error(0, "config", msg).primary(idx..idx, "")
+                        Diagnostic::error(1, "config", msg).primary(idx..idx, "")
                     } else {
-                        Diagnostic::error(0, "config", err.to_string())
+                        Diagnostic::error(1, "config", err.to_string())
                     };
-                    crate::emit_diagnostic(&d, &files);
-                    None
+                    Err((Some(config_file), d))
                 }
             }
         })
@@ -132,57 +141,81 @@ impl RulesConfig {
     ///
     /// if `issue_warnings` is true, linter warnings will be emitted stating a rule's configuration
     /// was ignore because its explicitly allowed.
+    ///
+    /// # Returns
+    ///
+    /// An `IntoIterator` implementation that will return the
+    /// rule and an optional `Diagnostic` which is a warning and should be emitted if present.
     pub fn intersect_allowed<'a, T>(
         &'a self,
         rules: T,
         issue_warnings: bool,
-    ) -> impl IntoIterator<Item = T::Item> + 'a
+    ) -> impl Iterator<Item = (T::Item, Option<Diagnostic>)> + 'a
     where
         T: IntoIterator + 'a,
         T::Item: Borrow<Box<dyn CstRule>>,
     {
-        rules.into_iter().filter(move |rule| {
+        rules.into_iter().filter_map(move |rule| {
             let res = self
                 .allowed
                 .iter()
                 .any(|allowed| allowed == rule.borrow().name());
 
-            if res && issue_warnings {
-                lint_warn!(
-                    "ignoring configuration for '{}' because it is explicitly allowed",
-                    rule.borrow().name()
-                );
+            let d = if res && issue_warnings {
+                Some(Diagnostic::warning(
+                    1,
+                    "config",
+                    format!(
+                        "ignoring configuration for '{}' because it is explicitly allowed",
+                        rule.borrow().name()
+                    ),
+                ))
+            } else {
+                None
+            };
+
+            if !res {
+                Some((rule, d))
+            } else {
+                None
             }
-            !res
         })
     }
 
-    pub fn store(&self) -> CstRuleStore {
+    /// Collects all rules and reutrns a new `CstRuleStore`.
+    ///
+    /// # Returns
+    ///
+    /// The actual rule store and a list of warnings that should be emitted.
+    pub fn store(&self) -> (CstRuleStore, Vec<Diagnostic>) {
         let mut store = CstRuleStore::new();
-        let mut rules: Vec<_> = self
+        let mut all_warns = vec![];
+
+        let (mut rules, warns): (_, Vec<_>) = self
             .intersect_allowed(
                 Self::unique_rules(self.errors.clone(), self.warnings.clone()),
                 true,
             )
-            .into_iter()
-            .collect();
+            .unzip();
+        all_warns.extend(warns.into_iter().flatten());
 
         for group in &self.groups {
             if let Some(group_rules) = get_group_rules_by_name(&group) {
-                rules = Self::unique_rules(
-                    rules,
-                    self.intersect_allowed(group_rules.into_iter(), false)
-                        .into_iter()
-                        .collect(),
-                )
-                .collect();
+                let (list, warns): (_, Vec<_>) = self
+                    .intersect_allowed(group_rules.into_iter(), false)
+                    .into_iter()
+                    .unzip();
+                all_warns.extend(warns.into_iter().flatten());
+
+                rules = Self::unique_rules(rules, list).collect();
             } else {
-                lint_warn!("Unknown rule group '{}'", group);
+                let d = Diagnostic::warning(1, "config", format!("unknown rule group '{}'", group));
+                all_warns.push(d);
             }
         }
 
         store.load_rules(rules);
-        store
+        (store, all_warns)
     }
 
     #[allow(clippy::needless_collect)]
