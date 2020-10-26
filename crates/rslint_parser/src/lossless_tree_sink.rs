@@ -56,15 +56,14 @@ impl<'a> TreeSink for LosslessTreeSink<'a> {
         // If this is a statement then attach a leading comment to it
         let n_trivias = self.tokens[self.token_pos..]
             .iter()
-            .take_while(|it| it.kind.is_trivia())
+            .take_while(|it| it.kind == WHITESPACE)
             .count();
         let leading_trivias = &self.tokens[self.token_pos..self.token_pos + n_trivias];
         let mut trivia_end = self.text_pos
             + leading_trivias
                 .iter()
                 .map(|it| TextSize::from(it.len as u32))
-                .sum::<TextSize>()
-            + TextSize::from(1);
+                .sum::<TextSize>();
 
         let n_attached_trivias = {
             let leading_trivias = leading_trivias.iter().rev().map(|it| {
