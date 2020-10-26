@@ -7,6 +7,10 @@ description = "CLI crate and glue for the rslint project"
 license = "MIT"
 repository = "https://github.com/RDambrosio016/RSLint"
 
+[[bin]]
+name = "rslint"
+path = "src/main.rs"
+
 [dependencies]
 rslint_core = { path = "../rslint_core", version = "0.2.0" }
 rslint_config = { path = "../rslint_config", version = "0.1.0" }

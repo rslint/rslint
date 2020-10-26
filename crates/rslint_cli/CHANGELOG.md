@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 
+- Changed the binary's name from `rslint_cli` to just `rslint`
 - Changed the exit codes produced by the CLI:
   `-1`: Linting was unsuccessful because of an internal error
   `0`: Linting was successful and there are no errors (but there may be warnings)
