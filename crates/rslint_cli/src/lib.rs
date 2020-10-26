@@ -20,15 +20,28 @@ use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
 use rslint_core::{lint_file, util::find_best_match_for_name, CstRuleStore, LintResult, RuleLevel};
 use std::fs::write;
+use std::process;
 
 pub(crate) const REPO_LINK: &str = "https://github.com/RDambrosio016/RSLint";
 
 #[allow(unused_must_use)]
 pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool, formatter: Option<String>) {
+    let exit_code = run_inner(glob, verbose, fix, dirty, formatter);
+    process::exit(exit_code);
+}
+
+/// The inner function for run to call destructors before we call [`process::exit`]
+fn run_inner(
+    glob: String,
+    verbose: bool,
+    fix: bool,
+    dirty: bool,
+    formatter: Option<String>,
+) -> i32 {
     let res = glob::glob(&glob);
     if let Err(err) = res {
         lint_err!("Invalid glob pattern: {}", err);
-        return;
+        return 2;
     }
 
     let handle = config::Config::new_threaded();
@@ -68,7 +81,7 @@ pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool, formatter: Optio
 
     if walker.files.is_empty() {
         lint_err!("No matching files found");
-        return;
+        return 2;
     }
 
     let mut results = walker
@@ -106,6 +119,18 @@ pub fn run(glob: String, verbose: bool, fix: bool, dirty: bool, formatter: Optio
         fix_count,
         &formatter,
     );
+
+    // print_results remaps the result to the appropriate severity
+    // so these diagnostic severities should be accurate
+    if results
+        .iter()
+        .flat_map(|res| res.diagnostics())
+        .any(|d| matches!(d.severity, Severity::Bug | Severity::Error))
+    {
+        1
+    } else {
+        0
+    }
 }
 
 pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty: bool) -> usize {

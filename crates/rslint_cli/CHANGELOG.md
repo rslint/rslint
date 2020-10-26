@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Changed the exit codes produced by the CLI:
+  `-1`: Linting was unsuccessful because of an internal error
+  `0`: Linting was successful and there are no errors (but there may be warnings)
+  `1`: Linting was successful and there is at least one error
+  `2`: Linting could not be done because of a config or CLI error (e.g. invalid glob pattern)
+
 ### Added
 
 - Added ways of configuring the formatter used through CLI and config
