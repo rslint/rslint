@@ -1,0 +1,35 @@
+{
+  "name": "rslint",
+  "version": "0.1.2",
+  "description": "An Extremely fast JavaScript linter and Rust crate",
+  "main": "postinstall.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "postinstall": "node ./postinstall.js"
+  },
+  "files": [
+    "postinstall.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RDambrosio016/RSLint.git"
+  },
+  "keywords": [
+    "linter",
+    "javascript",
+    "javascript-linter",
+    "parser",
+    "parallel",
+    "rust"
+  ],
+  "author": "Riccardo \"borgerking\" D'Ambrosio",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RDambrosio016/RSLint/issues"
+  },
+  "homepage": "https://github.com/RDambrosio016/RSLint#readme",
+  "dependencies": {}
+}
