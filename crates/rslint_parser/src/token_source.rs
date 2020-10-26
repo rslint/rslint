@@ -95,7 +95,7 @@ impl<'t> TokenSource<'t> {
         self.cur = (mk_token(pos, &self.token_offset_pairs), pos);
     }
 
-    pub fn last(&self) -> Option<Token> {
+    pub fn last_tok(&self) -> Option<Token> {
         if self.cur.1 == 0 {
             return None;
         }
@@ -150,5 +150,19 @@ impl<'t> TokenSource<'t> {
 
     pub fn size_hint(&self) -> usize {
         self.token_offset_pairs.len()
+    }
+}
+
+impl Iterator for TokenSource<'_> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let cur = self.cur.0.clone();
+        if cur.kind != EOF {
+            self.bump();
+            Some(cur)
+        } else {
+            None
+        }
     }
 }

@@ -1,5 +1,14 @@
 use rslint_cli::ExplanationRunner;
-use structopt::StructOpt;
+use structopt::{clap::arg_enum, StructOpt};
+
+const DEV_FLAGS_HELP: &str = "
+Developer flags that are used by RSLint developers to debug RSLint.
+
+    -Z help     -- Shows this message
+    -Z tokenize -- Tokenizes the input files and dumps the tokens
+    -Z dumpast  -- Parses the input files and prints the parsed AST
+
+Run with 'rslint -Z <FLAG> <FILES>'.";
 
 #[derive(Debug, StructOpt)]
 #[structopt(
@@ -24,6 +33,18 @@ pub(crate) struct Options {
     /// The error formatter to use, either "short" or "long" (default)
     #[structopt(short = "F", long)]
     formatter: Option<String>,
+    /// Developer only flags. See `-Z help` for more information.
+    #[structopt(name = "FLAG", short = "Z")]
+    dev_flag: Option<DevFlag>,
+}
+
+arg_enum! {
+    #[derive(Debug, PartialEq, Eq)]
+    enum DevFlag {
+        Help,
+        Tokenize,
+        DumpAst,
+    }
 }
 
 #[derive(Debug, StructOpt, PartialEq, Eq)]
@@ -43,10 +64,14 @@ fn main() {
 
     let opt = Options::from_args();
 
-    match opt.cmd {
-        Some(SubCommand::Explain { rules }) => ExplanationRunner::new(rules).print(),
-        Some(SubCommand::Rules) => rslint_cli::show_all_rules(),
-        Some(SubCommand::Infer { files }) => rslint_cli::infer(files),
-        None => rslint_cli::run(opt.files, opt.verbose, opt.fix, opt.dirty, opt.formatter),
+    match (opt.dev_flag, opt.cmd) {
+        (Some(DevFlag::Help), _) => println!("{}", DEV_FLAGS_HELP),
+        (Some(DevFlag::Tokenize), _) => rslint_cli::tokenize(opt.files),
+        (Some(DevFlag::DumpAst), _) => rslint_cli::dump_ast(opt.files),
+
+        (_, Some(SubCommand::Explain { rules })) => ExplanationRunner::new(rules).print(),
+        (_, Some(SubCommand::Rules)) => rslint_cli::show_all_rules(),
+        (_, Some(SubCommand::Infer { files })) => rslint_cli::infer(files),
+        (_, None) => rslint_cli::run(opt.files, opt.verbose, opt.fix, opt.dirty, opt.formatter),
     }
 }
