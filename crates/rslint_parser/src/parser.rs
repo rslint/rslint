@@ -439,7 +439,7 @@ impl Marker {
         }
         let finish_pos = p.events.len() as u32;
         p.push_event(Event::Finish {
-            end: p.tokens.last().map(|t| t.range.end).unwrap_or(0),
+            end: p.tokens.last_tok().map(|t| t.range.end).unwrap_or(0),
         });
         CompletedMarker::new(self.pos, finish_pos, kind).old_start(self.old_start)
     }

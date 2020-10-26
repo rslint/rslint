@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Changed the parameters of `FileWalker::from_glob` from `Paths` to a generic `IntoIterator`
 - Added the `infer` subcommand
 - Added the `infer` function
+- `-Z` developer flags (`dumpast`, `tokenize`, `help`)
 
 ### Changed
 

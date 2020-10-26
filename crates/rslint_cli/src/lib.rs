@@ -19,6 +19,7 @@ use colored::*;
 use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
 use rslint_core::{lint_file, util::find_best_match_for_name, CstRuleStore, LintResult, RuleLevel};
+use rslint_lexer::Lexer;
 use std::fs::write;
 use std::process;
 
@@ -176,6 +177,65 @@ pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty
         }
     }
     fix_count
+}
+
+pub fn dump_ast(glob: String) {
+    for_each_file(glob, |_, file| {
+        let header = if let Some(path) = &file.path {
+            format!("File {}", path.display())
+        } else {
+            format!("File {}", file.name)
+        };
+        println!("{}", header.red().bold());
+
+        println!("{:#?}", file.parse());
+    })
+}
+
+pub fn tokenize(glob: String) {
+    for_each_file(
+        glob,
+        |walker,
+         JsFile {
+             path,
+             name,
+             id,
+             source,
+             ..
+         }| {
+            let header = if let Some(path) = path {
+                format!("File {}", path.display())
+            } else {
+                format!("File {}", name)
+            };
+            println!("{}", header.red().bold());
+
+            let tokens = Lexer::from_str(source.as_str(), *id)
+                .map(|(tok, d)| {
+                    if let Some(d) = d {
+                        emit_diagnostic(&d, walker);
+                    }
+                    tok
+                })
+                .collect::<Vec<_>>();
+
+            rslint_parser::TokenSource::new(source.as_str(), tokens.as_slice()).for_each(|tok| {
+                println!("{:?}@{}..{}", tok.kind, tok.range.start, tok.range.end);
+            });
+            println!();
+        },
+    )
+}
+
+fn for_each_file(glob: String, action: impl Fn(&FileWalker, &JsFile)) {
+    let res = glob::glob(&glob);
+    if let Err(err) = res {
+        lint_err!("Invalid glob pattern: {}", err);
+        return;
+    }
+
+    let walker = FileWalker::from_glob(res.unwrap().filter_map(Result::ok));
+    walker.files.values().for_each(|file| action(&walker, file))
 }
 
 pub(crate) fn print_results(
