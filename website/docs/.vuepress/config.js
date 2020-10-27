@@ -41,7 +41,7 @@ module.exports = {
           title: "User Guide",
           collapsable: false,
           children: [
-            "/guide/getting-started",
+            "/guide/",
             "/guide/config",
             "/guide/directives",
             "/guide/formatters",

@@ -3,7 +3,7 @@ home: true
 heroText: RSLint
 tagline: Fast, Easy to use JavaScript Linter
 actionText: Get Started →
-actionLink: /guide/getting-started
+actionLink: /guide/
 features:
   - title: Error Tolerant
     details: Lint any code on the fly no matter how wrong it is.

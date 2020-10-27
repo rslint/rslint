@@ -23,8 +23,6 @@ use rslint_lexer::Lexer;
 use std::fs::write;
 use std::process;
 
-pub(crate) const REPO_LINK: &str = "https://github.com/RDambrosio016/RSLint";
-
 #[allow(unused_must_use)]
 pub fn run(
     glob: String,

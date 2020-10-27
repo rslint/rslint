@@ -2,7 +2,7 @@
 
 A (WIP) JavaScript linter written in Rust designed to be as fast as possible, customizable, and easy to use.
 
-[User Documentation](https://rdambrosio016.github.io/RSLint/) | [Dev Documentation](https://rdambrosio016.github.io/RSLint/dev/index.html) | [Rustdoc Documentation](https://docs.rs/rslint_core/0.1.2/rslint_core/) | [Website](http://rslint.org)
+[User Documentation](https://rslint.org/guide/getting-started.html) | [Dev Documentation](https://rslint.org/dev/) | [Rustdoc Documentation](https://docs.rs/rslint_core) | [Website](http://rslint.org)
 
 ## Docs and Installation
 
