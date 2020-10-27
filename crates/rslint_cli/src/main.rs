@@ -21,7 +21,7 @@ pub(crate) struct Options {
     verbose: bool,
     /// A glob pattern to lint.
     #[structopt(default_value = "./")]
-    files: String,
+    files: Vec<String>,
     #[structopt(subcommand)]
     cmd: Option<SubCommand>,
     /// Automatically attempt to fix any issues which can be fixed

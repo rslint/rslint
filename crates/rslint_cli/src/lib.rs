@@ -20,39 +20,34 @@ use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
 use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
-use std::fs::write;
 use std::process;
+use std::{fs::write, path::PathBuf};
 
 #[allow(unused_must_use)]
 pub fn run(
-    glob: String,
+    globs: Vec<String>,
     verbose: bool,
     fix: bool,
     dirty: bool,
     formatter: Option<String>,
     no_global_config: bool,
 ) {
-    let exit_code = run_inner(glob, verbose, fix, dirty, formatter, no_global_config);
+    let exit_code = run_inner(globs, verbose, fix, dirty, formatter, no_global_config);
     process::exit(exit_code);
 }
 
 /// The inner function for run to call destructors before we call [`process::exit`]
 fn run_inner(
-    glob: String,
+    globs: Vec<String>,
     verbose: bool,
     fix: bool,
     dirty: bool,
     formatter: Option<String>,
     no_global_config: bool,
 ) -> i32 {
-    let res = glob::glob(&glob);
-    if let Err(err) = res {
-        lint_err!("Invalid glob pattern: {}", err);
-        return 2;
-    }
-
-    let handle = config::Config::new_threaded(no_global_config, |_, _| {});
-    let mut walker = FileWalker::from_glob(res.unwrap().filter_map(Result::ok));
+    let handle =
+        config::Config::new_threaded(no_global_config, |file, d| emit_diagnostic(&d, &file));
+    let mut walker = FileWalker::from_glob(collect_globs(globs));
     let joined = handle.join();
     let mut config = joined.expect("config thread paniced");
     emit_diagnostics("short", &config.warnings(), &walker);
@@ -154,8 +149,8 @@ pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty
     fix_count
 }
 
-pub fn dump_ast(glob: String) {
-    for_each_file(glob, |_, file| {
+pub fn dump_ast(globs: Vec<String>) {
+    for_each_file(globs, |_, file| {
         let header = if let Some(path) = &file.path {
             format!("File {}", path.display())
         } else {
@@ -167,9 +162,9 @@ pub fn dump_ast(glob: String) {
     })
 }
 
-pub fn tokenize(glob: String) {
+pub fn tokenize(globs: Vec<String>) {
     for_each_file(
-        glob,
+        globs,
         |walker,
          JsFile {
              path,
@@ -202,14 +197,23 @@ pub fn tokenize(glob: String) {
     )
 }
 
-fn for_each_file(glob: String, action: impl Fn(&FileWalker, &JsFile)) {
-    let res = glob::glob(&glob);
-    if let Err(err) = res {
-        lint_err!("Invalid glob pattern: {}", err);
-        return;
-    }
+fn collect_globs(globs: Vec<String>) -> impl Iterator<Item = PathBuf> {
+    globs
+        .into_iter()
+        .map(|pat| glob::glob(&pat))
+        .flat_map(|path| {
+            if let Err(err) = path {
+                lint_err!("Invalid glob pattern: {}", err);
+                None
+            } else {
+                path.ok()
+            }
+        })
+        .flat_map(|path| path.filter_map(Result::ok))
+}
 
-    let walker = FileWalker::from_glob(res.unwrap().filter_map(Result::ok));
+fn for_each_file(globs: Vec<String>, action: impl Fn(&FileWalker, &JsFile)) {
+    let walker = FileWalker::from_glob(collect_globs(globs));
     walker.files.values().for_each(|file| action(&walker, file))
 }
 
