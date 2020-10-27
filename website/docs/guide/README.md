@@ -12,7 +12,6 @@ enforce style and good practices. RSLint is similar to ESLint with some major di
 - RSLint uses a CST (concrete syntax tree) as well as untyped nodes to evaluate patterns in code.
 - RSLint can lint any code no matter how wrong it is.
 - RSLint groups rules into distinct groups.
-- RSLint
 
 # Installation
 
@@ -28,7 +27,7 @@ You can also directly install the rslint cli:
 
 ```sh
 cargo install rslint_cli
-rslint_cli ./glob/pattern.js
+rslint ./glob/pattern.js
 ```
 
 If you do not have rust installed you can find prebuilt binaries for every release [here](https://github.com/RDambrosio016/RSLint/releases).
