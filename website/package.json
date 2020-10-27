@@ -1,0 +1,30 @@
+{
+  "name": "rslint_website",
+  "version": "1.0.0",
+  "description": "Docs website for RSLint",
+  "main": "index.js",
+  "scripts": {
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RDambrosio016/RSLint.git"
+  },
+  "keywords": [
+    "JavaScript",
+    "Linter"
+  ],
+  "author": "RSLint developers",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/RDambrosio016/RSLint/issues"
+  },
+  "homepage": "https://github.com/RDambrosio016/RSLint#readme",
+  "devDependencies": {
+    "vuepress": "^1.7.1"
+  },
+  "dependencies": {
+    "vuepress-theme-yuu": "^2.3.0"
+  }
+}

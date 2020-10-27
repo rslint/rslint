@@ -13,7 +13,6 @@ const GROUPS_ROOT: &str = "crates/rslint_core/src/groups";
 const REPO: &str = "https://github.com/RDambrosio016/RSLint/tree/master";
 
 pub fn run() {
-    let mut summary_res = "- [Rules](rules/README.md)\n".to_string();
     let mut groups = vec![];
     for file in read_dir(project_root().join(GROUPS_ROOT))
         .expect("Unreadable groups dir")
@@ -24,12 +23,8 @@ pub fn run() {
                 &read_to_string(file.path().join("mod.rs")).expect("No mod file for group"),
             );
             let meta = res.expect("No group! declaration in group");
-            summary_res.push_str(&format!(
-                "  - [{}](rules/{}/README.md)\n",
-                meta.name, meta.name
-            ));
 
-            let dir = project_root().join("docs/rules").join(&meta.name);
+            let dir = project_root().join("website/docs/rules").join(&meta.name);
 
             let res = extract_group(&meta.name).expect("Failed to extract group rule data");
             let mut v: Vec<_> = res.into_iter().collect();
@@ -39,13 +34,6 @@ pub fn run() {
 
             write(dir.join("README.md"), data).expect("Failed to write group md");
             for (name, rule) in v {
-                let replaced = name.replace("_", "-");
-                summary_res.push_str(&format!(
-                    "    - [{}](rules/{}/{}.md)\n",
-                    replaced.strip_suffix(".rs").unwrap(),
-                    meta.name,
-                    replaced.strip_suffix(".rs").unwrap()
-                ));
                 write(
                     dir.join(name.replace("_", "-")).with_extension("md"),
                     rule_markdown(rule, &meta),
@@ -56,21 +44,10 @@ pub fn run() {
         }
     }
     write(
-        project_root().join("docs/rules/README.md"),
+        project_root().join("website/docs/rules/README.md"),
         rules_markdown(groups),
     )
     .expect("Failed to write rules readme");
-    let mut old =
-        read_to_string(project_root().join("docs/SUMMARY.md")).expect("Can't find SUMMARY.md");
-
-    let idx = old
-        .find("- [Rules](rules/README.md)")
-        .unwrap_or_else(|| old.len());
-
-    old.truncate(idx);
-    let new = format!("{}{}", old, summary_res);
-    write(project_root().join("docs/SUMMARY.md"), new.as_bytes())
-        .expect("Can't write to SUMMARY.md");
 }
 
 const RULES_PRELUDE: &str =
@@ -197,7 +174,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
 
     if let Some(tests) = rule.tests {
         if !tests.err_examples.is_empty() {
-            ret.push_str("\n<details>\n <summary> More incorrect examples </summary>\n");
+            ret.push_str("\n::: details More incorrect examples\n");
             for example in tests.err_examples {
                 ret.push_str(&format!(
                     "{}\n```js\n{}\n```\n",
@@ -205,10 +182,10 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
                     example.source
                 ));
             }
-            ret.push_str("</details>");
+            ret.push_str(":::");
         }
         if !tests.ok_examples.is_empty() {
-            ret.push_str("<br>\n<details>\n <summary> More correct examples </summary>\n");
+            ret.push_str("\n::: details More correct examples\n");
             for example in tests.ok_examples {
                 ret.push_str(&format!(
                     "{}\n```js\n{}\n```\n",
@@ -216,7 +193,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
                     example.source
                 ));
             }
-            ret.push_str("</details>");
+            ret.push_str(":::");
         }
     }
 
