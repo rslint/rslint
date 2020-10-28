@@ -69,9 +69,14 @@ impl<'a> TreeSink for LosslessTreeSink<'a> {
         let n_attached_trivias = {
             let leading_trivias = leading_trivias.iter().rev().map(|it| {
                 let next_end = trivia_end - TextSize::from(it.len as u32);
-                let range = TextRange::new(next_end, trivia_end);
+                let (start, end) = (next_end.into(), trivia_end.into());
                 trivia_end = next_end;
-                (it.kind, &self.text[range])
+                (
+                    it.kind,
+                    self.text
+                        .get(start..end)
+                        .unwrap_or_else(|| self.text.get(start - 1..end).unwrap()),
+                )
             });
             n_attached_trivias(kind, leading_trivias.rev())
         };
