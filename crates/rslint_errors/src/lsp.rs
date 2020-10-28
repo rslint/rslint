@@ -26,7 +26,7 @@ pub fn convert_to_lsp_diagnostic(
     children.sort_by(|a, b| a.span.range.clone().cmp(b.span.range.clone()));
     let mut primary_label = None;
 
-    for child in children {
+    for child in children.into_iter().chain(diagnostic.primary.clone()) {
         let range = match byte_span_to_range(files, document_id, child.span.range.clone()) {
             Err(Error::ColumnOutOfBounds { max, .. }) => {
                 let start = std::cmp::min(max, child.span.range.start);
