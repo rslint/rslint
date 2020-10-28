@@ -1,2 +1,5 @@
 # test files use LF and tests fail if the data is parsed as CRLF
 * text=auto eol=lf
+
+# Give ddlog files syntax highlighting
+*.dl linguist-language=prolog

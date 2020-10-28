@@ -1,0 +1,95 @@
+bench = []
+bin = []
+example = []
+test = []
+[badges.maintenance]
+status = "none"
+
+[build-dependencies]
+
+[dependencies]
+abomonation = "0.7"
+differential-dataflow = "0.11.0"
+fnv = "1.0.2"
+libc = "0.2"
+num-traits = "0.2"
+once_cell = "1.4.1"
+timely = "0.11"
+
+[dependencies.cpuprofiler]
+features = []
+optional = true
+version = "0.0"
+
+[dependencies.differential_datalog]
+features = []
+optional = false
+path = "./differential_datalog"
+
+[dependencies.num]
+features = ["serde"]
+optional = false
+version = "0.3"
+
+[dependencies.ordered-float]
+features = ["serde"]
+optional = false
+version = "2.0.0"
+
+[dependencies.serde]
+features = ["derive"]
+optional = false
+version = "1.0"
+
+[dependencies.time]
+features = ["serde"]
+optional = false
+version = "0.2"
+
+[dependencies.types]
+features = []
+optional = false
+path = "./types"
+
+[dev-dependencies]
+
+[features]
+default = []
+nested_ts_32 = ["differential_datalog/nested_ts_32"]
+profile = ["cpuprofiler"]
+
+[lib]
+bench = true
+crate-type = ["lib"]
+doc = true
+doctest = true
+harness = true
+name = "rslint_scoping_ddlog"
+plugin = false
+proc-macro = false
+required-features = []
+test = true
+
+[package]
+authors = []
+autobenches = true
+autobins = false
+autoexamples = true
+autotests = true
+build = "src/build.rs"
+categories = []
+edition = "2018"
+keywords = []
+name = "rslint_scoping"
+publish = true
+version = "0.1.0"
+
+[patch]
+
+
+[target."cfg(not(windows))".build-dependencies]
+libtool = "0.1"
+
+[target."cfg(not(windows))".dependencies]
+
+[target."cfg(not(windows))".dev-dependencies]

@@ -16,6 +16,7 @@ rslint_core = { path = "../rslint_core", version = "0.2.0" }
 rslint_config = { path = "../rslint_config", version = "0.1.0" }
 rslint_errors = { path = "../rslint_errors", version = "0.1.0" }
 rslint_parser = { path = "../rslint_parser", version = "0.2" }
+rslint_scope = { path = "../rslint_scope", optional = true }
 termcolor = "1.1.0"
 walkdir = "2.3.1"
 glob = "0.3.0"
@@ -30,7 +31,6 @@ toml = "0.5.6"
 heck = "0.3.1"
 notify = "4.0.15"
 colored = "2.0.0"
-
 tracing = "0.1.21"
 tracing-flame = "0.1.0"
 inferno = "0.10.1"
@@ -39,3 +39,8 @@ inferno = "0.10.1"
 version = "0.2.15"
 default-features = false
 features = ["fmt", "registry", "ansi"]
+tracing = { version = "0.1.21", features = ["attributes"] }
+
+[features]
+default = []
+datalog_scope_analysis = ["rslint_scope"]

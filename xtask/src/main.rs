@@ -1,7 +1,7 @@
 use pico_args::Arguments;
 use xtask::{
     codegen::{self, Mode},
-    coverage, docgen,
+    coverage, datalog, docgen,
     glue::pushd,
     project_root, run_rustfmt, Result,
 };
@@ -37,6 +37,13 @@ fn main() -> Result<()> {
             let query = free.get(0).map(String::as_str);
             coverage::run(query);
             Ok(())
+        }
+        "datalog" => {
+            let debug = args.contains("debug");
+            let check = args.contains("check");
+            args.finish()?;
+
+            datalog::build_datalog(debug, check)
         }
         _ => {
             eprintln!(

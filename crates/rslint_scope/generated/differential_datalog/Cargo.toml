@@ -1,0 +1,34 @@
+[package]
+name = "differential_datalog"
+version = "0.1.0"
+edition = "2018"
+
+[features]
+default = []
+flatbuf = []
+# Use 32-bit instead of 16-bit nested timestamps.
+nested_ts_32 = []
+
+[dependencies]
+differential-dataflow = "0.11.0"
+abomonation = "0.7"
+ordered-float = { version = "2.0.0", features = ["serde"] }
+fnv = "1.0.2"
+timely = "0.11"
+libc = "0.2"
+csv = "1.1"
+num = { version = "0.3", features = ["serde"] }
+sequence_trie = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+typetag = "0.1"
+erased-serde = "0.3"
+
+[dev-dependencies]
+byteorder = "0.4.2"
+getopts = "0.2.14"
+itertools = "^0.6"
+serde_derive = "1.0"
+
+[lib]
+name = "differential_datalog"
+path = "lib.rs"

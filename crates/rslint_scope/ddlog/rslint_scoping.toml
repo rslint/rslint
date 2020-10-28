@@ -1,0 +1,3 @@
+[dependencies.rslint_core]
+path = "../../../rslint_core"
+version = "0.2.2"

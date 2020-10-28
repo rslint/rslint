@@ -12,6 +12,7 @@ Developer flags that are used by RSLint developers to debug RSLint.
     -Z dumpast  -- Parses the input files and prints the parsed AST
     -Z flame    -- Generates a flamegraph from all the tracing spans
     -Z log      -- Log all tracing events
+    -Z datalog  -- Use experimental ddlog-based scope analysis
 
 Run with 'rslint -Z <FLAG> <FILES>'.";
 
@@ -50,13 +51,17 @@ pub(crate) struct Options {
 }
 
 arg_enum! {
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     enum DevFlag {
         Help,
         Tokenize,
         DumpAst,
+<<<<<<< HEAD
         Flame,
         Log,
+=======
+        Datalog,
+>>>>>>> 7e327f2... Initial ddlog work
     }
 }
 
@@ -116,6 +121,9 @@ fn execute(opt: Options) {
             opt.dirty,
             opt.formatter,
             opt.no_global_config,
+            opt.dev_flag
+                .map(|flag| flag == DevFlag::Datalog)
+                .unwrap_or_default(),
         ),
     }
 }

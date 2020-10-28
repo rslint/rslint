@@ -21,6 +21,11 @@ impl CstRuleStore {
         self
     }
 
+    /// Load a single rule into this store.
+    pub fn load_rule(&mut self, rule: Box<dyn CstRule>) {
+        self.rules.push(rule);
+    }
+
     /// Load a list of rules into this store.
     pub fn load_rules(&mut self, rules: impl IntoIterator<Item = Box<dyn CstRule>>) {
         self.rules.extend(rules);

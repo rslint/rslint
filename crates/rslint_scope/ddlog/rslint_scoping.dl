@@ -1,0 +1,81 @@
+typedef Scope = u32
+typedef FuncId = u32
+typedef StmtId = u32
+typedef ExprId = u32
+typedef Name = istring
+
+typedef Span = Span { start: u32, end: u32 }
+
+typedef StmtKind =
+    StmtVarDecl
+    | StmtLetDecl
+    | StmtConstDecl
+    | StmtExpr { expr_id: ExprId }
+    | StmtReturn
+
+typedef ExprKind = ExprLit { kind: LitKind } | NameRef
+typedef LitKind = LitNumber | LitBigInt | LitString | LitNull | LitBool | LitRegex
+
+typedef Pattern = SinglePattern { name: Name }
+typedef IPattern = Intern<Pattern>
+
+input relation InputScope(parent: Scope, child: Scope)
+
+input relation Function(id: FuncId, name: Option<Name>, scope: Scope)
+input relation FunctionArg(parent_func: FuncId, pattern: IPattern)
+
+input relation Statement(id: StmtId, kind: StmtKind, scope: Scope, span: Span)
+input relation VarDecl(stmt_id: StmtId, effective_scope: Scope, pattern: Option<IPattern>, value: Option<ExprId>)
+input relation LetDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option<ExprId>)
+input relation ConstDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option<ExprId>)
+input relation Return(stmt_id: StmtId, value: Option<ExprId>)
+
+input relation Expression(id: ExprId, kind: ExprKind, scope: Scope, span: Span)
+input relation ExprNumber(id: ExprId, value: double)
+input relation ExprBigInt(id: ExprId, value: bigint)
+input relation ExprString(id: ExprId, value: istring)
+input relation ExprBool(id: ExprId, value: bool)
+input relation ExprNameRef(id: ExprId, value: Name)
+
+// Build the scope graph
+relation ChildScope(parent: Scope, child: Scope)
+ChildScope(parent, child) :- InputScope(parent, child).
+ChildScope(parent, child) :- InputScope(parent, interum), InputScope(interum, child).
+
+relation NameInScope(name: Name, scope: Scope, declared_in: Either<StmtId, FuncId>)
+// `let` declarations
+NameInScope(name, scope, Right { stmt }) :-
+    LetDecl(stmt, Some { pat }, _),
+    SinglePattern { var name } = pat.ival(),
+    Statement(stmt, _, scope, _).
+
+// `const` declarations
+NameInScope(name, scope, Right { stmt }) :-
+    ConstDecl(stmt, Some { pat }, _),
+    SinglePattern { var name } = pat.ival(),
+    Statement(stmt, _, scope, _).
+
+// `var` declarations
+NameInScope(name, scope, Right { stmt }) :-
+    VarDecl(stmt, scope, Some { pat }, _),
+    SinglePattern { var name } = pat.ival(),
+    Statement(stmt, _, scope, _).
+
+// Function arguments
+NameInScope(name, scope, Left { func }) :-
+    FunctionArg(func, pat),
+    SinglePattern { var name } = pat.ival(),
+    Function(func, _, scope).
+
+// Walk variables down scopes
+NameInScope(name, scope, declared_in) :-
+    NameInScope(name, interum, declared_in),
+    ChildScope(interum, scope).
+
+output relation InvalidNameUse(name: Name, scope: Scope, span: Span)
+// Variable usages that don't have an accompanying variable in scope
+// are reported
+InvalidNameUse(name, scope, span) :-
+    ExprNameRef(expr, name),
+    Expression(expr, NameRef, scope, span),
+    not NameInScope(name, scope, _).
