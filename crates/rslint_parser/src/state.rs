@@ -8,6 +8,8 @@ use crate::{CompletedMarker, Parser, SyntaxKind, TokenSet};
 /// It is required for things such as strict mode or async functions
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParserState {
+    /// `token_pos` and `event_pos`
+    pub parsed_template: bool,
     /// If false, object expressions are not allowed to be parsed
     /// inside an expression.
     ///
@@ -52,6 +54,7 @@ pub enum StrictMode {
 impl Default for ParserState {
     fn default() -> Self {
         Self {
+            parsed_template: false,
             allow_object_expr: true,
             include_in: true,
             continue_allowed: false,
@@ -72,6 +75,7 @@ impl Default for ParserState {
 impl ParserState {
     pub fn module() -> Self {
         Self {
+            parsed_template: false,
             allow_object_expr: true,
             include_in: true,
             continue_allowed: false,

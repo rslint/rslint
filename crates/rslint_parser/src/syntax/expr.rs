@@ -135,7 +135,7 @@ fn assign_expr_recursive(
     // TODO: dont always reparse as pattern since it will yield wonky errors for `(foo = true) = bar`
     if p.at_ts(ASSIGN_TOKENS) {
         if p.at(T![=]) {
-            if !is_valid_target(p, p.parse_marker(&target)) {
+            if !is_valid_target(p, p.parse_marker(&target)) && !p.state.parsed_template {
                 p.rewind(token_cur);
                 p.drain_events(p.cur_event_pos() - event_cur);
                 target = pattern(p)?;
@@ -935,6 +935,7 @@ pub fn template(p: &mut Parser, tag: Option<CompletedMarker>) -> CompletedMarker
 
     // The lexer already should throw an error for unterminated template literal
     p.eat(BACKTICK);
+    p.state.parsed_template = true;
     m.complete(p, TEMPLATE)
 }
 
