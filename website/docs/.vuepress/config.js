@@ -64,7 +64,15 @@ module.exports = {
       ],
       "/rules/": getRuleSidebar(),
     },
-  }
+  },
+  plugins: [
+    [
+      "vuepress-plugin-container",
+      {
+        type: "eslint"
+      }
+    ]
+  ]
 };
 
 function getRuleSidebar() {
