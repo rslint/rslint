@@ -1383,6 +1383,7 @@ version = "0.1.3"
 dependencies = [
  "ansi_term 0.12.1",
  "atty",
+ "criterion",
  "quickcheck",
  "quickcheck_macros",
  "rslint_errors",

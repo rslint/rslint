@@ -23,4 +23,5 @@ expect-test = "1.0"
 
 [[bench]]
 name = "parser"
+path = "benches/bench.rs"
 harness = false
