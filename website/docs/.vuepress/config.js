@@ -55,10 +55,13 @@ module.exports = {
           collapsable: false,
           children: [
             "/dev/",
-            "/dev/docgen",
-            "/dev/project_layout",
+            "/dev/architecture",
+            "/dev/lexing",
+            "/dev/untyped-trees",
+            "/dev/parsing",
+            "/dev/runner",
             "/dev/rules",
-            "/dev/syntax"
+            "/dev/docgen",
           ]
         }
       ],
