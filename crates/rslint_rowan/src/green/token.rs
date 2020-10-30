@@ -42,7 +42,9 @@ impl GreenToken {
     pub fn new(kind: SyntaxKind, text: SmolStr) -> GreenToken {
         let ptr = Arc::into_raw(Arc::new(GreenTokenData { kind, text }));
         let ptr = ptr::NonNull::new(ptr as *mut _).unwrap();
-        GreenToken { ptr: Self::add_tag(ptr) }
+        GreenToken {
+            ptr: Self::add_tag(ptr),
+        }
     }
 
     /// Kind of this Token.
@@ -67,7 +69,10 @@ impl GreenToken {
 impl fmt::Debug for GreenToken {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let data = self.data();
-        f.debug_struct("GreenToken").field("kind", &data.kind).field("text", &data.text).finish()
+        f.debug_struct("GreenToken")
+            .field("kind", &data.kind)
+            .field("text", &data.text)
+            .finish()
     }
 }
 
@@ -79,7 +84,9 @@ impl Clone for GreenToken {
             Arc::into_raw(Arc::clone(&arc))
         };
         let ptr = ptr::NonNull::new(ptr as *mut _).unwrap();
-        GreenToken { ptr: Self::add_tag(ptr) }
+        GreenToken {
+            ptr: Self::add_tag(ptr),
+        }
     }
 }
 

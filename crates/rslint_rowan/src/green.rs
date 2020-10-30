@@ -1,7 +1,7 @@
+mod builder;
+mod element;
 mod node;
 mod token;
-mod element;
-mod builder;
 
 pub(crate) use self::element::GreenElementRef;
 use self::element::{GreenElement, PackedGreenElement};

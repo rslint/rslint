@@ -20,7 +20,10 @@ pub struct SyntaxNode<L: Language> {
 
 impl<L: Language> From<cursor::SyntaxNode> for SyntaxNode<L> {
     fn from(raw: cursor::SyntaxNode) -> SyntaxNode<L> {
-        SyntaxNode { raw, _p: PhantomData }
+        SyntaxNode {
+            raw,
+            _p: PhantomData,
+        }
     }
 }
 
@@ -71,7 +74,10 @@ pub struct SyntaxToken<L: Language> {
 
 impl<L: Language> From<cursor::SyntaxToken> for SyntaxToken<L> {
     fn from(raw: cursor::SyntaxToken) -> SyntaxToken<L> {
-        SyntaxToken { raw, _p: PhantomData }
+        SyntaxToken {
+            raw,
+            _p: PhantomData,
+        }
     }
 }
 
@@ -178,11 +184,17 @@ impl<L: Language> SyntaxNode<L> {
     }
 
     pub fn children(&self) -> SyntaxNodeChildren<L> {
-        SyntaxNodeChildren { raw: self.raw.children(), _p: PhantomData }
+        SyntaxNodeChildren {
+            raw: self.raw.children(),
+            _p: PhantomData,
+        }
     }
 
     pub fn children_with_tokens(&self) -> SyntaxElementChildren<L> {
-        SyntaxElementChildren { raw: self.raw.children_with_tokens(), _p: PhantomData }
+        SyntaxElementChildren {
+            raw: self.raw.children_with_tokens(),
+            _p: PhantomData,
+        }
     }
 
     pub fn first_child(&self) -> Option<SyntaxNode<L>> {
@@ -233,7 +245,9 @@ impl<L: Language> SyntaxNode<L> {
         &self,
         direction: Direction,
     ) -> impl Iterator<Item = SyntaxElement<L>> {
-        self.raw.siblings_with_tokens(direction).map(SyntaxElement::from)
+        self.raw
+            .siblings_with_tokens(direction)
+            .map(SyntaxElement::from)
     }
 
     pub fn descendants(&self) -> impl Iterator<Item = SyntaxNode<L>> {
@@ -249,7 +263,9 @@ impl<L: Language> SyntaxNode<L> {
     }
 
     pub fn preorder_with_tokens(&self) -> impl Iterator<Item = WalkEvent<SyntaxElement<L>>> {
-        self.raw.preorder_with_tokens().map(|event| event.map(NodeOrToken::from))
+        self.raw
+            .preorder_with_tokens()
+            .map(|event| event.map(NodeOrToken::from))
     }
 
     pub fn token_at_offset(&self, offset: TextSize) -> TokenAtOffset<SyntaxToken<L>> {
@@ -302,7 +318,9 @@ impl<L: Language> SyntaxToken<L> {
         &self,
         direction: Direction,
     ) -> impl Iterator<Item = SyntaxElement<L>> {
-        self.raw.siblings_with_tokens(direction).map(SyntaxElement::from)
+        self.raw
+            .siblings_with_tokens(direction)
+            .map(SyntaxElement::from)
     }
 
     pub fn next_token(&self) -> Option<SyntaxToken<L>> {

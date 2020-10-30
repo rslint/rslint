@@ -57,10 +57,12 @@ impl<L: Language> Serialize for Children<&'_ SyntaxNode<L>> {
         S: Serializer,
     {
         let mut state = serializer.serialize_seq(None)?;
-        self.0.children_with_tokens().try_for_each(|element| match element {
-            NodeOrToken::Node(it) => state.serialize_element(&it),
-            NodeOrToken::Token(it) => state.serialize_element(&it),
-        })?;
+        self.0
+            .children_with_tokens()
+            .try_for_each(|element| match element {
+                NodeOrToken::Node(it) => state.serialize_element(&it),
+                NodeOrToken::Token(it) => state.serialize_element(&it),
+            })?;
         state.end()
     }
 }
