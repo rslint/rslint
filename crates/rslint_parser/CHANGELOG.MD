@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Changed
+
+- Made `cur_event_pos` and `token_pos` private in favor of a specialized checkpoint struct
+- Changed `rewind` to take a Checkpoint
+
 ### Added
 
 - Added `util::contains_js_whitespace`
@@ -42,10 +47,12 @@ finally{}
 ### Added
 
 - Added handling of shebang where the parser consumes shebang if exists at the start
+- Added a Checkpoint struct to easily backtrack (rewind) the parser
 
 ### Fixed
 
 - Fixed handling of `/=` and `>>=`
+- Fixed `parse_marker` panicking on preceded markers which are later abandoned
 - Fixed arrow expr parameters sometimes being `NAME_REF` instead of `NAME`
 
 ## [0.2.0] - 2020-10-8

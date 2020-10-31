@@ -41,6 +41,9 @@ pub struct ParserState {
     pub expr_recovery_set: TokenSet,
     pub should_record_names: bool,
     pub name_map: HashMap<String, Range<usize>>,
+    /// Whether the parser is in a conditional expr (ternary expr)
+    pub in_cond_expr: bool,
+    pub in_case_cond: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,6 +71,8 @@ impl Default for ParserState {
             expr_recovery_set: EXPR_RECOVERY_SET,
             name_map: HashMap::with_capacity(3),
             should_record_names: false,
+            in_cond_expr: false,
+            in_case_cond: false,
         }
     }
 }

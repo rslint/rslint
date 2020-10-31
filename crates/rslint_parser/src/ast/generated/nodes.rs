@@ -314,7 +314,7 @@ pub struct TsTypeParams {
 }
 impl TsTypeParams {
     pub fn l_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![<]) }
-    pub fn params(&self) -> AstChildren<TsType> { support::children(&self.syntax) }
+    pub fn params(&self) -> AstChildren<TsTypeParam> { support::children(&self.syntax) }
     pub fn r_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![>]) }
 }
 #[doc = ""]
@@ -356,6 +356,43 @@ impl TsConditionalType {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsConstraint {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsConstraint {
+    pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsTypeParam {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsTypeParam {
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn constraint(&self) -> Option<TsConstraint> { support::child(&self.syntax) }
+    pub fn default(&self) -> Option<TsDefault> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsDefault {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsDefault {
+    pub fn eq_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![=]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsNonNull {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsNonNull {
+    pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
+    pub fn excl_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![!]) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
@@ -369,8 +406,8 @@ pub struct Module {
     pub(crate) syntax: SyntaxNode,
 }
 impl Module {
-    pub fn items(&self) -> AstChildren<ModuleItem> { support::children(&self.syntax) }
     pub fn shebang_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![shebang]) }
+    pub fn items(&self) -> AstChildren<ModuleItem> { support::children(&self.syntax) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -916,6 +953,7 @@ pub struct NewExpr {
 }
 impl NewExpr {
     pub fn new_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![new]) }
+    pub fn type_args(&self) -> Option<TsTypeArgs> { support::child(&self.syntax) }
     pub fn object(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn arguments(&self) -> Option<ArgList> { support::child(&self.syntax) }
 }
@@ -1112,7 +1150,10 @@ pub struct ArrowExpr {
     pub(crate) syntax: SyntaxNode,
 }
 impl ArrowExpr {
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn params(&self) -> Option<ArrowExprParams> { support::child(&self.syntax) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![:]) }
+    pub fn return_type(&self) -> Option<TsType> { support::child(&self.syntax) }
     pub fn fat_arrow_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![=>]) }
 }
 #[doc = ""]
@@ -1302,6 +1343,7 @@ pub enum Expr {
     ImportCall(ImportCall),
     YieldExpr(YieldExpr),
     AwaitExpr(AwaitExpr),
+    TsNonNull(TsNonNull),
 }
 #[doc = " Either a single type reference or a fully qualified path\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1757,6 +1799,50 @@ impl AstNode for TsExtends {
 }
 impl AstNode for TsConditionalType {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_CONDITIONAL_TYPE }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsConstraint {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_CONSTRAINT }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsTypeParam {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_TYPE_PARAM }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsDefault {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_DEFAULT }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsNonNull {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_NON_NULL }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3113,6 +3199,9 @@ impl From<YieldExpr> for Expr {
 impl From<AwaitExpr> for Expr {
     fn from(node: AwaitExpr) -> Expr { Expr::AwaitExpr(node) }
 }
+impl From<TsNonNull> for Expr {
+    fn from(node: TsNonNull) -> Expr { Expr::TsNonNull(node) }
+}
 impl AstNode for Expr {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -3142,6 +3231,7 @@ impl AstNode for Expr {
                 | IMPORT_CALL
                 | YIELD_EXPR
                 | AWAIT_EXPR
+                | TS_NON_NULL
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3171,6 +3261,7 @@ impl AstNode for Expr {
             IMPORT_CALL => Expr::ImportCall(ImportCall { syntax }),
             YIELD_EXPR => Expr::YieldExpr(YieldExpr { syntax }),
             AWAIT_EXPR => Expr::AwaitExpr(AwaitExpr { syntax }),
+            TS_NON_NULL => Expr::TsNonNull(TsNonNull { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3202,6 +3293,7 @@ impl AstNode for Expr {
             Expr::ImportCall(it) => &it.syntax,
             Expr::YieldExpr(it) => &it.syntax,
             Expr::AwaitExpr(it) => &it.syntax,
+            Expr::TsNonNull(it) => &it.syntax,
         }
     }
 }
@@ -3698,6 +3790,26 @@ impl std::fmt::Display for TsExtends {
     }
 }
 impl std::fmt::Display for TsConditionalType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsConstraint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsTypeParam {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsDefault {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsNonNull {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

@@ -42,7 +42,7 @@ pub fn ts_fn_or_constructor_type(p: &mut Parser, fn_type: bool) -> CompletedMark
     }
 
     if p.at(T![<]) {
-        ts_type_args(p).change_kind(p, TS_TYPE_PARAMS);
+        ts_type_params(p);
     }
     formal_parameters(p);
     ts_type_or_type_predicate_ann(p, T![=>]);
@@ -83,11 +83,9 @@ pub fn ts_non_conditional_type(p: &mut Parser) -> Option<CompletedMarker> {
 }
 
 fn look_ahead(p: &mut Parser, func: impl FnOnce(&mut Parser) -> bool) -> bool {
-    let cur_tok_pos = p.token_pos();
-    let cur_event_pos = p.cur_event_pos();
+    let checkpoint = p.checkpoint();
     let res = func(p);
-    p.rewind(cur_tok_pos);
-    p.drain_events(p.cur_event_pos() - cur_event_pos);
+    p.rewind(checkpoint);
     res
 }
 
@@ -162,9 +160,10 @@ fn intersection_or_union(p: &mut Parser, intersection: bool) -> Option<Completed
 
     let op = if intersection { T![&] } else { T![|] };
     let saw_op = p.eat(op); //leading operator is allowed
+    let parsed = constituent(p);
 
-    if !saw_op && constituent(p).is_none() {
-        return None;
+    if !saw_op || parsed.is_none() {
+        return parsed;
     }
 
     while p.eat(op) {
@@ -363,6 +362,43 @@ pub fn ts_type_args(p: &mut Parser) -> CompletedMarker {
     m.complete(p, TS_TYPE_ARGS)
 }
 
+pub fn ts_type_params(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.expect(T![<]);
+    let mut first = true;
+
+    while !p.at(EOF) && !p.at(T![>]) {
+        if first {
+            first = false;
+        } else {
+            p.expect(T![,]);
+        }
+        type_param(p);
+    }
+    p.expect(T![>]);
+    m.complete(p, TS_TYPE_PARAMS)
+}
+
+fn type_param(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    if let Some(x) = identifier_name(p) {
+        x.undo_completion(p).abandon(p)
+    }
+    if p.at(T![extends]) {
+        let _m = p.start();
+        p.bump_any();
+        ts_type(p);
+        _m.complete(p, TS_CONSTRAINT);
+    }
+    if p.at(T![=]) {
+        let _m = p.start();
+        p.bump_any();
+        ts_type(p);
+        _m.complete(p, TS_DEFAULT);
+    }
+    m.complete(p, TS_TYPE_PARAM)
+}
+
 pub fn ts_import(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![import]);
@@ -428,6 +464,10 @@ pub fn ts_mapped_type(p: &mut Parser) -> CompletedMarker {
         p.error(err);
     } else {
         p.bump_any();
+    }
+    if p.cur_src() == "as" {
+        p.bump_any();
+        ts_type(p);
     }
     p.expect(T![']']);
     param.complete(p, TS_MAPPED_TYPE_PARAM);

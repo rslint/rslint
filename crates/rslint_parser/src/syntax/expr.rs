@@ -5,6 +5,7 @@
 
 use super::decl::{arrow_body, class_decl, formal_parameters, function_decl, method};
 use super::pat::pattern;
+use super::typescript::*;
 use super::util::*;
 use crate::{SyntaxKind::*, *};
 
@@ -98,10 +99,9 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
         ..p.state.clone()
     });
 
-    let token_cur = guard.token_pos();
-    let event_cur = guard.cur_event_pos();
+    let checkpoint = guard.checkpoint();
     let target = conditional_expr(&mut *guard)?;
-    assign_expr_recursive(&mut *guard, target, token_cur, event_cur)
+    assign_expr_recursive(&mut *guard, target, checkpoint)
 }
 
 pub(crate) fn is_valid_target(p: &mut Parser, marker: &CompletedMarker) -> bool {
@@ -149,19 +149,30 @@ fn check_assign_target_from_marker(p: &mut Parser, marker: &CompletedMarker) {
 fn assign_expr_recursive(
     p: &mut Parser,
     mut target: CompletedMarker,
-    token_cur: usize,
-    event_cur: usize,
+    checkpoint: Checkpoint,
 ) -> Option<CompletedMarker> {
     // TODO: dont always reparse as pattern since it will yield wonky errors for `(foo = true) = bar`
     if p.at_ts(ASSIGN_TOKENS) {
         if p.at(T![=]) {
             if !is_valid_target(p, &target) && target.kind() != TEMPLATE {
-                p.rewind(token_cur);
-                p.drain_events(p.cur_event_pos() - event_cur);
+                p.rewind(checkpoint);
                 target = pattern(p)?;
             }
         } else {
             check_assign_target_from_marker(p, &target);
+            let parsed = p.parse_marker::<Expr>(&target);
+            // FIXME: should this only be done if the parser isnt configured for ts?
+            check_simple_assign_target(p, &parsed, target.range(p));
+            if (parsed.text() == "eval" || parsed.text() == "arguments")
+                && p.state.strict.is_some()
+                && p.typescript
+            {
+                let err = p
+                    .err_builder("`eval` and `arguments` cannot be assigned to")
+                    .primary(parsed.range(), "");
+
+                p.error(err);
+            }
         }
         let m = target.precede(p);
         p.bump_any();
@@ -309,6 +320,7 @@ pub fn paren_expr(p: &mut Parser) -> CompletedMarker {
 // new Foo(bar, baz, 6 + 6, foo[bar] + (foo) => {} * foo?.bar)
 pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMarker> {
     if p.at(T![new]) {
+        let tok_range = p.cur_tok().range;
         // We must start the marker here and not outside or else we make
         // a needless node if the node ends up just being a primary expr
         let m = p.start();
@@ -322,7 +334,23 @@ pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMar
             return Some(subscripts(p, complete, true));
         }
 
-        member_or_new_expr(p, new_expr)?;
+        let complete = member_or_new_expr(p, new_expr)?;
+        if complete.kind() == ARROW_EXPR {
+            return Some(complete);
+        }
+
+        if p.at(T![<]) {
+            let mut args = ts_type_args(p);
+            args.err_if_not_ts(p, "type arguments are only allowed in TypeScript files");
+            if !p.at(T!['(']) {
+                // TODO: add a "consider adding adding parentheses after the expression" suggestion once rslint_errors lands
+                let err = p
+                    .err_builder("`new` expressions with type arguments must have an argument list")
+                    .primary(tok_range.start..args.range(p).end().into(), "");
+
+                p.error(err);
+            }
+        }
 
         if !new_expr || p.at(T!['(']) {
             args(p);
@@ -381,6 +409,32 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
             }
             T!['['] => lhs = bracket_expr(p, lhs, false),
             T![.] => lhs = dot_expr(p, lhs, false),
+            T![!] if p.typescript && !p.has_linebreak_before_n(0) => {
+                lhs = {
+                    let m = lhs.precede(p);
+                    p.bump_any();
+                    m.complete(p, TS_NON_NULL)
+                }
+            }
+            T![<] if p.typescript => {
+                let m = lhs.precede(p);
+                // TODO: handle generic async arrow function expressions
+                ts_type_args(p);
+                if !no_call && p.at(T!['(']) {
+                    args(p);
+                    lhs = m.complete(p, CALL_EXPR);
+                } else if p.at(BACKTICK) {
+                    m.abandon(p);
+                    lhs = template(p, Some(lhs));
+                } else if no_call {
+                    p.expect(BACKTICK);
+                } else {
+                    let err = p.err_builder(&format!("expected a a backtick or `(` following type arguments, but instead found `{}`", p.cur_src()))
+                        .primary(p.cur_tok().range, "");
+
+                    p.error(err);
+                }
+            }
             BACKTICK => lhs = template(p, Some(lhs)),
             _ => return lhs,
         }
@@ -527,9 +581,8 @@ pub fn args(p: &mut Parser) -> CompletedMarker {
 // (5 + 5) => {}
 pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarker {
     let m = p.start();
+    let checkpoint = p.checkpoint();
     let start = p.cur_tok().range.start;
-    let token_cur = p.token_pos();
-    let event_cur = p.cur_event_pos();
     p.expect(T!['(']);
     let mut spread_range = None;
     let mut trailing_comma_marker = None;
@@ -585,12 +638,18 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
         }
     }
     drop(temp);
+    let has_ret_type =
+        !p.state.in_cond_expr && p.typescript && p.at(T![:]) && !p.state.in_case_cond;
 
     // This is an arrow expr, so we rewind the parser and reparse as parameters
     // This is kind of inefficient but in the grand scheme of things it does not matter
     // since the parser is already crazy fast
-    if p.at(T![=>]) && !p.has_linebreak_before_n(0) {
-        if !can_be_arrow {
+    // FIXME: verify that this logic is correct
+    if (p.at(T![=>]) && !p.has_linebreak_before_n(0))
+        || (p.typescript && p.state.in_cond_expr && p.at(T![:]))
+        || has_ret_type
+    {
+        if !can_be_arrow && (!p.at(T![:]) && !p.typescript) {
             let err = p
                 .err_builder("Unexpected token `=>`")
                 .primary(p.cur_tok(), "an arrow expression is not allowed here");
@@ -598,9 +657,23 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
             p.error(err);
         } else {
             // Rewind the parser so we can reparse as formal parameters
-            p.rewind(token_cur);
-            p.drain_events(p.cur_event_pos() - event_cur);
+            p.rewind(checkpoint);
             formal_parameters(p);
+
+            let maybe_err_m = p.start();
+            if p.eat(T![:]) {
+                ts_type(p);
+                let complete = maybe_err_m.complete(p, ERROR);
+                if !p.typescript {
+                    let err = p
+                        .err_builder("functions may only have return types in TypeScript files")
+                        .primary(complete.range(p), "");
+
+                    p.error(err);
+                } else {
+                    complete.undo_completion(p).abandon(p);
+                }
+            }
 
             p.bump_any();
             arrow_body(p);
@@ -717,7 +790,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             } else {
                 // `async a => {}` and `async (a) => {}`
                 if p.state.potential_arrow_start
-                    && token_set![T![ident], T![yield], T!['(']].contains(p.nth(1))
+                    && token_set![T![ident], T![yield], T!['('], T![<]].contains(p.nth(1))
                 {
                     // test async_arrow_expr
                     // let a = async foo => {}
@@ -726,6 +799,12 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                     // async (yield) => {}
                     let m = p.start();
                     p.bump_any();
+                    if p.at(T![<]) {
+                        ts_type_params(p).err_if_not_ts(
+                            p,
+                            "type parameters may only be used in TypeScript files",
+                        );
+                    }
                     if p.at(T!['(']) {
                         formal_parameters(p);
                     } else {
@@ -734,6 +813,22 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                         // let a = async await => {}
                         p.bump_remap(T![ident]);
                         m.complete(p, NAME);
+                    }
+                    let maybe_err_m = p.start();
+                    if p.eat(T![:]) {
+                        ts_type(p);
+                        let complete = maybe_err_m.complete(p, ERROR);
+                        if !p.typescript {
+                            let err = p
+                                .err_builder(
+                                    "functions may only have return types in TypeScript files",
+                                )
+                                .primary(complete.range(p), "");
+
+                            p.error(err);
+                        } else {
+                            complete.undo_completion(p).abandon(p);
+                        }
                     }
                     p.expect(T![=>]);
                     arrow_body(&mut *p.with_state(ParserState {
@@ -1087,11 +1182,37 @@ pub fn lhs_expr(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     let lhs = member_or_new_expr(p, true)?;
-    Some(if p.at(T!['(']) {
-        subscripts(p, lhs, false)
+    if lhs.kind() == ARROW_EXPR {
+        return Some(lhs);
+    }
+
+    let m = lhs.precede(p);
+    let type_args = if p.at(T![<]) {
+        let checkpoint = p.checkpoint();
+        let mut complete = ts_type_args(p);
+        if !p.at(T!['(']) {
+            p.rewind(checkpoint);
+            None
+        } else {
+            complete.err_if_not_ts(p, "type arguments can only be used in TypeScript files");
+            Some(complete)
+        }
     } else {
-        lhs
-    })
+        None
+    };
+
+    if p.at(T!['(']) {
+        args(p);
+        let lhs = m.complete(p, CALL_EXPR);
+        return Some(subscripts(p, lhs, false));
+    }
+
+    if type_args.is_some() {
+        p.expect(T!['(']);
+    }
+
+    m.abandon(p);
+    Some(lhs)
 }
 
 /// A postifx expression, either `LHSExpr [no linebreak] ++` or `LHSExpr [no linebreak] --`.

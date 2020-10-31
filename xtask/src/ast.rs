@@ -261,6 +261,10 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_CONSTRUCTOR_TYPE",
         "TS_EXTENDS",
         "TS_CONDITIONAL_TYPE",
+        "TS_CONSTRAINT",
+        "TS_DEFAULT",
+        "TS_TYPE_PARAM",
+        "TS_NON_NULL",
     ],
 };
 
@@ -491,6 +495,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             name: TsTypeName,
             T![ident],
             ty: TsType,
+            /* as */
+            /* alias */
             T![']']
         }
 
@@ -550,7 +556,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct TsTypeParams {
             T![<],
-            params: [TsType],
+            params: [TsTypeParam],
             T![>]
         }
 
@@ -575,6 +581,27 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             /* cons */
             T![:],
             /* alt */
+        }
+
+        struct TsConstraint {
+            T![extends],
+            ty: TsType
+        }
+
+        struct TsTypeParam {
+            T![ident],
+            constraint: TsConstraint,
+            default: TsDefault
+        }
+
+        struct TsDefault {
+            T![=],
+            ty: TsType
+        }
+
+        struct TsNonNull {
+            expr: Expr,
+            T![!]
         }
 
         // --------------------------------------------------
@@ -928,6 +955,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct NewExpr {
             T![new],
+            type_args: TsTypeArgs,
             object: Expr,
             arguments: ArgList,
         }
@@ -1057,7 +1085,10 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ArrowExpr {
             /* async */
+            type_params: TsTypeParams,
             params: ArrowExprParams,
+            T![:],
+            return_type: TsType,
             T![=>],
             /* ExprOrBlock */
         }
@@ -1236,7 +1267,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             SuperCall,
             ImportCall,
             YieldExpr,
-            AwaitExpr
+            AwaitExpr,
+            TsNonNull
         }
 
         /// Either a single type reference or a fully qualified path

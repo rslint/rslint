@@ -42,3 +42,20 @@ impl TsImport {
             .find(|t| t.kind() == STRING)
     }
 }
+
+impl TsMappedTypeParam {
+    /// present for alias
+    pub fn as_token(&self) -> Option<SyntaxToken> {
+        self.syntax()
+            .children_with_tokens()
+            .filter_map(|x| x.into_token())
+            .find(|x| x.kind() == IDENT && x.text() == "as")
+    }
+
+    pub fn alias(&self) -> Option<TsType> {
+        self.syntax()
+            .children()
+            .filter_map(|x| x.try_to::<TsType>())
+            .nth(1)
+    }
+}
