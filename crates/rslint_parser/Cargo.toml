@@ -7,9 +7,6 @@ license = "MIT"
 description = "An extremely fast ECMAScript parser made for the rslint project"
 repository = "https://github.com/RDambrosio016/RSLint"
 
-[lib]
-bench = false
-
 [dependencies]
 rslint_errors = { path = "../rslint_errors", version = "0.1.0" }
 rslint_syntax = { path = "../rslint_syntax", version = "0.1" }
@@ -19,13 +16,6 @@ num-bigint = "0.3.0"
 lexical = { version = "5.2.0", features = ["radix"] }
 
 [dev-dependencies]
-criterion = "0.3"
-ureq = "1.5.1"
 walkdir = "2.3.1"
 rayon = "1"
 expect-test = "1.0"
-
-[[bench]]
-name = "parser"
-path = "benches/bench.rs"
-harness = false

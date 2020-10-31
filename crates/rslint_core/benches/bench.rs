@@ -1,4 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+use rslint_core::CstRuleStore;
 use rslint_lexer::Lexer;
 use rslint_parser::parse_text;
 
@@ -12,12 +13,17 @@ fn tokenize(source: &str) {
     Lexer::from_str(source, 0).for_each(drop);
 }
 
+fn lint(source: &str) {
+    let _ = rslint_core::lint_file(0, source, false, &CstRuleStore::new().builtins(), false);
+}
+
 fn bench_source(c: &mut Criterion, name: &str, source: &str) {
     let mut group = c.benchmark_group(name);
     group.sample_size(10);
     group.throughput(Throughput::Bytes(source.len() as u64));
     group.bench_function("parse", |b| b.iter(|| parse(black_box(&source))));
     group.bench_function("tokenize", |b| b.iter(|| tokenize(black_box(&source))));
+    group.bench_function("lint", |b| b.iter(|| lint(black_box(&source))));
     group.finish();
 }
 

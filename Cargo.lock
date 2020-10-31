@@ -1452,6 +1452,7 @@ dependencies = [
 name = "rslint_core"
 version = "0.2.2"
 dependencies = [
+ "criterion",
  "dyn-clone",
  "indoc",
  "rayon",
@@ -1463,6 +1464,7 @@ dependencies = [
  "serde",
  "text-diff",
  "typetag",
+ "ureq",
 ]
 
 [[package]]
@@ -1526,7 +1528,6 @@ dependencies = [
 name = "rslint_parser"
 version = "0.2.1"
 dependencies = [
- "criterion",
  "expect-test",
  "lexical",
  "num-bigint",
@@ -1535,7 +1536,6 @@ dependencies = [
  "rslint_lexer",
  "rslint_rowan",
  "rslint_syntax",
- "ureq",
  "walkdir",
 ]
 

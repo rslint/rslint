@@ -7,6 +7,9 @@ description = "The core linter housing all of the rules for the rslint project"
 license = "MIT"
 repository = "https://github.com/RDambrosio016/RSLint"
 
+[lib]
+bench = false
+
 [dependencies]
 rslint_parser = { path = "../rslint_parser", version = ">=0.2.1" }
 rslint_lexer = { path = "../rslint_lexer", version = "0.1.0" }
@@ -19,3 +22,11 @@ rayon = "1.4.0"
 dyn-clone = "1.0.2"
 text-diff = "0.4.0"
 indoc = "1.0.3"
+
+[dev-dependencies]
+criterion = "0.3.3"
+ureq = "1.5.1"
+
+[[bench]]
+name = "bench"
+harness = false
