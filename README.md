@@ -6,7 +6,7 @@ A (WIP) JavaScript linter written in Rust designed to be as fast as possible, cu
 
 ## Docs and Installation
 
-Please see the [website](https://rdambrosio016.github.io/RSLint/) for installation instructions and documentation.
+Please see the [website](https://rslint.org) for installation instructions and documentation.
 
 ## Currently known big issues
 
