@@ -17,12 +17,6 @@ ansi_term = { version = "0.12.1", optional = true }
 [dev-dependencies]
 quickcheck = "0.9"
 quickcheck_macros = "0.9"
-criterion = "0.3"
-
-[[bench]]
-name = "lexer"
-path = "benches/bench.rs"
-harness = false
 
 [features]
 highlight = ["atty", "ansi_term"]

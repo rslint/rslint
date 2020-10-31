@@ -1,15 +1,33 @@
-use criterion::{criterion_group, criterion_main, Criterion, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+use rslint_lexer::Lexer;
 use rslint_parser::parse_text;
 
-const ENGINE_262: &str = include_str!("../../../tests/engine262.js");
+const ENGINE_262_URL: &str = "https://engine262.js.org/engine262/engine262.js";
 
-pub fn bench(c: &mut Criterion) {
-    let mut group = c.benchmark_group("engine262");
+fn parse(source: &str) {
+    parse_text(source, 0);
+}
+
+fn tokenize(source: &str) {
+    Lexer::from_str(source, 0).for_each(drop);
+}
+
+fn bench_source(c: &mut Criterion, name: &str, source: &str) {
+    let mut group = c.benchmark_group(name);
     group.sample_size(10);
-    group.throughput(Throughput::Bytes(ENGINE_262.len() as u64));
-    group.bench_function("parse", |b| b.iter(|| parse_text(ENGINE_262, 0)));
+    group.throughput(Throughput::Bytes(source.len() as u64));
+    group.bench_function("parse", |b| b.iter(|| parse(black_box(&source))));
+    group.bench_function("tokenize", |b| b.iter(|| tokenize(black_box(&source))));
     group.finish();
 }
 
-criterion_group!(benches, bench);
+fn engine262(c: &mut Criterion) {
+    let source = ureq::get(ENGINE_262_URL)
+        .call()
+        .into_string()
+        .expect("failed to get engine262 source code");
+    bench_source(c, "engine262", &source);
+}
+
+criterion_group!(benches, engine262);
 criterion_main!(benches);
