@@ -1,5 +1,4 @@
 use ast;
-use hir;
 
 use Result;
 
@@ -14,7 +13,6 @@ use Result;
 #[derive(Clone, Debug, Default)]
 pub struct ParserBuilder {
     ast: ast::parse::ParserBuilder,
-    hir: hir::translate::TranslatorBuilder,
 }
 
 impl ParserBuilder {
@@ -25,7 +23,9 @@ impl ParserBuilder {
 
     /// Build a parser from this configuration with the given pattern.
     pub fn build(&self) -> Parser {
-        Parser { ast: self.ast.build(), hir: self.hir.build() }
+        Parser {
+            ast: self.ast.build(),
+        }
     }
 
     /// Set the nesting limit for this parser.
@@ -77,84 +77,6 @@ impl ParserBuilder {
         self.ast.octal(yes);
         self
     }
-
-    /// When enabled, the parser will permit the construction of a regular
-    /// expression that may match invalid UTF-8.
-    ///
-    /// When disabled (the default), the parser is guaranteed to produce
-    /// an expression that will only ever match valid UTF-8 (otherwise, the
-    /// parser will return an error).
-    ///
-    /// Perhaps surprisingly, when invalid UTF-8 isn't allowed, a negated ASCII
-    /// word boundary (uttered as `(?-u:\B)` in the concrete syntax) will cause
-    /// the parser to return an error. Namely, a negated ASCII word boundary
-    /// can result in matching positions that aren't valid UTF-8 boundaries.
-    pub fn allow_invalid_utf8(&mut self, yes: bool) -> &mut ParserBuilder {
-        self.hir.allow_invalid_utf8(yes);
-        self
-    }
-
-    /// Enable verbose mode in the regular expression.
-    ///
-    /// When enabled, verbose mode permits insigificant whitespace in many
-    /// places in the regular expression, as well as comments. Comments are
-    /// started using `#` and continue until the end of the line.
-    ///
-    /// By default, this is disabled. It may be selectively enabled in the
-    /// regular expression by using the `x` flag regardless of this setting.
-    pub fn ignore_whitespace(&mut self, yes: bool) -> &mut ParserBuilder {
-        self.ast.ignore_whitespace(yes);
-        self
-    }
-
-    /// Enable or disable the case insensitive flag by default.
-    ///
-    /// By default this is disabled. It may alternatively be selectively
-    /// enabled in the regular expression itself via the `i` flag.
-    pub fn case_insensitive(&mut self, yes: bool) -> &mut ParserBuilder {
-        self.hir.case_insensitive(yes);
-        self
-    }
-
-    /// Enable or disable the multi-line matching flag by default.
-    ///
-    /// By default this is disabled. It may alternatively be selectively
-    /// enabled in the regular expression itself via the `m` flag.
-    pub fn multi_line(&mut self, yes: bool) -> &mut ParserBuilder {
-        self.hir.multi_line(yes);
-        self
-    }
-
-    /// Enable or disable the "dot matches any character" flag by default.
-    ///
-    /// By default this is disabled. It may alternatively be selectively
-    /// enabled in the regular expression itself via the `s` flag.
-    pub fn dot_matches_new_line(&mut self, yes: bool) -> &mut ParserBuilder {
-        self.hir.dot_matches_new_line(yes);
-        self
-    }
-
-    /// Enable or disable the "swap greed" flag by default.
-    ///
-    /// By default this is disabled. It may alternatively be selectively
-    /// enabled in the regular expression itself via the `U` flag.
-    pub fn swap_greed(&mut self, yes: bool) -> &mut ParserBuilder {
-        self.hir.swap_greed(yes);
-        self
-    }
-
-    /// Enable or disable the Unicode flag (`u`) by default.
-    ///
-    /// By default this is **enabled**. It may alternatively be selectively
-    /// disabled in the regular expression itself via the `u` flag.
-    ///
-    /// Note that unless `allow_invalid_utf8` is enabled (it's disabled by
-    /// default), a regular expression will fail to parse if Unicode mode is
-    /// disabled and a sub-expression could possibly match invalid UTF-8.
-    pub fn unicode(&mut self, yes: bool) -> &mut ParserBuilder {
-        self.hir.unicode(yes);
-        self
-    }
 }
 
 /// A convenience parser for regular expressions.
@@ -174,7 +96,6 @@ impl ParserBuilder {
 #[derive(Clone, Debug)]
 pub struct Parser {
     ast: ast::parse::Parser,
-    hir: hir::translate::Translator,
 }
 
 impl Parser {
@@ -188,13 +109,5 @@ impl Parser {
     /// [`ParserBuilder`](struct.ParserBuilder.html).
     pub fn new() -> Parser {
         ParserBuilder::new().build()
-    }
-
-    /// Parse the regular expression into a high level intermediate
-    /// representation.
-    pub fn parse(&mut self, pattern: &str) -> Result<hir::Hir> {
-        let ast = self.ast.parse(pattern)?;
-        let hir = self.hir.translate(pattern, &ast)?;
-        Ok(hir)
     }
 }

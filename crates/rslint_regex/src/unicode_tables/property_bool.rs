@@ -45,7 +45,10 @@ pub const BY_NAME: &'static [(&'static str, &'static [(char, char)])] = &[
     ("Math", MATH),
     ("Noncharacter_Code_Point", NONCHARACTER_CODE_POINT),
     ("Other_Alphabetic", OTHER_ALPHABETIC),
-    ("Other_Default_Ignorable_Code_Point", OTHER_DEFAULT_IGNORABLE_CODE_POINT),
+    (
+        "Other_Default_Ignorable_Code_Point",
+        OTHER_DEFAULT_IGNORABLE_CODE_POINT,
+    ),
     ("Other_Grapheme_Extend", OTHER_GRAPHEME_EXTEND),
     ("Other_ID_Continue", OTHER_ID_CONTINUE),
     ("Other_ID_Start", OTHER_ID_START),
@@ -69,8 +72,7 @@ pub const BY_NAME: &'static [(&'static str, &'static [(char, char)])] = &[
     ("XID_Start", XID_START),
 ];
 
-pub const ASCII_HEX_DIGIT: &'static [(char, char)] =
-    &[('0', '9'), ('A', 'F'), ('a', 'f')];
+pub const ASCII_HEX_DIGIT: &'static [(char, char)] = &[('0', '9'), ('A', 'F'), ('a', 'f')];
 
 pub const ALPHABETIC: &'static [(char, char)] = &[
     ('A', 'Z'),
@@ -5950,8 +5952,7 @@ pub const HYPHEN: &'static [(char, char)] = &[
     ('･', '･'),
 ];
 
-pub const IDS_BINARY_OPERATOR: &'static [(char, char)] =
-    &[('⿰', '⿱'), ('⿴', '⿻')];
+pub const IDS_BINARY_OPERATOR: &'static [(char, char)] = &[('⿰', '⿱'), ('⿴', '⿻')];
 
 pub const IDS_TRINARY_OPERATOR: &'static [(char, char)] = &[('⿲', '⿳')];
 
@@ -8442,8 +8443,12 @@ pub const OTHER_GRAPHEME_EXTEND: &'static [(char, char)] = &[
 pub const OTHER_ID_CONTINUE: &'static [(char, char)] =
     &[('·', '·'), ('·', '·'), ('፩', '፱'), ('᧚', '᧚')];
 
-pub const OTHER_ID_START: &'static [(char, char)] =
-    &[('\u{1885}', '\u{1886}'), ('℘', '℘'), ('℮', '℮'), ('゛', '゜')];
+pub const OTHER_ID_START: &'static [(char, char)] = &[
+    ('\u{1885}', '\u{1886}'),
+    ('℘', '℘'),
+    ('℮', '℮'),
+    ('゛', '゜'),
+];
 
 pub const OTHER_LOWERCASE: &'static [(char, char)] = &[
     ('ª', 'ª'),
@@ -8672,8 +8677,7 @@ pub const QUOTATION_MARK: &'static [(char, char)] = &[
     ('｢', '｣'),
 ];
 
-pub const RADICAL: &'static [(char, char)] =
-    &[('⺀', '⺙'), ('⺛', '⻳'), ('⼀', '⿕')];
+pub const RADICAL: &'static [(char, char)] = &[('⺀', '⺙'), ('⺛', '⻳'), ('⼀', '⿕')];
 
 pub const REGIONAL_INDICATOR: &'static [(char, char)] = &[('🇦', '🇿')];
 

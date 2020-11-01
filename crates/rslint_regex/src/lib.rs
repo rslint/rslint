@@ -164,7 +164,6 @@ pub use unicode::UnicodeWordError;
 pub mod ast;
 mod either;
 mod error;
-pub mod hir;
 mod parser;
 mod unicode;
 mod unicode_tables;
@@ -205,8 +204,8 @@ pub fn escape_into(text: &str, buf: &mut String) {
 /// `false` is fixed and won't change in a semver compatible release.
 pub fn is_meta_character(c: char) -> bool {
     match c {
-        '\\' | '.' | '+' | '*' | '?' | '(' | ')' | '|' | '[' | ']' | '{'
-        | '}' | '^' | '$' | '#' | '&' | '-' | '~' => true,
+        '\\' | '.' | '+' | '*' | '?' | '(' | ')' | '|' | '[' | ']' | '{' | '}' | '^' | '$'
+        | '#' | '&' | '-' | '~' => true,
         _ => false,
     }
 }
@@ -245,9 +244,7 @@ pub fn is_word_character(c: char) -> bool {
 ///
 /// If the `unicode-perl` feature is not enabled, then this function always
 /// returns an error.
-pub fn try_is_word_character(
-    c: char,
-) -> std::result::Result<bool, UnicodeWordError> {
+pub fn try_is_word_character(c: char) -> std::result::Result<bool, UnicodeWordError> {
     unicode::is_word_character(c)
 }
 

@@ -4,7 +4,6 @@ use std::fmt;
 use std::result;
 
 use ast;
-use hir;
 
 /// A type alias for dealing with errors returned by this crate.
 pub type Result<T> = result::Result<T, Error>;
@@ -15,9 +14,6 @@ pub enum Error {
     /// An error that occurred while translating concrete syntax into abstract
     /// syntax (AST).
     Parse(ast::Error),
-    /// An error that occurred while translating abstract syntax into a high
-    /// level intermediate representation (HIR).
-    Translate(hir::Error),
     /// Hints that destructuring should not be exhaustive.
     ///
     /// This enum may grow additional variants, so this makes sure clients
@@ -33,19 +29,12 @@ impl From<ast::Error> for Error {
     }
 }
 
-impl From<hir::Error> for Error {
-    fn from(err: hir::Error) -> Error {
-        Error::Translate(err)
-    }
-}
-
 impl error::Error for Error {
     // TODO: Remove this method entirely on the next breaking semver release.
     #[allow(deprecated)]
     fn description(&self) -> &str {
         match *self {
             Error::Parse(ref x) => x.description(),
-            Error::Translate(ref x) => x.description(),
             _ => unreachable!(),
         }
     }
@@ -55,7 +44,6 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::Parse(ref x) => x.fmt(f),
-            Error::Translate(ref x) => x.fmt(f),
             _ => unreachable!(),
         }
     }
@@ -86,17 +74,6 @@ impl<'e> From<&'e ast::Error> for Formatter<'e, ast::ErrorKind> {
             err: err.kind(),
             span: err.span(),
             aux_span: err.auxiliary_span(),
-        }
-    }
-}
-
-impl<'e> From<&'e hir::Error> for Formatter<'e, hir::ErrorKind> {
-    fn from(err: &'e hir::Error) -> Self {
-        Formatter {
-            pattern: err.pattern(),
-            err: err.kind(),
-            span: err.span(),
-            aux_span: None,
         }
     }
 }
@@ -168,9 +145,7 @@ struct Spans<'p> {
 
 impl<'p> Spans<'p> {
     /// Build a sequence of spans from a formatter.
-    fn from_formatter<'e, E: fmt::Display>(
-        fmter: &'p Formatter<'e, E>,
-    ) -> Spans<'p> {
+    fn from_formatter<'e, E: fmt::Display>(fmter: &'p Formatter<'e, E>) -> Spans<'p> {
         let mut line_count = fmter.pattern.lines().count();
         // If the pattern ends with a `\n` literal, then our line count is
         // off by one, since a span can occur immediately after the last `\n`,
@@ -178,8 +153,11 @@ impl<'p> Spans<'p> {
         if fmter.pattern.ends_with('\n') {
             line_count += 1;
         }
-        let line_number_width =
-            if line_count <= 1 { 0 } else { line_count.to_string().len() };
+        let line_number_width = if line_count <= 1 {
+            0
+        } else {
+            line_count.to_string().len()
+        };
         let mut spans = Spans {
             pattern: &fmter.pattern,
             line_number_width: line_number_width,

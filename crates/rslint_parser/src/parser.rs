@@ -189,24 +189,29 @@ impl<'t> Parser<'t> {
         error: impl Into<ParserError>,
         recovery: TokenSet,
         include_braces: bool,
-    ) {
+    ) -> Option<()> {
+        if self.state.no_recovery {
+            return None;
+        }
+
         match self.cur() {
             T!['{'] | T!['}'] if include_braces => {
                 self.error(error);
-                return;
+                return Some(());
             }
             _ => (),
         }
 
         if self.at_ts(recovery) {
             self.error(error);
-            return;
+            return Some(());
         }
 
         let m = self.start();
         self.error(error);
         self.bump_any();
         m.complete(self, SyntaxKind::ERROR);
+        Some(())
     }
 
     /// Recover from an error but don't add an error to the events

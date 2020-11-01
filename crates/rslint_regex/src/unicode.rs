@@ -2,8 +2,6 @@ use std::error;
 use std::fmt;
 use std::result;
 
-use hir;
-
 /// A type alias for errors specific to Unicode handling of classes.
 pub type Result<T> = result::Result<T, Error>;
 
@@ -82,19 +80,13 @@ pub fn simple_fold(
     c: char,
 ) -> FoldResult<result::Result<impl Iterator<Item = char>, Option<char>>> {
     #[cfg(not(feature = "unicode-case"))]
-    fn imp(
-        _: char,
-    ) -> FoldResult<result::Result<impl Iterator<Item = char>, Option<char>>>
-    {
+    fn imp(_: char) -> FoldResult<result::Result<impl Iterator<Item = char>, Option<char>>> {
         use std::option::IntoIter;
         Err::<result::Result<IntoIter<char>, _>, _>(CaseFoldError(()))
     }
 
     #[cfg(feature = "unicode-case")]
-    fn imp(
-        c: char,
-    ) -> FoldResult<result::Result<impl Iterator<Item = char>, Option<char>>>
-    {
+    fn imp(c: char) -> FoldResult<result::Result<impl Iterator<Item = char>, Option<char>>> {
         use unicode_tables::case_folding_simple::CASE_FOLDING_SIMPLE;
 
         Ok(CASE_FOLDING_SIMPLE
@@ -119,10 +111,7 @@ pub fn simple_fold(
 /// This function panics if `end < start`.
 ///
 /// This returns an error if the Unicode case folding tables are not available.
-pub fn contains_simple_case_mapping(
-    start: char,
-    end: char,
-) -> FoldResult<bool> {
+pub fn contains_simple_case_mapping(start: char, end: char) -> FoldResult<bool> {
     #[cfg(not(feature = "unicode-case"))]
     fn imp(_: char, _: char) -> FoldResult<bool> {
         Err(CaseFoldError(()))
@@ -189,7 +178,10 @@ impl<'a> ClassQuery<'a> {
         match *self {
             ClassQuery::OneLetter(c) => self.canonical_binary(&c.to_string()),
             ClassQuery::Binary(name) => self.canonical_binary(name),
-            ClassQuery::ByValue { property_name, property_value } => {
+            ClassQuery::ByValue {
+                property_name,
+                property_value,
+            } => {
                 let property_name = symbolic_name_normalize(property_name);
                 let property_value = symbolic_name_normalize(property_value);
 
@@ -217,13 +209,10 @@ impl<'a> ClassQuery<'a> {
                             None => return Err(Error::PropertyValueNotFound),
                             Some(vals) => vals,
                         };
-                        let canon_val =
-                            match canonical_value(vals, &property_value) {
-                                None => {
-                                    return Err(Error::PropertyValueNotFound)
-                                }
-                                Some(canon_val) => canon_val,
-                            };
+                        let canon_val = match canonical_value(vals, &property_value) {
+                            None => return Err(Error::PropertyValueNotFound),
+                            Some(canon_val) => canon_val,
+                        };
                         CanonicalClassQuery::ByValue {
                             property_name: canon_name,
                             property_value: canon_val,
@@ -281,117 +270,6 @@ enum CanonicalClassQuery {
         /// The canonical property value.
         property_value: &'static str,
     },
-}
-
-/// Looks up a Unicode class given a query. If one doesn't exist, then
-/// `None` is returned.
-pub fn class(query: ClassQuery) -> Result<hir::ClassUnicode> {
-    use self::CanonicalClassQuery::*;
-
-    match query.canonicalize()? {
-        Binary(name) => bool_property(name),
-        GeneralCategory(name) => gencat(name),
-        Script(name) => script(name),
-        ByValue { property_name: "Age", property_value } => {
-            let mut class = hir::ClassUnicode::empty();
-            for set in ages(property_value)? {
-                class.union(&hir_class(set));
-            }
-            Ok(class)
-        }
-        ByValue { property_name: "Script_Extensions", property_value } => {
-            script_extension(property_value)
-        }
-        ByValue {
-            property_name: "Grapheme_Cluster_Break",
-            property_value,
-        } => gcb(property_value),
-        ByValue { property_name: "Sentence_Break", property_value } => {
-            sb(property_value)
-        }
-        ByValue { property_name: "Word_Break", property_value } => {
-            wb(property_value)
-        }
-        _ => {
-            // What else should we support?
-            Err(Error::PropertyNotFound)
-        }
-    }
-}
-
-/// Returns a Unicode aware class for \w.
-///
-/// This returns an error if the data is not available for \w.
-pub fn perl_word() -> Result<hir::ClassUnicode> {
-    #[cfg(not(feature = "unicode-perl"))]
-    fn imp() -> Result<hir::ClassUnicode> {
-        Err(Error::PerlClassNotFound)
-    }
-
-    #[cfg(feature = "unicode-perl")]
-    fn imp() -> Result<hir::ClassUnicode> {
-        use unicode_tables::perl_word::PERL_WORD;
-        Ok(hir_class(PERL_WORD))
-    }
-
-    imp()
-}
-
-/// Returns a Unicode aware class for \s.
-///
-/// This returns an error if the data is not available for \s.
-pub fn perl_space() -> Result<hir::ClassUnicode> {
-    #[cfg(not(any(feature = "unicode-perl", feature = "unicode-bool")))]
-    fn imp() -> Result<hir::ClassUnicode> {
-        Err(Error::PerlClassNotFound)
-    }
-
-    #[cfg(all(feature = "unicode-perl", not(feature = "unicode-bool")))]
-    fn imp() -> Result<hir::ClassUnicode> {
-        use unicode_tables::perl_space::WHITE_SPACE;
-        Ok(hir_class(WHITE_SPACE))
-    }
-
-    #[cfg(feature = "unicode-bool")]
-    fn imp() -> Result<hir::ClassUnicode> {
-        use unicode_tables::property_bool::WHITE_SPACE;
-        Ok(hir_class(WHITE_SPACE))
-    }
-
-    imp()
-}
-
-/// Returns a Unicode aware class for \d.
-///
-/// This returns an error if the data is not available for \d.
-pub fn perl_digit() -> Result<hir::ClassUnicode> {
-    #[cfg(not(any(feature = "unicode-perl", feature = "unicode-gencat")))]
-    fn imp() -> Result<hir::ClassUnicode> {
-        Err(Error::PerlClassNotFound)
-    }
-
-    #[cfg(all(feature = "unicode-perl", not(feature = "unicode-gencat")))]
-    fn imp() -> Result<hir::ClassUnicode> {
-        use unicode_tables::perl_decimal::DECIMAL_NUMBER;
-        Ok(hir_class(DECIMAL_NUMBER))
-    }
-
-    #[cfg(feature = "unicode-gencat")]
-    fn imp() -> Result<hir::ClassUnicode> {
-        use unicode_tables::general_category::DECIMAL_NUMBER;
-        Ok(hir_class(DECIMAL_NUMBER))
-    }
-
-    imp()
-}
-
-/// Build a Unicode HIR class from a sequence of Unicode scalar value ranges.
-pub fn hir_class(ranges: &[(char, char)]) -> hir::ClassUnicode {
-    let hir_ranges: Vec<hir::ClassUnicodeRange> = ranges
-        .iter()
-        .map(|&(s, e)| hir::ClassUnicodeRange::new(s, e))
-        .collect();
-    hir::ClassUnicode::new(hir_ranges)
 }
 
 /// Returns true only if the given codepoint is in the `\w` character class.
@@ -503,10 +381,7 @@ fn canonical_prop(normalized_name: &str) -> Result<Option<&'static str>> {
 ///
 /// The normalized property value must have been normalized according to
 /// UAX44 LM3, which can be done using `symbolic_name_normalize`.
-fn canonical_value(
-    vals: PropertyValues,
-    normalized_value: &str,
-) -> Option<&'static str> {
+fn canonical_value(vals: PropertyValues, normalized_value: &str) -> Option<&'static str> {
     vals.binary_search_by_key(&normalized_value, |&(n, _)| n)
         .ok()
         .map(|i| vals[i].1)
@@ -515,9 +390,7 @@ fn canonical_value(
 /// Return the table of property values for the given property name.
 ///
 /// If the property values data is not available, then an error is returned.
-fn property_values(
-    canonical_property_name: &'static str,
-) -> Result<Option<PropertyValues>> {
+fn property_values(canonical_property_name: &'static str) -> Result<Option<PropertyValues>> {
     #[cfg(not(any(
         feature = "unicode-age",
         feature = "unicode-bool",
@@ -615,189 +488,6 @@ fn ages(canonical_age: &str) -> Result<impl Iterator<Item = Range>> {
     }
 
     imp(canonical_age)
-}
-
-/// Returns the Unicode HIR class corresponding to the given general category.
-///
-/// Name canonicalization is assumed to be performed by the caller.
-///
-/// If the given general category could not be found, or if the general
-/// category data is not available, then an error is returned.
-fn gencat(canonical_name: &'static str) -> Result<hir::ClassUnicode> {
-    #[cfg(not(feature = "unicode-gencat"))]
-    fn imp(_: &'static str) -> Result<hir::ClassUnicode> {
-        Err(Error::PropertyNotFound)
-    }
-
-    #[cfg(feature = "unicode-gencat")]
-    fn imp(name: &'static str) -> Result<hir::ClassUnicode> {
-        use unicode_tables::general_category::BY_NAME;
-        match name {
-            "ASCII" => Ok(hir_class(&[('\0', '\x7F')])),
-            "Any" => Ok(hir_class(&[('\0', '\u{10FFFF}')])),
-            "Assigned" => {
-                let mut cls = gencat("Unassigned")?;
-                cls.negate();
-                Ok(cls)
-            }
-            name => property_set(BY_NAME, name)
-                .map(hir_class)
-                .ok_or(Error::PropertyValueNotFound),
-        }
-    }
-
-    match canonical_name {
-        "Decimal_Number" => perl_digit(),
-        name => imp(name),
-    }
-}
-
-/// Returns the Unicode HIR class corresponding to the given script.
-///
-/// Name canonicalization is assumed to be performed by the caller.
-///
-/// If the given script could not be found, or if the script data is not
-/// available, then an error is returned.
-fn script(canonical_name: &'static str) -> Result<hir::ClassUnicode> {
-    #[cfg(not(feature = "unicode-script"))]
-    fn imp(_: &'static str) -> Result<hir::ClassUnicode> {
-        Err(Error::PropertyNotFound)
-    }
-
-    #[cfg(feature = "unicode-script")]
-    fn imp(name: &'static str) -> Result<hir::ClassUnicode> {
-        use unicode_tables::script::BY_NAME;
-        property_set(BY_NAME, name)
-            .map(hir_class)
-            .ok_or(Error::PropertyValueNotFound)
-    }
-
-    imp(canonical_name)
-}
-
-/// Returns the Unicode HIR class corresponding to the given script extension.
-///
-/// Name canonicalization is assumed to be performed by the caller.
-///
-/// If the given script extension could not be found, or if the script data is
-/// not available, then an error is returned.
-fn script_extension(
-    canonical_name: &'static str,
-) -> Result<hir::ClassUnicode> {
-    #[cfg(not(feature = "unicode-script"))]
-    fn imp(_: &'static str) -> Result<hir::ClassUnicode> {
-        Err(Error::PropertyNotFound)
-    }
-
-    #[cfg(feature = "unicode-script")]
-    fn imp(name: &'static str) -> Result<hir::ClassUnicode> {
-        use unicode_tables::script_extension::BY_NAME;
-        property_set(BY_NAME, name)
-            .map(hir_class)
-            .ok_or(Error::PropertyValueNotFound)
-    }
-
-    imp(canonical_name)
-}
-
-/// Returns the Unicode HIR class corresponding to the given Unicode boolean
-/// property.
-///
-/// Name canonicalization is assumed to be performed by the caller.
-///
-/// If the given boolean property could not be found, or if the boolean
-/// property data is not available, then an error is returned.
-fn bool_property(canonical_name: &'static str) -> Result<hir::ClassUnicode> {
-    #[cfg(not(feature = "unicode-bool"))]
-    fn imp(_: &'static str) -> Result<hir::ClassUnicode> {
-        Err(Error::PropertyNotFound)
-    }
-
-    #[cfg(feature = "unicode-bool")]
-    fn imp(name: &'static str) -> Result<hir::ClassUnicode> {
-        use unicode_tables::property_bool::BY_NAME;
-        property_set(BY_NAME, name)
-            .map(hir_class)
-            .ok_or(Error::PropertyNotFound)
-    }
-
-    match canonical_name {
-        "Decimal_Number" => perl_digit(),
-        "White_Space" => perl_space(),
-        name => imp(name),
-    }
-}
-
-/// Returns the Unicode HIR class corresponding to the given grapheme cluster
-/// break property.
-///
-/// Name canonicalization is assumed to be performed by the caller.
-///
-/// If the given property could not be found, or if the corresponding data is
-/// not available, then an error is returned.
-fn gcb(canonical_name: &'static str) -> Result<hir::ClassUnicode> {
-    #[cfg(not(feature = "unicode-segment"))]
-    fn imp(_: &'static str) -> Result<hir::ClassUnicode> {
-        Err(Error::PropertyNotFound)
-    }
-
-    #[cfg(feature = "unicode-segment")]
-    fn imp(name: &'static str) -> Result<hir::ClassUnicode> {
-        use unicode_tables::grapheme_cluster_break::BY_NAME;
-        property_set(BY_NAME, name)
-            .map(hir_class)
-            .ok_or(Error::PropertyValueNotFound)
-    }
-
-    imp(canonical_name)
-}
-
-/// Returns the Unicode HIR class corresponding to the given word break
-/// property.
-///
-/// Name canonicalization is assumed to be performed by the caller.
-///
-/// If the given property could not be found, or if the corresponding data is
-/// not available, then an error is returned.
-fn wb(canonical_name: &'static str) -> Result<hir::ClassUnicode> {
-    #[cfg(not(feature = "unicode-segment"))]
-    fn imp(_: &'static str) -> Result<hir::ClassUnicode> {
-        Err(Error::PropertyNotFound)
-    }
-
-    #[cfg(feature = "unicode-segment")]
-    fn imp(name: &'static str) -> Result<hir::ClassUnicode> {
-        use unicode_tables::word_break::BY_NAME;
-        property_set(BY_NAME, name)
-            .map(hir_class)
-            .ok_or(Error::PropertyValueNotFound)
-    }
-
-    imp(canonical_name)
-}
-
-/// Returns the Unicode HIR class corresponding to the given sentence
-/// break property.
-///
-/// Name canonicalization is assumed to be performed by the caller.
-///
-/// If the given property could not be found, or if the corresponding data is
-/// not available, then an error is returned.
-fn sb(canonical_name: &'static str) -> Result<hir::ClassUnicode> {
-    #[cfg(not(feature = "unicode-segment"))]
-    fn imp(_: &'static str) -> Result<hir::ClassUnicode> {
-        Err(Error::PropertyNotFound)
-    }
-
-    #[cfg(feature = "unicode-segment")]
-    fn imp(name: &'static str) -> Result<hir::ClassUnicode> {
-        use unicode_tables::sentence_break::BY_NAME;
-        property_set(BY_NAME, name)
-            .map(hir_class)
-            .ok_or(Error::PropertyValueNotFound)
-    }
-
-    imp(canonical_name)
 }
 
 /// Like symbolic_name_normalize_bytes, but operates on a string.
