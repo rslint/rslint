@@ -235,24 +235,18 @@ impl fmt::Display for ErrorKind {
                  capturing groups ({})",
                 ::std::u32::MAX
             ),
-            ClassEscapeInvalid => {
-                write!(f, "invalid escape sequence found in character class")
-            }
+            ClassEscapeInvalid => write!(f, "invalid escape sequence found in character class"),
             ClassRangeInvalid => write!(
                 f,
                 "invalid character class range, \
                  the start must be <= the end"
             ),
-            ClassRangeLiteral => {
-                write!(f, "invalid range boundary, must be a literal")
-            }
+            ClassRangeLiteral => write!(f, "invalid range boundary, must be a literal"),
             ClassUnclosed => write!(f, "unclosed character class"),
             DecimalEmpty => write!(f, "decimal literal empty"),
             DecimalInvalid => write!(f, "decimal literal invalid"),
             EscapeHexEmpty => write!(f, "hexadecimal literal empty"),
-            EscapeHexInvalid => {
-                write!(f, "hexadecimal literal is not a Unicode scalar value")
-            }
+            EscapeHexInvalid => write!(f, "hexadecimal literal is not a Unicode scalar value"),
             EscapeHexInvalidDigit => write!(f, "invalid hexadecimal digit"),
             EscapeUnexpectedEof => write!(
                 f,
@@ -260,20 +254,12 @@ impl fmt::Display for ErrorKind {
                  reached end of pattern prematurely"
             ),
             EscapeUnrecognized => write!(f, "unrecognized escape sequence"),
-            FlagDanglingNegation => {
-                write!(f, "dangling flag negation operator")
-            }
+            FlagDanglingNegation => write!(f, "dangling flag negation operator"),
             FlagDuplicate { .. } => write!(f, "duplicate flag"),
-            FlagRepeatedNegation { .. } => {
-                write!(f, "flag negation operator repeated")
-            }
-            FlagUnexpectedEof => {
-                write!(f, "expected flag but got end of regex")
-            }
+            FlagRepeatedNegation { .. } => write!(f, "flag negation operator repeated"),
+            FlagUnexpectedEof => write!(f, "expected flag but got end of regex"),
             FlagUnrecognized => write!(f, "unrecognized flag"),
-            GroupNameDuplicate { .. } => {
-                write!(f, "duplicate capture group name")
-            }
+            GroupNameDuplicate { .. } => write!(f, "duplicate capture group name"),
             GroupNameEmpty => write!(f, "empty capture group name"),
             GroupNameInvalid => write!(f, "invalid capture group character"),
             GroupNameUnexpectedEof => write!(f, "unclosed capture group name"),
@@ -293,18 +279,10 @@ impl fmt::Display for ErrorKind {
             RepetitionCountDecimalEmpty => {
                 write!(f, "repetition quantifier expects a valid decimal")
             }
-            RepetitionCountUnclosed => {
-                write!(f, "unclosed counted repetition")
-            }
-            RepetitionMissing => {
-                write!(f, "repetition operator missing expression")
-            }
-            UnicodeClassInvalid => {
-                write!(f, "invalid Unicode character class")
-            }
-            UnsupportedBackreference => {
-                write!(f, "backreferences are not supported")
-            }
+            RepetitionCountUnclosed => write!(f, "unclosed counted repetition"),
+            RepetitionMissing => write!(f, "repetition operator missing expression"),
+            UnicodeClassInvalid => write!(f, "invalid Unicode character class"),
+            UnsupportedBackreference => write!(f, "backreferences are not supported"),
             UnsupportedLookAround => write!(
                 f,
                 "look-around, including look-ahead and look-behind, \
@@ -385,7 +363,10 @@ impl PartialOrd for Position {
 impl Span {
     /// Create a new span with the given positions.
     pub fn new(start: Position, end: Position) -> Span {
-        Span { start: start, end: end }
+        Span {
+            start: start,
+            end: end,
+        }
     }
 
     /// Create a new span using the given position as the start and end.
@@ -427,7 +408,11 @@ impl Position {
     ///
     /// `column` is the approximate column number, starting at `1`.
     pub fn new(offset: usize, line: usize, column: usize) -> Position {
-        Position { offset: offset, line: line, column: column }
+        Position {
+            offset: offset,
+            line: line,
+            column: column,
+        }
     }
 }
 
@@ -519,11 +504,9 @@ impl Ast {
     /// subexpressions.
     fn has_subexprs(&self) -> bool {
         match *self {
-            Ast::Empty(_)
-            | Ast::Flags(_)
-            | Ast::Literal(_)
-            | Ast::Dot(_)
-            | Ast::Assertion(_) => false,
+            Ast::Empty(_) | Ast::Flags(_) | Ast::Literal(_) | Ast::Dot(_) | Ast::Assertion(_) => {
+                false
+            }
             Ast::Class(_)
             | Ast::Repetition(_)
             | Ast::Group(_)

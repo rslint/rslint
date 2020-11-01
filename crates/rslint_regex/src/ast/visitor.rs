@@ -54,20 +54,14 @@ pub trait Visitor {
     /// This method is called on every
     /// [`ClassSetItem`](enum.ClassSetItem.html)
     /// before descending into child nodes.
-    fn visit_class_set_item_pre(
-        &mut self,
-        _ast: &ast::ClassSetItem,
-    ) -> Result<(), Self::Err> {
+    fn visit_class_set_item_pre(&mut self, _ast: &ast::ClassSetItem) -> Result<(), Self::Err> {
         Ok(())
     }
 
     /// This method is called on every
     /// [`ClassSetItem`](enum.ClassSetItem.html)
     /// after descending into child nodes.
-    fn visit_class_set_item_post(
-        &mut self,
-        _ast: &ast::ClassSetItem,
-    ) -> Result<(), Self::Err> {
+    fn visit_class_set_item_post(&mut self, _ast: &ast::ClassSetItem) -> Result<(), Self::Err> {
         Ok(())
     }
 
@@ -181,7 +175,10 @@ enum ClassFrame<'a> {
     },
     /// A stack frame allocated just before descending into a binary operator's
     /// right hand child node.
-    BinaryRHS { op: &'a ast::ClassSetBinaryOp, rhs: &'a ast::ClassSet },
+    BinaryRHS {
+        op: &'a ast::ClassSetBinaryOp,
+        rhs: &'a ast::ClassSet,
+    },
 }
 
 /// A representation of the inductive step when performing structural induction
@@ -200,14 +197,13 @@ enum ClassInduct<'a> {
 
 impl<'a> HeapVisitor<'a> {
     fn new() -> HeapVisitor<'a> {
-        HeapVisitor { stack: vec![], stack_class: vec![] }
+        HeapVisitor {
+            stack: vec![],
+            stack_class: vec![],
+        }
     }
 
-    fn visit<V: Visitor>(
-        &mut self,
-        mut ast: &'a Ast,
-        mut visitor: V,
-    ) -> Result<V::Output, V::Err> {
+    fn visit<V: Visitor>(&mut self, mut ast: &'a Ast, mut visitor: V) -> Result<V::Output, V::Err> {
         self.stack.clear();
         self.stack_class.clear();
 
@@ -266,9 +262,10 @@ impl<'a> HeapVisitor<'a> {
             Ast::Repetition(ref x) => Some(Frame::Repetition(x)),
             Ast::Group(ref x) => Some(Frame::Group(x)),
             Ast::Concat(ref x) if x.asts.is_empty() => None,
-            Ast::Concat(ref x) => {
-                Some(Frame::Concat { head: &x.asts[0], tail: &x.asts[1..] })
-            }
+            Ast::Concat(ref x) => Some(Frame::Concat {
+                head: &x.asts[0],
+                tail: &x.asts[1..],
+            }),
             Ast::Alternation(ref x) if x.asts.is_empty() => None,
             Ast::Alternation(ref x) => Some(Frame::Alternation {
                 head: &x.asts[0],
@@ -288,7 +285,10 @@ impl<'a> HeapVisitor<'a> {
                 if tail.is_empty() {
                     None
                 } else {
-                    Some(Frame::Concat { head: &tail[0], tail: &tail[1..] })
+                    Some(Frame::Concat {
+                        head: &tail[0],
+                        tail: &tail[1..],
+                    })
                 }
             }
             Frame::Alternation { tail, .. } => {
@@ -382,16 +382,13 @@ impl<'a> HeapVisitor<'a> {
     /// occurs if and only if there are child nodes). Otherwise, return None.
     fn induct_class(&self, ast: &ClassInduct<'a>) -> Option<ClassFrame<'a>> {
         match *ast {
-            ClassInduct::Item(&ast::ClassSetItem::Bracketed(ref x)) => {
-                match x.kind {
-                    ast::ClassSet::Item(ref item) => {
-                        Some(ClassFrame::Union { head: item, tail: &[] })
-                    }
-                    ast::ClassSet::BinaryOp(ref op) => {
-                        Some(ClassFrame::Binary { op: op })
-                    }
-                }
-            }
+            ClassInduct::Item(&ast::ClassSetItem::Bracketed(ref x)) => match x.kind {
+                ast::ClassSet::Item(ref item) => Some(ClassFrame::Union {
+                    head: item,
+                    tail: &[],
+                }),
+                ast::ClassSet::BinaryOp(ref op) => Some(ClassFrame::Binary { op: op }),
+            },
             ClassInduct::Item(&ast::ClassSetItem::Union(ref x)) => {
                 if x.items.is_empty() {
                     None
@@ -454,12 +451,8 @@ impl<'a> ClassFrame<'a> {
         match *self {
             ClassFrame::Union { head, .. } => ClassInduct::Item(head),
             ClassFrame::Binary { op, .. } => ClassInduct::BinaryOp(op),
-            ClassFrame::BinaryLHS { ref lhs, .. } => {
-                ClassInduct::from_set(lhs)
-            }
-            ClassFrame::BinaryRHS { ref rhs, .. } => {
-                ClassInduct::from_set(rhs)
-            }
+            ClassFrame::BinaryLHS { ref lhs, .. } => ClassInduct::from_set(lhs),
+            ClassFrame::BinaryRHS { ref rhs, .. } => ClassInduct::from_set(rhs),
         }
     }
 }
@@ -503,15 +496,9 @@ impl<'a> fmt::Debug for ClassInduct<'a> {
                 ast::ClassSetItem::Union(_) => "Item(Union)",
             },
             ClassInduct::BinaryOp(it) => match it.kind {
-                ast::ClassSetBinaryOpKind::Intersection => {
-                    "BinaryOp(Intersection)"
-                }
-                ast::ClassSetBinaryOpKind::Difference => {
-                    "BinaryOp(Difference)"
-                }
-                ast::ClassSetBinaryOpKind::SymmetricDifference => {
-                    "BinaryOp(SymmetricDifference)"
-                }
+                ast::ClassSetBinaryOpKind::Intersection => "BinaryOp(Intersection)",
+                ast::ClassSetBinaryOpKind::Difference => "BinaryOp(Difference)",
+                ast::ClassSetBinaryOpKind::SymmetricDifference => "BinaryOp(SymmetricDifference)",
             },
         };
         write!(f, "{}", x)

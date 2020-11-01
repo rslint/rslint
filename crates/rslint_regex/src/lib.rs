@@ -166,6 +166,7 @@ mod either;
 mod error;
 mod parser;
 mod unicode;
+#[rustfmt::skip]
 mod unicode_tables;
 pub mod utf8;
 

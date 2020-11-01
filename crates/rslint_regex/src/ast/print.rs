@@ -57,7 +57,13 @@ impl Printer {
     /// here are a `fmt::Formatter` (which is available in `fmt::Display`
     /// implementations) or a `&mut String`.
     pub fn print<W: fmt::Write>(&mut self, ast: &Ast, wtr: W) -> fmt::Result {
-        visitor::visit(ast, Writer { printer: self, wtr: wtr })
+        visitor::visit(
+            ast,
+            Writer {
+                printer: self,
+                wtr: wtr,
+            },
+        )
     }
 }
 
@@ -78,9 +84,7 @@ impl<'p, W: fmt::Write> Visitor for Writer<'p, W> {
     fn visit_pre(&mut self, ast: &Ast) -> fmt::Result {
         match *ast {
             Ast::Group(ref x) => self.fmt_group_pre(x),
-            Ast::Class(ast::Class::Bracketed(ref x)) => {
-                self.fmt_class_bracketed_pre(x)
-            }
+            Ast::Class(ast::Class::Bracketed(ref x)) => self.fmt_class_bracketed_pre(x),
             _ => Ok(()),
         }
     }
@@ -96,9 +100,7 @@ impl<'p, W: fmt::Write> Visitor for Writer<'p, W> {
             Ast::Assertion(ref x) => self.fmt_assertion(x),
             Ast::Class(Class::Perl(ref x)) => self.fmt_class_perl(x),
             Ast::Class(Class::Unicode(ref x)) => self.fmt_class_unicode(x),
-            Ast::Class(Class::Bracketed(ref x)) => {
-                self.fmt_class_bracketed_post(x)
-            }
+            Ast::Class(Class::Bracketed(ref x)) => self.fmt_class_bracketed_post(x),
             Ast::Repetition(ref x) => self.fmt_repetition(x),
             Ast::Group(ref x) => self.fmt_group_post(x),
             Ast::Alternation(_) => Ok(()),
@@ -110,22 +112,14 @@ impl<'p, W: fmt::Write> Visitor for Writer<'p, W> {
         self.wtr.write_str("|")
     }
 
-    fn visit_class_set_item_pre(
-        &mut self,
-        ast: &ast::ClassSetItem,
-    ) -> Result<(), Self::Err> {
+    fn visit_class_set_item_pre(&mut self, ast: &ast::ClassSetItem) -> Result<(), Self::Err> {
         match *ast {
-            ast::ClassSetItem::Bracketed(ref x) => {
-                self.fmt_class_bracketed_pre(x)
-            }
+            ast::ClassSetItem::Bracketed(ref x) => self.fmt_class_bracketed_pre(x),
             _ => Ok(()),
         }
     }
 
-    fn visit_class_set_item_post(
-        &mut self,
-        ast: &ast::ClassSetItem,
-    ) -> Result<(), Self::Err> {
+    fn visit_class_set_item_post(&mut self, ast: &ast::ClassSetItem) -> Result<(), Self::Err> {
         use ast::ClassSetItem::*;
 
         match *ast {
@@ -196,10 +190,7 @@ impl<'p, W: fmt::Write> Writer<'p, W> {
         }
     }
 
-    fn fmt_repetition_range(
-        &mut self,
-        ast: &ast::RepetitionRange,
-    ) -> fmt::Result {
+    fn fmt_repetition_range(&mut self, ast: &ast::RepetitionRange) -> fmt::Result {
         use ast::RepetitionRange::*;
         match *ast {
             Exactly(x) => write!(self.wtr, "{{{}}}", x),
@@ -215,43 +206,27 @@ impl<'p, W: fmt::Write> Writer<'p, W> {
             Verbatim => self.wtr.write_char(ast.c),
             Punctuation => write!(self.wtr, r"\{}", ast.c),
             Octal => write!(self.wtr, r"\{:o}", ast.c as u32),
-            HexFixed(ast::HexLiteralKind::X) => {
-                write!(self.wtr, r"\x{:02X}", ast.c as u32)
-            }
+            HexFixed(ast::HexLiteralKind::X) => write!(self.wtr, r"\x{:02X}", ast.c as u32),
             HexFixed(ast::HexLiteralKind::UnicodeShort) => {
                 write!(self.wtr, r"\u{:04X}", ast.c as u32)
             }
             HexFixed(ast::HexLiteralKind::UnicodeLong) => {
                 write!(self.wtr, r"\U{:08X}", ast.c as u32)
             }
-            HexBrace(ast::HexLiteralKind::X) => {
-                write!(self.wtr, r"\x{{{:X}}}", ast.c as u32)
-            }
+            HexBrace(ast::HexLiteralKind::X) => write!(self.wtr, r"\x{{{:X}}}", ast.c as u32),
             HexBrace(ast::HexLiteralKind::UnicodeShort) => {
                 write!(self.wtr, r"\u{{{:X}}}", ast.c as u32)
             }
             HexBrace(ast::HexLiteralKind::UnicodeLong) => {
                 write!(self.wtr, r"\U{{{:X}}}", ast.c as u32)
             }
-            Special(ast::SpecialLiteralKind::Bell) => {
-                self.wtr.write_str(r"\a")
-            }
-            Special(ast::SpecialLiteralKind::FormFeed) => {
-                self.wtr.write_str(r"\f")
-            }
+            Special(ast::SpecialLiteralKind::Bell) => self.wtr.write_str(r"\a"),
+            Special(ast::SpecialLiteralKind::FormFeed) => self.wtr.write_str(r"\f"),
             Special(ast::SpecialLiteralKind::Tab) => self.wtr.write_str(r"\t"),
-            Special(ast::SpecialLiteralKind::LineFeed) => {
-                self.wtr.write_str(r"\n")
-            }
-            Special(ast::SpecialLiteralKind::CarriageReturn) => {
-                self.wtr.write_str(r"\r")
-            }
-            Special(ast::SpecialLiteralKind::VerticalTab) => {
-                self.wtr.write_str(r"\v")
-            }
-            Special(ast::SpecialLiteralKind::Space) => {
-                self.wtr.write_str(r"\ ")
-            }
+            Special(ast::SpecialLiteralKind::LineFeed) => self.wtr.write_str(r"\n"),
+            Special(ast::SpecialLiteralKind::CarriageReturn) => self.wtr.write_str(r"\r"),
+            Special(ast::SpecialLiteralKind::VerticalTab) => self.wtr.write_str(r"\v"),
+            Special(ast::SpecialLiteralKind::Space) => self.wtr.write_str(r"\ "),
         }
     }
 
@@ -293,10 +268,7 @@ impl<'p, W: fmt::Write> Writer<'p, W> {
         Ok(())
     }
 
-    fn fmt_class_bracketed_pre(
-        &mut self,
-        ast: &ast::ClassBracketed,
-    ) -> fmt::Result {
+    fn fmt_class_bracketed_pre(&mut self, ast: &ast::ClassBracketed) -> fmt::Result {
         if ast.negated {
             self.wtr.write_str("[^")
         } else {
@@ -304,17 +276,11 @@ impl<'p, W: fmt::Write> Writer<'p, W> {
         }
     }
 
-    fn fmt_class_bracketed_post(
-        &mut self,
-        _ast: &ast::ClassBracketed,
-    ) -> fmt::Result {
+    fn fmt_class_bracketed_post(&mut self, _ast: &ast::ClassBracketed) -> fmt::Result {
         self.wtr.write_str("]")
     }
 
-    fn fmt_class_set_binary_op_kind(
-        &mut self,
-        ast: &ast::ClassSetBinaryOpKind,
-    ) -> fmt::Result {
+    fn fmt_class_set_binary_op_kind(&mut self, ast: &ast::ClassSetBinaryOpKind) -> fmt::Result {
         use ast::ClassSetBinaryOpKind::*;
         match *ast {
             Intersection => self.wtr.write_str("&&"),
@@ -381,15 +347,21 @@ impl<'p, W: fmt::Write> Writer<'p, W> {
         match ast.kind {
             OneLetter(c) => self.wtr.write_char(c),
             Named(ref x) => write!(self.wtr, "{{{}}}", x),
-            NamedValue { op: Equal, ref name, ref value } => {
-                write!(self.wtr, "{{{}={}}}", name, value)
-            }
-            NamedValue { op: Colon, ref name, ref value } => {
-                write!(self.wtr, "{{{}:{}}}", name, value)
-            }
-            NamedValue { op: NotEqual, ref name, ref value } => {
-                write!(self.wtr, "{{{}!={}}}", name, value)
-            }
+            NamedValue {
+                op: Equal,
+                ref name,
+                ref value,
+            } => write!(self.wtr, "{{{}={}}}", name, value),
+            NamedValue {
+                op: Colon,
+                ref name,
+                ref value,
+            } => write!(self.wtr, "{{{}:{}}}", name, value),
+            NamedValue {
+                op: NotEqual,
+                ref name,
+                ref value,
+            } => write!(self.wtr, "{{{}!={}}}", name, value),
         }
     }
 }
