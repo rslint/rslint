@@ -15,3 +15,7 @@ impl From<TextRange> for Span {
         }
     }
 }
+
+pub fn debug(message: &String) {
+    println!("Datalog Debug: {}", message);
+}

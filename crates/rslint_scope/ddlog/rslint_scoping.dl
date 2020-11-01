@@ -1,3 +1,6 @@
+#[has_side_effects]
+extern function debug(message: string)
+
 typedef Scope = u32
 typedef FuncId = u32
 typedef StmtId = u32
@@ -5,6 +8,10 @@ typedef ExprId = u32
 typedef Name = istring
 
 typedef Span = Span { start: u32, end: u32 }
+
+function to_string(span: Span): string {
+    "Span{.start = ${span.start}, .end = ${span.end}}"
+}
 
 typedef Pattern = SinglePattern { name: Name }
 typedef IPattern = Intern<Pattern>
@@ -44,7 +51,7 @@ input relation FunctionArg(parent_func: FuncId, pattern: IPattern)
 
 // Statements
 input relation Statement(id: StmtId, kind: StmtKind, scope: Scope, span: Span)
-input relation VarDecl(stmt_id: StmtId, effective_scope: Scope, pattern: Option<IPattern>, value: Option<ExprId>)
+input relation VarDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option<ExprId>)
 input relation LetDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option<ExprId>)
 input relation ConstDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option<ExprId>)
 input relation Return(stmt_id: StmtId, value: Option<ExprId>)
@@ -95,27 +102,33 @@ relation ChildScope(parent: Scope, child: Scope)
 ChildScope(parent, child) :- InputScope(parent, child).
 ChildScope(parent, child) :- InputScope(parent, interum), InputScope(interum, child).
 
+relation ClosestFunction(scope: Scope, func: FuncId)
+ClosestFunction(scope, func) :- Function(func, _, scope).
+ClosestFunction(scope, func) :- Function(func, _, func_scope), ChildScope(func_scope, scope).
+
 relation NameInScope(name: Name, scope: Scope, declared_in: Either<StmtId, FuncId>)
 // `let` declarations
-NameInScope(name, scope, Right { stmt }) :-
+NameInScope(name, scope, Left { stmt }) :-
     LetDecl(stmt, Some { pat }, _),
     SinglePattern { var name } = pat.ival(),
     Statement(stmt, _, scope, _).
 
 // `const` declarations
-NameInScope(name, scope, Right { stmt }) :-
+NameInScope(name, scope, Left { stmt }) :-
     ConstDecl(stmt, Some { pat }, _),
     SinglePattern { var name } = pat.ival(),
     Statement(stmt, _, scope, _).
 
 // `var` declarations
-NameInScope(name, scope, Right { stmt }) :-
-    VarDecl(stmt, scope, Some { pat }, _),
+NameInScope(name, scope, Left { stmt }) :-
+    VarDecl(stmt, Some { pat }, _),
     SinglePattern { var name } = pat.ival(),
-    Statement(stmt, _, scope, _).
+    Statement(stmt, _, decl_scope, _),
+    // Bubble `var` up to the nearest function's scope?
+    ClosestFunction(decl_scope, scope).
 
 // Function arguments
-NameInScope(name, scope, Left { func }) :-
+NameInScope(name, scope, Right { func }) :-
     FunctionArg(func, pat),
     SinglePattern { var name } = pat.ival(),
     Function(func, _, scope).
@@ -125,10 +138,21 @@ NameInScope(name, scope, declared_in) :-
     NameInScope(name, interum, declared_in),
     ChildScope(interum, scope).
 
+// Variable usages (`let` and `const` predecls or undefined symbols) that don't
+// have an accompanying variable in scope are reported
+// TODO: Use a levenshtein aggregate to try and correct and/or look in children
+//       scopes for a declaration
 output relation InvalidNameUse(name: Name, scope: Scope, span: Span)
-// Variable usages that don't have an accompanying variable in scope
-// are reported
 InvalidNameUse(name, scope, span) :-
     ExprNameRef(expr, name),
     Expression(expr, NameRef, scope, span),
     not NameInScope(name, scope, _).
+
+// `var` usages that happen before the declaration
+output relation VarUseBeforeDeclaration(name: Name, used_in: Span, declared_in: Span)
+VarUseBeforeDeclaration(name, used_in, declared_in) :-
+    ExprNameRef(expr, name),
+    Expression(expr, NameRef, used_scope, used_in),
+    NameInScope(name, used_scope, Left { .l = stmt }),
+    Statement(stmt, StmtVarDecl, declared_scope, declared_in),
+    ChildScope(used_scope, declared_scope).

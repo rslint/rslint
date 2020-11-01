@@ -13,7 +13,7 @@ use rslint_core::{
     CstRule, Rule, RuleCtx,
 };
 use serde::{Deserialize, Serialize};
-use types::InvalidNameUse;
+use types::{InvalidNameUse, VarUseBeforeDeclaration};
 use visit::Visit;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -48,6 +48,23 @@ impl ScopeAnalyzer {
                     format!("cannot find value `{}` in this scope", name),
                 )
                 .primary(span, "not found in this scope".to_owned());
+
+            ctx.add_err(error);
+        }
+
+        for VarUseBeforeDeclaration {
+            name,
+            used_in,
+            declared_in,
+        } in facts.var_use_before_decl
+        {
+            let error = ctx
+                .err(
+                    "datalog-scoping",
+                    format!("used the variable `{}` before it was declared", name),
+                )
+                .primary(used_in, "used here (value will be undefined)".to_owned())
+                .secondary(declared_in, "declared here".to_owned());
 
             ctx.add_err(error);
         }

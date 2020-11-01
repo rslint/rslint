@@ -22,6 +22,7 @@ pub type DatalogResult<T> = Result<T, String>;
 #[derive(Debug, Clone)]
 pub struct DerivedFacts {
     pub invalid_name_uses: Vec<InvalidNameUse>,
+    pub var_use_before_decl: Vec<VarUseBeforeDeclaration>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -91,20 +92,31 @@ impl Datalog {
     }
 
     fn update(&self, mut delta: DeltaMap<DDValue>) -> DerivedFacts {
-        let relation = delta.clear_rel(Relations::InvalidNameUse as RelId);
-        let mut invalid_name_uses = Vec::with_capacity(relation.len());
-        for (usage, weight) in relation.into_iter() {
-            match Weight::from(weight) {
-                Weight::Insert => {
-                    // Safety: This must be an instance of `InvalidNameUse` since it comes
-                    //         from the `InvalidNameUse` relation
-                    invalid_name_uses.push(unsafe { InvalidNameUse::from_ddvalue(usage) });
-                }
-                Weight::Delete => {}
-            }
+        macro_rules! drain_relations {
+            ($($relation:ident->$field:ident),* $(,)?) => {
+                $(
+                    let relation = delta.clear_rel(Relations::$relation as RelId);
+                    let mut $field = Vec::with_capacity(relation.len());
+                    for (usage, weight) in relation.into_iter() {
+                        match Weight::from(weight) {
+                            Weight::Insert => {
+                                // Safety: This is the correct type since we pulled it from
+                                //         the correct relation
+                                $field.push(unsafe { $relation::from_ddvalue(usage) });
+                            }
+                            Weight::Delete => {}
+                        }
+                    }
+                )*
+
+                DerivedFacts { $( $field, )* }
+            };
         }
 
-        DerivedFacts { invalid_name_uses }
+        drain_relations! {
+            InvalidNameUse->invalid_name_uses,
+            VarUseBeforeDeclaration->var_use_before_decl,
+        }
     }
 }
 
@@ -295,7 +307,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Statement {
                         id: stmt_id,
                         kind: StmtKind::StmtLetDecl,
-                        scope: self.scope_id(),
+                        scope: scope.scope_id(),
                         span: span.into(),
                     },
                 );
@@ -329,7 +341,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Statement {
                         id: stmt_id,
                         kind: StmtKind::StmtConstDecl,
-                        scope: self.scope_id(),
+                        scope: scope.scope_id(),
                         span: span.into(),
                     },
                 );
@@ -354,10 +366,6 @@ pub trait DatalogBuilder<'ddlog> {
                     Relations::VarDecl as RelId,
                     VarDecl {
                         stmt_id,
-                        // TODO: Carry along the id of the closest var scoping
-                        //       terminator through scopes/functions? This may
-                        //       be trivial to do within ddlog itself
-                        effective_scope: scope.scope_id(),
                         pattern: pattern.into(),
                         value: value.into(),
                     },
@@ -367,7 +375,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Statement {
                         id: stmt_id,
                         kind: StmtKind::StmtVarDecl,
-                        scope: self.scope_id(),
+                        scope: scope.scope_id(),
                         span: span.into(),
                     },
                 );
