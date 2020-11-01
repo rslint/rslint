@@ -1,6 +1,6 @@
 #![allow(
     path_statements,
-//unused_imports,
+    //unused_imports,
     non_snake_case,
     non_camel_case_types,
     non_upper_case_globals,
@@ -16,16 +16,16 @@
 )]
 
 // Required for #[derive(Serialize, Deserialize)].
+use ::serde::Deserialize;
+use ::serde::Serialize;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
-use ::serde::Deserialize;
-use ::serde::Serialize;
 
-use crate::closure;
-use crate::std_usize;
-use crate::string_append;
 use crate::string_append_str;
+use crate::string_append;
+use crate::std_usize;
+use crate::closure;
 
 //
 // use crate::ddlog_std;
@@ -308,45 +308,45 @@ pub type istring = crate::internment::Intern<String>;
 /* fn istring_to_uppercase(s: & crate::internment::istring) -> String */
 /* fn istring_trim(s: & crate::internment::istring) -> String */
 /* fn ival<A: crate::Val>(s: & crate::internment::Intern<A>) -> A */
-pub fn contains(s1: &crate::internment::istring, s2: &String) -> bool {
-    crate::internment::istring_contains(s1, s2)
+pub fn contains(s1: & crate::internment::istring, s2: & String) -> bool
+{   crate::internment::istring_contains(s1, s2)
 }
-pub fn ends_with(s: &crate::internment::istring, suffix: &String) -> bool {
-    crate::internment::istring_ends_with(s, suffix)
+pub fn ends_with(s: & crate::internment::istring, suffix: & String) -> bool
+{   crate::internment::istring_ends_with(s, suffix)
 }
-pub fn join(strings: &crate::ddlog_std::Vec<crate::internment::istring>, sep: &String) -> String {
-    crate::internment::istring_join(strings, sep)
+pub fn join(strings: & crate::ddlog_std::Vec<crate::internment::istring>, sep: & String) -> String
+{   crate::internment::istring_join(strings, sep)
 }
-pub fn len(s: &crate::internment::istring) -> u64 {
-    crate::internment::istring_len(s)
+pub fn len(s: & crate::internment::istring) -> u64
+{   crate::internment::istring_len(s)
 }
-pub fn replace(s: &crate::internment::istring, from: &String, to: &String) -> String {
-    crate::internment::istring_replace(s, from, to)
+pub fn replace(s: & crate::internment::istring, from: & String, to: & String) -> String
+{   crate::internment::istring_replace(s, from, to)
 }
-pub fn reverse(s: &crate::internment::istring) -> String {
-    crate::internment::istring_reverse(s)
+pub fn reverse(s: & crate::internment::istring) -> String
+{   crate::internment::istring_reverse(s)
 }
-pub fn split(s: &crate::internment::istring, sep: &String) -> crate::ddlog_std::Vec<String> {
-    crate::internment::istring_split(s, sep)
+pub fn split(s: & crate::internment::istring, sep: & String) -> crate::ddlog_std::Vec<String>
+{   crate::internment::istring_split(s, sep)
 }
-pub fn starts_with(s: &crate::internment::istring, prefix: &String) -> bool {
-    crate::internment::istring_starts_with(s, prefix)
+pub fn starts_with(s: & crate::internment::istring, prefix: & String) -> bool
+{   crate::internment::istring_starts_with(s, prefix)
 }
-pub fn substr(s: &crate::internment::istring, start: &u64, end: &u64) -> String {
-    crate::internment::istring_substr(s, start, end)
+pub fn substr(s: & crate::internment::istring, start: & u64, end: & u64) -> String
+{   crate::internment::istring_substr(s, start, end)
 }
-pub fn to_bytes(s: &crate::internment::istring) -> crate::ddlog_std::Vec<u8> {
-    crate::internment::istring_to_bytes(s)
+pub fn to_bytes(s: & crate::internment::istring) -> crate::ddlog_std::Vec<u8>
+{   crate::internment::istring_to_bytes(s)
 }
-pub fn to_lowercase(s: &crate::internment::istring) -> String {
-    crate::internment::istring_to_lowercase(s)
+pub fn to_lowercase(s: & crate::internment::istring) -> String
+{   crate::internment::istring_to_lowercase(s)
 }
-pub fn to_string(s: &crate::internment::istring) -> String {
-    (*crate::internment::ival(s)).clone()
+pub fn to_string(s: & crate::internment::istring) -> String
+{   (*crate::internment::ival(s)).clone()
 }
-pub fn to_uppercase(s: &crate::internment::istring) -> String {
-    crate::internment::istring_to_uppercase(s)
+pub fn to_uppercase(s: & crate::internment::istring) -> String
+{   crate::internment::istring_to_uppercase(s)
 }
-pub fn trim(s: &crate::internment::istring) -> String {
-    crate::internment::istring_trim(s)
+pub fn trim(s: & crate::internment::istring) -> String
+{   crate::internment::istring_trim(s)
 }

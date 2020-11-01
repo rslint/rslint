@@ -12,7 +12,10 @@ use std::{
     mem,
     sync::{Arc, Mutex, MutexGuard},
 };
-use types::{internment::Intern, Span as DatalogSpan, *};
+use types::{internment::Intern, *};
+
+// TODO: Work on the internment situation, I don't like
+//       having to allocate strings for stuff
 
 pub type DatalogResult<T> = Result<T, String>;
 
@@ -41,6 +44,14 @@ impl From<isize> for Weight {
 #[derive(Debug, Clone)]
 pub struct Datalog {
     datalog: Arc<Mutex<DatalogInner>>,
+    // Kinda hacky, but I don't know any way to lock the transaction
+    // state while also giving us the clone-ability that `Arc` provides.
+    // `Rc` is both !Send and !Sync, so that doesn't work without
+    // unsafe impls of Send/Sync on `Datalog`. Lifetimes could be used, the
+    // 'ddlog lifetime is already threaded through code so that could work
+    // combined with a `RefCell` around `Datalog.updates` to allow mutation.
+    // FIXME: Do that ^
+    transaction_lock: Arc<Mutex<()>>,
 }
 
 impl Datalog {
@@ -55,6 +66,7 @@ impl Datalog {
                 statement_id: 0,
                 expression_id: 0,
             })),
+            transaction_lock: Arc::new(Mutex::new(())),
         };
         this.update(init_state);
 
@@ -65,9 +77,15 @@ impl Datalog {
     where
         F: for<'trans> FnOnce(&mut DatalogTransaction<'trans>) -> DatalogResult<()>,
     {
-        let mut trans = DatalogTransaction::new(self.datalog.clone())?;
-        transaction(&mut trans)?;
-        let delta = trans.commit()?;
+        let delta = {
+            // DDlog only allows one concurrent transaction, so this lock keeps transactions
+            // in serial
+            let __transaction_guard = self.transaction_lock.lock().unwrap();
+
+            let mut trans = DatalogTransaction::new(self.datalog.clone())?;
+            transaction(&mut trans)?;
+            trans.commit()?
+        };
 
         Ok(self.update(delta))
     }
@@ -101,32 +119,32 @@ impl Default for Datalog {
 pub struct DatalogInner {
     hddlog: HDDlog,
     updates: Vec<Update<DDValue>>,
-    scope_id: u32,
-    function_id: u32,
-    statement_id: u32,
-    expression_id: u32,
+    scope_id: Scope,
+    function_id: FuncId,
+    statement_id: StmtId,
+    expression_id: ExprId,
 }
 
 impl DatalogInner {
-    fn inc_scope(&mut self) -> u32 {
+    fn inc_scope(&mut self) -> Scope {
         let temp = self.scope_id;
         self.scope_id += 1;
         temp
     }
 
-    fn inc_function(&mut self) -> u32 {
+    fn inc_function(&mut self) -> FuncId {
         let temp = self.function_id;
         self.function_id += 1;
         temp
     }
 
-    fn inc_statement(&mut self) -> u32 {
+    fn inc_statement(&mut self) -> StmtId {
         let temp = self.statement_id;
         self.statement_id += 1;
         temp
     }
 
-    fn inc_expression(&mut self) -> u32 {
+    fn inc_expression(&mut self) -> ExprId {
         let temp = self.expression_id;
         self.expression_id += 1;
         temp
@@ -204,7 +222,7 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
 }
 
 pub trait DatalogBuilder<'ddlog> {
-    fn current_id(&self) -> u32;
+    fn scope_id(&self) -> Scope;
 
     fn datalog(&self) -> &Arc<Mutex<DatalogInner>>;
 
@@ -216,7 +234,7 @@ pub trait DatalogBuilder<'ddlog> {
         let mut datalog = self.datalog_mut();
         let new_scope_id = datalog.inc_scope();
         datalog.push_scope(InputScope {
-            parent: self.current_id(),
+            parent: self.scope_id(),
             child: new_scope_id,
         });
 
@@ -227,21 +245,21 @@ pub trait DatalogBuilder<'ddlog> {
         }
     }
 
-    fn next_function_id(&self) -> u32 {
+    fn next_function_id(&self) -> FuncId {
         self.datalog_mut().inc_function()
     }
 
-    fn next_expr_id(&self) -> u32 {
+    fn next_expr_id(&self) -> ExprId {
         self.datalog_mut().inc_expression()
     }
 
-    fn decl_function(&self, id: u32, name: Option<Intern<String>>) -> DatalogFunction<'ddlog> {
+    fn decl_function(&self, id: FuncId, name: Option<Intern<String>>) -> DatalogFunction<'ddlog> {
         self.datalog_mut().insert(
             Relations::Function as RelId,
             Function {
                 id,
                 name: name.into(),
-                scope: self.current_id(),
+                scope: self.scope_id(),
             },
         );
 
@@ -277,7 +295,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Statement {
                         id: stmt_id,
                         kind: StmtKind::StmtLetDecl,
-                        scope: self.current_id(),
+                        scope: self.scope_id(),
                         span: span.into(),
                     },
                 );
@@ -311,7 +329,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Statement {
                         id: stmt_id,
                         kind: StmtKind::StmtConstDecl,
-                        scope: self.current_id(),
+                        scope: self.scope_id(),
                         span: span.into(),
                     },
                 );
@@ -339,7 +357,7 @@ pub trait DatalogBuilder<'ddlog> {
                         // TODO: Carry along the id of the closest var scoping
                         //       terminator through scopes/functions? This may
                         //       be trivial to do within ddlog itself
-                        effective_scope: scope.current_id(),
+                        effective_scope: scope.scope_id(),
                         pattern: pattern.into(),
                         value: value.into(),
                     },
@@ -349,7 +367,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Statement {
                         id: stmt_id,
                         kind: StmtKind::StmtVarDecl,
-                        scope: self.current_id(),
+                        scope: self.scope_id(),
                         span: span.into(),
                     },
                 );
@@ -377,7 +395,7 @@ pub trait DatalogBuilder<'ddlog> {
                     kind: ExprKind::ExprLit {
                         kind: LitKind::LitNumber,
                     },
-                    scope: self.current_id(),
+                    scope: self.scope_id(),
                     span: span.into(),
                 },
             );
@@ -404,7 +422,7 @@ pub trait DatalogBuilder<'ddlog> {
                     kind: ExprKind::ExprLit {
                         kind: LitKind::LitBigInt,
                     },
-                    scope: self.current_id(),
+                    scope: self.scope_id(),
                     span: span.into(),
                 },
             );
@@ -431,7 +449,7 @@ pub trait DatalogBuilder<'ddlog> {
                     kind: ExprKind::ExprLit {
                         kind: LitKind::LitString,
                     },
-                    scope: self.current_id(),
+                    scope: self.scope_id(),
                     span: span.into(),
                 },
             );
@@ -450,7 +468,7 @@ pub trait DatalogBuilder<'ddlog> {
                 kind: ExprKind::ExprLit {
                     kind: LitKind::LitNull,
                 },
-                scope: self.current_id(),
+                scope: self.scope_id(),
                 span: span.into(),
             },
         );
@@ -474,7 +492,7 @@ pub trait DatalogBuilder<'ddlog> {
                     kind: ExprKind::ExprLit {
                         kind: LitKind::LitBool,
                     },
-                    scope: self.current_id(),
+                    scope: self.scope_id(),
                     span: span.into(),
                 },
             );
@@ -494,7 +512,7 @@ pub trait DatalogBuilder<'ddlog> {
                 kind: ExprKind::ExprLit {
                     kind: LitKind::LitRegex,
                 },
-                scope: self.current_id(),
+                scope: self.scope_id(),
                 span: span.into(),
             },
         );
@@ -519,7 +537,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Expression {
                     id,
                     kind: ExprKind::NameRef,
-                    scope: self.current_id(),
+                    scope: self.scope_id(),
                     span: span.into(),
                 },
             );
@@ -527,7 +545,7 @@ pub trait DatalogBuilder<'ddlog> {
         id
     }
 
-    fn ret(&self, value: Option<ExprId>, span: TextRange) {
+    fn ret(&self, value: Option<ExprId>, span: TextRange) -> StmtId {
         let mut datalog = self.datalog_mut();
         let stmt_id = datalog.inc_statement();
 
@@ -544,22 +562,395 @@ pub trait DatalogBuilder<'ddlog> {
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtReturn,
-                    scope: self.current_id(),
+                    scope: self.scope_id(),
                     span: span.into(),
                 },
             );
+
+        stmt_id
+    }
+
+    fn if_stmt(
+        &self,
+        cond: Option<ExprId>,
+        if_body: Option<StmtId>,
+        else_body: Option<StmtId>,
+        span: TextRange,
+    ) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::If as RelId,
+                If {
+                    stmt_id,
+                    cond: cond.into(),
+                    if_body: if_body.into(),
+                    else_body: else_body.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtIf,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn brk(&self, label: Option<String>, span: TextRange) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::Break as RelId,
+                Break {
+                    stmt_id,
+                    label: label.as_ref().map(internment::intern).into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtBreak,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn do_while(&self, body: Option<StmtId>, cond: Option<ExprId>, span: TextRange) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::DoWhile as RelId,
+                DoWhile {
+                    stmt_id,
+                    body: body.into(),
+                    cond: cond.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtDoWhile,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn while_stmt(&self, cond: Option<ExprId>, body: Option<StmtId>, span: TextRange) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::While as RelId,
+                DoWhile {
+                    stmt_id,
+                    cond: cond.into(),
+                    body: body.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtWhile,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn for_stmt(
+        &self,
+        init: Option<ForInit>,
+        test: Option<ExprId>,
+        update: Option<ExprId>,
+        body: Option<StmtId>,
+        span: TextRange,
+    ) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::For as RelId,
+                For {
+                    stmt_id,
+                    init: init.into(),
+                    test: test.into(),
+                    update: update.into(),
+                    body: body.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtFor,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn for_in(
+        &self,
+        elem: Option<ForInit>,
+        collection: Option<ExprId>,
+        body: Option<StmtId>,
+        span: TextRange,
+    ) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::ForIn as RelId,
+                ForIn {
+                    stmt_id,
+                    elem: elem.into(),
+                    collection: collection.into(),
+                    body: body.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtForIn,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn cont(&self, label: Option<String>, span: TextRange) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::Continue as RelId,
+                Continue {
+                    stmt_id,
+                    label: label.as_ref().map(internment::intern).into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtContinue,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn with(&self, cond: Option<ExprId>, body: Option<StmtId>, span: TextRange) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::With as RelId,
+                With {
+                    stmt_id,
+                    cond: cond.into(),
+                    body: body.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtWith,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn label(&self, name: Option<String>, body: Option<StmtId>, span: TextRange) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::Label as RelId,
+                Label {
+                    stmt_id,
+                    name: name.as_ref().map(internment::intern).into(),
+                    body: body.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtLabel,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn switch(
+        &self,
+        test: Option<ExprId>,
+        cases: Vec<(SwitchClause, Option<StmtId>)>,
+        span: TextRange,
+    ) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::Switch as RelId,
+                Switch {
+                    stmt_id,
+                    test: test.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtSwitch,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        for (case, body) in cases {
+            datalog.insert(
+                Relations::SwitchCase as RelId,
+                SwitchCase {
+                    stmt_id,
+                    case,
+                    body: body.into(),
+                },
+            );
+        }
+
+        stmt_id
+    }
+
+    fn throw(&self, exception: Option<ExprId>, span: TextRange) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::Throw as RelId,
+                Throw {
+                    stmt_id,
+                    exception: exception.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtThrow,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn try_stmt(
+        &self,
+        body: Option<StmtId>,
+        handler: TryHandler,
+        finalizer: Option<StmtId>,
+        span: TextRange,
+    ) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::Try as RelId,
+                Try {
+                    stmt_id,
+                    body: body.into(),
+                    handler,
+                    finalizer: finalizer.into(),
+                },
+            )
+            .insert(
+                Relations::Statement as RelId,
+                Statement {
+                    id: stmt_id,
+                    kind: StmtKind::StmtTry,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
+    fn debugger(&self, span: TextRange) -> StmtId {
+        let mut datalog = self.datalog_mut();
+        let stmt_id = datalog.inc_statement();
+
+        datalog.insert(
+            Relations::Statement as RelId,
+            Statement {
+                id: stmt_id,
+                kind: StmtKind::StmtDebugger,
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        stmt_id
     }
 }
 
 #[derive(Clone)]
 pub struct DatalogFunction<'ddlog> {
     datalog: Arc<Mutex<DatalogInner>>,
-    func_id: u32,
+    func_id: FuncId,
     __lifetime: PhantomData<&'ddlog ()>,
 }
 
 impl<'ddlog> DatalogFunction<'ddlog> {
-    pub fn func_id(&self) -> u32 {
+    pub fn func_id(&self) -> FuncId {
         self.func_id
     }
 
@@ -579,20 +970,20 @@ impl<'ddlog> DatalogBuilder<'ddlog> for DatalogFunction<'ddlog> {
         &self.datalog
     }
 
-    fn current_id(&self) -> u32 {
-        self.func_id()
+    fn scope_id(&self) -> Scope {
+        self.func_id
     }
 }
 
 #[derive(Clone)]
 pub struct DatalogScope<'ddlog> {
     datalog: Arc<Mutex<DatalogInner>>,
-    scope_id: u32,
+    scope_id: Scope,
     __lifetime: PhantomData<&'ddlog ()>,
 }
 
 impl<'ddlog> DatalogScope<'ddlog> {
-    pub fn scope_id(&self) -> u32 {
+    pub fn scope_id(&self) -> Scope {
         self.scope_id
     }
 }
@@ -602,8 +993,8 @@ impl<'ddlog> DatalogBuilder<'ddlog> for DatalogScope<'ddlog> {
         &self.datalog
     }
 
-    fn current_id(&self) -> u32 {
-        self.scope_id()
+    fn scope_id(&self) -> Scope {
+        self.scope_id
     }
 }
 

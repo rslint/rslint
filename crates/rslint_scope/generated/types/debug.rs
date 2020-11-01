@@ -1,6 +1,6 @@
 #![allow(
     path_statements,
-//unused_imports,
+    //unused_imports,
     non_snake_case,
     non_camel_case_types,
     non_upper_case_globals,
@@ -16,16 +16,16 @@
 )]
 
 // Required for #[derive(Serialize, Deserialize)].
+use ::serde::Deserialize;
+use ::serde::Serialize;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
-use ::serde::Deserialize;
-use ::serde::Serialize;
 
-use crate::closure;
-use crate::std_usize;
-use crate::string_append;
 use crate::string_append_str;
+use crate::string_append;
+use crate::std_usize;
+use crate::closure;
 
 //
 // use crate::ddlog_std;

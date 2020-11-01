@@ -1,22 +1,20 @@
 use crate::{glue::fs2, project_root};
 use anyhow::{Context, Result};
 use cargo_toml::Manifest;
-use std::{
-    fs,
-    path::{Component, Path, Prefix},
-    process::{Command, Stdio},
-};
+use std::path::{Component, Path, Prefix};
 use toml::Value;
 
 const SCOPES_DIR: &str = "crates/rslint_scope";
 
-pub fn build_datalog(debug: bool, check: bool) -> Result<()> {
+pub fn build_datalog(_debug: bool, _check: bool) -> Result<()> {
     let scopes_dir = project_root().join(SCOPES_DIR);
 
+    /*
+    FIXME: Screw wsl interop
     let mut cmd = if cfg!(windows) {
         let has_wsl = Command::new("wsl")
             .arg("--help")
-            .stdin(Stdio::null())
+            .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status()
             .map(|s| s.code() == Some(-1))
@@ -69,29 +67,31 @@ pub fn build_datalog(debug: bool, check: bool) -> Result<()> {
         cmd
     };
 
-    dbg!(&cmd);
-
-    let _status = cmd
+    let status = cmd
         .spawn()
-        .context("failed to run ddlog")?
-        .wait()
+        .context("failed to spawn ddlog")?
+        .wait_with_output()
         .context("failed to run ddlog")?;
 
-    let ddlog_dir = scopes_dir.join("rslint_scoping_ddlog");
-    let generated_dir = scopes_dir.join("generated");
     if !ddlog_dir.exists() {
-        eprintln!("could not find generated code, exiting");
+        eprintln!("could not find newly generated code, exiting");
         return Ok(());
     }
 
+    let ddlog_dir = scopes_dir.join("rslint_scoping_ddlog");
+    let generated_dir = scopes_dir.join("generated");
     if generated_dir.exists() {
         fs2::remove_dir_all(&generated_dir).context("failed to remove the old generated code")?;
     }
 
     fs::rename(&ddlog_dir, &generated_dir)
         .context("failed to rename the generated code's folder")?;
+    */
 
-    edit_generated_code(&generated_dir)?;
+    let generated_dir = scopes_dir.join("generated");
+    if generated_dir.exists() {
+        edit_generated_code(&generated_dir)?;
+    }
 
     Ok(())
 }
@@ -185,7 +185,7 @@ fn write_toml(name: &str, path: &Path, manifest: &Manifest) -> Result<()> {
     })
 }
 
-fn unixify(path: &Path) -> String {
+fn _unixify(path: &Path) -> String {
     let mut buf = String::new();
     let mut comps = path
         .components()

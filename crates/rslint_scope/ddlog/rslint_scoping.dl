@@ -6,38 +6,91 @@ typedef Name = istring
 
 typedef Span = Span { start: u32, end: u32 }
 
+typedef Pattern = SinglePattern { name: Name }
+typedef IPattern = Intern<Pattern>
+
 typedef StmtKind =
     StmtVarDecl
     | StmtLetDecl
     | StmtConstDecl
     | StmtExpr { expr_id: ExprId }
     | StmtReturn
+    | StmtIf
+    | StmtBreak
+    | StmtDoWhile
+    | StmtWhile
+    | StmtFor
+    | StmtForIn
+    | StmtContinue
+    | StmtWith
+    | StmtLabel
+    | StmtSwitch
+    | StmtThrow
+    | StmtTry
+    | StmtDebugger // No associated relation, they carry no data
 
 typedef ExprKind = ExprLit { kind: LitKind } | NameRef
 typedef LitKind = LitNumber | LitBigInt | LitString | LitNull | LitBool | LitRegex
+typedef ForInit = ForDecl { stmt_id: StmtId } | ForExpr { expr_id: ExprId }
+typedef SwitchClause = CaseClause { test: Option<ExprId> } | DefaultClause
+typedef TryHandler = TryHandler { error: Option<IPattern>, body: Option<StmtId> }
 
-typedef Pattern = SinglePattern { name: Name }
-typedef IPattern = Intern<Pattern>
-
+// The input scope relationships, just map parent<-child for one generation
 input relation InputScope(parent: Scope, child: Scope)
 
+// Functions
 input relation Function(id: FuncId, name: Option<Name>, scope: Scope)
 input relation FunctionArg(parent_func: FuncId, pattern: IPattern)
 
+// Statements
 input relation Statement(id: StmtId, kind: StmtKind, scope: Scope, span: Span)
 input relation VarDecl(stmt_id: StmtId, effective_scope: Scope, pattern: Option<IPattern>, value: Option<ExprId>)
 input relation LetDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option<ExprId>)
 input relation ConstDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option<ExprId>)
 input relation Return(stmt_id: StmtId, value: Option<ExprId>)
+input relation If(stmt_id: StmtId, cond: Option<ExprId>, if_body: Option<ExprId>, else_body: Option<ExprId>)
+input relation Break(stmt_id: StmtId, label: Option<Name>)
+input relation DoWhile(stmt_id: StmtId, body: Option<StmtId>, cond: Option<ExprId>)
+input relation While(stmt_id: StmtId, cond: Option<ExprId>, body: Option<StmtId>)
+input relation For(stmt_id: StmtId, init: Option<ForInit>, test: Option<ExprId>, update: Option<ExprId>, body: Option<StmtId>)
+input relation ForIn(stmt_id: StmtId, elem: Option<ForInit>, collection: Option<ExprId>, body: Option<StmtId>)
+input relation Continue(stmt_id: StmtId, label: Option<Name>)
+input relation With(stmt_id: StmtId, cond: Option<ExprId>, body: Option<StmtId>)
+input relation Label(stmt_id: StmtId, name: Option<Name>, body: Option<StmtId>)
+// Switch statements & cases
+input relation Switch(stmt_id: StmtId, test: Option<ExprId>)
+input relation SwitchCase(stmt_id: StmtId, case: SwitchClause, body: Option<StmtId>)
+input relation Throw(stmt_id: StmtId, exception: Option<ExprId>)
+input relation Try(stmt_id: StmtId, body: Option<StmtId>, handler: TryHandler, finalizer: Option<StmtId>)
 
+// Expressions
 input relation Expression(id: ExprId, kind: ExprKind, scope: Scope, span: Span)
+// Literals
 input relation ExprNumber(id: ExprId, value: double)
 input relation ExprBigInt(id: ExprId, value: bigint)
 input relation ExprString(id: ExprId, value: istring)
 input relation ExprBool(id: ExprId, value: bool)
 input relation ExprNameRef(id: ExprId, value: Name)
 
-// Build the scope graph
+// Build the scope graph, unrolling the parent<-child relationships to full trees
+//
+// Given
+// ```
+// a<-b
+// b<-c
+// b<-d
+// ```
+// It will produce
+// ```
+// a
+// ├-b
+// │ └┐  
+// │  ├╴c
+// │  └╴d 
+// ├╴c
+// └╴d
+// ```
+//
 relation ChildScope(parent: Scope, child: Scope)
 ChildScope(parent, child) :- InputScope(parent, child).
 ChildScope(parent, child) :- InputScope(parent, interum), InputScope(interum, child).
