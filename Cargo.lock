@@ -1436,6 +1436,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "rslint_regex"
+version = "0.1.0"
+
+[[package]]
 name = "rslint_rowan"
 version = "0.10.0"
 dependencies = [
