@@ -80,8 +80,6 @@ I also got the idea from
 which uses it for executing automata on their term index.
 */
 
-#![deny(missing_docs)]
-
 use std::char;
 use std::fmt;
 use std::slice;
@@ -152,6 +150,10 @@ impl Utf8Sequence {
         self.as_slice().len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// Reverses the ranges in this sequence.
     ///
     /// For example, if this corresponds to the following sequence:
@@ -197,7 +199,7 @@ impl<'a> IntoIterator for &'a Utf8Sequence {
     type Item = &'a Utf8Range;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.as_slice().into_iter()
+        self.as_slice().iter()
     }
 }
 

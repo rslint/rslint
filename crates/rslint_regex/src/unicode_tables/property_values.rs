@@ -6,10 +6,7 @@
 //
 // ucd-generate 0.2.8 is available on crates.io.
 
-pub const PROPERTY_VALUES: &'static [(
-    &'static str,
-    &'static [(&'static str, &'static str)],
-)] = &[
+pub const PROPERTY_VALUES: &'static [(&'static str, &'static [(&'static str, &'static str)])] = &[
     (
         "Age",
         &[

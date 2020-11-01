@@ -193,7 +193,10 @@ pub const PROPERTY_NAMES: &'static [(&'static str, &'static str)] = &[
     ("olower", "Other_Lowercase"),
     ("omath", "Other_Math"),
     ("otheralphabetic", "Other_Alphabetic"),
-    ("otherdefaultignorablecodepoint", "Other_Default_Ignorable_Code_Point"),
+    (
+        "otherdefaultignorablecodepoint",
+        "Other_Default_Ignorable_Code_Point",
+    ),
     ("othergraphemeextend", "Other_Grapheme_Extend"),
     ("otheridcontinue", "Other_ID_Continue"),
     ("otheridstart", "Other_ID_Start"),

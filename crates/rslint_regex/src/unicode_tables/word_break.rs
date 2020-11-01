@@ -976,8 +976,11 @@ pub const MIDNUMLET: &'static [(char, char)] = &[
     ('．', '．'),
 ];
 
-pub const NEWLINE: &'static [(char, char)] =
-    &[('\u{b}', '\u{c}'), ('\u{85}', '\u{85}'), ('\u{2028}', '\u{2029}')];
+pub const NEWLINE: &'static [(char, char)] = &[
+    ('\u{b}', '\u{c}'),
+    ('\u{85}', '\u{85}'),
+    ('\u{2028}', '\u{2029}'),
+];
 
 pub const NUMERIC: &'static [(char, char)] = &[
     ('0', '9'),

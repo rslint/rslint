@@ -14,13 +14,6 @@ pub enum Error {
     /// An error that occurred while translating concrete syntax into abstract
     /// syntax (AST).
     Parse(ast::Error),
-    /// Hints that destructuring should not be exhaustive.
-    ///
-    /// This enum may grow additional variants, so this makes sure clients
-    /// don't count on exhaustive matching. (Otherwise, adding a new variant
-    /// could break existing code.)
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 impl From<ast::Error> for Error {
@@ -35,7 +28,6 @@ impl error::Error for Error {
     fn description(&self) -> &str {
         match *self {
             Error::Parse(ref x) => x.description(),
-            _ => unreachable!(),
         }
     }
 }
@@ -44,7 +36,6 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Error::Parse(ref x) => x.fmt(f),
-            _ => unreachable!(),
         }
     }
 }
@@ -160,13 +151,13 @@ impl<'p> Spans<'p> {
         };
         let mut spans = Spans {
             pattern: &fmter.pattern,
-            line_number_width: line_number_width,
+            line_number_width,
             by_line: vec![vec![]; line_count],
             multi_line: vec![],
         };
-        spans.add(fmter.span.clone());
+        spans.add(*fmter.span);
         if let Some(span) = fmter.aux_span {
-            spans.add(span.clone());
+            spans.add(*span);
         }
         spans
     }
@@ -266,7 +257,7 @@ fn repeat_char(c: char, count: usize) -> String {
 mod tests {
     use ast::parse::Parser;
 
-    fn assert_panic_message(pattern: &str, expected_msg: &str) -> () {
+    fn assert_panic_message(pattern: &str, expected_msg: &str) {
         let result = Parser::new().parse(pattern);
         match result {
             Ok(_) => {

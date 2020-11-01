@@ -10,6 +10,8 @@ pub use ast::visitor::{visit, Visitor};
 
 pub mod parse;
 pub mod print;
+#[cfg(test)]
+mod tests;
 mod visitor;
 
 /// An error that occurred while parsing a regular expression into an abstract
@@ -66,6 +68,7 @@ impl Error {
 
 /// The type of an error that occurred while building an AST.
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum ErrorKind {
     /// The capturing group limit was exceeded.
     ///
@@ -169,13 +172,6 @@ pub enum ErrorKind {
     /// `(?<!re)`. Note that all of these syntaxes are otherwise invalid; this
     /// error is used to improve the user experience.
     UnsupportedLookAround,
-    /// Hints that destructuring should not be exhaustive.
-    ///
-    /// This enum may grow additional variants, so this makes sure clients
-    /// don't count on exhaustive matching. (Otherwise, adding a new variant
-    /// could break existing code.)
-    #[doc(hidden)]
-    __Nonexhaustive,
 }
 
 impl error::Error for Error {
@@ -288,7 +284,6 @@ impl fmt::Display for ErrorKind {
                 "look-around, including look-ahead and look-behind, \
                  is not supported"
             ),
-            _ => unreachable!(),
         }
     }
 }
@@ -363,10 +358,7 @@ impl PartialOrd for Position {
 impl Span {
     /// Create a new span with the given positions.
     pub fn new(start: Position, end: Position) -> Span {
-        Span {
-            start: start,
-            end: end,
-        }
+        Span { start, end }
     }
 
     /// Create a new span using the given position as the start and end.
@@ -409,9 +401,9 @@ impl Position {
     /// `column` is the approximate column number, starting at `1`.
     pub fn new(offset: usize, line: usize, column: usize) -> Position {
         Position {
-            offset: offset,
-            line: line,
-            column: column,
+            offset,
+            line,
+            column,
         }
     }
 }
@@ -494,10 +486,7 @@ impl Ast {
 
     /// Return true if and only if this Ast is empty.
     pub fn is_empty(&self) -> bool {
-        match *self {
-            Ast::Empty(_) => true,
-            _ => false,
-        }
+        matches!(*self, Ast::Empty(_))
     }
 
     /// Returns true if and only if this AST has any (including possibly empty)
@@ -875,10 +864,7 @@ pub enum ClassUnicodeOpKind {
 impl ClassUnicodeOpKind {
     /// Whether the op is an equality op or not.
     pub fn is_equal(&self) -> bool {
-        match *self {
-            ClassUnicodeOpKind::Equal | ClassUnicodeOpKind::Colon => true,
-            _ => false,
-        }
+        matches!(*self, ClassUnicodeOpKind::Equal | ClassUnicodeOpKind::Colon)
     }
 }
 
@@ -926,10 +912,7 @@ impl ClassSet {
 
     /// Return true if and only if this class set is empty.
     fn is_empty(&self) -> bool {
-        match *self {
-            ClassSet::Item(ClassSetItem::Empty(_)) => true,
-            _ => false,
-        }
+        matches!(*self, ClassSet::Item(ClassSetItem::Empty(_)))
     }
 }
 
@@ -1150,10 +1133,7 @@ impl RepetitionRange {
     /// The only case where a repetition range is invalid is if it is bounded
     /// and its start is greater than its end.
     pub fn is_valid(&self) -> bool {
-        match *self {
-            RepetitionRange::Bounded(s, e) if s > e => false,
-            _ => true,
-        }
+        !matches!(*self, RepetitionRange::Bounded(s, e) if s > e)
     }
 }
 
@@ -1313,10 +1293,7 @@ pub enum FlagsItemKind {
 impl FlagsItemKind {
     /// Returns true if and only if this item is a negation operator.
     pub fn is_negation(&self) -> bool {
-        match *self {
-            FlagsItemKind::Negation => true,
-            _ => false,
-        }
+        matches!(*self, FlagsItemKind::Negation)
     }
 }
 
@@ -1444,42 +1421,5 @@ impl Drop for ClassSet {
                 }
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    // We use a thread with an explicit stack size to test that our destructor
-    // for Ast can handle arbitrarily sized expressions in constant stack
-    // space. In case we run on a platform without threads (WASM?), we limit
-    // this test to Windows/Unix.
-    #[test]
-    #[cfg(any(unix, windows))]
-    fn no_stack_overflow_on_drop() {
-        use std::thread;
-
-        let run = || {
-            let span = || Span::splat(Position::new(0, 0, 0));
-            let mut ast = Ast::Empty(span());
-            for i in 0..200 {
-                ast = Ast::Group(Group {
-                    span: span(),
-                    kind: GroupKind::CaptureIndex(i),
-                    ast: Box::new(ast),
-                });
-            }
-            assert!(!ast.is_empty());
-        };
-
-        // We run our test on a thread with a small stack size so we can
-        // force the issue more easily.
-        thread::Builder::new()
-            .stack_size(1 << 10)
-            .spawn(run)
-            .unwrap()
-            .join()
-            .unwrap();
     }
 }

@@ -1408,8 +1408,7 @@ pub const V6_1: &'static [(char, char)] = &[
 
 pub const V6_2: &'static [(char, char)] = &[('₺', '₺')];
 
-pub const V6_3: &'static [(char, char)] =
-    &[('\u{61c}', '\u{61c}'), ('\u{2066}', '\u{2069}')];
+pub const V6_3: &'static [(char, char)] = &[('\u{61c}', '\u{61c}'), ('\u{2066}', '\u{2069}')];
 
 pub const V7_0: &'static [(char, char)] = &[
     ('Ϳ', 'Ϳ'),

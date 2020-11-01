@@ -154,17 +154,14 @@ The following features are available:
   `\p{sb=ATerm}`.
 */
 
-#![deny(missing_docs)]
 #![forbid(unsafe_code)]
 
 pub use error::{Error, Result};
-pub use parser::{Parser, ParserBuilder};
 pub use unicode::UnicodeWordError;
 
 pub mod ast;
 mod either;
 mod error;
-mod parser;
 mod unicode;
 #[rustfmt::skip]
 mod unicode_tables;
@@ -204,11 +201,26 @@ pub fn escape_into(text: &str, buf: &mut String) {
 /// Note that the set of characters for which this function returns `true` or
 /// `false` is fixed and won't change in a semver compatible release.
 pub fn is_meta_character(c: char) -> bool {
-    match c {
-        '\\' | '.' | '+' | '*' | '?' | '(' | ')' | '|' | '[' | ']' | '{' | '}' | '^' | '$'
-        | '#' | '&' | '-' | '~' => true,
-        _ => false,
-    }
+    matches!(
+        c,
+        '\\' | '.'
+            | '+'
+            | '*'
+            | '?'
+            | '('
+            | ')'
+            | '|'
+            | '['
+            | ']'
+            | '{'
+            | '}'
+            | '^'
+            | '$'
+            | '#'
+            | '&'
+            | '-'
+            | '~'
+    )
 }
 
 /// Returns true if and only if the given character is a Unicode word
@@ -254,10 +266,7 @@ pub fn try_is_word_character(c: char) -> std::result::Result<bool, UnicodeWordEr
 /// An ASCII word character is defined by the following character class:
 /// `[_0-9a-zA-Z]'.
 pub fn is_word_byte(c: u8) -> bool {
-    match c {
-        b'_' | b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z' => true,
-        _ => false,
-    }
+    matches!(c, b'_' | b'0'..=b'9' | b'a'..=b'z' | b'A'..=b'Z')
 }
 
 #[cfg(test)]

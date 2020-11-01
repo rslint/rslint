@@ -46,6 +46,12 @@ pub struct Printer {
     _priv: (),
 }
 
+impl Default for Printer {
+    fn default() -> Self {
+        PrinterBuilder::new().build()
+    }
+}
+
 impl Printer {
     /// Create a new printer.
     pub fn new() -> Printer {
@@ -57,13 +63,7 @@ impl Printer {
     /// here are a `fmt::Formatter` (which is available in `fmt::Display`
     /// implementations) or a `&mut String`.
     pub fn print<W: fmt::Write>(&mut self, ast: &Ast, wtr: W) -> fmt::Result {
-        visitor::visit(
-            ast,
-            Writer {
-                printer: self,
-                wtr: wtr,
-            },
-        )
+        visitor::visit(ast, Writer { printer: self, wtr })
     }
 }
 

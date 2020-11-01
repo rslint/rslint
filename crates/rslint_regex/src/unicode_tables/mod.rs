@@ -1,3 +1,5 @@
+#![allow(warnings, clippy::all)]
+
 #[cfg(feature = "unicode-age")]
 pub mod age;
 

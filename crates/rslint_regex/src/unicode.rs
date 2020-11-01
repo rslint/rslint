@@ -91,7 +91,7 @@ pub fn simple_fold(
 
         Ok(CASE_FOLDING_SIMPLE
             .binary_search_by_key(&c, |&(c1, _)| c1)
-            .map(|i| CASE_FOLDING_SIMPLE[i].1.iter().map(|&c| c))
+            .map(|i| CASE_FOLDING_SIMPLE[i].1.iter().copied())
             .map_err(|i| {
                 if i >= CASE_FOLDING_SIMPLE.len() {
                     None
@@ -453,7 +453,7 @@ fn ages(canonical_age: &str) -> Result<impl Iterator<Item = Range>> {
     fn imp(canonical_age: &str) -> Result<impl Iterator<Item = Range>> {
         use unicode_tables::age;
 
-        const AGES: &'static [(&'static str, Range)] = &[
+        const AGES: &[(&str, Range)] = &[
             ("V1_1", age::V1_1),
             ("V2_0", age::V2_0),
             ("V2_1", age::V2_1),
