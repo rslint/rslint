@@ -1,17 +1,30 @@
 #[has_side_effects]
 extern function debug(message: string)
 
-typedef Scope = u32
-typedef FuncId = u32
-typedef StmtId = u32
-typedef ExprId = u32
+typedef Scope = Scope { id: u32 }
 typedef Name = istring
+
+// Ids
+typedef GlobalId = GlobalId { id: u32 }
+typedef FuncId = FuncId { id: u32 }
+typedef StmtId = StmtId { id: u32 }
+typedef ExprId = ExprId { id: u32 }
+typedef AnyId =
+    AnyIdGlobal { global: GlobalId }
+    | AnyIdFunc { func: FuncId }
+    | AnyIdStmt { stmt: StmtId }
+    | AnyIdExpr { expr: ExprId }
 
 typedef Span = Span { start: u32, end: u32 }
 
 function to_string(span: Span): string {
     "Span{.start = ${span.start}, .end = ${span.end}}"
 }
+
+typedef OneOf<'A, 'B, 'C> =
+    First { a: 'A }
+    | Second { b: 'B }
+    | Third { c: 'C }
 
 typedef Pattern = SinglePattern { name: Name }
 typedef IPattern = Intern<Pattern>
@@ -20,7 +33,9 @@ typedef StmtKind =
     StmtVarDecl
     | StmtLetDecl
     | StmtConstDecl
-    | StmtExpr { expr_id: ExprId }
+    // No statement relation, use expr_id to find the
+    // associated expression
+    | StmtExpr { expr_id: Option<ExprId> }
     | StmtReturn
     | StmtIf
     | StmtBreak
@@ -34,16 +49,133 @@ typedef StmtKind =
     | StmtSwitch
     | StmtThrow
     | StmtTry
-    | StmtDebugger // No associated relation, they carry no data
+    // No associated relation, they carry no data
+    | StmtDebugger
+    // No associated relation, literally nothing
+    | StmtEmpty
 
-typedef ExprKind = ExprLit { kind: LitKind } | NameRef
+typedef ExprKind =
+    ExprLit { kind: LitKind }
+    | ExprNameRef
+    | ExprYield
+    | ExprAwait
+    | ExprArrow
+    | ExprUnaryOp
+    | ExprBinOp
+    | ExprTernary
+    // No associated relation
+    | ExprThis
+    | ExprTemplate
+    | ExprArray
+    // Associated with the Property relation
+    | ExprObject
+    | ExprGrouping { inner: Option<ExprId> }
+    | ExprBracket
+    | ExprDot
+    | ExprNew
+    | ExprCall
+    | ExprAssign
+    | ExprSequence { exprs: Vec<ExprId> }
+    | ExprNewTarget
+    | ExprImportMeta
+    | ExprInlineFunc
+    | ExprSuperCall { args: Option<Vec<ExprId>> }
+    | ExprImportCall { arg: Option<ExprId> }
+    | ExprClass
+
+typedef UnaryOperand =
+    UnaryIncrement
+    | UnaryDecrement
+    | UnaryDelete
+    | UnaryVoid
+    | UnaryTypeof
+    | UnaryPlus
+    | UnaryMinus
+    | UnaryBitwiseNot
+    | UnaryLogicalNot
+    | UnaryAwait
+
+typedef BinOperand =
+    BinLessThan
+    | BinGreaterThan
+    | BinLessThanOrEqual
+    | BinGreaterThanOrEqual
+    | BinEquality
+    | BinStrictEquality
+    | BinInequality
+    | BinStrictInequality
+    | BinPlus
+    | BinMinus
+    | BinTimes
+    | BinDivide
+    | BinRemainder
+    | BinExponent
+    | BinLeftShift
+    | BinRightShift
+    | BinUnsignedRightShift
+    | BinBitwiseAnd
+    | BinBitwiseOr
+    | BinBitwiseXor
+    | BinNullishCoalescing
+    | BinLogicalOr
+    | BinLogicalAnd
+    | BinIn
+    | BinInstanceof
+
+typedef AssignOperand =
+    OpAssign
+    | OpAddAssign
+    | OpSubtractAssign
+    | OpTimesAssign
+    | OpRemainderAssign
+    | OpExponentAssign
+    | OpLeftShiftAssign
+    | OpRightShiftAssign
+    | OpUnsignedRightShiftAssign
+    | OpBitwiseAndAssign
+    | OpBitwiseOrAssign
+    | OpBitwiseXorAssign
+    | OpLogicalAndAssign
+    | OpLogicalOrAssign
+    | OpNullishCoalescingAssign
+
 typedef LitKind = LitNumber | LitBigInt | LitString | LitNull | LitBool | LitRegex
-typedef ForInit = ForDecl { stmt_id: StmtId } | ForExpr { expr_id: ExprId }
+typedef ForInit = ForDecl { stmt_id: Option<StmtId> } | ForExpr { expr_id: ExprId }
 typedef SwitchClause = CaseClause { test: Option<ExprId> } | DefaultClause
 typedef TryHandler = TryHandler { error: Option<IPattern>, body: Option<StmtId> }
+typedef ArrayElement = ArrExpr { expr: ExprId } | ArrSpread { spread: Option<ExprId> }
+
+typedef PropertyKey =
+    ComputedKey { prop: Option<ExprId> }
+    | LiteralKey { lit: ExprId }
+    | IdentKey { ident: Name }
+
+typedef PropertyVal =
+    PropLit { lit: Option<ExprId> }
+    | PropGetter { body: Option<StmtId> }
+    | PropSetter { params: Option<Vec<IPattern>> }
+    | PropSpread { value: Option<ExprId> }
+    | PropInit { value: Option<ExprId> }
+    | PropIdent
+    | PropMethod { params: Option<Vec<IPattern>>, body: Option<StmtId> }
+
+typedef ClassElement =
+    ClassEmptyElem
+    | ClassMethod {
+        name: Option<PropertyKey>,
+        params: Option<Vec<IPattern>>,
+        body: Option<StmtId>
+    }
+    | ClassStaticMethod {
+        name: Option<PropertyKey>,
+        params: Option<Vec<IPattern>>,
+        body: Option<StmtId>
+    }
 
 // The input scope relationships, just map parent<-child for one generation
+// TODO: Scope spans, make clear if a span is implicit or explicit
 input relation InputScope(parent: Scope, child: Scope)
+input relation EveryScope(scope: Scope)
 
 // Functions
 input relation Function(id: FuncId, name: Option<Name>, scope: Scope)
@@ -55,7 +187,7 @@ input relation VarDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option
 input relation LetDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option<ExprId>)
 input relation ConstDecl(stmt_id: StmtId, pattern: Option<IPattern>, value: Option<ExprId>)
 input relation Return(stmt_id: StmtId, value: Option<ExprId>)
-input relation If(stmt_id: StmtId, cond: Option<ExprId>, if_body: Option<ExprId>, else_body: Option<ExprId>)
+input relation If(stmt_id: StmtId, cond: Option<ExprId>, if_body: Option<StmtId>, else_body: Option<StmtId>)
 input relation Break(stmt_id: StmtId, label: Option<Name>)
 input relation DoWhile(stmt_id: StmtId, body: Option<StmtId>, cond: Option<ExprId>)
 input relation While(stmt_id: StmtId, cond: Option<ExprId>, body: Option<StmtId>)
@@ -73,11 +205,32 @@ input relation Try(stmt_id: StmtId, body: Option<StmtId>, handler: TryHandler, f
 // Expressions
 input relation Expression(id: ExprId, kind: ExprKind, scope: Scope, span: Span)
 // Literals
-input relation ExprNumber(id: ExprId, value: double)
-input relation ExprBigInt(id: ExprId, value: bigint)
-input relation ExprString(id: ExprId, value: istring)
-input relation ExprBool(id: ExprId, value: bool)
-input relation ExprNameRef(id: ExprId, value: Name)
+input relation ExprNumber(expr_id: ExprId, value: double)
+input relation ExprBigInt(expr_id: ExprId, value: bigint)
+input relation ExprString(expr_id: ExprId, value: istring)
+input relation ExprBool(expr_id: ExprId, value: bool)
+input relation NameRef(expr_id: ExprId, value: Name)
+input relation Yield(expr_id: ExprId, value: Option<ExprId>)
+input relation Await(expr_id: ExprId, value: Option<ExprId>)
+input relation Arrow(expr_id: ExprId, body: Option<Either<ExprId, StmtId>>)
+input relation ArrowParam(expr_id: ExprId, param: IPattern) // TODO: Inline this?
+input relation UnaryOp(expr_id: ExprId, op: Option<UnaryOperand>, expr: Option<ExprId>)
+input relation BinOp(expr_id: ExprId, op: Option<BinOperand>, lhs: Option<ExprId>, rhs: Option<ExprId>)
+input relation Ternary(expr_id: ExprId, test: Option<ExprId>, true_val: Option<ExprId>, false_val: Option<ExprId>)
+input relation Template(expr_id: ExprId, tag: Option<ExprId>, elements: Vec<ExprId>)
+input relation Array(expr_id: ExprId, elements: Vec<ArrayElement>)
+input relation Property(expr_id: ExprId, key: Option<PropertyKey>, val: Option<PropertyVal>)
+input relation BracketAccess(expr_id: ExprId, object: Option<ExprId>, prop: Option<ExprId>)
+input relation DotAccess(expr_id: ExprId, object: Option<ExprId>, prop: Option<Name>)
+input relation New(expr_id: ExprId, object: Option<ExprId>, args: Option<Vec<ExprId>>)
+input relation Call(expr_id: ExprId, callee: Option<ExprId>, args: Option<Vec<ExprId>>)
+input relation Assign(expr_id: ExprId, lhs: Option<Either<IPattern, ExprId>>, rhs: Option<ExprId>, op: Option<AssignOperand>)
+input relation InlineFunc(expr_id: ExprId, name: Option<Name>, body: Option<StmtId>)
+input relation InlineFuncParam(expr_id: ExprId, param: IPattern) // TODO: Inline this?
+input relation ClassExpr(expr_id: ExprId, element: Option<ClassElement>)
+
+// Globals
+input relation ImplicitGlobal(id: GlobalId, name: Name)
 
 // Build the scope graph, unrolling the parent<-child relationships to full trees
 //
@@ -106,32 +259,65 @@ relation ClosestFunction(scope: Scope, func: FuncId)
 ClosestFunction(scope, func) :- Function(func, _, scope).
 ClosestFunction(scope, func) :- Function(func, _, func_scope), ChildScope(func_scope, scope).
 
-relation NameInScope(name: Name, scope: Scope, declared_in: Either<StmtId, FuncId>)
+relation NameInScope(name: Name, scope: Scope, declared_in: AnyId)
+// Add globals to every scope
+NameInScope(name, scope, AnyIdGlobal { global }) :- ImplicitGlobal(global, name), EveryScope(scope).
+
 // `let` declarations
-NameInScope(name, scope, Left { stmt }) :-
+NameInScope(name, scope, AnyIdStmt { stmt }) :-
     LetDecl(stmt, Some { pat }, _),
     SinglePattern { var name } = pat.ival(),
     Statement(stmt, _, scope, _).
 
 // `const` declarations
-NameInScope(name, scope, Left { stmt }) :-
+NameInScope(name, scope, AnyIdStmt { stmt }) :-
     ConstDecl(stmt, Some { pat }, _),
     SinglePattern { var name } = pat.ival(),
     Statement(stmt, _, scope, _).
 
 // `var` declarations
-NameInScope(name, scope, Left { stmt }) :-
+NameInScope(name, scope, AnyIdStmt { stmt }) :-
     VarDecl(stmt, Some { pat }, _),
     SinglePattern { var name } = pat.ival(),
     Statement(stmt, _, decl_scope, _),
     // Bubble `var` up to the nearest function's scope?
-    ClosestFunction(decl_scope, scope).
+    ClosestFunction(decl_scope, func),
+    Function(func, _, scope).
+
+// Functions
+NameInScope(name, scope, AnyIdFunc { func }) :- Function(func, Some { name }, scope).
 
 // Function arguments
-NameInScope(name, scope, Right { func }) :-
+NameInScope(name, scope, AnyIdFunc { func }) :-
     FunctionArg(func, pat),
     SinglePattern { var name } = pat.ival(),
     Function(func, _, scope).
+
+// Closure arguments
+NameInScope(name, scope, AnyIdExpr { expr }) :-
+    ArrowParam(expr, pat),
+    SinglePattern { var name } = pat.ival(),
+    // Get the body's expression and put the parameters in-scope
+    // there, not within the arrow expression's scope
+    // TODO: Can I address Expr/Stmt at the same time instead
+    //       of seperate rules?
+    Arrow(expr, Some { Left { expr_body } }),
+    Expression(expr_body, _, scope, _).
+NameInScope(name, scope, AnyIdExpr { expr }) :-
+    ArrowParam(expr, pat),
+    SinglePattern { var name } = pat.ival(),
+    // Get the body's statement and put the parameters in-scope
+    // there, not within the arrow expression's scope
+    Arrow(expr, Some { Right { stmt_body } }),
+    Statement(stmt_body, _, scope, _).
+
+// Inline function arguments
+NameInScope(name, scope, AnyIdExpr { expr }) :-
+    InlineFuncParam(expr, pat),
+    SinglePattern { var name } = pat.ival(),
+    // TODO: Add the function's name somewhere too?
+    InlineFunc(expr, _, Some { body }),
+    Statement(body, _, scope, _).
 
 // Walk variables down scopes
 NameInScope(name, scope, declared_in) :-
@@ -144,15 +330,15 @@ NameInScope(name, scope, declared_in) :-
 //       scopes for a declaration
 output relation InvalidNameUse(name: Name, scope: Scope, span: Span)
 InvalidNameUse(name, scope, span) :-
-    ExprNameRef(expr, name),
-    Expression(expr, NameRef, scope, span),
+    NameRef(expr, name),
+    Expression(expr, ExprNameRef, scope, span),
     not NameInScope(name, scope, _).
 
 // `var` usages that happen before the declaration
 output relation VarUseBeforeDeclaration(name: Name, used_in: Span, declared_in: Span)
 VarUseBeforeDeclaration(name, used_in, declared_in) :-
-    ExprNameRef(expr, name),
-    Expression(expr, NameRef, used_scope, used_in),
-    NameInScope(name, used_scope, Left { .l = stmt }),
+    NameRef(expr, name),
+    Expression(expr, ExprNameRef, used_scope, used_in),
+    NameInScope(name, used_scope, AnyIdStmt { .stmt = stmt }),
     Statement(stmt, StmtVarDecl, declared_scope, declared_in),
     ChildScope(used_scope, declared_scope).

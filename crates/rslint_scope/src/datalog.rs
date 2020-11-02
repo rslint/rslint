@@ -1,3 +1,4 @@
+use crate::globals::{BROWSER_GLOBALS, ECMA_GLOBALS, NODE_GLOBALS};
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
     int::Int,
@@ -5,17 +6,17 @@ use differential_datalog::{
     record::Record,
     DDlog, DeltaMap,
 };
-use rslint_core::rule_prelude::{BigInt, TextRange};
+use rslint_parser::{BigInt, TextRange};
 use rslint_scoping_ddlog::{api::HDDlog, relid2name, Relations};
 use std::{
-    marker::PhantomData,
+    cell::{Cell, RefCell},
     mem,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{Arc, Mutex},
 };
-use types::{internment::Intern, *};
+use types::{ddlog_std::Either, internment::Intern, *};
 
 // TODO: Work on the internment situation, I don't like
-//       having to allocate strings for stuff
+//       having to allocate strings for idents
 
 pub type DatalogResult<T> = Result<T, String>;
 
@@ -45,45 +46,59 @@ impl From<isize> for Weight {
 #[derive(Debug, Clone)]
 pub struct Datalog {
     datalog: Arc<Mutex<DatalogInner>>,
-    // Kinda hacky, but I don't know any way to lock the transaction
-    // state while also giving us the clone-ability that `Arc` provides.
-    // `Rc` is both !Send and !Sync, so that doesn't work without
-    // unsafe impls of Send/Sync on `Datalog`. Lifetimes could be used, the
-    // 'ddlog lifetime is already threaded through code so that could work
-    // combined with a `RefCell` around `Datalog.updates` to allow mutation.
-    // FIXME: Do that ^
-    transaction_lock: Arc<Mutex<()>>,
 }
 
 impl Datalog {
     pub fn new() -> DatalogResult<Self> {
         let (hddlog, init_state) = HDDlog::run(2, false, |_: usize, _: &Record, _: isize| {})?;
         let this = Self {
-            datalog: Arc::new(Mutex::new(DatalogInner {
-                hddlog,
-                updates: Vec::with_capacity(100),
-                scope_id: 0,
-                function_id: 0,
-                statement_id: 0,
-                expression_id: 0,
-            })),
-            transaction_lock: Arc::new(Mutex::new(())),
+            datalog: Arc::new(Mutex::new(DatalogInner::new(hddlog))),
         };
         this.update(init_state);
 
         Ok(this)
     }
 
+    pub fn inject_globals<I>(&self, globals: I) -> DatalogResult<DerivedFacts>
+    where
+        I: IntoIterator<Item = String>,
+    {
+        self.transaction(|trans| {
+            for global in globals {
+                trans.implicit_global(Intern::new(global));
+            }
+
+            Ok(())
+        })
+    }
+
+    pub fn with_node_globals(&self) -> DatalogResult<DerivedFacts> {
+        self.inject_globals(NODE_GLOBALS.iter().map(ToString::to_string))
+    }
+
+    pub fn with_ecma_globals(&self) -> DatalogResult<DerivedFacts> {
+        self.inject_globals(ECMA_GLOBALS.iter().map(ToString::to_string))
+    }
+
+    pub fn with_browser_globals(&self) -> DatalogResult<DerivedFacts> {
+        self.inject_globals(BROWSER_GLOBALS.iter().map(ToString::to_string))
+    }
+
+    // Note: Ddlog only allows one concurrent transaction, so all calls to this function
+    //       will block until the previous completes
+    // TODO: We can actually add to the transaction batch concurrently, but transactions
+    //       themselves have to be synchronized in some fashion (barrier?)
     pub fn transaction<F>(&self, transaction: F) -> DatalogResult<DerivedFacts>
     where
         F: for<'trans> FnOnce(&mut DatalogTransaction<'trans>) -> DatalogResult<()>,
     {
         let delta = {
-            // DDlog only allows one concurrent transaction, so this lock keeps transactions
-            // in serial
-            let __transaction_guard = self.transaction_lock.lock().unwrap();
+            let datalog = self
+                .datalog
+                .lock()
+                .expect("failed to lock datalog for transaction");
 
-            let mut trans = DatalogTransaction::new(self.datalog.clone())?;
+            let mut trans = DatalogTransaction::new(&*datalog)?;
             transaction(&mut trans)?;
             trans.commit()?
         };
@@ -122,7 +137,7 @@ impl Datalog {
 
 impl Default for Datalog {
     fn default() -> Self {
-        Self::new().unwrap()
+        Self::new().expect("failed to create ddlog instance")
     }
 }
 
@@ -130,50 +145,52 @@ impl Default for Datalog {
 #[derive(Debug)]
 pub struct DatalogInner {
     hddlog: HDDlog,
-    updates: Vec<Update<DDValue>>,
-    scope_id: Scope,
-    function_id: FuncId,
-    statement_id: StmtId,
-    expression_id: ExprId,
+    updates: RefCell<Vec<Update<DDValue>>>,
+    scope_id: Cell<Scope>,
+    global_id: Cell<GlobalId>,
+    function_id: Cell<FuncId>,
+    statement_id: Cell<StmtId>,
+    expression_id: Cell<ExprId>,
 }
 
 impl DatalogInner {
-    fn inc_scope(&mut self) -> Scope {
-        let temp = self.scope_id;
-        self.scope_id += 1;
-        temp
+    fn new(hddlog: HDDlog) -> Self {
+        Self {
+            hddlog,
+            updates: RefCell::new(Vec::with_capacity(100)),
+            scope_id: Cell::new(Scope::new(0)),
+            global_id: Cell::new(GlobalId::new(0)),
+            function_id: Cell::new(FuncId::new(0)),
+            statement_id: Cell::new(StmtId::new(0)),
+            expression_id: Cell::new(ExprId::new(0)),
+        }
     }
 
-    fn inc_function(&mut self) -> FuncId {
-        let temp = self.function_id;
-        self.function_id += 1;
-        temp
+    fn inc_scope(&self) -> Scope {
+        self.scope_id.inc()
     }
 
-    fn inc_statement(&mut self) -> StmtId {
-        let temp = self.statement_id;
-        self.statement_id += 1;
-        temp
+    fn inc_global(&self) -> GlobalId {
+        self.global_id.inc()
     }
 
-    fn inc_expression(&mut self) -> ExprId {
-        let temp = self.expression_id;
-        self.expression_id += 1;
-        temp
+    fn inc_function(&self) -> FuncId {
+        self.function_id.inc()
     }
 
-    fn push_scope(&mut self, scope: InputScope) {
-        self.updates.push(Update::Insert {
-            relid: Relations::InputScope as RelId,
-            v: scope.into_ddvalue(),
-        });
+    fn inc_statement(&self) -> StmtId {
+        self.statement_id.inc()
     }
 
-    fn insert<V>(&mut self, relation: RelId, val: V) -> &mut Self
+    fn inc_expression(&self) -> ExprId {
+        self.expression_id.inc()
+    }
+
+    fn insert<V>(&self, relation: RelId, val: V) -> &Self
     where
         V: DDValConvert,
     {
-        self.updates.push(Update::Insert {
+        self.updates.borrow_mut().push(Update::Insert {
             relid: relation,
             v: val.into_ddvalue(),
         });
@@ -183,51 +200,57 @@ impl DatalogInner {
 }
 
 pub struct DatalogTransaction<'ddlog> {
-    datalog: Arc<Mutex<DatalogInner>>,
-    __lifetime: PhantomData<&'ddlog ()>,
+    datalog: &'ddlog DatalogInner,
 }
 
 impl<'ddlog> DatalogTransaction<'ddlog> {
-    fn new(datalog: Arc<Mutex<DatalogInner>>) -> DatalogResult<Self> {
-        datalog.lock().unwrap().hddlog.transaction_start()?;
+    fn new(datalog: &'ddlog DatalogInner) -> DatalogResult<Self> {
+        datalog.hddlog.transaction_start()?;
 
-        Ok(Self {
-            datalog,
-            __lifetime: PhantomData,
-        })
+        Ok(Self { datalog })
     }
 
-    pub fn scope(&self) -> DatalogScope<'_> {
-        let mut datalog = self.datalog.lock().unwrap();
-
-        let parent = datalog.scope_id;
-        let scope_id = datalog.inc_scope();
-        datalog.push_scope(InputScope {
-            parent,
-            child: scope_id,
-        });
+    pub fn scope(&self) -> DatalogScope<'ddlog> {
+        let parent = self.datalog.scope_id.get();
+        let scope_id = self.datalog.inc_scope();
+        self.datalog
+            .insert(
+                Relations::EveryScope as RelId,
+                InputScope {
+                    parent,
+                    child: scope_id,
+                },
+            )
+            .insert(Relations::InputScope as RelId, scope_id);
 
         DatalogScope {
-            datalog: self.datalog.clone(),
+            datalog: self.datalog,
             scope_id,
-            __lifetime: PhantomData,
         }
+    }
+
+    fn implicit_global(&self, name: Name) -> GlobalId {
+        let id = self.datalog.inc_global();
+        self.datalog.insert(
+            Relations::ImplicitGlobal as RelId,
+            ImplicitGlobal { id, name },
+        );
+
+        id
     }
 
     pub fn commit(self) -> DatalogResult<DeltaMap<DDValue>> {
-        let mut datalog = self.datalog.lock().unwrap();
+        let updates = mem::take(&mut *self.datalog.updates.borrow_mut());
+        self.datalog.hddlog.apply_valupdates(updates.into_iter())?;
 
-        let updates = mem::take(&mut datalog.updates);
-        datalog.hddlog.apply_valupdates(updates.into_iter())?;
+        let delta = self.datalog.hddlog.transaction_commit_dump_changes()?;
 
-        let delta = datalog.hddlog.transaction_commit_dump_changes()?;
-
-        #[cfg(debug_assertions)]
-        {
-            println!("== start transaction ==");
-            dump_delta(&delta);
-            println!("==  end transaction  ==\n\n");
-        }
+        // #[cfg(debug_assertions)]
+        // {
+        //     println!("== start transaction ==");
+        //     dump_delta(&delta);
+        //     println!("==  end transaction  ==\n\n");
+        // }
 
         Ok(delta)
     }
@@ -236,37 +259,47 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
 pub trait DatalogBuilder<'ddlog> {
     fn scope_id(&self) -> Scope;
 
-    fn datalog(&self) -> &Arc<Mutex<DatalogInner>>;
-
-    fn datalog_mut(&self) -> MutexGuard<'_, DatalogInner> {
-        self.datalog().lock().unwrap()
-    }
+    fn datalog(&self) -> &'ddlog DatalogInner;
 
     fn scope(&self) -> DatalogScope<'ddlog> {
-        let mut datalog = self.datalog_mut();
-        let new_scope_id = datalog.inc_scope();
-        datalog.push_scope(InputScope {
-            parent: self.scope_id(),
-            child: new_scope_id,
-        });
+        let parent = self.datalog().scope_id.get();
+        let scope_id = self.datalog().inc_scope();
+        self.datalog()
+            .insert(
+                Relations::EveryScope as RelId,
+                InputScope {
+                    parent,
+                    child: scope_id,
+                },
+            )
+            .insert(Relations::InputScope as RelId, scope_id);
 
         DatalogScope {
-            datalog: self.datalog().clone(),
-            scope_id: new_scope_id,
-            __lifetime: PhantomData,
+            datalog: self.datalog(),
+            scope_id,
         }
     }
 
     fn next_function_id(&self) -> FuncId {
-        self.datalog_mut().inc_function()
+        self.datalog().inc_function()
     }
 
     fn next_expr_id(&self) -> ExprId {
-        self.datalog_mut().inc_expression()
+        self.datalog().inc_expression()
     }
 
-    fn decl_function(&self, id: FuncId, name: Option<Intern<String>>) -> DatalogFunction<'ddlog> {
-        self.datalog_mut().insert(
+    fn implicit_global(&self, name: Name) -> GlobalId {
+        let id = self.datalog().inc_global();
+        self.datalog().insert(
+            Relations::ImplicitGlobal as RelId,
+            ImplicitGlobal { id, name },
+        );
+
+        id
+    }
+
+    fn decl_function(&self, id: FuncId, name: Option<Name>) -> DatalogFunction<'ddlog> {
+        self.datalog().insert(
             Relations::Function as RelId,
             Function {
                 id,
@@ -276,9 +309,9 @@ pub trait DatalogBuilder<'ddlog> {
         );
 
         DatalogFunction {
-            datalog: self.datalog().clone(),
+            datalog: self.datalog(),
             func_id: id,
-            __lifetime: PhantomData,
+            scope_id: self.scope_id(),
         }
     }
 
@@ -287,10 +320,10 @@ pub trait DatalogBuilder<'ddlog> {
         pattern: Option<Intern<Pattern>>,
         value: Option<ExprId>,
         span: TextRange,
-    ) -> DatalogScope<'ddlog> {
+    ) -> (StmtId, DatalogScope<'ddlog>) {
         let scope = self.scope();
-        {
-            let mut datalog = scope.datalog_mut();
+        let stmt_id = {
+            let datalog = scope.datalog();
             let stmt_id = datalog.inc_statement();
 
             datalog
@@ -311,9 +344,11 @@ pub trait DatalogBuilder<'ddlog> {
                         span: span.into(),
                     },
                 );
-        }
 
-        scope
+            stmt_id
+        };
+
+        (stmt_id, scope)
     }
 
     fn decl_const(
@@ -321,10 +356,10 @@ pub trait DatalogBuilder<'ddlog> {
         pattern: Option<Intern<Pattern>>,
         value: Option<ExprId>,
         span: TextRange,
-    ) -> DatalogScope<'ddlog> {
+    ) -> (StmtId, DatalogScope<'ddlog>) {
         let scope = self.scope();
-        {
-            let mut datalog = scope.datalog_mut();
+        let stmt_id = {
+            let datalog = scope.datalog();
             let stmt_id = datalog.inc_statement();
 
             datalog
@@ -345,9 +380,11 @@ pub trait DatalogBuilder<'ddlog> {
                         span: span.into(),
                     },
                 );
-        }
 
-        scope
+            stmt_id
+        };
+
+        (stmt_id, scope)
     }
 
     fn decl_var(
@@ -355,10 +392,10 @@ pub trait DatalogBuilder<'ddlog> {
         pattern: Option<Intern<Pattern>>,
         value: Option<ExprId>,
         span: TextRange,
-    ) -> DatalogScope<'ddlog> {
+    ) -> (StmtId, DatalogScope<'ddlog>) {
         let scope = self.scope();
-        {
-            let mut datalog = scope.datalog_mut();
+        let stmt_id = {
+            let datalog = scope.datalog();
             let stmt_id = datalog.inc_statement();
 
             datalog
@@ -379,182 +416,15 @@ pub trait DatalogBuilder<'ddlog> {
                         span: span.into(),
                     },
                 );
-        }
 
-        scope
-    }
+            stmt_id
+        };
 
-    fn number(&self, number: f64, span: TextRange) -> ExprId {
-        let mut datalog = self.datalog_mut();
-        let id = datalog.inc_expression();
-
-        datalog
-            .insert(
-                Relations::ExprNumber as RelId,
-                ExprNumber {
-                    id,
-                    value: number.into(),
-                },
-            )
-            .insert(
-                Relations::Expression as RelId,
-                Expression {
-                    id,
-                    kind: ExprKind::ExprLit {
-                        kind: LitKind::LitNumber,
-                    },
-                    scope: self.scope_id(),
-                    span: span.into(),
-                },
-            );
-
-        id
-    }
-
-    fn bigint(&self, bigint: BigInt, span: TextRange) -> ExprId {
-        let mut datalog = self.datalog_mut();
-        let id = datalog.inc_expression();
-
-        datalog
-            .insert(
-                Relations::ExprNumber as RelId,
-                ExprBigInt {
-                    id,
-                    value: Int::from_bigint(bigint),
-                },
-            )
-            .insert(
-                Relations::Expression as RelId,
-                Expression {
-                    id,
-                    kind: ExprKind::ExprLit {
-                        kind: LitKind::LitBigInt,
-                    },
-                    scope: self.scope_id(),
-                    span: span.into(),
-                },
-            );
-
-        id
-    }
-
-    fn string(&self, string: String, span: TextRange) -> ExprId {
-        let mut datalog = self.datalog_mut();
-        let id = datalog.inc_expression();
-
-        datalog
-            .insert(
-                Relations::ExprString as RelId,
-                ExprString {
-                    id,
-                    value: internment::intern(&string),
-                },
-            )
-            .insert(
-                Relations::Expression as RelId,
-                Expression {
-                    id,
-                    kind: ExprKind::ExprLit {
-                        kind: LitKind::LitString,
-                    },
-                    scope: self.scope_id(),
-                    span: span.into(),
-                },
-            );
-
-        id
-    }
-
-    fn null(&self, span: TextRange) -> ExprId {
-        let mut datalog = self.datalog_mut();
-        let id = datalog.inc_expression();
-
-        datalog.insert(
-            Relations::Expression as RelId,
-            Expression {
-                id,
-                kind: ExprKind::ExprLit {
-                    kind: LitKind::LitNull,
-                },
-                scope: self.scope_id(),
-                span: span.into(),
-            },
-        );
-
-        id
-    }
-
-    fn boolean(&self, boolean: bool, span: TextRange) -> ExprId {
-        let mut datalog = self.datalog_mut();
-        let id = datalog.inc_expression();
-
-        datalog
-            .insert(
-                Relations::ExprBool as RelId,
-                ExprBool { id, value: boolean },
-            )
-            .insert(
-                Relations::Expression as RelId,
-                Expression {
-                    id,
-                    kind: ExprKind::ExprLit {
-                        kind: LitKind::LitBool,
-                    },
-                    scope: self.scope_id(),
-                    span: span.into(),
-                },
-            );
-
-        id
-    }
-
-    // TODO: Do we need to take in the regex literal?
-    fn regex(&self, span: TextRange) -> ExprId {
-        let mut datalog = self.datalog_mut();
-        let id = datalog.inc_expression();
-
-        datalog.insert(
-            Relations::Expression as RelId,
-            Expression {
-                id,
-                kind: ExprKind::ExprLit {
-                    kind: LitKind::LitRegex,
-                },
-                scope: self.scope_id(),
-                span: span.into(),
-            },
-        );
-
-        id
-    }
-
-    fn name_ref(&self, name: String, span: TextRange) -> ExprId {
-        let mut datalog = self.datalog_mut();
-        let id = datalog.inc_expression();
-
-        datalog
-            .insert(
-                Relations::ExprNameRef as RelId,
-                ExprNameRef {
-                    id,
-                    value: internment::intern(&name),
-                },
-            )
-            .insert(
-                Relations::Expression as RelId,
-                Expression {
-                    id,
-                    kind: ExprKind::NameRef,
-                    scope: self.scope_id(),
-                    span: span.into(),
-                },
-            );
-
-        id
+        (stmt_id, scope)
     }
 
     fn ret(&self, value: Option<ExprId>, span: TextRange) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -585,7 +455,7 @@ pub trait DatalogBuilder<'ddlog> {
         else_body: Option<StmtId>,
         span: TextRange,
     ) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -612,7 +482,7 @@ pub trait DatalogBuilder<'ddlog> {
     }
 
     fn brk(&self, label: Option<String>, span: TextRange) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -637,7 +507,7 @@ pub trait DatalogBuilder<'ddlog> {
     }
 
     fn do_while(&self, body: Option<StmtId>, cond: Option<ExprId>, span: TextRange) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -663,7 +533,7 @@ pub trait DatalogBuilder<'ddlog> {
     }
 
     fn while_stmt(&self, cond: Option<ExprId>, body: Option<StmtId>, span: TextRange) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -696,7 +566,7 @@ pub trait DatalogBuilder<'ddlog> {
         body: Option<StmtId>,
         span: TextRange,
     ) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -730,7 +600,7 @@ pub trait DatalogBuilder<'ddlog> {
         body: Option<StmtId>,
         span: TextRange,
     ) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -757,7 +627,7 @@ pub trait DatalogBuilder<'ddlog> {
     }
 
     fn cont(&self, label: Option<String>, span: TextRange) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -782,7 +652,7 @@ pub trait DatalogBuilder<'ddlog> {
     }
 
     fn with(&self, cond: Option<ExprId>, body: Option<StmtId>, span: TextRange) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -808,7 +678,7 @@ pub trait DatalogBuilder<'ddlog> {
     }
 
     fn label(&self, name: Option<String>, body: Option<StmtId>, span: TextRange) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -839,7 +709,7 @@ pub trait DatalogBuilder<'ddlog> {
         cases: Vec<(SwitchClause, Option<StmtId>)>,
         span: TextRange,
     ) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -875,7 +745,7 @@ pub trait DatalogBuilder<'ddlog> {
     }
 
     fn throw(&self, exception: Option<ExprId>, span: TextRange) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -906,7 +776,7 @@ pub trait DatalogBuilder<'ddlog> {
         finalizer: Option<StmtId>,
         span: TextRange,
     ) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
@@ -933,7 +803,7 @@ pub trait DatalogBuilder<'ddlog> {
     }
 
     fn debugger(&self, span: TextRange) -> StmtId {
-        let mut datalog = self.datalog_mut();
+        let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog.insert(
@@ -948,13 +818,807 @@ pub trait DatalogBuilder<'ddlog> {
 
         stmt_id
     }
+
+    fn stmt_expr(&self, expr: Option<ExprId>, span: TextRange) -> StmtId {
+        let datalog = self.datalog();
+        let stmt_id = datalog.inc_statement();
+
+        datalog.insert(
+            Relations::Statement as RelId,
+            Statement {
+                id: stmt_id,
+                kind: StmtKind::StmtExpr {
+                    expr_id: expr.into(),
+                },
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        stmt_id
+    }
+
+    fn empty(&self, span: TextRange) -> StmtId {
+        let datalog = self.datalog();
+        let stmt_id = datalog.inc_statement();
+
+        datalog.insert(
+            Relations::Statement as RelId,
+            Statement {
+                id: stmt_id,
+                kind: StmtKind::StmtEmpty,
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        stmt_id
+    }
+
+    fn number(&self, number: f64, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::ExprNumber as RelId,
+                ExprNumber {
+                    expr_id,
+                    value: number.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprLit {
+                        kind: LitKind::LitNumber,
+                    },
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn bigint(&self, bigint: BigInt, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::ExprNumber as RelId,
+                ExprBigInt {
+                    expr_id,
+                    value: Int::from_bigint(bigint),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprLit {
+                        kind: LitKind::LitBigInt,
+                    },
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn string(&self, string: String, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::ExprString as RelId,
+                ExprString {
+                    expr_id,
+                    value: internment::intern(&string),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprLit {
+                        kind: LitKind::LitString,
+                    },
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn null(&self, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprLit {
+                    kind: LitKind::LitNull,
+                },
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        expr_id
+    }
+
+    fn boolean(&self, boolean: bool, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::ExprBool as RelId,
+                ExprBool {
+                    expr_id,
+                    value: boolean,
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprLit {
+                        kind: LitKind::LitBool,
+                    },
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    // TODO: Do we need to take in the regex literal?
+    fn regex(&self, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprLit {
+                    kind: LitKind::LitRegex,
+                },
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        expr_id
+    }
+
+    fn name_ref(&self, name: String, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::NameRef as RelId,
+                NameRef {
+                    expr_id,
+                    value: internment::intern(&name),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprNameRef,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn yield_expr(&self, value: Option<ExprId>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::Yield as RelId,
+                Yield {
+                    expr_id,
+                    value: value.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprYield,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn await_expr(&self, value: Option<ExprId>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::Await as RelId,
+                Await {
+                    expr_id,
+                    value: value.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprAwait,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn arrow(
+        &self,
+        body: Option<Either<ExprId, StmtId>>,
+        params: Vec<IPattern>,
+        span: TextRange,
+    ) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::Arrow as RelId,
+                Arrow {
+                    expr_id,
+                    body: body.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprArrow,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        for param in params {
+            datalog.insert(
+                Relations::ArrowParam as RelId,
+                ArrowParam { expr_id, param },
+            );
+        }
+
+        expr_id
+    }
+
+    fn unary(&self, op: Option<UnaryOperand>, expr: Option<ExprId>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::UnaryOp as RelId,
+                UnaryOp {
+                    expr_id,
+                    op: op.into(),
+                    expr: expr.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprUnaryOp,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn bin(
+        &self,
+        op: Option<BinOperand>,
+        lhs: Option<ExprId>,
+        rhs: Option<ExprId>,
+        span: TextRange,
+    ) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::BinOp as RelId,
+                BinOp {
+                    expr_id,
+                    op: op.into(),
+                    lhs: lhs.into(),
+                    rhs: rhs.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprBinOp,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn ternary(
+        &self,
+        test: Option<ExprId>,
+        true_val: Option<ExprId>,
+        false_val: Option<ExprId>,
+        span: TextRange,
+    ) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::Ternary as RelId,
+                Ternary {
+                    expr_id,
+                    test: test.into(),
+                    true_val: true_val.into(),
+                    false_val: false_val.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprTernary,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn this(&self, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprThis,
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        expr_id
+    }
+
+    fn template(&self, tag: Option<ExprId>, elements: Vec<ExprId>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::Template as RelId,
+                Template {
+                    expr_id,
+                    tag: tag.into(),
+                    elements: elements.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprTemplate,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn array(&self, elements: Vec<ArrayElement>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::Array as RelId,
+                Array {
+                    expr_id,
+                    elements: elements.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprArray,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn object(
+        &self,
+        properties: Vec<(Option<PropertyKey>, PropertyVal)>,
+        span: TextRange,
+    ) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        for (key, val) in properties {
+            datalog.insert(
+                Relations::Property as RelId,
+                Property {
+                    expr_id,
+                    key: key.into(),
+                    val: Some(val).into(),
+                },
+            );
+        }
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprObject,
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        expr_id
+    }
+
+    fn grouping(&self, inner: Option<ExprId>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprGrouping {
+                    inner: inner.into(),
+                },
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        expr_id
+    }
+
+    fn bracket(&self, object: Option<ExprId>, prop: Option<ExprId>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::BracketAccess as RelId,
+                BracketAccess {
+                    expr_id,
+                    object: object.into(),
+                    prop: prop.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprBracket,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn dot(&self, object: Option<ExprId>, prop: Option<Name>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::DotAccess as RelId,
+                DotAccess {
+                    expr_id,
+                    object: object.into(),
+                    prop: prop.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprDot,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn new(&self, object: Option<ExprId>, args: Option<Vec<ExprId>>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::New as RelId,
+                New {
+                    expr_id,
+                    object: object.into(),
+                    args: args.map(Into::into).into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprNew,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn call(&self, callee: Option<ExprId>, args: Option<Vec<ExprId>>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::Call as RelId,
+                Call {
+                    expr_id,
+                    callee: callee.into(),
+                    args: args.map(Into::into).into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprCall,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn assign(
+        &self,
+        lhs: Option<Either<IPattern, ExprId>>,
+        rhs: Option<ExprId>,
+        op: Option<AssignOperand>,
+        span: TextRange,
+    ) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::Assign as RelId,
+                Assign {
+                    expr_id,
+                    lhs: lhs.into(),
+                    rhs: rhs.into(),
+                    op: op.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprAssign,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
+
+    fn sequence(&self, exprs: Vec<ExprId>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprSequence {
+                    exprs: exprs.into(),
+                },
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        expr_id
+    }
+
+    fn new_target(&self, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprNewTarget,
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        expr_id
+    }
+
+    fn import_meta(&self, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprImportMeta,
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+
+        expr_id
+    }
+
+    fn fn_expr(
+        &self,
+        name: Option<Name>,
+        params: Vec<IPattern>,
+        body: Option<StmtId>,
+        span: TextRange,
+    ) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::InlineFunc as RelId,
+                InlineFunc {
+                    expr_id,
+                    name: name.into(),
+                    body: body.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprInlineFunc,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        for param in params {
+            datalog.insert(
+                Relations::InlineFuncParam as RelId,
+                InlineFuncParam { expr_id, param },
+            );
+        }
+
+        expr_id
+    }
+
+    fn super_call(&self, args: Option<Vec<ExprId>>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprSuperCall {
+                    args: args.map(Into::into).into(),
+                },
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+        expr_id
+    }
+
+    fn import_call(&self, arg: Option<ExprId>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::Expression as RelId,
+            Expression {
+                id: expr_id,
+                kind: ExprKind::ExprImportCall { arg: arg.into() },
+                scope: self.scope_id(),
+                span: span.into(),
+            },
+        );
+        expr_id
+    }
+
+    fn class_expr(&self, element: Option<ClassElement>, span: TextRange) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog
+            .insert(
+                Relations::ClassExpr as RelId,
+                ClassExpr {
+                    expr_id,
+                    element: element.into(),
+                },
+            )
+            .insert(
+                Relations::Expression as RelId,
+                Expression {
+                    id: expr_id,
+                    kind: ExprKind::ExprClass,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        expr_id
+    }
 }
 
 #[derive(Clone)]
 pub struct DatalogFunction<'ddlog> {
-    datalog: Arc<Mutex<DatalogInner>>,
+    datalog: &'ddlog DatalogInner,
     func_id: FuncId,
-    __lifetime: PhantomData<&'ddlog ()>,
+    scope_id: Scope,
 }
 
 impl<'ddlog> DatalogFunction<'ddlog> {
@@ -963,7 +1627,7 @@ impl<'ddlog> DatalogFunction<'ddlog> {
     }
 
     pub fn argument(&self, pattern: Intern<Pattern>) {
-        self.datalog_mut().insert(
+        self.datalog.insert(
             Relations::FunctionArg as RelId,
             FunctionArg {
                 parent_func: self.func_id(),
@@ -974,20 +1638,19 @@ impl<'ddlog> DatalogFunction<'ddlog> {
 }
 
 impl<'ddlog> DatalogBuilder<'ddlog> for DatalogFunction<'ddlog> {
-    fn datalog(&self) -> &Arc<Mutex<DatalogInner>> {
-        &self.datalog
+    fn datalog(&self) -> &'ddlog DatalogInner {
+        self.datalog
     }
 
     fn scope_id(&self) -> Scope {
-        self.func_id
+        self.scope_id
     }
 }
 
 #[derive(Clone)]
 pub struct DatalogScope<'ddlog> {
-    datalog: Arc<Mutex<DatalogInner>>,
+    datalog: &'ddlog DatalogInner,
     scope_id: Scope,
-    __lifetime: PhantomData<&'ddlog ()>,
 }
 
 impl<'ddlog> DatalogScope<'ddlog> {
@@ -997,8 +1660,8 @@ impl<'ddlog> DatalogScope<'ddlog> {
 }
 
 impl<'ddlog> DatalogBuilder<'ddlog> for DatalogScope<'ddlog> {
-    fn datalog(&self) -> &Arc<Mutex<DatalogInner>> {
-        &self.datalog
+    fn datalog(&self) -> &'ddlog DatalogInner {
+        self.datalog
     }
 
     fn scope_id(&self) -> Scope {
@@ -1007,6 +1670,7 @@ impl<'ddlog> DatalogBuilder<'ddlog> for DatalogScope<'ddlog> {
 }
 
 #[cfg(debug_assertions)]
+#[allow(dead_code)]
 fn dump_delta(delta: &DeltaMap<DDValue>) {
     for (rel, changes) in delta.iter() {
         println!("Changes to relation {}", relid2name(*rel).unwrap());

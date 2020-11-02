@@ -1,6 +1,6 @@
 mod analyzer;
 mod datalog;
-mod visit;
+pub mod globals;
 
 pub use datalog::{
     Datalog, DatalogBuilder, DatalogFunction, DatalogResult, DatalogScope, DatalogTransaction,
@@ -8,13 +8,11 @@ pub use datalog::{
 };
 
 use analyzer::AnalyzerInner;
-use rslint_core::{
-    rule_prelude::{ast::Stmt, SyntaxNode, SyntaxNodeExt},
-    CstRule, Rule, RuleCtx,
-};
+use analyzer::Visit;
+use rslint_core::{CstRule, Rule, RuleCtx};
+use rslint_parser::{ast::Stmt, SyntaxNode, SyntaxNodeExt};
 use serde::{Deserialize, Serialize};
 use types::{InvalidNameUse, VarUseBeforeDeclaration};
-use visit::Visit;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ScopeAnalyzer {

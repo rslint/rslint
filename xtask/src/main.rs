@@ -39,11 +39,14 @@ fn main() -> Result<()> {
             Ok(())
         }
         "datalog" => {
-            let debug = args.contains("debug");
-            let check = args.contains("check");
+            let skip_trim = args.contains("--skip-trim");
             args.finish()?;
 
-            datalog::build_datalog(debug, check)
+            if !skip_trim {
+                datalog::trim_datalog()?;
+            }
+
+            Ok(())
         }
         _ => {
             eprintln!(
@@ -57,7 +60,8 @@ SUBCOMMANDS:
     codegen
     syntax
     docgen
-    coverage"
+    coverage
+    datalog"
             );
             Ok(())
         }

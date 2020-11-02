@@ -7,12 +7,17 @@ license = "MIT"
 description = "Scope analysis of JS programs"
 
 [dependencies]
+rslint_parser = { path = "../rslint_parser", version = "0.2.1" }
+# Temporary dependencies for debugging
 rslint_core = { path = "../rslint_core", version = "0.2.2" }
-types = { path = "./generated/types" }
-differential_datalog = { path = "./generated/differential_datalog" }
 serde = { version = "1.0.115", features = ["derive"] }
 typetag = "0.1.5"
+# Datalog types
+types = { path = "./generated/types" }
+# Datalog
+differential_datalog = { path = "./generated/differential_datalog" }
 
+# Generated datalog code
 [dependencies.rslint_scoping]
 path = "./generated"
 default-features = false

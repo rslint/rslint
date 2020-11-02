@@ -34,11 +34,17 @@ features = ["serde"]
 optional = false
 version = "2.0.0"
 
-[dependencies.rslint_core]
+[dependencies.rslint_errors]
 features = []
 optional = false
-path = "../../../rslint_core"
-version = "0.2.2"
+path = "../../../rslint_errors"
+version = "0.1.2"
+
+[dependencies.rslint_parser]
+features = []
+optional = false
+path = "../../../rslint_parser"
+version = "0.2.1"
 
 [dependencies.serde]
 features = ["derive"]
