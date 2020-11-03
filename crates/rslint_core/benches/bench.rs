@@ -21,8 +21,8 @@ fn bench_source(c: &mut Criterion, name: &str, source: &str) {
     let mut group = c.benchmark_group(name);
     group.sample_size(10);
     group.throughput(Throughput::Bytes(source.len() as u64));
-    group.bench_function("parse", |b| b.iter(|| parse(black_box(&source))));
     group.bench_function("tokenize", |b| b.iter(|| tokenize(black_box(&source))));
+    group.bench_function("parse", |b| b.iter(|| parse(black_box(&source))));
     group.bench_function("lint", |b| b.iter(|| lint(black_box(&source))));
     group.finish();
 }
