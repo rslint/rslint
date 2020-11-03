@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added more functions to `util::StyleExt`
 - Added `RuleCtx::dummy_ctx`
 - Added `Inferable` to define rules which can have their options inferred from nodes
+- Added benchmarks for linting a file
 
 ### Changed
 
