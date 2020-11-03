@@ -25,5 +25,6 @@ jobs:
       - uses: actions/checkout@master
       - uses: Stupremee/criterion-compare-action@master
         with:
+          cwd: crates/rslint_core
           package: rslint_core
           token: ${{ secrets.GITHUB_TOKEN }}
