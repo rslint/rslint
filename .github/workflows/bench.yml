@@ -25,5 +25,5 @@ jobs:
       - uses: actions/checkout@master
       - uses: boa-dev/criterion-compare-action@master
         with:
-          cwd: crates/rslint_core
+          cwd: "crates/rslint_core"
           token: ${{ secrets.GITHUB_TOKEN }}
