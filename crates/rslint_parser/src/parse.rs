@@ -170,6 +170,7 @@ fn parse_common(
 /// assert_eq!(&util::concat_tokens(&tokens), "foo. bar[2]")
 /// ```
 pub fn parse_text(text: &str, file_id: usize) -> Parse<Script> {
+    std::thread::sleep(std::time::Duration::from_millis(200));
     let (events, mut errors, tokens) = parse_common(text, file_id, false);
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events);
