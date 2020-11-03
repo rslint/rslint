@@ -23,7 +23,7 @@ jobs:
             ~/.cargo/registry
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - uses: actions/checkout@master
-      - uses: boa-dev/criterion-compare-action@master
+      - uses: Stupremee/criterion-compare-action@master
         with:
-          cwd: "crates/rslint_core"
+          package: rslint_core
           token: ${{ secrets.GITHUB_TOKEN }}
