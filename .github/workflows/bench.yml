@@ -1,0 +1,29 @@
+# Benchmark the current pull request and compare it with `master` branch
+
+on: [pull_request]
+name: Benchmark
+
+jobs:
+  runBenchmark:
+    name: run benchmark
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          profile: minimal
+      - name: Cache cargo
+        uses: actions/cache@v2
+        with:
+          path: |
+            target
+            ~/.cargo/git
+            ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions/checkout@master
+      - uses: Stupremee/criterion-compare-action@master
+        with:
+          package: rslint_core
+          token: ${{ secrets.GITHUB_TOKEN }}
