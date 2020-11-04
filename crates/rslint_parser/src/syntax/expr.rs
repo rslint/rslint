@@ -279,6 +279,18 @@ fn binary_expr_recursive(
     left: Option<CompletedMarker>,
     min_prec: u8,
 ) -> Option<CompletedMarker> {
+    if 7 > min_prec && !p.has_linebreak_before_n(0) && p.cur_src() == "as" {
+        let m = left.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
+        p.bump_any();
+        let mut res = if p.eat(T![const]) {
+            m.complete(p, TS_CONST_ASSERTION)
+        } else {
+            ts_type(p);
+            m.complete(p, TS_AS_EXPR)
+        };
+        res.err_if_not_ts(p, "type assertions can only be used in TypeScript files");
+        return binary_expr_recursive(p, Some(res), min_prec);
+    }
     let precedence = match p.cur() {
         T![in] if p.state.include_in => 7,
         T![instanceof] => 7,
