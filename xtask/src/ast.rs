@@ -265,7 +265,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_DEFAULT",
         "TS_TYPE_PARAM",
         "TS_NON_NULL",
-        "TS_AS_EXPR",
+        "TS_ASSERTION",
         "TS_CONST_ASSERTION",
     ],
 };
@@ -607,16 +607,21 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![!]
         }
 
-        struct TsAsExpr {
+        struct TsAssertion {
             expr: Expr,
             T![ident],
-            ty: TsType
+            T![<],
+            ty: TsType,
+            T![>]
         }
 
+        /// A TypeScript const assertion either as `foo as const` or `<const>foo`
         struct TsConstAssertion {
             expr: Expr,
             T![ident],
-            T![const]
+            T![<],
+            T![const],
+            T![>]
         }
 
         // --------------------------------------------------
@@ -1324,7 +1329,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsConstructorType,
             TsConditionalType,
             TsNonNull,
-            TsAsExpr,
+            TsAssertion,
             TsConstAssertion
         }
 

@@ -253,7 +253,7 @@ pub enum SyntaxKind {
     TS_DEFAULT,
     TS_TYPE_PARAM,
     TS_NON_NULL,
-    TS_AS_EXPR,
+    TS_ASSERTION,
     TS_CONST_ASSERTION,
     #[doc(hidden)]
     __LAST,

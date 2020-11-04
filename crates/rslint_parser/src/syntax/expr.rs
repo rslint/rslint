@@ -286,7 +286,7 @@ fn binary_expr_recursive(
             m.complete(p, TS_CONST_ASSERTION)
         } else {
             ts_type(p);
-            m.complete(p, TS_AS_EXPR)
+            m.complete(p, TS_ASSERTION)
         };
         res.err_if_not_ts(p, "type assertions can only be used in TypeScript files");
         return binary_expr_recursive(p, Some(res), min_prec);
@@ -1330,6 +1330,25 @@ pub fn unary_expr(p: &mut Parser) -> Option<CompletedMarker> {
     const UNARY_SINGLE: TokenSet =
         token_set![T![delete], T![void], T![typeof], T![+], T![-], T![~], T![!]];
 
+    if p.at(T![<]) {
+        let m = p.start();
+        p.bump_any();
+        if p.eat(T![const]) {
+            p.expect(T![>]);
+            unary_expr(p);
+            let mut res = m.complete(p, TS_CONST_ASSERTION);
+            res.err_if_not_ts(p, "const assertions can only be used in TypeScript files");
+            return Some(res);
+        } else {
+            ts_type(p);
+            p.expect(T![>]);
+            unary_expr(p);
+            let mut res = m.complete(p, TS_CONST_ASSERTION);
+            res.err_if_not_ts(p, "type assertions can only be used in TypeScript files");
+            return Some(res);
+        }
+    }
+
     if p.at(T![++]) {
         let m = p.start();
         p.bump(T![++]);
@@ -1349,8 +1368,21 @@ pub fn unary_expr(p: &mut Parser) -> Option<CompletedMarker> {
 
     if p.at_ts(UNARY_SINGLE) {
         let m = p.start();
+        let op = p.cur();
         p.bump_any();
-        unary_expr(p)?;
+        let res = unary_expr(p)?;
+        if op == T![delete] && p.typescript {
+            match res.kind() {
+                DOT_EXPR | BRACKET_EXPR => {}
+                _ => {
+                    let err = p
+                        .err_builder("the target for a delete operator must be a property access")
+                        .primary(res.range(p), "");
+
+                    p.error(err);
+                }
+            }
+        }
         return Some(m.complete(p, UNARY_EXPR));
     }
 

@@ -399,15 +399,17 @@ impl TsNonNull {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TsAsExpr {
+pub struct TsAssertion {
     pub(crate) syntax: SyntaxNode,
 }
-impl TsAsExpr {
+impl TsAssertion {
     pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn l_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [<]) }
     pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+    pub fn r_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [>]) }
 }
-#[doc = ""]
+#[doc = " A TypeScript const assertion either as `foo as const` or `<const>foo`\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TsConstAssertion {
     pub(crate) syntax: SyntaxNode,
@@ -415,7 +417,9 @@ pub struct TsConstAssertion {
 impl TsConstAssertion {
     pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn l_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [<]) }
     pub fn const_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![const]) }
+    pub fn r_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [>]) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1412,7 +1416,7 @@ pub enum TsType {
     TsConstructorType(TsConstructorType),
     TsConditionalType(TsConditionalType),
     TsNonNull(TsNonNull),
-    TsAsExpr(TsAsExpr),
+    TsAssertion(TsAssertion),
     TsConstAssertion(TsConstAssertion),
 }
 #[doc = ""]
@@ -1883,8 +1887,8 @@ impl AstNode for TsNonNull {
     }
     fn syntax(&self) -> &SyntaxNode { &self.syntax }
 }
-impl AstNode for TsAsExpr {
-    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_AS_EXPR }
+impl AstNode for TsAssertion {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_ASSERTION }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3463,8 +3467,8 @@ impl From<TsConditionalType> for TsType {
 impl From<TsNonNull> for TsType {
     fn from(node: TsNonNull) -> TsType { TsType::TsNonNull(node) }
 }
-impl From<TsAsExpr> for TsType {
-    fn from(node: TsAsExpr) -> TsType { TsType::TsAsExpr(node) }
+impl From<TsAssertion> for TsType {
+    fn from(node: TsAssertion) -> TsType { TsType::TsAssertion(node) }
 }
 impl From<TsConstAssertion> for TsType {
     fn from(node: TsConstAssertion) -> TsType { TsType::TsConstAssertion(node) }
@@ -3503,7 +3507,7 @@ impl AstNode for TsType {
                 | TS_CONSTRUCTOR_TYPE
                 | TS_CONDITIONAL_TYPE
                 | TS_NON_NULL
-                | TS_AS_EXPR
+                | TS_ASSERTION
                 | TS_CONST_ASSERTION
         )
     }
@@ -3539,7 +3543,7 @@ impl AstNode for TsType {
             TS_CONSTRUCTOR_TYPE => TsType::TsConstructorType(TsConstructorType { syntax }),
             TS_CONDITIONAL_TYPE => TsType::TsConditionalType(TsConditionalType { syntax }),
             TS_NON_NULL => TsType::TsNonNull(TsNonNull { syntax }),
-            TS_AS_EXPR => TsType::TsAsExpr(TsAsExpr { syntax }),
+            TS_ASSERTION => TsType::TsAssertion(TsAssertion { syntax }),
             TS_CONST_ASSERTION => TsType::TsConstAssertion(TsConstAssertion { syntax }),
             _ => return None,
         };
@@ -3577,7 +3581,7 @@ impl AstNode for TsType {
             TsType::TsConstructorType(it) => &it.syntax,
             TsType::TsConditionalType(it) => &it.syntax,
             TsType::TsNonNull(it) => &it.syntax,
-            TsType::TsAsExpr(it) => &it.syntax,
+            TsType::TsAssertion(it) => &it.syntax,
             TsType::TsConstAssertion(it) => &it.syntax,
         }
     }
@@ -3885,7 +3889,7 @@ impl std::fmt::Display for TsNonNull {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for TsAsExpr {
+impl std::fmt::Display for TsAssertion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
