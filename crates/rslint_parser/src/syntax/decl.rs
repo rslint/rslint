@@ -161,7 +161,7 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
     } else if !expr {
         let err = guard
             .err_builder("class declarations must have a name")
-            .primary(guard.cur_tok(), "");
+            .primary(guard.cur_tok().range, "");
 
         guard.error(err);
     }
@@ -302,7 +302,7 @@ pub fn method(
         _ => {
             let err = p
                 .err_builder("expected a method definition, but found none")
-                .primary(p.cur_tok(), "");
+                .primary(p.cur_tok().range, "");
 
             p.err_recover(
                 err,

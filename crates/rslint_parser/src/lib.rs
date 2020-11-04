@@ -59,7 +59,6 @@
 mod parser;
 #[macro_use]
 mod token_set;
-mod diagnostics;
 mod event;
 mod lossless_tree_sink;
 mod lossy_tree_sink;
@@ -79,7 +78,6 @@ pub mod util;
 
 pub use crate::{
     ast::{AstNode, AstToken},
-    diagnostics::ErrorBuilder,
     event::{process, Event},
     lossless_tree_sink::LosslessTreeSink,
     lossy_tree_sink::LossyTreeSink,

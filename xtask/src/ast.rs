@@ -600,7 +600,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsNonNull {
-            expr: Expr,
+            target: ExprOrSuper,
             T![!]
         }
 
@@ -1307,7 +1307,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsUnion,
             TsFnType,
             TsConstructorType,
-            TsConditionalType
+            TsConditionalType,
+            TsNonNull
         }
 
         enum TsThisOrName {

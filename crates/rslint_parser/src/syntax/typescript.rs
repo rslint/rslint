@@ -18,6 +18,30 @@ pub const BASE_TS_RECOVERY_SET: TokenSet = token_set![
     T!['['],
 ];
 
+// ambiguity is fun!
+macro_rules! no_recover {
+    ($p:expr, $res:expr) => {
+        if $res.is_none() && $p.state.no_recovery {
+            return None;
+        }
+    };
+}
+
+pub fn try_parse_ts(
+    p: &mut Parser,
+    func: impl FnOnce(&mut Parser) -> Option<CompletedMarker>,
+) -> Option<CompletedMarker> {
+    let checkpoint = p.checkpoint();
+    let res = func(&mut *p.with_state(ParserState {
+        no_recovery: true,
+        ..p.state.clone()
+    }));
+    if res.is_none() {
+        p.rewind(checkpoint);
+    }
+    res
+}
+
 pub fn ts_type(p: &mut Parser) -> Option<CompletedMarker> {
     let ty = ts_non_conditional_type(p);
     if p.has_linebreak_before_n(0) || !p.at(T![extends]) {
@@ -28,55 +52,58 @@ pub fn ts_type(p: &mut Parser) -> Option<CompletedMarker> {
     ts_non_conditional_type(p);
     let compl = m.complete(p, TS_EXTENDS);
     let m = compl.precede(p);
-    p.expect(T![?]);
-    ts_type(p);
-    p.expect(T![:]);
-    ts_type(p);
+    p.expect_no_recover(T![?])?;
+    no_recover!(p, ts_type(p));
+    p.expect_no_recover(T![:])?;
+    no_recover!(p, ts_type(p));
     Some(m.complete(p, TS_CONDITIONAL_TYPE))
 }
 
-pub fn ts_fn_or_constructor_type(p: &mut Parser, fn_type: bool) -> CompletedMarker {
+pub fn ts_fn_or_constructor_type(p: &mut Parser, fn_type: bool) -> Option<CompletedMarker> {
     let m = p.start();
     if !fn_type {
-        p.expect(T![new]);
+        p.expect_no_recover(T![new])?;
     }
 
     if p.at(T![<]) {
         ts_type_params(p);
     }
     formal_parameters(p);
-    ts_type_or_type_predicate_ann(p, T![=>]);
-    m.complete(
+    no_recover!(p, ts_type_or_type_predicate_ann(p, T![=>]));
+    Some(m.complete(
         p,
         if fn_type {
             TS_FN_TYPE
         } else {
             TS_CONSTRUCTOR_TYPE
         },
-    )
+    ))
 }
 
-fn ts_type_or_type_predicate_ann(p: &mut Parser, return_token: SyntaxKind) {
+fn ts_type_or_type_predicate_ann(
+    p: &mut Parser,
+    return_token: SyntaxKind,
+) -> Option<CompletedMarker> {
     let ident_ref_set = token_set![T![await], T![yield], T![ident]];
-    p.expect(return_token);
+    p.expect_no_recover(return_token)?;
 
     let type_pred = (p.cur_src() == "asserts" && ident_ref_set.contains(p.nth(1)))
         || (p.at_ts(ident_ref_set) && p.nth_src(1) == "is" && !p.has_linebreak_before_n(1));
 
     if type_pred {
-        ts_predicate(p);
+        ts_predicate(p)
     } else {
-        ts_type(p);
+        ts_type(p)
     }
 }
 
 pub fn ts_non_conditional_type(p: &mut Parser) -> Option<CompletedMarker> {
     if is_start_of_fn_type(p) {
-        return Some(ts_fn_or_constructor_type(p, true));
+        return ts_fn_or_constructor_type(p, true);
     }
 
     if p.at(T![new]) {
-        return Some(ts_fn_or_constructor_type(p, true));
+        return ts_fn_or_constructor_type(p, true);
     }
 
     intersection_or_union(p, false)
@@ -184,7 +211,7 @@ pub fn ts_type_operator_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
     if matches!(p.cur_src(), "keyof" | "unique" | "readonly") {
         let m = p.start();
         p.bump_any();
-        ts_type_operator_or_higher(p);
+        no_recover!(p, ts_type_operator_or_higher(p));
         Some(m.complete(p, TS_TYPE_OPERATOR))
     } else if p.cur_src() == "infer" {
         todo!("infer")
@@ -203,8 +230,8 @@ pub fn ts_array_type_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
         if p.eat(T![']']) {
             Some(m.complete(p, TS_ARRAY))
         } else {
-            ts_type(p);
-            p.expect(T![']']);
+            no_recover!(p, ts_type(p));
+            p.expect_no_recover(T![']'])?;
             Some(m.complete(p, TS_INDEXED_ARRAY))
         }
     } else {
@@ -274,11 +301,11 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
                 p.bump_any();
                 _m.complete(p, LITERAL);
             } else {
-                p.expect(NUMBER);
+                p.expect_no_recover(NUMBER)?;
             }
             Some(m.complete(p, TS_LITERAL))
         }
-        T![import] => Some(ts_import(p)),
+        T![import] => ts_import(p),
         T![this] => {
             if p.nth_src(1) == "is" {
                 ts_predicate(p)
@@ -288,10 +315,10 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
                 Some(m.complete(p, TS_THIS))
             }
         }
-        T![typeof] => Some(ts_type_query(p)),
+        T![typeof] => ts_type_query(p),
         T!['{'] => {
             if is_mapped_type_start(p) {
-                Some(ts_mapped_type(p))
+                ts_mapped_type(p)
             } else {
                 todo!("object types")
             }
@@ -300,8 +327,8 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
         T!['('] => {
             let m = p.start();
             p.bump_any();
-            ts_type(p);
-            p.expect(T![')']);
+            no_recover!(p, ts_type(p));
+            p.expect_no_recover(T![')'])?;
             Some(m.complete(p, TS_PAREN))
         }
         _ => {
@@ -335,9 +362,9 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
-pub fn ts_type_args(p: &mut Parser) -> CompletedMarker {
+pub fn ts_type_args(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
-    p.expect(T![<]);
+    p.expect_no_recover(T![<])?;
     let mut first = true;
 
     while !p.at(EOF) && !p.at(T![>]) {
@@ -354,32 +381,33 @@ pub fn ts_type_args(p: &mut Parser) -> CompletedMarker {
 
             p.error(err);
         } else {
-            p.expect(T![,]);
+            p.expect_no_recover(T![,])?;
         }
-        ts_type(p);
+        no_recover!(p, ts_type(p));
     }
-    p.expect(T![>]);
-    m.complete(p, TS_TYPE_ARGS)
+    p.expect_no_recover(T![>])?;
+    Some(m.complete(p, TS_TYPE_ARGS))
 }
 
-pub fn ts_type_params(p: &mut Parser) -> CompletedMarker {
+// FIXME: `<T() => {}` causes infinite recursion if the parser isnt being run with `no_recovery`
+pub fn ts_type_params(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
-    p.expect(T![<]);
+    p.expect_no_recover(T![<])?;
     let mut first = true;
 
     while !p.at(EOF) && !p.at(T![>]) {
         if first {
             first = false;
         } else {
-            p.expect(T![,]);
+            p.expect_no_recover(T![,])?;
         }
-        type_param(p);
+        no_recover!(p, type_param(p));
     }
-    p.expect(T![>]);
-    m.complete(p, TS_TYPE_PARAMS)
+    p.expect_no_recover(T![>])?;
+    Some(m.complete(p, TS_TYPE_PARAMS))
 }
 
-fn type_param(p: &mut Parser) -> CompletedMarker {
+fn type_param(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
     if let Some(x) = identifier_name(p) {
         x.undo_completion(p).abandon(p)
@@ -387,24 +415,24 @@ fn type_param(p: &mut Parser) -> CompletedMarker {
     if p.at(T![extends]) {
         let _m = p.start();
         p.bump_any();
-        ts_type(p);
+        no_recover!(p, ts_type(p));
         _m.complete(p, TS_CONSTRAINT);
     }
     if p.at(T![=]) {
         let _m = p.start();
         p.bump_any();
-        ts_type(p);
+        no_recover!(p, ts_type(p));
         _m.complete(p, TS_DEFAULT);
     }
-    m.complete(p, TS_TYPE_PARAM)
+    Some(m.complete(p, TS_TYPE_PARAM))
 }
 
-pub fn ts_import(p: &mut Parser) -> CompletedMarker {
+pub fn ts_import(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
-    p.expect(T![import]);
-    p.expect(T!['(']);
-    p.expect(STRING);
-    p.expect(T![')']);
+    p.expect_no_recover(T![import])?;
+    p.expect_no_recover(T!['('])?;
+    p.expect_no_recover(STRING)?;
+    p.expect_no_recover(T![')'])?;
     if p.eat(T![.]) {
         ts_entity_name(p, None, false);
     }
@@ -412,24 +440,24 @@ pub fn ts_import(p: &mut Parser) -> CompletedMarker {
         ts_type_args(p);
     }
 
-    m.complete(p, TS_IMPORT)
+    Some(m.complete(p, TS_IMPORT))
 }
 
-pub fn ts_type_query(p: &mut Parser) -> CompletedMarker {
+pub fn ts_type_query(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
-    p.expect(T![typeof]);
+    p.expect_no_recover(T![typeof])?;
 
     if p.at(T![import]) {
-        ts_import(p);
+        no_recover!(p, ts_import(p));
     } else {
-        ts_entity_name(p, None, true);
+        no_recover!(p, ts_entity_name(p, None, true));
     }
-    m.complete(p, TS_TYPE_QUERY)
+    Some(m.complete(p, TS_TYPE_QUERY))
 }
 
-pub fn ts_mapped_type(p: &mut Parser) -> CompletedMarker {
+pub fn ts_mapped_type(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
-    p.expect(T!['{']);
+    p.expect_no_recover(T!['{'])?;
     let tok = p.cur_tok().range;
     let _m = p.start();
     if p.eat(T![+]) || p.eat(T![-]) {
@@ -451,7 +479,7 @@ pub fn ts_mapped_type(p: &mut Parser) -> CompletedMarker {
     }
 
     let param = p.start();
-    p.expect(T!['[']);
+    p.expect_no_recover(T!['['])?;
     // This is basically to unwrap the marker from a node to a single token
     if let Some(x) = identifier_name(p) {
         x.undo_completion(p).abandon(p)
@@ -469,7 +497,7 @@ pub fn ts_mapped_type(p: &mut Parser) -> CompletedMarker {
         p.bump_any();
         ts_type(p);
     }
-    p.expect(T![']']);
+    p.expect_no_recover(T![']'])?;
     param.complete(p, TS_MAPPED_TYPE_PARAM);
     let tok = p.cur_tok().range;
     if p.eat(T![+]) || p.eat(T![-]) {
@@ -487,13 +515,13 @@ pub fn ts_mapped_type(p: &mut Parser) -> CompletedMarker {
         p.bump_any();
     }
 
-    p.expect(T![:]);
-    ts_type(p);
+    p.expect_no_recover(T![:])?;
+    no_recover!(p, ts_type(p));
     // FIXME: This should issue an error for no semi and no ASI, but the fact that a `}` is expected
     // after should make this case kind of rare
     p.eat(T![;]);
-    p.expect(T!['}']);
-    m.complete(p, TS_MAPPED_TYPE)
+    p.expect_no_recover(T!['}'])?;
+    Some(m.complete(p, TS_MAPPED_TYPE))
 }
 
 fn is_mapped_type_start(p: &Parser) -> bool {
@@ -538,7 +566,7 @@ pub fn ts_predicate(p: &mut Parser) -> Option<CompletedMarker> {
 
     if p.cur_src() == "is" {
         p.bump_any();
-        ts_type(p);
+        no_recover!(p, ts_type(p));
         advanced = true;
     }
 
@@ -575,7 +603,7 @@ pub fn ts_type_ref(
 
     ts_entity_name(p, recovery_set, true)?;
     if !p.has_linebreak_before_n(0) && p.at(T![<]) {
-        ts_type_args(p);
+        no_recover!(p, ts_type_args(p));
     }
 
     Some(m.complete(p, TS_TYPE_REF))
@@ -598,7 +626,7 @@ pub fn ts_entity_name(
     while p.at(T![.]) {
         let m = lhs.precede(p);
         // TODO: we should maybe move recovery out of ts_type_name since we dont need recovery here
-        ts_type_name(p, set, allow_reserved);
+        no_recover!(p, ts_type_name(p, set, allow_reserved));
         lhs = m.complete(p, TS_QUALIFIED_PATH);
     }
     Some(lhs)
@@ -624,6 +652,6 @@ pub fn ts_type_name(
         ))
         .primary(p.cur_tok().range, "");
 
-    p.err_recover(err, set, false);
+    p.err_recover(err, set, false)?;
     None
 }

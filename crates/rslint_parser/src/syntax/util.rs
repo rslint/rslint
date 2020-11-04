@@ -1,7 +1,7 @@
 //! General utility functions for parsing and error checking.
 
 use crate::{
-    ast::{Expr, GroupingExpr, NameRef, UnaryExpr},
+    ast::{CondExpr, Expr, GroupingExpr, NameRef, UnaryExpr},
     SyntaxKind::*,
     *,
 };
@@ -19,17 +19,60 @@ pub fn check_simple_assign_target(p: &mut Parser, target: &Expr, range: TextRang
         ))
         .primary(range, "This expression cannot be assigned to");
 
+    if !is_simple_assign_target(p, target) {
+        p.error(err);
+    }
+}
+
+fn is_simple_assign_target(p: &mut Parser, target: &Expr) -> bool {
     match target.syntax().kind() {
-        NAME_REF | BRACKET_EXPR | DOT_EXPR => {}
+        NAME_REF | BRACKET_EXPR | DOT_EXPR => true,
         GROUPING_EXPR => {
             let inner = GroupingExpr::cast(target.syntax().to_owned())
                 .unwrap()
                 .inner();
             if let Some(inner) = inner {
-                check_simple_assign_target(p, &inner, range)
+                is_simple_assign_target(p, &inner)
+            } else {
+                // avoid throwing extra errors for empty grouping exprs
+                true
             }
         }
-        _ => p.error(err),
+        _ => false,
+    }
+}
+
+pub fn check_assign_target(p: &mut Parser, target: &Expr, range: TextRange, deny_call: bool) {
+    if p.typescript {
+        let is_eval_or_args = target.text() == "eval" || target.text() == "arguments";
+        if is_eval_or_args && p.state.strict.is_some() {
+            let err = p
+                .err_builder("`eval` and `arguments` cannot be assigned to in strict mode")
+                .primary(range, "");
+
+            p.error(err);
+        }
+
+        fn should_deny(e: &Expr, deny_call: bool) -> bool {
+            match e {
+                Expr::Literal(_) => false,
+                Expr::CallExpr(_) => deny_call,
+                Expr::BinExpr(_) => false,
+                Expr::GroupingExpr(it) => it.inner().map_or(false, |i| should_deny(&i, deny_call)),
+                _ => true,
+            }
+        }
+
+        if !is_eval_or_args && !is_simple_assign_target(p, target) && should_deny(target, deny_call)
+        {
+            let err = p
+                .err_builder("invalid assignment target")
+                .primary(range, "");
+
+            p.error(err);
+        }
+    } else {
+        check_simple_assign_target(p, target, range);
     }
 }
 

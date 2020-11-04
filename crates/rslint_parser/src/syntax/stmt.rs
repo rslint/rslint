@@ -104,7 +104,8 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
             )
         }
         T![ident] if p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)) => var_decl(p, false),
-        _ if p.at_ts(STARTS_EXPR) => {
+        // TODO: handle `<T>() => {};` with less of a hack
+        _ if p.at_ts(STARTS_EXPR) || p.at(T![<]) => {
             let start = p.cur_tok().range.start;
             let mut expr = expr(p)?;
             // Labelled stmt
@@ -573,7 +574,7 @@ pub fn var_decl(p: &mut Parser, no_semi: bool) -> CompletedMarker {
                 .err_builder(
                     "Expected `var`, `let`, or `const` for a variable declaration, but found none",
                 )
-                .primary(p.cur_tok(), "");
+                .primary(p.cur_tok().range, "");
 
             p.error(err);
         }

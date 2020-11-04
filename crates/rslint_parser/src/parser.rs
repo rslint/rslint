@@ -3,6 +3,7 @@
 //! the parser yields events like `Start node`, `Error`, etc.
 //! These events are then applied to a `TreeSink`.
 
+use rslint_errors::Diagnostic;
 use std::borrow::BorrowMut;
 use std::cell::Cell;
 use std::ops::Range;
@@ -198,24 +199,29 @@ impl<'t> Parser<'t> {
         error: impl Into<ParserError>,
         recovery: TokenSet,
         include_braces: bool,
-    ) {
+    ) -> Option<()> {
+        if self.state.no_recovery {
+            return None;
+        }
+
         match self.cur() {
             T!['{'] | T!['}'] if include_braces => {
                 self.error(error);
-                return;
+                return Some(());
             }
             _ => (),
         }
 
         if self.at_ts(recovery) {
             self.error(error);
-            return;
+            return Some(());
         }
 
         let m = self.start();
         self.error(error);
         self.bump_any();
         m.complete(self, SyntaxKind::ERROR);
+        Some(())
     }
 
     /// Recover from an error but don't add an error to the events
@@ -270,8 +276,8 @@ impl<'t> Parser<'t> {
     }
 
     /// Make a new error builder with `error` severity
-    pub fn err_builder(&self, message: &str) -> ErrorBuilder {
-        ErrorBuilder::error(self.file_id, message)
+    pub fn err_builder(&self, message: &str) -> Diagnostic {
+        Diagnostic::error(self.file_id, "SyntaxError", message)
     }
 
     /// Add an error
@@ -416,8 +422,8 @@ impl<'t> Parser<'t> {
     }
 
     /// Make a new error builder with warning severity
-    pub fn warning_builder(&self, message: &str) -> ErrorBuilder {
-        ErrorBuilder::warning(self.file_id, message)
+    pub fn warning_builder(&self, message: &str) -> Diagnostic {
+        Diagnostic::warning(self.file_id, "SyntaxError", message)
     }
 
     /// Bump and add an error event
@@ -457,6 +463,18 @@ impl<'t> Parser<'t> {
             self.rewind(checkpoint);
         }
         res
+    }
+
+    pub(crate) fn expect_no_recover(&mut self, kind: SyntaxKind) -> Option<bool> {
+        if self.state.no_recovery {
+            Some(true).filter(|_| self.eat(kind))
+        } else {
+            Some(self.expect(kind))
+        }
+    }
+
+    pub fn span_text(&self, span: impl rslint_errors::Span) -> &str {
+        &self.tokens.source()[span.as_range()]
     }
 }
 
