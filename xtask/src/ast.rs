@@ -265,6 +265,8 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_DEFAULT",
         "TS_TYPE_PARAM",
         "TS_NON_NULL",
+        "TS_AS_EXPR",
+        "TS_CONST_ASSERTION",
     ],
 };
 
@@ -600,8 +602,21 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsNonNull {
-            target: ExprOrSuper,
+            // FIXME: Should this allow super! too?
+            target: Expr,
             T![!]
+        }
+
+        struct TsAsExpr {
+            expr: Expr,
+            T![ident],
+            ty: TsType
+        }
+
+        struct TsConstAssertion {
+            expr: Expr,
+            T![ident],
+            T![const]
         }
 
         // --------------------------------------------------
@@ -1308,7 +1323,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsFnType,
             TsConstructorType,
             TsConditionalType,
-            TsNonNull
+            TsNonNull,
+            TsAsExpr,
+            TsConstAssertion
         }
 
         enum TsThisOrName {

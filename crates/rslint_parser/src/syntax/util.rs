@@ -1,7 +1,7 @@
 //! General utility functions for parsing and error checking.
 
 use crate::{
-    ast::{CondExpr, Expr, GroupingExpr, NameRef, UnaryExpr},
+    ast::{Expr, GroupingExpr, NameRef, UnaryExpr},
     SyntaxKind::*,
     *,
 };
