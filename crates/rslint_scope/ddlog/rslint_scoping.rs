@@ -116,8 +116,8 @@ impl_id_traits! {
 /// The implicitly introduced `arguments` variable for function scopes,
 /// kept in a global so we only allocate & intern it once
 pub static IMPLICIT_ARGUMENTS: Lazy<Intern<Pattern>> = Lazy::new(|| {
-    Intern::new(Pattern {
-        name: Intern::new("arguments".to_owned()),
+    Intern::new(Pattern::SinglePattern {
+        name: Some(Intern::new("arguments".to_owned())).into(),
     })
 });
 

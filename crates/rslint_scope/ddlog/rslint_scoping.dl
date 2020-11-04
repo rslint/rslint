@@ -26,7 +26,19 @@ typedef OneOf<'A, 'B, 'C> =
     | Second { b: 'B }
     | Third { c: 'C }
 
-typedef Pattern = SinglePattern { name: Name }
+typedef Pattern =
+    SinglePattern { name: Option<Name> }
+    | RestPattern { rest: Option<Intern<Pattern>> }
+    | AssignPattern { key: Option<Intern<Pattern>>, value: Option<ExprId> }
+    | ObjectPattern { props: Vec<Intern<ObjectPatternProp>> }
+    | ArrayPattern { elems: Vec<Intern<Pattern>> }
+
+typedef ObjectPatternProp =
+    ObjAssignPattern { assign_key: Option<Intern<Pattern>>, assign_value: Option<ExprId> }
+    | ObjKeyValuePattern { key: Option<PropertyKey>, value: Option<Intern<Pattern>> }
+    | ObjRestPattern { rest: Option<Intern<Pattern>> }
+    | ObjSinglePattern { name: Option<Name> }
+
 typedef IPattern = Intern<Pattern>
 
 typedef StmtKind =
@@ -266,19 +278,19 @@ NameInScope(name, scope, AnyIdGlobal { global }) :- ImplicitGlobal(global, name)
 // `let` declarations
 NameInScope(name, scope, AnyIdStmt { stmt }) :-
     LetDecl(stmt, Some { pat }, _),
-    SinglePattern { var name } = pat.ival(),
+    SinglePattern { Some { var name }} = pat.ival(),
     Statement(stmt, _, scope, _).
 
 // `const` declarations
 NameInScope(name, scope, AnyIdStmt { stmt }) :-
     ConstDecl(stmt, Some { pat }, _),
-    SinglePattern { var name } = pat.ival(),
+    SinglePattern { Some { var name }} = pat.ival(),
     Statement(stmt, _, scope, _).
 
 // `var` declarations
 NameInScope(name, scope, AnyIdStmt { stmt }) :-
     VarDecl(stmt, Some { pat }, _),
-    SinglePattern { var name } = pat.ival(),
+    SinglePattern { Some { var name }} = pat.ival(),
     Statement(stmt, _, decl_scope, _),
     // Bubble `var` up to the nearest function's scope?
     ClosestFunction(decl_scope, func),
@@ -290,13 +302,13 @@ NameInScope(name, scope, AnyIdFunc { func }) :- Function(func, Some { name }, sc
 // Function arguments
 NameInScope(name, scope, AnyIdFunc { func }) :-
     FunctionArg(func, pat),
-    SinglePattern { var name } = pat.ival(),
+    SinglePattern { Some { var name }} = pat.ival(),
     Function(func, _, scope).
 
 // Closure arguments
 NameInScope(name, scope, AnyIdExpr { expr }) :-
     ArrowParam(expr, pat),
-    SinglePattern { var name } = pat.ival(),
+    SinglePattern { Some { var name }} = pat.ival(),
     // Get the body's expression and put the parameters in-scope
     // there, not within the arrow expression's scope
     // TODO: Can I address Expr/Stmt at the same time instead
@@ -305,7 +317,7 @@ NameInScope(name, scope, AnyIdExpr { expr }) :-
     Expression(expr_body, _, scope, _).
 NameInScope(name, scope, AnyIdExpr { expr }) :-
     ArrowParam(expr, pat),
-    SinglePattern { var name } = pat.ival(),
+    SinglePattern { Some { var name }} = pat.ival(),
     // Get the body's statement and put the parameters in-scope
     // there, not within the arrow expression's scope
     Arrow(expr, Some { Right { stmt_body } }),
@@ -314,7 +326,7 @@ NameInScope(name, scope, AnyIdExpr { expr }) :-
 // Inline function arguments
 NameInScope(name, scope, AnyIdExpr { expr }) :-
     InlineFuncParam(expr, pat),
-    SinglePattern { var name } = pat.ival(),
+    SinglePattern { Some { var name }} = pat.ival(),
     // TODO: Add the function's name somewhere too?
     InlineFunc(expr, _, Some { body }),
     Statement(body, _, scope, _).

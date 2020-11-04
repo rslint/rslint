@@ -234,8 +234,8 @@ impl_id_traits! {
 /// The implicitly introduced `arguments` variable for function scopes,
 /// kept in a global so we only allocate & intern it once
 pub static IMPLICIT_ARGUMENTS: Lazy<Intern<Pattern>> = Lazy::new(|| {
-    Intern::new(Pattern {
-        name: Intern::new("arguments".to_owned()),
+    Intern::new(Pattern::SinglePattern {
+        name: Some(Intern::new("arguments".to_owned())).into(),
     })
 });
 
@@ -2107,6 +2107,67 @@ impl ::std::fmt::Debug for New {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub enum ObjectPatternProp {
+    ObjAssignPattern {
+        assign_key: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>,
+        assign_value: crate::ddlog_std::Option<crate::ExprId>
+    },
+    ObjKeyValuePattern {
+        key: crate::ddlog_std::Option<crate::PropertyKey>,
+        value: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>
+    },
+    ObjRestPattern {
+        rest: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>
+    },
+    ObjSinglePattern {
+        name: crate::ddlog_std::Option<crate::Name>
+    }
+}
+impl abomonation::Abomonation for ObjectPatternProp{}
+::differential_datalog::decl_enum_from_record!(ObjectPatternProp["ObjectPatternProp"]<>, ObjAssignPattern["ObjAssignPattern"][2]{[0]assign_key["assign_key"]: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>, [1]assign_value["assign_value"]: crate::ddlog_std::Option<crate::ExprId>}, ObjKeyValuePattern["ObjKeyValuePattern"][2]{[0]key["key"]: crate::ddlog_std::Option<crate::PropertyKey>, [1]value["value"]: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>}, ObjRestPattern["ObjRestPattern"][1]{[0]rest["rest"]: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>}, ObjSinglePattern["ObjSinglePattern"][1]{[0]name["name"]: crate::ddlog_std::Option<crate::Name>});
+::differential_datalog::decl_enum_into_record!(ObjectPatternProp<>, ObjAssignPattern["ObjAssignPattern"]{assign_key, assign_value}, ObjKeyValuePattern["ObjKeyValuePattern"]{key, value}, ObjRestPattern["ObjRestPattern"]{rest}, ObjSinglePattern["ObjSinglePattern"]{name});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(ObjectPatternProp<>, ObjAssignPattern{assign_key: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>, assign_value: crate::ddlog_std::Option<crate::ExprId>}, ObjKeyValuePattern{key: crate::ddlog_std::Option<crate::PropertyKey>, value: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>}, ObjRestPattern{rest: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>}, ObjSinglePattern{name: crate::ddlog_std::Option<crate::Name>});
+impl ::std::fmt::Display for ObjectPatternProp {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::ObjectPatternProp::ObjAssignPattern{assign_key,assign_value} => {
+                __formatter.write_str("ObjAssignPattern{")?;
+                ::std::fmt::Debug::fmt(assign_key, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(assign_value, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::ObjectPatternProp::ObjKeyValuePattern{key,value} => {
+                __formatter.write_str("ObjKeyValuePattern{")?;
+                ::std::fmt::Debug::fmt(key, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(value, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::ObjectPatternProp::ObjRestPattern{rest} => {
+                __formatter.write_str("ObjRestPattern{")?;
+                ::std::fmt::Debug::fmt(rest, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::ObjectPatternProp::ObjSinglePattern{name} => {
+                __formatter.write_str("ObjSinglePattern{")?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ObjectPatternProp {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+impl ::std::default::Default for ObjectPatternProp {
+    fn default() -> Self {
+        crate::ObjectPatternProp::ObjAssignPattern{assign_key : ::std::default::Default::default(), assign_value : ::std::default::Default::default()}
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum OneOf<A, B, C> {
     First {
         a: A
@@ -2153,20 +2214,57 @@ impl <A: ::std::default::Default, B: ::std::default::Default, C: ::std::default:
         crate::OneOf::First{a : ::std::default::Default::default()}
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
-pub struct Pattern {
-    pub name: crate::Name
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub enum Pattern {
+    SinglePattern {
+        name: crate::ddlog_std::Option<crate::Name>
+    },
+    RestPattern {
+        rest: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>
+    },
+    AssignPattern {
+        key: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>,
+        value: crate::ddlog_std::Option<crate::ExprId>
+    },
+    ObjectPattern {
+        props: crate::ddlog_std::Vec<crate::internment::Intern<crate::ObjectPatternProp>>
+    },
+    ArrayPattern {
+        elems: crate::ddlog_std::Vec<crate::internment::Intern<crate::Pattern>>
+    }
 }
 impl abomonation::Abomonation for Pattern{}
-::differential_datalog::decl_struct_from_record!(Pattern["Pattern"]<>, ["SinglePattern"][1]{[0]name["name"]: crate::Name});
-::differential_datalog::decl_struct_into_record!(Pattern, ["Pattern"]<>, name);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Pattern, <>, name: crate::Name);
+::differential_datalog::decl_enum_from_record!(Pattern["Pattern"]<>, SinglePattern["SinglePattern"][1]{[0]name["name"]: crate::ddlog_std::Option<crate::Name>}, RestPattern["RestPattern"][1]{[0]rest["rest"]: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>}, AssignPattern["AssignPattern"][2]{[0]key["key"]: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>, [1]value["value"]: crate::ddlog_std::Option<crate::ExprId>}, ObjectPattern["ObjectPattern"][1]{[0]props["props"]: crate::ddlog_std::Vec<crate::internment::Intern<crate::ObjectPatternProp>>}, ArrayPattern["ArrayPattern"][1]{[0]elems["elems"]: crate::ddlog_std::Vec<crate::internment::Intern<crate::Pattern>>});
+::differential_datalog::decl_enum_into_record!(Pattern<>, SinglePattern["SinglePattern"]{name}, RestPattern["RestPattern"]{rest}, AssignPattern["AssignPattern"]{key, value}, ObjectPattern["ObjectPattern"]{props}, ArrayPattern["ArrayPattern"]{elems});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(Pattern<>, SinglePattern{name: crate::ddlog_std::Option<crate::Name>}, RestPattern{rest: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>}, AssignPattern{key: crate::ddlog_std::Option<crate::internment::Intern<crate::Pattern>>, value: crate::ddlog_std::Option<crate::ExprId>}, ObjectPattern{props: crate::ddlog_std::Vec<crate::internment::Intern<crate::ObjectPatternProp>>}, ArrayPattern{elems: crate::ddlog_std::Vec<crate::internment::Intern<crate::Pattern>>});
 impl ::std::fmt::Display for Pattern {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::Pattern{name} => {
+            crate::Pattern::SinglePattern{name} => {
                 __formatter.write_str("SinglePattern{")?;
                 ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::Pattern::RestPattern{rest} => {
+                __formatter.write_str("RestPattern{")?;
+                ::std::fmt::Debug::fmt(rest, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::Pattern::AssignPattern{key,value} => {
+                __formatter.write_str("AssignPattern{")?;
+                ::std::fmt::Debug::fmt(key, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(value, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::Pattern::ObjectPattern{props} => {
+                __formatter.write_str("ObjectPattern{")?;
+                ::std::fmt::Debug::fmt(props, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::Pattern::ArrayPattern{elems} => {
+                __formatter.write_str("ArrayPattern{")?;
+                ::std::fmt::Debug::fmt(elems, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -2175,6 +2273,11 @@ impl ::std::fmt::Display for Pattern {
 impl ::std::fmt::Debug for Pattern {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
+    }
+}
+impl ::std::default::Default for Pattern {
+    fn default() -> Self {
+        crate::Pattern::SinglePattern{name : ::std::default::Default::default()}
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]

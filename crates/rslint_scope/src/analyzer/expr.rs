@@ -111,8 +111,8 @@ impl<'ddlog> Visit<'ddlog, ArrowExpr> for AnalyzerInner {
         let params = arrow
             .params()
             .map(|params| match params {
-                ArrowExprParams::Name(name) => vec![Intern::new(DatalogPattern {
-                    name: Intern::new(name.text()),
+                ArrowExprParams::Name(name) => vec![Intern::new(DatalogPattern::SinglePattern {
+                    name: Some(self.visit(scope, name)).into(),
                 })],
 
                 ArrowExprParams::ParameterList(params) => params
