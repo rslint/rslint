@@ -126,6 +126,7 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                     | "namespace"
                     | "type"
             ) && !p.nth_at(1, T![:])
+                && p.nth_at(1, T![.])
             {
                 if let Some(mut res) = ts_expr_stmt(p) {
                     res.err_if_not_ts(
