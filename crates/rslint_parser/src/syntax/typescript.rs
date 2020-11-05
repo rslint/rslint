@@ -115,6 +115,7 @@ pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
         }
         let end = p.cur_tok().range.end;
         p.expect(T![=]);
+        ts_type(p);
         semi(p, start..end);
         return Some(m.complete(p, TS_TYPE_ALIAS_DECL));
     }
@@ -350,6 +351,9 @@ fn intersection_or_union(
     } else if !saw_op && ty.is_none() {
         m.abandon(p);
         None
+    } else if !saw_op {
+        m.abandon(p);
+        ty
     } else {
         Some(m.complete(p, kind))
     }
