@@ -409,6 +409,17 @@ impl TsAssertion {
     pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
     pub fn r_angle_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [>]) }
 }
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsTypeAliasDecl {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsTypeAliasDecl {
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
+    pub fn eq_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [=]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
 #[doc = " A TypeScript const assertion either as `foo as const` or `<const>foo`\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TsConstAssertion {
@@ -427,6 +438,7 @@ pub struct TsEnum {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsEnum {
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn const_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![const]) }
     pub fn enum_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![enum]) }
     pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
@@ -849,6 +861,7 @@ pub struct FnDecl {
     pub(crate) syntax: SyntaxNode,
 }
 impl FnDecl {
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn function_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![function])
     }
@@ -1260,6 +1273,7 @@ pub struct ClassDecl {
     pub(crate) syntax: SyntaxNode,
 }
 impl ClassDecl {
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn class_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![class]) }
     pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
     pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
@@ -1369,6 +1383,7 @@ pub enum Decl {
     ClassDecl(ClassDecl),
     VarDecl(VarDecl),
     TsEnum(TsEnum),
+    TsTypeAliasDecl(TsTypeAliasDecl),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1911,6 +1926,17 @@ impl AstNode for TsNonNull {
 }
 impl AstNode for TsAssertion {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_ASSERTION }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsTypeAliasDecl {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_TYPE_ALIAS_DECL }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3209,9 +3235,15 @@ impl From<VarDecl> for Decl {
 impl From<TsEnum> for Decl {
     fn from(node: TsEnum) -> Decl { Decl::TsEnum(node) }
 }
+impl From<TsTypeAliasDecl> for Decl {
+    fn from(node: TsTypeAliasDecl) -> Decl { Decl::TsTypeAliasDecl(node) }
+}
 impl AstNode for Decl {
     fn can_cast(kind: SyntaxKind) -> bool {
-        matches!(kind, FN_DECL | CLASS_DECL | VAR_DECL | TS_ENUM)
+        matches!(
+            kind,
+            FN_DECL | CLASS_DECL | VAR_DECL | TS_ENUM | TS_TYPE_ALIAS_DECL
+        )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
@@ -3219,6 +3251,7 @@ impl AstNode for Decl {
             CLASS_DECL => Decl::ClassDecl(ClassDecl { syntax }),
             VAR_DECL => Decl::VarDecl(VarDecl { syntax }),
             TS_ENUM => Decl::TsEnum(TsEnum { syntax }),
+            TS_TYPE_ALIAS_DECL => Decl::TsTypeAliasDecl(TsTypeAliasDecl { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3229,6 +3262,7 @@ impl AstNode for Decl {
             Decl::ClassDecl(it) => &it.syntax,
             Decl::VarDecl(it) => &it.syntax,
             Decl::TsEnum(it) => &it.syntax,
+            Decl::TsTypeAliasDecl(it) => &it.syntax,
         }
     }
 }
@@ -3935,6 +3969,11 @@ impl std::fmt::Display for TsNonNull {
     }
 }
 impl std::fmt::Display for TsAssertion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsTypeAliasDecl {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

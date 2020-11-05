@@ -269,6 +269,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_CONST_ASSERTION",
         "TS_ENUM",
         "TS_ENUM_MEMBER",
+        "TS_TYPE_ALIAS_DECL",
     ],
 };
 
@@ -617,6 +618,14 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![>]
         }
 
+        struct TsTypeAliasDecl {
+            /* type */
+            T![ident],
+            type_params: TsTypeParams,
+            T![=],
+            ty: TsType
+        }
+
         /// A TypeScript const assertion either as `foo as const` or `<const>foo`
         struct TsConstAssertion {
             expr: Expr,
@@ -627,6 +636,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsEnum {
+            T![ident],
             T![const],
             T![enum],
             T!['{'],
@@ -896,6 +906,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct FnDecl {
+            T![ident],
             /* async */
             T![function],
             T![*],
@@ -1158,6 +1169,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct ClassDecl {
+            T![ident],
             T![class],
             name: Name,
             T![extends],
@@ -1269,7 +1281,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             FnDecl,
             ClassDecl,
             VarDecl,
-            TsEnum
+            TsEnum,
+            TsTypeAliasDecl
         }
 
         /*

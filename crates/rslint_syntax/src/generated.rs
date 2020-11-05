@@ -257,6 +257,7 @@ pub enum SyntaxKind {
     TS_CONST_ASSERTION,
     TS_ENUM,
     TS_ENUM_MEMBER,
+    TS_TYPE_ALIAS_DECL,
     #[doc(hidden)]
     __LAST,
 }

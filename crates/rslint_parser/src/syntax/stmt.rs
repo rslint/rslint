@@ -6,7 +6,7 @@ use super::decl::{class_decl, function_decl};
 use super::expr::{assign_expr, expr, primary_expr, EXPR_RECOVERY_SET, STARTS_EXPR};
 use super::pat::*;
 use super::program::{export_decl, import_decl};
-use super::typescript::ts_enum;
+use super::typescript::*;
 use super::util::{
     check_for_stmt_declarators, check_label_use, check_lhs, check_var_decl_bound_names,
 };
@@ -115,6 +115,27 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
         // TODO: handle `<T>() => {};` with less of a hack
         _ if p.at_ts(STARTS_EXPR) || p.at(T![<]) => {
             let start = p.cur_tok().range.start;
+            if matches!(
+                p.cur_src(),
+                "global"
+                    | "declare"
+                    | "abstract"
+                    | "enum"
+                    | "interface"
+                    | "module"
+                    | "namespace"
+                    | "type"
+            ) && !p.nth_at(1, T![:])
+            {
+                if let Some(mut res) = ts_expr_stmt(p) {
+                    res.err_if_not_ts(
+                        p,
+                        "TypeScript declarations can only be used in TypeScript files",
+                    );
+                    return Some(res);
+                }
+            }
+
             let mut expr = expr(p)?;
             // Labelled stmt
             if expr.kind() == NAME_REF && p.at(T![:]) {
@@ -152,12 +173,12 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                 let m = expr.precede(p);
                 p.bump_any();
                 stmt(p, None);
-                m.complete(p, LABELLED_STMT)
-            } else {
-                let m = expr.precede(p);
-                semi(p, start..p.cur_tok().range.end);
-                m.complete(p, EXPR_STMT)
+                return Some(m.complete(p, LABELLED_STMT));
             }
+
+            let m = expr.precede(p);
+            semi(p, start..p.cur_tok().range.end);
+            m.complete(p, EXPR_STMT)
         }
         _ => {
             let err = p

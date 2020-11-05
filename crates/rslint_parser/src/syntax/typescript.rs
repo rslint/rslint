@@ -3,8 +3,9 @@
 //! Most of the functions do not check if the parser is configured for TypeScript.
 //! Functions that do check will say so in the docs.
 
-use super::decl::formal_parameters;
+use super::decl::*;
 use super::expr::{assign_expr, identifier_name, literal, template};
+use super::stmt::{semi, var_decl};
 use crate::ast::Template;
 use crate::{SyntaxKind::*, *};
 
@@ -17,6 +18,109 @@ pub const BASE_TS_RECOVERY_SET: TokenSet = token_set![
     T![break],
     T!['['],
 ];
+
+pub(crate) fn ts_expr_stmt(p: &mut Parser) -> Option<CompletedMarker> {
+    match p.cur_src() {
+        "declare" => ts_declare(p),
+        "global" => todo!(),
+        _ => ts_decl(p),
+    }
+}
+
+pub(crate) fn ts_declare(p: &mut Parser) -> Option<CompletedMarker> {
+    debug_assert_eq!(p.cur_src(), "declare");
+    Some(match p.nth(1) {
+        T![function] => {
+            let m = p.start();
+            p.bump_any();
+            function_decl(p, m, false)
+        }
+        T![class] => {
+            let m = p.start();
+            p.bump_any();
+            class_decl(p, false).undo_completion(p).abandon(p);
+            m.complete(p, CLASS_DECL)
+        }
+        t if (t == T![const] && p.nth_at(2, T![enum])) || t == T![enum] => {
+            let m = p.start();
+            p.bump_any();
+            ts_enum(p).undo_completion(p).abandon(p);
+            m.complete(p, TS_ENUM)
+        }
+        T![const] | T![var] => {
+            let m = p.start();
+            p.bump_any();
+            // unwrap the marker so its children go to `m`
+            var_decl(p, false).undo_completion(p).abandon(p);
+            m.complete(p, VAR_DECL)
+        }
+        _ if p.nth_src(1) == "let" => {
+            let m = p.start();
+            p.bump_any();
+            var_decl(p, false).undo_completion(p).abandon(p);
+            m.complete(p, VAR_DECL)
+        }
+        _ => {
+            let checkpoint = p.checkpoint();
+            let m = p.start();
+            p.bump_any();
+            let res = ts_decl(p);
+            if let Some(res) = res {
+                let kind = res.kind();
+                res.undo_completion(p).abandon(p);
+                return Some(m.complete(p, kind));
+            } else {
+                m.abandon(p);
+                p.rewind(checkpoint);
+                return None;
+            }
+        }
+    })
+}
+
+pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
+    if p.cur_src() == "abstract" {
+        let m = p.start();
+        p.bump_any();
+        class_decl(p, false).undo_completion(p).abandon(p);
+        return Some(m.complete(p, CLASS_DECL));
+    }
+
+    if p.at(T![enum]) {
+        let m = p.start();
+        p.bump_any();
+        ts_enum(p).undo_completion(p).abandon(p);
+        return Some(m.complete(p, TS_ENUM));
+    }
+
+    if p.cur_src() == "interface" {
+        todo!("interfaces");
+    }
+
+    if p.cur_src() == "module" {
+        todo!("modules");
+    }
+
+    if p.cur_src() == "namespace" {
+        todo!("namespaces");
+    }
+
+    if p.cur_src() == "type" {
+        let m = p.start();
+        let start = p.cur_tok().range.start;
+        p.bump_any();
+        identifier_name(p);
+        if p.at(T![<]) {
+            ts_type_params(p);
+        }
+        let end = p.cur_tok().range.end;
+        p.expect(T![=]);
+        semi(p, start..end);
+        return Some(m.complete(p, TS_TYPE_ALIAS_DECL));
+    }
+
+    None
+}
 
 // ambiguity is fun!
 macro_rules! no_recover {
@@ -153,7 +257,11 @@ pub fn ts_non_conditional_type(p: &mut Parser) -> Option<CompletedMarker> {
         return ts_fn_or_constructor_type(p, true);
     }
 
-    intersection_or_union(p, false)
+    intersection_or_union(p, false, |p| ts_intersection_type_or_higher(p), T![|])
+}
+
+fn ts_intersection_type_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
+    intersection_or_union(p, true, |p| ts_type_operator_or_higher(p), T![&])
 }
 
 fn look_ahead(p: &mut Parser, func: impl FnOnce(&mut Parser) -> bool) -> bool {
@@ -219,39 +327,32 @@ fn skip_parameter_start(p: &mut Parser) -> bool {
     false
 }
 
-// hack for intersection_or_union constituent
-fn union(p: &mut Parser) -> Option<CompletedMarker> {
-    intersection_or_union(p, true)
-}
-
-fn intersection_or_union(p: &mut Parser, intersection: bool) -> Option<CompletedMarker> {
-    let m = p.start();
-    let constituent = if intersection {
-        ts_type_operator_or_higher
+fn intersection_or_union(
+    p: &mut Parser,
+    intersection: bool,
+    mut constituent: impl FnMut(&mut Parser) -> Option<CompletedMarker>,
+    op: SyntaxKind,
+) -> Option<CompletedMarker> {
+    let kind = if intersection {
+        TS_INTERSECTION
     } else {
-        union
+        TS_UNION
     };
+    let m = p.start();
+    let saw_op = p.eat(op);
+    let ty = constituent(p);
+    if p.at(op) {
+        while p.eat(op) {
+            constituent(p);
+        }
 
-    let op = if intersection { T![&] } else { T![|] };
-    let saw_op = p.eat(op); //leading operator is allowed
-    let parsed = constituent(p);
-
-    if !saw_op || parsed.is_none() {
-        return parsed;
+        Some(m.complete(p, kind))
+    } else if !saw_op && ty.is_none() {
+        m.abandon(p);
+        None
+    } else {
+        Some(m.complete(p, kind))
     }
-
-    while p.eat(op) {
-        constituent(p);
-    }
-
-    Some(m.complete(
-        p,
-        if intersection {
-            TS_INTERSECTION
-        } else {
-            TS_UNION
-        },
-    ))
 }
 
 pub fn ts_type_operator_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
