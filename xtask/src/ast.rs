@@ -267,6 +267,8 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_NON_NULL",
         "TS_ASSERTION",
         "TS_CONST_ASSERTION",
+        "TS_ENUM",
+        "TS_ENUM_MEMBER",
     ],
 };
 
@@ -622,6 +624,20 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![<],
             T![const],
             T![>]
+        }
+
+        struct TsEnum {
+            T![const],
+            T![enum],
+            T!['{'],
+            members: [TsEnumMember],
+            T!['}']
+        }
+
+        struct TsEnumMember {
+            T![ident],
+            T![=],
+            value: Expr
         }
 
         // --------------------------------------------------
@@ -1253,6 +1269,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             FnDecl,
             ClassDecl,
             VarDecl,
+            TsEnum
         }
 
         /*
@@ -1288,7 +1305,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             ImportCall,
             YieldExpr,
             AwaitExpr,
-            TsNonNull
+            TsNonNull,
+            TsAssertion,
+            TsConstAssertion
         }
 
         /// Either a single type reference or a fully qualified path
@@ -1328,9 +1347,6 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsFnType,
             TsConstructorType,
             TsConditionalType,
-            TsNonNull,
-            TsAssertion,
-            TsConstAssertion
         }
 
         enum TsThisOrName {

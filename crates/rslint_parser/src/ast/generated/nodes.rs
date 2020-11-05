@@ -423,6 +423,28 @@ impl TsConstAssertion {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsEnum {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsEnum {
+    pub fn const_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![const]) }
+    pub fn enum_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![enum]) }
+    pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
+    pub fn members(&self) -> AstChildren<TsEnumMember> { support::children(&self.syntax) }
+    pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsEnumMember {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsEnumMember {
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn eq_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [=]) }
+    pub fn value(&self) -> Option<Expr> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
@@ -1346,6 +1368,7 @@ pub enum Decl {
     FnDecl(FnDecl),
     ClassDecl(ClassDecl),
     VarDecl(VarDecl),
+    TsEnum(TsEnum),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1376,6 +1399,8 @@ pub enum Expr {
     YieldExpr(YieldExpr),
     AwaitExpr(AwaitExpr),
     TsNonNull(TsNonNull),
+    TsAssertion(TsAssertion),
+    TsConstAssertion(TsConstAssertion),
 }
 #[doc = " Either a single type reference or a fully qualified path\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1415,9 +1440,6 @@ pub enum TsType {
     TsFnType(TsFnType),
     TsConstructorType(TsConstructorType),
     TsConditionalType(TsConditionalType),
-    TsNonNull(TsNonNull),
-    TsAssertion(TsAssertion),
-    TsConstAssertion(TsConstAssertion),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1900,6 +1922,28 @@ impl AstNode for TsAssertion {
 }
 impl AstNode for TsConstAssertion {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_CONST_ASSERTION }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsEnum {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_ENUM }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsEnumMember {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_ENUM_MEMBER }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3162,13 +3206,19 @@ impl From<ClassDecl> for Decl {
 impl From<VarDecl> for Decl {
     fn from(node: VarDecl) -> Decl { Decl::VarDecl(node) }
 }
+impl From<TsEnum> for Decl {
+    fn from(node: TsEnum) -> Decl { Decl::TsEnum(node) }
+}
 impl AstNode for Decl {
-    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, FN_DECL | CLASS_DECL | VAR_DECL) }
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(kind, FN_DECL | CLASS_DECL | VAR_DECL | TS_ENUM)
+    }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             FN_DECL => Decl::FnDecl(FnDecl { syntax }),
             CLASS_DECL => Decl::ClassDecl(ClassDecl { syntax }),
             VAR_DECL => Decl::VarDecl(VarDecl { syntax }),
+            TS_ENUM => Decl::TsEnum(TsEnum { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3178,6 +3228,7 @@ impl AstNode for Decl {
             Decl::FnDecl(it) => &it.syntax,
             Decl::ClassDecl(it) => &it.syntax,
             Decl::VarDecl(it) => &it.syntax,
+            Decl::TsEnum(it) => &it.syntax,
         }
     }
 }
@@ -3259,6 +3310,12 @@ impl From<AwaitExpr> for Expr {
 impl From<TsNonNull> for Expr {
     fn from(node: TsNonNull) -> Expr { Expr::TsNonNull(node) }
 }
+impl From<TsAssertion> for Expr {
+    fn from(node: TsAssertion) -> Expr { Expr::TsAssertion(node) }
+}
+impl From<TsConstAssertion> for Expr {
+    fn from(node: TsConstAssertion) -> Expr { Expr::TsConstAssertion(node) }
+}
 impl AstNode for Expr {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -3289,6 +3346,8 @@ impl AstNode for Expr {
                 | YIELD_EXPR
                 | AWAIT_EXPR
                 | TS_NON_NULL
+                | TS_ASSERTION
+                | TS_CONST_ASSERTION
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3319,6 +3378,8 @@ impl AstNode for Expr {
             YIELD_EXPR => Expr::YieldExpr(YieldExpr { syntax }),
             AWAIT_EXPR => Expr::AwaitExpr(AwaitExpr { syntax }),
             TS_NON_NULL => Expr::TsNonNull(TsNonNull { syntax }),
+            TS_ASSERTION => Expr::TsAssertion(TsAssertion { syntax }),
+            TS_CONST_ASSERTION => Expr::TsConstAssertion(TsConstAssertion { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3351,6 +3412,8 @@ impl AstNode for Expr {
             Expr::YieldExpr(it) => &it.syntax,
             Expr::AwaitExpr(it) => &it.syntax,
             Expr::TsNonNull(it) => &it.syntax,
+            Expr::TsAssertion(it) => &it.syntax,
+            Expr::TsConstAssertion(it) => &it.syntax,
         }
     }
 }
@@ -3464,15 +3527,6 @@ impl From<TsConstructorType> for TsType {
 impl From<TsConditionalType> for TsType {
     fn from(node: TsConditionalType) -> TsType { TsType::TsConditionalType(node) }
 }
-impl From<TsNonNull> for TsType {
-    fn from(node: TsNonNull) -> TsType { TsType::TsNonNull(node) }
-}
-impl From<TsAssertion> for TsType {
-    fn from(node: TsAssertion) -> TsType { TsType::TsAssertion(node) }
-}
-impl From<TsConstAssertion> for TsType {
-    fn from(node: TsConstAssertion) -> TsType { TsType::TsConstAssertion(node) }
-}
 impl AstNode for TsType {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -3506,9 +3560,6 @@ impl AstNode for TsType {
                 | TS_FN_TYPE
                 | TS_CONSTRUCTOR_TYPE
                 | TS_CONDITIONAL_TYPE
-                | TS_NON_NULL
-                | TS_ASSERTION
-                | TS_CONST_ASSERTION
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3542,9 +3593,6 @@ impl AstNode for TsType {
             TS_FN_TYPE => TsType::TsFnType(TsFnType { syntax }),
             TS_CONSTRUCTOR_TYPE => TsType::TsConstructorType(TsConstructorType { syntax }),
             TS_CONDITIONAL_TYPE => TsType::TsConditionalType(TsConditionalType { syntax }),
-            TS_NON_NULL => TsType::TsNonNull(TsNonNull { syntax }),
-            TS_ASSERTION => TsType::TsAssertion(TsAssertion { syntax }),
-            TS_CONST_ASSERTION => TsType::TsConstAssertion(TsConstAssertion { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3580,9 +3628,6 @@ impl AstNode for TsType {
             TsType::TsFnType(it) => &it.syntax,
             TsType::TsConstructorType(it) => &it.syntax,
             TsType::TsConditionalType(it) => &it.syntax,
-            TsType::TsNonNull(it) => &it.syntax,
-            TsType::TsAssertion(it) => &it.syntax,
-            TsType::TsConstAssertion(it) => &it.syntax,
         }
     }
 }
@@ -3895,6 +3940,16 @@ impl std::fmt::Display for TsAssertion {
     }
 }
 impl std::fmt::Display for TsConstAssertion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsEnum {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsEnumMember {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

@@ -6,7 +6,10 @@ use super::decl::{class_decl, function_decl};
 use super::expr::{assign_expr, expr, primary_expr, EXPR_RECOVERY_SET, STARTS_EXPR};
 use super::pat::*;
 use super::program::{export_decl, import_decl};
-use super::util::{check_for_stmt_declarators, check_label_use, check_lhs};
+use super::typescript::ts_enum;
+use super::util::{
+    check_for_stmt_declarators, check_label_use, check_lhs, check_var_decl_bound_names,
+};
 use crate::{SyntaxKind::*, *};
 
 pub const STMT_RECOVERY_SET: TokenSet = token_set![
@@ -71,6 +74,11 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
         T![if] => if_stmt(p),
         T![with] => with_stmt(p),
         T![while] => while_stmt(p),
+        t if (t == T![const] && p.nth_at(1, T![enum])) || t == T![enum] => {
+            let mut res = ts_enum(p);
+            res.err_if_not_ts(p, "enums can only be declared in TypeScript files");
+            res
+        }
         T![var] | T![const] => var_decl(p, false),
         T![for] => for_stmt(p),
         T![do] => do_stmt(p),

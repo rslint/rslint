@@ -4,7 +4,7 @@
 //! Functions that do check will say so in the docs.
 
 use super::decl::formal_parameters;
-use super::expr::{identifier_name, literal, template};
+use super::expr::{assign_expr, identifier_name, literal, template};
 use crate::ast::Template;
 use crate::{SyntaxKind::*, *};
 
@@ -25,6 +25,53 @@ macro_rules! no_recover {
             return None;
         }
     };
+}
+
+pub fn ts_enum(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.eat(T![const]);
+    p.expect(T![enum]);
+    identifier_name(p);
+    p.expect(T!['{']);
+    let mut first = true;
+
+    while !p.at(EOF) && !p.at(T!['}']) {
+        if first {
+            first = false;
+        } else {
+            p.expect(T![,]);
+        }
+
+        let member = p.start();
+        let err_occured =
+            if !p.at_ts(token_set![T![ident], T![yield], T![await]]) && !p.cur().is_keyword() {
+                let err = p
+                    .err_builder("expected an identifier for an enum variant, but found none")
+                    .primary(p.cur_tok().range, "");
+
+                p.err_recover(
+                    err,
+                    token_set![T!['}'], T![ident], T![yield], T![await], T![=], T![,]],
+                    false,
+                );
+                true
+            } else {
+                identifier_name(p).unwrap().undo_completion(p).abandon(p);
+                false
+            };
+
+        if p.eat(T![=]) {
+            assign_expr(p);
+            member.complete(p, TS_ENUM_MEMBER);
+        } else if err_occured {
+            member.abandon(p);
+        } else {
+            member.complete(p, TS_ENUM_MEMBER);
+        }
+    }
+
+    p.expect(T!['}']);
+    m.complete(p, TS_ENUM)
 }
 
 pub fn try_parse_ts(
