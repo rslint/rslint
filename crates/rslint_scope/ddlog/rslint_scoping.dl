@@ -1,3 +1,5 @@
+import vec
+
 #[has_side_effects]
 extern function debug(message: string)
 
@@ -6,11 +8,13 @@ typedef Name = istring
 
 // Ids
 typedef GlobalId = GlobalId { id: u32 }
+typedef ClassId = ClassId { id: u32 }
 typedef FuncId = FuncId { id: u32 }
 typedef StmtId = StmtId { id: u32 }
 typedef ExprId = ExprId { id: u32 }
 typedef AnyId =
     AnyIdGlobal { global: GlobalId }
+    | AnyIdClass { class: ClassId }
     | AnyIdFunc { func: FuncId }
     | AnyIdStmt { stmt: StmtId }
     | AnyIdExpr { expr: ExprId }
@@ -33,13 +37,35 @@ typedef Pattern =
     | ObjectPattern { props: Vec<Intern<ObjectPatternProp>> }
     | ArrayPattern { elems: Vec<Intern<Pattern>> }
 
+function bound_vars(pat: IPattern): Vec<Name> {
+    match (pat.ival()) {
+        SinglePattern { Some { name }} -> [name],
+        RestPattern { Some { rest }} -> rest.bound_vars(),
+        AssignPattern { Some { key }, _ } -> key.bound_vars(),
+        ObjectPattern { props } -> props.flatmap(|prop| prop.bound_vars()),
+        ArrayPattern { elems } -> elems.flatmap(|elem| elem.bound_vars()),
+        _ -> vec_empty()
+    }
+}
+
 typedef ObjectPatternProp =
     ObjAssignPattern { assign_key: Option<Intern<Pattern>>, assign_value: Option<ExprId> }
     | ObjKeyValuePattern { key: Option<PropertyKey>, value: Option<Intern<Pattern>> }
     | ObjRestPattern { rest: Option<Intern<Pattern>> }
     | ObjSinglePattern { name: Option<Name> }
 
+function bound_vars(pat: IObjectPatternProp): Vec<Name> {
+    match (pat.ival()) {
+        ObjAssignPattern { Some { key }, _ } -> key.bound_vars(),
+        ObjKeyValuePattern { _, Some { value }} -> value.bound_vars(),
+        ObjRestPattern { Some { rest }} -> rest.bound_vars(),
+        ObjSinglePattern { Some { name }} -> [name],
+        _ -> vec_empty()
+    }
+}
+
 typedef IPattern = Intern<Pattern>
+typedef IObjectPatternProp = Intern<ObjectPatternProp>
 
 typedef StmtKind =
     StmtVarDecl
@@ -184,6 +210,8 @@ typedef ClassElement =
         body: Option<StmtId>
     }
 
+typedef IClassElement = Intern<ClassElement>
+
 // The input scope relationships, just map parent<-child for one generation
 // TODO: Scope spans, make clear if a span is implicit or explicit
 input relation InputScope(parent: Scope, child: Scope)
@@ -239,7 +267,10 @@ input relation Call(expr_id: ExprId, callee: Option<ExprId>, args: Option<Vec<Ex
 input relation Assign(expr_id: ExprId, lhs: Option<Either<IPattern, ExprId>>, rhs: Option<ExprId>, op: Option<AssignOperand>)
 input relation InlineFunc(expr_id: ExprId, name: Option<Name>, body: Option<StmtId>)
 input relation InlineFuncParam(expr_id: ExprId, param: IPattern) // TODO: Inline this?
-input relation ClassExpr(expr_id: ExprId, element: Option<ClassElement>)
+input relation ClassExpr(expr_id: ExprId, elements: Option<Vec<IClassElement>>)
+
+// Class declarations
+input relation Class(id: ClassId, name: Option<Name>, parent: Option<ExprId>, elements: Option<Vec<IClassElement>>, scope: Scope)
 
 // Globals
 input relation ImplicitGlobal(id: GlobalId, name: Name)
@@ -271,63 +302,179 @@ relation ClosestFunction(scope: Scope, func: FuncId)
 ClosestFunction(scope, func) :- Function(func, _, scope).
 ClosestFunction(scope, func) :- Function(func, _, func_scope), ChildScope(func_scope, scope).
 
+// The `NameInScope` relation gives every name/symbol/ident that's defined for any given scope.
+// Names are walked down children scopes, meaning all children have access to the variables of
+// their parent scope(s)
+//
+// ```
+// // 'a defines the `foo` symbol
+// 'a: { foo }
+//  │
+//  │ // 'b defines the `bar` symbol and inherits
+//  │ // the `foo` symbol
+//  ├-'b: { foo, bar }
+// ```
+//
 relation NameInScope(name: Name, scope: Scope, declared_in: AnyId)
-// Add globals to every scope
+
+// Add implicit globals to every scope
 NameInScope(name, scope, AnyIdGlobal { global }) :- ImplicitGlobal(global, name), EveryScope(scope).
 
+// Class declarations
+//
+// Class declarations create a new scope when they're declared,
+// so we add the class's name within that scope
+//
+// ```js
+// // Scope: { ... }
+// class Baz { }
+// // Scope: { Baz, ... }
+// ```
+//
+NameInScope(name, scope, AnyIdClass { class }) :- Class(class, Some { name }, _, _, scope).
+
 // `let` declarations
+//
+// Let declarations create a new scope when they're declared,
+// so we add the variable's name within that scope
+//
+// ```js
+// // Scope: { ... }
+// let foo = 10;
+// // Scope: { foo, ... }
+// ```
+//
 NameInScope(name, scope, AnyIdStmt { stmt }) :-
     LetDecl(stmt, Some { pat }, _),
-    SinglePattern { Some { var name }} = pat.ival(),
+    var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _).
 
 // `const` declarations
+//
+// Const declarations create a new scope when they're declared,
+// so we add the variable's name within that scope
+//
+// ```js
+// // Scope: { ... }
+// const foo = 10;
+// // Scope: { foo, ... }
+// ```
+//
 NameInScope(name, scope, AnyIdStmt { stmt }) :-
     ConstDecl(stmt, Some { pat }, _),
-    SinglePattern { Some { var name }} = pat.ival(),
+    var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _).
 
 // `var` declarations
+//
+// Var declarations bubble up to the nearest function-level block
+//
+// ```js
+// // Scope: { ... }
+// function foo() {
+//     // Scope: { baz, ... }
+//     var baz = 10;
+//     // Scope: { baz, ... }
+// }
+// // Scope: { ... }
+// ```
+//
 NameInScope(name, scope, AnyIdStmt { stmt }) :-
     VarDecl(stmt, Some { pat }, _),
-    SinglePattern { Some { var name }} = pat.ival(),
+    var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, decl_scope, _),
-    // Bubble `var` up to the nearest function's scope?
+    // Bubble `var` up to the nearest function's scope
     ClosestFunction(decl_scope, func),
     Function(func, _, scope).
 
-// Functions
+// Function declarations
+//
+// Function declarations don't initalize a new scope, so we add the function's
+// name to the scope it was declared in
+//
+// ```js
+// // Scope: { foo, ... }
+// function foo() {
+//     // Scope: { foo, ... }
+// }
+// // Scope: { foo, ... }
+// ```
+//
 NameInScope(name, scope, AnyIdFunc { func }) :- Function(func, Some { name }, scope).
 
-// Function arguments
+// Introduce function arguments within the body of their enclosing function
+//
+// ```js
+// // Scope: { ... }
+// function foo(bar, baz) {
+//     // Scope: { bar, baz, ... }
+// }
+// // Scope: { ... }
+// ```
+//
 NameInScope(name, scope, AnyIdFunc { func }) :-
     FunctionArg(func, pat),
-    SinglePattern { Some { var name }} = pat.ival(),
+    var name = FlatMap(pat.bound_vars()),
     Function(func, _, scope).
 
-// Closure arguments
+// Introduce closure arguments within the body of their enclosing closure
+//
+// ```js
+// // Scope: { ... }
+// ((bar, baz) => {
+//     // Scope: { bar, baz, ... }
+// });
+// // Scope: { ... }
+// ```
+//
 NameInScope(name, scope, AnyIdExpr { expr }) :-
     ArrowParam(expr, pat),
-    SinglePattern { Some { var name }} = pat.ival(),
+    var name = FlatMap(pat.bound_vars()),
     // Get the body's expression and put the parameters in-scope
     // there, not within the arrow expression's scope
     // TODO: Can I address Expr/Stmt at the same time instead
     //       of seperate rules?
-    Arrow(expr, Some { Left { expr_body } }),
+    Arrow(expr, Some { Left { expr_body }}),
     Expression(expr_body, _, scope, _).
+
 NameInScope(name, scope, AnyIdExpr { expr }) :-
     ArrowParam(expr, pat),
-    SinglePattern { Some { var name }} = pat.ival(),
+    var name = FlatMap(pat.bound_vars()),
     // Get the body's statement and put the parameters in-scope
     // there, not within the arrow expression's scope
-    Arrow(expr, Some { Right { stmt_body } }),
+    Arrow(expr, Some { Right { stmt_body }}),
     Statement(stmt_body, _, scope, _).
 
-// Inline function arguments
+// Inline function names
+//
+// Inline functions that are named are treated like normal functions
+// and added to their enclosing scope
+//
+// ```js
+// // Scope: { foo, ... }
+// let _ = function foo() {
+//     // Scope: { foo, ... }
+// }
+// // Scope: { foo, ... }
+// ```
+//
+NameInScope(name, scope, AnyIdExpr { expr }) :-
+    InlineFunc(expr, Some { name }, _),
+    Expression(expr, _, scope, _).
+
+// Introduce inline function arguments within the body of their enclosing closure
+//
+// ```js
+// // Scope: { ... }
+// let _ = function(bar, baz) {
+//     // Scope: { bar, baz, ... }
+// };
+// // Scope: { ... }
+// ```
+//
 NameInScope(name, scope, AnyIdExpr { expr }) :-
     InlineFuncParam(expr, pat),
-    SinglePattern { Some { var name }} = pat.ival(),
-    // TODO: Add the function's name somewhere too?
+    var name = FlatMap(pat.bound_vars()),
     InlineFunc(expr, _, Some { body }),
     Statement(body, _, scope, _).
 

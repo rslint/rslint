@@ -112,10 +112,13 @@ macro_rules! deserialize_map_from_array {
 }
 
 
+pub static __STATIC_1: ::once_cell::sync::Lazy<crate::ddlog_std::Vec<crate::Name>> = ::once_cell::sync::Lazy::new(|| crate::ddlog_std::vec_empty());
+pub static __STATIC_0: ::once_cell::sync::Lazy<crate::ddlog_std::Vec<crate::Name>> = ::once_cell::sync::Lazy::new(|| crate::ddlog_std::vec_with_capacity((&(1 as u64))));
 pub mod ddlog_std;
 pub mod internment;
 pub mod debug;
 pub mod log;
+pub mod vec;
 use internment::Intern;
 use once_cell::sync::Lazy;
 use rslint_parser::{
@@ -226,6 +229,7 @@ macro_rules! impl_id_traits {
 impl_id_traits! {
     Scope,
     GlobalId,
+    ClassId,
     FuncId,
     StmtId,
     ExprId,
@@ -315,6 +319,9 @@ pub enum AnyId {
     AnyIdGlobal {
         global: crate::GlobalId
     },
+    AnyIdClass {
+        class: crate::ClassId
+    },
     AnyIdFunc {
         func: crate::FuncId
     },
@@ -326,15 +333,20 @@ pub enum AnyId {
     }
 }
 impl abomonation::Abomonation for AnyId{}
-::differential_datalog::decl_enum_from_record!(AnyId["AnyId"]<>, AnyIdGlobal["AnyIdGlobal"][1]{[0]global["global"]: crate::GlobalId}, AnyIdFunc["AnyIdFunc"][1]{[0]func["func"]: crate::FuncId}, AnyIdStmt["AnyIdStmt"][1]{[0]stmt["stmt"]: crate::StmtId}, AnyIdExpr["AnyIdExpr"][1]{[0]expr["expr"]: crate::ExprId});
-::differential_datalog::decl_enum_into_record!(AnyId<>, AnyIdGlobal["AnyIdGlobal"]{global}, AnyIdFunc["AnyIdFunc"]{func}, AnyIdStmt["AnyIdStmt"]{stmt}, AnyIdExpr["AnyIdExpr"]{expr});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(AnyId<>, AnyIdGlobal{global: crate::GlobalId}, AnyIdFunc{func: crate::FuncId}, AnyIdStmt{stmt: crate::StmtId}, AnyIdExpr{expr: crate::ExprId});
+::differential_datalog::decl_enum_from_record!(AnyId["AnyId"]<>, AnyIdGlobal["AnyIdGlobal"][1]{[0]global["global"]: crate::GlobalId}, AnyIdClass["AnyIdClass"][1]{[0]class["class"]: crate::ClassId}, AnyIdFunc["AnyIdFunc"][1]{[0]func["func"]: crate::FuncId}, AnyIdStmt["AnyIdStmt"][1]{[0]stmt["stmt"]: crate::StmtId}, AnyIdExpr["AnyIdExpr"][1]{[0]expr["expr"]: crate::ExprId});
+::differential_datalog::decl_enum_into_record!(AnyId<>, AnyIdGlobal["AnyIdGlobal"]{global}, AnyIdClass["AnyIdClass"]{class}, AnyIdFunc["AnyIdFunc"]{func}, AnyIdStmt["AnyIdStmt"]{stmt}, AnyIdExpr["AnyIdExpr"]{expr});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(AnyId<>, AnyIdGlobal{global: crate::GlobalId}, AnyIdClass{class: crate::ClassId}, AnyIdFunc{func: crate::FuncId}, AnyIdStmt{stmt: crate::StmtId}, AnyIdExpr{expr: crate::ExprId});
 impl ::std::fmt::Display for AnyId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
             crate::AnyId::AnyIdGlobal{global} => {
                 __formatter.write_str("AnyIdGlobal{")?;
                 ::std::fmt::Debug::fmt(global, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::AnyId::AnyIdClass{class} => {
+                __formatter.write_str("AnyIdClass{")?;
+                ::std::fmt::Debug::fmt(class, __formatter)?;
                 __formatter.write_str("}")
             },
             crate::AnyId::AnyIdFunc{func} => {
@@ -938,6 +950,42 @@ impl ::std::fmt::Debug for ChildScope {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct Class {
+    pub id: crate::ClassId,
+    pub name: crate::ddlog_std::Option<crate::Name>,
+    pub parent: crate::ddlog_std::Option<crate::ExprId>,
+    pub elements: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::IClassElement>>,
+    pub scope: crate::Scope
+}
+impl abomonation::Abomonation for Class{}
+::differential_datalog::decl_struct_from_record!(Class["Class"]<>, ["Class"][5]{[0]id["id"]: crate::ClassId, [1]name["name"]: crate::ddlog_std::Option<crate::Name>, [2]parent["parent"]: crate::ddlog_std::Option<crate::ExprId>, [3]elements["elements"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::IClassElement>>, [4]scope["scope"]: crate::Scope});
+::differential_datalog::decl_struct_into_record!(Class, ["Class"]<>, id, name, parent, elements, scope);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Class, <>, id: crate::ClassId, name: crate::ddlog_std::Option<crate::Name>, parent: crate::ddlog_std::Option<crate::ExprId>, elements: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::IClassElement>>, scope: crate::Scope);
+impl ::std::fmt::Display for Class {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::Class{id,name,parent,elements,scope} => {
+                __formatter.write_str("Class{")?;
+                ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(parent, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(elements, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(scope, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for Class {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum ClassElement {
     ClassEmptyElem,
@@ -997,26 +1045,50 @@ impl ::std::default::Default for ClassElement {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct ClassExpr {
     pub expr_id: crate::ExprId,
-    pub element: crate::ddlog_std::Option<crate::ClassElement>
+    pub elements: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::IClassElement>>
 }
 impl abomonation::Abomonation for ClassExpr{}
-::differential_datalog::decl_struct_from_record!(ClassExpr["ClassExpr"]<>, ["ClassExpr"][2]{[0]expr_id["expr_id"]: crate::ExprId, [1]element["element"]: crate::ddlog_std::Option<crate::ClassElement>});
-::differential_datalog::decl_struct_into_record!(ClassExpr, ["ClassExpr"]<>, expr_id, element);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ClassExpr, <>, expr_id: crate::ExprId, element: crate::ddlog_std::Option<crate::ClassElement>);
+::differential_datalog::decl_struct_from_record!(ClassExpr["ClassExpr"]<>, ["ClassExpr"][2]{[0]expr_id["expr_id"]: crate::ExprId, [1]elements["elements"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::IClassElement>>});
+::differential_datalog::decl_struct_into_record!(ClassExpr, ["ClassExpr"]<>, expr_id, elements);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ClassExpr, <>, expr_id: crate::ExprId, elements: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::IClassElement>>);
 impl ::std::fmt::Display for ClassExpr {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::ClassExpr{expr_id,element} => {
+            crate::ClassExpr{expr_id,elements} => {
                 __formatter.write_str("ClassExpr{")?;
                 ::std::fmt::Debug::fmt(expr_id, __formatter)?;
                 __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(element, __formatter)?;
+                ::std::fmt::Debug::fmt(elements, __formatter)?;
                 __formatter.write_str("}")
             }
         }
     }
 }
 impl ::std::fmt::Debug for ClassExpr {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct ClassId {
+    pub id: u32
+}
+impl abomonation::Abomonation for ClassId{}
+::differential_datalog::decl_struct_from_record!(ClassId["ClassId"]<>, ["ClassId"][1]{[0]id["id"]: u32});
+::differential_datalog::decl_struct_into_record!(ClassId, ["ClassId"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ClassId, <>, id: u32);
+impl ::std::fmt::Display for ClassId {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::ClassId{id} => {
+                __formatter.write_str("ClassId{")?;
+                ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ClassId {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
@@ -1730,6 +1802,8 @@ impl ::std::fmt::Debug for GlobalId {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
+pub type IClassElement = crate::internment::Intern<crate::ClassElement>;
+pub type IObjectPatternProp = crate::internment::Intern<crate::ObjectPatternProp>;
 pub type IPattern = crate::internment::Intern<crate::Pattern>;
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct If {
@@ -3186,6 +3260,59 @@ impl ::std::fmt::Debug for Yield {
     }
 }
 /* fn debug(message: & String) -> () */
+pub fn bound_vars_internment_Intern__Pattern_ddlog_std_Vec__internment_Intern____Stringval(pat: & crate::IPattern) -> crate::ddlog_std::Vec<crate::Name>
+{   match (*crate::internment::ival(pat)) {
+        crate::Pattern::SinglePattern{name: crate::ddlog_std::Option::Some{x: ref name}} => {
+                                                                                                let ref mut __vec: crate::ddlog_std::Vec<crate::Name> = (*(&*crate::__STATIC_0)).clone();
+                                                                                                crate::ddlog_std::push::<crate::internment::Intern<String>>(__vec, name);
+                                                                                                (*__vec).clone()
+                                                                                            },
+        crate::Pattern::RestPattern{rest: crate::ddlog_std::Option::Some{x: ref rest}} => crate::bound_vars_internment_Intern__Pattern_ddlog_std_Vec__internment_Intern____Stringval(rest),
+        crate::Pattern::AssignPattern{key: crate::ddlog_std::Option::Some{x: ref key}, value: _} => crate::bound_vars_internment_Intern__Pattern_ddlog_std_Vec__internment_Intern____Stringval(key),
+        crate::Pattern::ObjectPattern{props: ref props} => crate::vec::flatmap::<crate::internment::Intern<crate::ObjectPatternProp>, crate::internment::Intern<String>>(props, (&{
+                                                                                                                                                                                      (Box::new(closure::ClosureImpl{
+                                                                                                                                                                                          description: "(function(prop: internment::Intern<ObjectPatternProp>):ddlog_std::Vec<internment::Intern<string>>{(bound_vars(prop))})",
+                                                                                                                                                                                          captured: (),
+                                                                                                                                                                                          f: {
+                                                                                                                                                                                                 fn __f(__args:*const crate::internment::Intern<crate::ObjectPatternProp>, __captured: &()) -> crate::ddlog_std::Vec<crate::internment::Intern<String>>
+                                                                                                                                                                                                 {
+                                                                                                                                                                                                     let prop = unsafe{&*__args};
+                                                                                                                                                                                                     crate::bound_vars_internment_Intern__ObjectPatternProp_ddlog_std_Vec__internment_Intern____Stringval(prop)
+                                                                                                                                                                                                 }
+                                                                                                                                                                                                 __f
+                                                                                                                                                                                             }
+                                                                                                                                                                                      }) as Box<dyn closure::Closure<(*const crate::internment::Intern<crate::ObjectPatternProp>), crate::ddlog_std::Vec<crate::internment::Intern<String>>>>)
+                                                                                                                                                                                  })),
+        crate::Pattern::ArrayPattern{elems: ref elems} => crate::vec::flatmap::<crate::internment::Intern<crate::Pattern>, crate::internment::Intern<String>>(elems, (&{
+                                                                                                                                                                           (Box::new(closure::ClosureImpl{
+                                                                                                                                                                               description: "(function(elem: internment::Intern<Pattern>):ddlog_std::Vec<internment::Intern<string>>{(bound_vars(elem))})",
+                                                                                                                                                                               captured: (),
+                                                                                                                                                                               f: {
+                                                                                                                                                                                      fn __f(__args:*const crate::internment::Intern<crate::Pattern>, __captured: &()) -> crate::ddlog_std::Vec<crate::internment::Intern<String>>
+                                                                                                                                                                                      {
+                                                                                                                                                                                          let elem = unsafe{&*__args};
+                                                                                                                                                                                          crate::bound_vars_internment_Intern__Pattern_ddlog_std_Vec__internment_Intern____Stringval(elem)
+                                                                                                                                                                                      }
+                                                                                                                                                                                      __f
+                                                                                                                                                                                  }
+                                                                                                                                                                           }) as Box<dyn closure::Closure<(*const crate::internment::Intern<crate::Pattern>), crate::ddlog_std::Vec<crate::internment::Intern<String>>>>)
+                                                                                                                                                                       })),
+        _ => (*(&*crate::__STATIC_1)).clone()
+    }
+}
+pub fn bound_vars_internment_Intern__ObjectPatternProp_ddlog_std_Vec__internment_Intern____Stringval(pat: & crate::IObjectPatternProp) -> crate::ddlog_std::Vec<crate::Name>
+{   match (*crate::internment::ival(pat)) {
+        crate::ObjectPatternProp::ObjAssignPattern{assign_key: crate::ddlog_std::Option::Some{x: ref key}, assign_value: _} => crate::bound_vars_internment_Intern__Pattern_ddlog_std_Vec__internment_Intern____Stringval(key),
+        crate::ObjectPatternProp::ObjKeyValuePattern{key: _, value: crate::ddlog_std::Option::Some{x: ref value}} => crate::bound_vars_internment_Intern__Pattern_ddlog_std_Vec__internment_Intern____Stringval(value),
+        crate::ObjectPatternProp::ObjRestPattern{rest: crate::ddlog_std::Option::Some{x: ref rest}} => crate::bound_vars_internment_Intern__Pattern_ddlog_std_Vec__internment_Intern____Stringval(rest),
+        crate::ObjectPatternProp::ObjSinglePattern{name: crate::ddlog_std::Option::Some{x: ref name}} => {
+                                                                                                             let ref mut __vec: crate::ddlog_std::Vec<crate::Name> = (*(&*crate::__STATIC_0)).clone();
+                                                                                                             crate::ddlog_std::push::<crate::internment::Intern<String>>(__vec, name);
+                                                                                                             (*__vec).clone()
+                                                                                                         },
+        _ => (*(&*crate::__STATIC_1)).clone()
+    }
+}
 pub fn to_string(span: & crate::Span) -> String
 {   string_append_str(string_append(string_append_str(string_append(String::from(r###"Span{.start = "###), (&crate::ddlog_std::__builtin_2string((&span.start)))), r###", .end = "###), (&crate::ddlog_std::__builtin_2string((&span.end)))), r###"}"###)
 }
@@ -3199,6 +3326,7 @@ pub fn to_string(span: & crate::Span) -> String
 ::differential_datalog::decl_ddval_convert!{crate::Break}
 ::differential_datalog::decl_ddval_convert!{crate::Call}
 ::differential_datalog::decl_ddval_convert!{crate::ChildScope}
+::differential_datalog::decl_ddval_convert!{crate::Class}
 ::differential_datalog::decl_ddval_convert!{crate::ClassExpr}
 ::differential_datalog::decl_ddval_convert!{crate::ClosestFunction}
 ::differential_datalog::decl_ddval_convert!{crate::ConstDecl}
@@ -3245,17 +3373,17 @@ pub fn to_string(span: & crate::Span) -> String
 ::differential_datalog::decl_ddval_convert!{crate::While}
 ::differential_datalog::decl_ddval_convert!{crate::With}
 ::differential_datalog::decl_ddval_convert!{crate::Yield}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::ExprId, crate::internment::Intern<String>>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::FuncId, crate::internment::Intern<String>>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::Scope, crate::Scope>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::StmtId, crate::internment::Intern<String>>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::ExprId>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::FuncId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::Scope>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::ExprId, crate::internment::Intern<String>, crate::ExprId>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::ExprId, crate::internment::Intern<String>, crate::StmtId>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::ExprId, crate::internment::Intern<crate::Pattern>, crate::internment::Intern<String>>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::StmtId, crate::internment::Intern<String>, crate::FuncId>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::StmtId, crate::internment::Intern<String>, crate::Scope>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::StmtId>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ExprId, crate::ExprId>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ExprId, crate::StmtId>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ExprId, crate::internment::Intern<crate::Pattern>>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::Scope, crate::Span>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::Span, crate::Span>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::StmtId, crate::FuncId>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::StmtId, crate::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::internment::Intern<String>, crate::Scope, crate::Span, crate::StmtId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple5<crate::internment::Intern<String>, crate::Scope, crate::Span, crate::Scope, crate::Span>}

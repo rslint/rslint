@@ -148,6 +148,7 @@ pub struct DatalogInner {
     updates: RefCell<Vec<Update<DDValue>>>,
     scope_id: Cell<Scope>,
     global_id: Cell<GlobalId>,
+    class_id: Cell<ClassId>,
     function_id: Cell<FuncId>,
     statement_id: Cell<StmtId>,
     expression_id: Cell<ExprId>,
@@ -160,6 +161,7 @@ impl DatalogInner {
             updates: RefCell::new(Vec::with_capacity(100)),
             scope_id: Cell::new(Scope::new(0)),
             global_id: Cell::new(GlobalId::new(0)),
+            class_id: Cell::new(ClassId::new(0)),
             function_id: Cell::new(FuncId::new(0)),
             statement_id: Cell::new(StmtId::new(0)),
             expression_id: Cell::new(ExprId::new(0)),
@@ -172,6 +174,10 @@ impl DatalogInner {
 
     fn inc_global(&self) -> GlobalId {
         self.global_id.inc()
+    }
+
+    fn inc_class(&self) -> ClassId {
+        self.class_id.inc()
     }
 
     fn inc_function(&self) -> FuncId {
@@ -1588,7 +1594,7 @@ pub trait DatalogBuilder<'ddlog> {
         expr_id
     }
 
-    fn class_expr(&self, element: Option<ClassElement>, span: TextRange) -> ExprId {
+    fn class_expr(&self, elements: Option<Vec<IClassElement>>, span: TextRange) -> ExprId {
         let datalog = self.datalog();
         let expr_id = datalog.inc_expression();
 
@@ -1597,7 +1603,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::ClassExpr as RelId,
                 ClassExpr {
                     expr_id,
-                    element: element.into(),
+                    elements: elements.map(Into::into).into(),
                 },
             )
             .insert(
@@ -1611,6 +1617,34 @@ pub trait DatalogBuilder<'ddlog> {
             );
 
         expr_id
+    }
+
+    fn class_decl(
+        &self,
+        name: Option<Name>,
+        parent: Option<ExprId>,
+        elements: Option<Vec<IClassElement>>,
+    ) -> (ClassId, DatalogScope<'ddlog>) {
+        let scope = self.scope();
+        let id = {
+            let datalog = self.datalog();
+            let id = datalog.inc_class();
+
+            datalog.insert(
+                Relations::Class as RelId,
+                Class {
+                    id,
+                    name: name.into(),
+                    parent: parent.into(),
+                    elements: elements.map(Into::into).into(),
+                    scope: self.scope_id(),
+                },
+            );
+
+            id
+        };
+
+        (id, scope)
     }
 }
 

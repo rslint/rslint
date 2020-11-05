@@ -101,6 +101,10 @@ for arg in "$@"; do
         check_undeclared "$library_dir" "--library-dir"
         library_dir="true"
 
+    elif [ "$arg" = "--no-xtask" ]; then
+        check_undeclared "$no_xtask" "--no-xtask"
+        no_xtask="true"
+
     elif [ "$arg" = "--help" ] || [ "$arg" = "-h" ]; then
         printf "USAGE:\n"
         printf "    ./ddlog.sh [SUBCOMMAND] [FLAGS]\n"
@@ -110,7 +114,8 @@ for arg in "$@"; do
         printf "        --no-check          Don't run 'cargo check' on generated code\n"
         printf "        --debug             Enable debug mode (causes ddlog to dump internal tables)\n"
         printf "        --no-color          Disable terminal coloring\n"
-        printf "        --no-fmt            Don't run rustfmt"
+        printf "        --no-fmt            Don't run rustfmt\n"
+        printf "        --no-xtask          Don't run the xtask datalog procedure\n"
         # TODO: Finish these (need arg passing)
         # printf "    -o, --output-dir        Set the output dir, defaults to $DDLOG_OUTPUT_DIR\n"
         # printf "    -i, --input-file        Set the input file, defaults to $DDLOG_INPUT_FILE\n"
@@ -168,15 +173,30 @@ ddlog -i $DDLOG_INPUT_FILE \
       --omit-workspace \
       $extra_args
 
-rm -rf generated
-mv rslint_scoping_ddlog generated
-
 exit_code=$?
 if [ $exit_code -ne 0 ]; then
     failure "failed\n"
     exit $exit_code
 else
     success "ok\n"
+fi
+
+if [ "$subcommand" = "compile" ] || [ -z "$subcommand" ]; then
+    printf "replacing old generated code...\n"
+    rm -rf generated
+    mv rslint_scoping_ddlog generated
+fi
+
+if [ "$no_xtask" != "true" ]; then
+    printf "running xtask code cleanup...\n"
+    cargo --quiet run --package xtask --bin xtask -- datalog
+
+    exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        printf "failed xtask cleanup\n"
+    else
+        printf "finised xtask cleanup\n"
+    fi
 fi
 
 if ( [ "$subcommand" = "compile" ] || [ -z "$subcommand" ] ) && [ "$no_check" != "true" ]; then
@@ -193,3 +213,10 @@ if ( [ "$subcommand" = "compile" ] || [ -z "$subcommand" ] ) && [ "$no_check" !=
         success "ok\n"
     fi
 fi
+
+if [ "$subcommand" = "compile" ] || [ -z "$subcommand" ]; then
+    command_name="compiling"
+elif [ "$subcommand" = "check" ]; then
+    command_name="checking"
+fi
+printf "finished %s ddlog\n" "$command_name"

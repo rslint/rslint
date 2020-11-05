@@ -49,7 +49,8 @@ finally{}
 - Improved the throughput of the parser by 1050%+
 - Improved the speed of the parser by 130%+
 - Stopped using `parse_marker` in many places
-- Switched the backing of `TokenSet` from `u128` to `[u128; 2]` to accomodate tokens with a value over 128
+- Switched the backing of `TokenSet` from `u128` to `[u128; 2]` to accommodate tokens with a value over 128
+- Changed `ClassBody.elements` to return an `AstChildren<ClassElement>` instead of an `Option<ClassElement>`
 
 ## [0.2.1] - 2020-10-20
 

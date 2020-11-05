@@ -490,16 +490,16 @@ impl<'ddlog> Visit<'ddlog, ClassExpr> for AnalyzerInner {
     type Output = ExprId;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, class: ClassExpr) -> Self::Output {
-        let element = self.visit(scope, class.body().and_then(|body| body.elements()));
-        scope.class_expr(element, class.range())
+        let elements = self.visit(scope, class.body().map(|body| body.elements()));
+        scope.class_expr(elements, class.range())
     }
 }
 
 impl<'ddlog> Visit<'ddlog, ClassElement> for AnalyzerInner {
-    type Output = DatalogClassElement;
+    type Output = Intern<DatalogClassElement>;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, elem: ClassElement) -> Self::Output {
-        match elem {
+        Intern::new(match elem {
             ClassElement::EmptyStmt(_empty) => DatalogClassElement::ClassEmptyElem,
             ClassElement::Method(method) => {
                 let name = self.visit(scope, method.name()).into();
@@ -527,6 +527,18 @@ impl<'ddlog> Visit<'ddlog, ClassElement> for AnalyzerInner {
 
                 DatalogClassElement::ClassStaticMethod { name, params, body }
             }
-        }
+        })
+    }
+}
+
+impl<'ddlog> Visit<'ddlog, AstChildren<ClassElement>> for AnalyzerInner {
+    type Output = Vec<Intern<DatalogClassElement>>;
+
+    fn visit(
+        &self,
+        scope: &dyn DatalogBuilder<'ddlog>,
+        elements: AstChildren<ClassElement>,
+    ) -> Self::Output {
+        elements.map(|element| self.visit(scope, element)).collect()
     }
 }

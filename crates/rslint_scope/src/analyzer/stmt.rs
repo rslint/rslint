@@ -4,13 +4,13 @@ use crate::{
 };
 use rslint_core::rule_prelude::{
     ast::{
-        AstChildren, BlockStmt, BreakStmt, ContinueStmt, DebuggerStmt, Decl, DoWhileStmt, FnDecl,
-        ForHead, ForInStmt, ForStmt, IfStmt, LabelledStmt, ReturnStmt, Stmt, SwitchCase,
-        SwitchStmt, ThrowStmt, TryStmt, VarDecl, WhileStmt, WithStmt,
+        AstChildren, BlockStmt, BreakStmt, ClassDecl, ContinueStmt, DebuggerStmt, Decl,
+        DoWhileStmt, FnDecl, ForHead, ForInStmt, ForStmt, IfStmt, LabelledStmt, ReturnStmt, Stmt,
+        SwitchCase, SwitchStmt, ThrowStmt, TryStmt, VarDecl, WhileStmt, WithStmt,
     },
     AstNode, SyntaxNodeExt,
 };
-use types::{internment, ForInit, StmtId, SwitchClause, TryHandler, IMPLICIT_ARGUMENTS};
+use types::{ClassId, ForInit, FuncId, StmtId, SwitchClause, TryHandler, IMPLICIT_ARGUMENTS};
 
 impl<'ddlog> Visit<'ddlog, Stmt> for AnalyzerInner {
     type Output = (Option<StmtId>, Option<DatalogScope<'ddlog>>);
@@ -50,21 +50,24 @@ impl<'ddlog> Visit<'ddlog, Decl> for AnalyzerInner {
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, decl: Decl) -> Self::Output {
         match decl {
             Decl::FnDecl(func) => {
-                self.visit(scope, func);
+                let _function_id = self.visit(scope, func);
                 (None, None)
             }
-            Decl::ClassDecl(_) => (None, None),
+            Decl::ClassDecl(class) => {
+                let (_class_id, scope) = self.visit(scope, class);
+                (None, Some(scope))
+            }
             Decl::VarDecl(var) => self.visit(scope, var),
         }
     }
 }
 
 impl<'ddlog> Visit<'ddlog, FnDecl> for AnalyzerInner {
-    type Output = ();
+    type Output = FuncId;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, func: FnDecl) -> Self::Output {
         let function_id = scope.next_function_id();
-        let name = func.name().map(|name| internment::intern(&name.text()));
+        let name = self.visit(scope, func.name());
 
         let function = scope.decl_function(function_id, name);
 
@@ -87,6 +90,20 @@ impl<'ddlog> Visit<'ddlog, FnDecl> for AnalyzerInner {
                 }
             }
         }
+
+        function_id
+    }
+}
+
+impl<'ddlog> Visit<'ddlog, ClassDecl> for AnalyzerInner {
+    type Output = (ClassId, DatalogScope<'ddlog>);
+
+    fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, class: ClassDecl) -> Self::Output {
+        let name = self.visit(scope, class.name());
+        let parent = self.visit(scope, class.parent());
+        let elements = self.visit(scope, class.body().map(|body| body.elements()));
+
+        scope.class_decl(name, parent, elements)
     }
 }
 
