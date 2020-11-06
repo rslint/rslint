@@ -22,7 +22,7 @@ typedef AnyId =
 typedef Span = Span { start: u32, end: u32 }
 
 function to_string(span: Span): string {
-    "Span{.start = ${span.start}, .end = ${span.end}}"
+    "(${span.start}, ${span.end})"
 }
 
 typedef OneOf<'A, 'B, 'C> =
@@ -218,7 +218,7 @@ input relation InputScope(parent: Scope, child: Scope)
 input relation EveryScope(scope: Scope)
 
 // Functions
-input relation Function(id: FuncId, name: Option<Name>, scope: Scope)
+input relation Function(id: FuncId, name: Option<Name>, scope: Scope, body: Scope)
 input relation FunctionArg(parent_func: FuncId, pattern: IPattern)
 
 // Statements
@@ -299,8 +299,8 @@ ChildScope(parent, child) :- InputScope(parent, child).
 ChildScope(parent, child) :- InputScope(parent, interum), InputScope(interum, child).
 
 relation ClosestFunction(scope: Scope, func: FuncId)
-ClosestFunction(scope, func) :- Function(func, _, scope).
-ClosestFunction(scope, func) :- Function(func, _, func_scope), ChildScope(func_scope, scope).
+ClosestFunction(body, func) :- Function(func, _, _, body).
+ClosestFunction(scope, func) :- Function(func, _, _, body), ChildScope(body, scope).
 
 // The `NameInScope` relation gives every name/symbol/ident that's defined for any given scope.
 // Names are walked down children scopes, meaning all children have access to the variables of
@@ -312,10 +312,16 @@ ClosestFunction(scope, func) :- Function(func, _, func_scope), ChildScope(func_s
 //  │
 //  │ // 'b defines the `bar` symbol and inherits
 //  │ // the `foo` symbol
-//  ├-'b: { foo, bar }
+//  └-'b: { foo, bar }
 // ```
 //
 relation NameInScope(name: Name, scope: Scope, declared_in: AnyId)
+
+// An index that returns all variables avaliable in a given scope
+index Index_VariablesForScope(scope: Scope) on NameInScope(_, scope, _)
+
+// An index that returns all variables by the given name in the given scope
+index Index_VariableInScope(scope: Scope, variable: Name) on NameInScope(variable, scope, _)
 
 // Add implicit globals to every scope
 NameInScope(name, scope, AnyIdGlobal { global }) :- ImplicitGlobal(global, name), EveryScope(scope).
@@ -384,8 +390,15 @@ NameInScope(name, scope, AnyIdStmt { stmt }) :-
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, decl_scope, _),
     // Bubble `var` up to the nearest function's scope
-    ClosestFunction(decl_scope, func),
-    Function(func, _, scope).
+    ClosestFunction(decl_scope, func), // FIXME: This or the Function clause is wrong
+    Function(func, _, _, scope).
+
+NameInScope(name, scope, AnyIdStmt { stmt }) :-
+    VarDecl(stmt, Some { pat }, _),
+    var name = FlatMap(pat.bound_vars()),
+    Statement(stmt, _, scope, _),
+    // For `var` declarations not within a function, use the declaration scope
+    not ClosestFunction(scope, _).
 
 // Function declarations
 //
@@ -400,7 +413,7 @@ NameInScope(name, scope, AnyIdStmt { stmt }) :-
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(name, scope, AnyIdFunc { func }) :- Function(func, Some { name }, scope).
+NameInScope(name, scope, AnyIdFunc { func }) :- Function(func, Some { name }, scope, _).
 
 // Introduce function arguments within the body of their enclosing function
 //
@@ -412,10 +425,10 @@ NameInScope(name, scope, AnyIdFunc { func }) :- Function(func, Some { name }, sc
 // // Scope: { ... }
 // ```
 //
-NameInScope(name, scope, AnyIdFunc { func }) :-
+NameInScope(name, body, AnyIdFunc { func }) :-
     FunctionArg(func, pat),
     var name = FlatMap(pat.bound_vars()),
-    Function(func, _, scope).
+    Function(func, _, _, body).
 
 // Introduce closure arguments within the body of their enclosing closure
 //

@@ -1725,22 +1725,25 @@ impl ::std::fmt::Debug for FuncId {
 pub struct Function {
     pub id: crate::FuncId,
     pub name: crate::ddlog_std::Option<crate::Name>,
-    pub scope: crate::Scope
+    pub scope: crate::Scope,
+    pub body: crate::Scope
 }
 impl abomonation::Abomonation for Function{}
-::differential_datalog::decl_struct_from_record!(Function["Function"]<>, ["Function"][3]{[0]id["id"]: crate::FuncId, [1]name["name"]: crate::ddlog_std::Option<crate::Name>, [2]scope["scope"]: crate::Scope});
-::differential_datalog::decl_struct_into_record!(Function, ["Function"]<>, id, name, scope);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Function, <>, id: crate::FuncId, name: crate::ddlog_std::Option<crate::Name>, scope: crate::Scope);
+::differential_datalog::decl_struct_from_record!(Function["Function"]<>, ["Function"][4]{[0]id["id"]: crate::FuncId, [1]name["name"]: crate::ddlog_std::Option<crate::Name>, [2]scope["scope"]: crate::Scope, [3]body["body"]: crate::Scope});
+::differential_datalog::decl_struct_into_record!(Function, ["Function"]<>, id, name, scope, body);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Function, <>, id: crate::FuncId, name: crate::ddlog_std::Option<crate::Name>, scope: crate::Scope, body: crate::Scope);
 impl ::std::fmt::Display for Function {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::Function{id,name,scope} => {
+            crate::Function{id,name,scope,body} => {
                 __formatter.write_str("Function{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(name, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(scope, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(body, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -3314,7 +3317,7 @@ pub fn bound_vars_internment_Intern__ObjectPatternProp_ddlog_std_Vec__internment
     }
 }
 pub fn to_string(span: & crate::Span) -> String
-{   string_append_str(string_append(string_append_str(string_append(String::from(r###"Span{.start = "###), (&crate::ddlog_std::__builtin_2string((&span.start)))), r###", .end = "###), (&crate::ddlog_std::__builtin_2string((&span.end)))), r###"}"###)
+{   string_append_str(string_append(string_append_str(string_append(String::from(r###"("###), (&crate::ddlog_std::__builtin_2string((&span.start)))), r###", "###), (&crate::ddlog_std::__builtin_2string((&span.end)))), r###")"###)
 }
 ::differential_datalog::decl_ddval_convert!{crate::Array}
 ::differential_datalog::decl_ddval_convert!{crate::Arrow}
@@ -3374,6 +3377,7 @@ pub fn to_string(span: & crate::Span) -> String
 ::differential_datalog::decl_ddval_convert!{crate::With}
 ::differential_datalog::decl_ddval_convert!{crate::Yield}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::Scope, crate::Scope>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::Scope, crate::internment::Intern<String>>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::ExprId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::FuncId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::Scope>}
@@ -3385,5 +3389,6 @@ pub fn to_string(span: & crate::Span) -> String
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::Span, crate::Span>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::StmtId, crate::FuncId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::StmtId, crate::Scope>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::StmtId, crate::internment::Intern<crate::Pattern>>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::internment::Intern<String>, crate::Scope, crate::Span, crate::StmtId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple5<crate::internment::Intern<String>, crate::Scope, crate::Span, crate::Scope, crate::Span>}

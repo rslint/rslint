@@ -1,6 +1,7 @@
 mod analyzer;
 mod datalog;
 pub mod globals;
+mod tests;
 
 pub use datalog::{
     Datalog, DatalogBuilder, DatalogFunction, DatalogResult, DatalogScope, DatalogTransaction,
@@ -28,16 +29,7 @@ impl ScopeAnalyzer {
     }
 
     pub fn analyze(&self, syntax: &SyntaxNode, ctx: &mut RuleCtx) -> DatalogResult<()> {
-        let analyzer = AnalyzerInner;
-
-        let facts = self.datalog.transaction(|trans| {
-            let scope = trans.scope();
-            for stmt in syntax.children().filter_map(|node| node.try_to::<Stmt>()) {
-                analyzer.visit(&scope, stmt);
-            }
-
-            Ok(())
-        })?;
+        let facts = self.analyze_inner(syntax)?;
 
         for InvalidNameUse { name, span, .. } in facts.invalid_name_uses {
             let error = ctx
@@ -68,6 +60,19 @@ impl ScopeAnalyzer {
         }
 
         Ok(())
+    }
+
+    fn analyze_inner(&self, syntax: &SyntaxNode) -> DatalogResult<DerivedFacts> {
+        let analyzer = AnalyzerInner;
+
+        self.datalog.transaction(|trans| {
+            let scope = trans.scope();
+            for stmt in syntax.children().filter_map(|node| node.try_to::<Stmt>()) {
+                analyzer.visit(&scope, stmt);
+            }
+
+            Ok(())
+        })
     }
 }
 

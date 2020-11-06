@@ -1,13 +1,13 @@
-use crate::globals::{BROWSER_GLOBALS, ECMA_GLOBALS, NODE_GLOBALS};
+use crate::globals::JsGlobal;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
     int::Int,
-    program::{RelId, Update},
+    program::{IdxId, RelId, Update},
     record::Record,
     DDlog, DeltaMap,
 };
 use rslint_parser::{BigInt, TextRange};
-use rslint_scoping_ddlog::{api::HDDlog, relid2name, Relations};
+use rslint_scoping_ddlog::{api::HDDlog, relid2name, Indexes, Relations};
 use std::{
     cell::{Cell, RefCell},
     mem,
@@ -59,29 +59,48 @@ impl Datalog {
         Ok(this)
     }
 
-    pub fn inject_globals<I>(&self, globals: I) -> DatalogResult<DerivedFacts>
-    where
-        I: IntoIterator<Item = String>,
-    {
+    // TODO: Make this take an iterator
+    pub fn inject_globals(&self, globals: &[JsGlobal]) -> DatalogResult<DerivedFacts> {
         self.transaction(|trans| {
             for global in globals {
-                trans.implicit_global(Intern::new(global));
+                trans.implicit_global(global);
             }
 
             Ok(())
         })
     }
 
-    pub fn with_node_globals(&self) -> DatalogResult<DerivedFacts> {
-        self.inject_globals(NODE_GLOBALS.iter().map(ToString::to_string))
+    pub fn clear_globals(&self) -> DatalogResult<DerivedFacts> {
+        self.transaction(|trans| {
+            trans
+                .datalog
+                .hddlog
+                .clear_relation(Relations::ImplicitGlobal as RelId)?;
+
+            Ok(())
+        })
     }
 
-    pub fn with_ecma_globals(&self) -> DatalogResult<DerivedFacts> {
-        self.inject_globals(ECMA_GLOBALS.iter().map(ToString::to_string))
-    }
+    pub fn variables_for_scope(&self, scope: Scope) -> DatalogResult<Vec<Name>> {
+        let mut vars = Vec::new();
 
-    pub fn with_browser_globals(&self) -> DatalogResult<DerivedFacts> {
-        self.inject_globals(BROWSER_GLOBALS.iter().map(ToString::to_string))
+        self.transaction(|trans| {
+            vars.extend(
+                trans
+                    .datalog
+                    .hddlog
+                    .query_index(
+                        Indexes::Index_VariablesForScope as IdxId,
+                        scope.into_ddvalue(),
+                    )?
+                    .into_iter()
+                    .map(|name| unsafe { NameInScope::from_ddvalue(name).name }),
+            );
+
+            Ok(())
+        })?;
+
+        Ok(vars)
     }
 
     // Note: Ddlog only allows one concurrent transaction, so all calls to this function
@@ -217,13 +236,12 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
     }
 
     pub fn scope(&self) -> DatalogScope<'ddlog> {
-        let parent = self.datalog.scope_id.get();
         let scope_id = self.datalog.inc_scope();
         self.datalog
             .insert(
                 Relations::EveryScope as RelId,
                 InputScope {
-                    parent,
+                    parent: scope_id,
                     child: scope_id,
                 },
             )
@@ -235,11 +253,15 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         }
     }
 
-    fn implicit_global(&self, name: Name) -> GlobalId {
+    // TODO: Fully integrate global info into ddlog
+    fn implicit_global(&self, global: &JsGlobal) -> GlobalId {
         let id = self.datalog.inc_global();
         self.datalog.insert(
             Relations::ImplicitGlobal as RelId,
-            ImplicitGlobal { id, name },
+            ImplicitGlobal {
+                id,
+                name: Intern::new(global.name.to_string()),
+            },
         );
 
         id
@@ -251,12 +273,12 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
 
         let delta = self.datalog.hddlog.transaction_commit_dump_changes()?;
 
-        // #[cfg(debug_assertions)]
-        // {
-        //     println!("== start transaction ==");
-        //     dump_delta(&delta);
-        //     println!("==  end transaction  ==\n\n");
-        // }
+        #[cfg(debug_assertions)]
+        {
+            println!("== start transaction ==");
+            dump_delta(&delta);
+            println!("==  end transaction  ==\n\n");
+        }
 
         Ok(delta)
     }
@@ -294,31 +316,44 @@ pub trait DatalogBuilder<'ddlog> {
         self.datalog().inc_expression()
     }
 
-    fn implicit_global(&self, name: Name) -> GlobalId {
+    // TODO: Fully integrate global info into ddlog
+    fn implicit_global(&self, global: &JsGlobal) -> GlobalId {
         let id = self.datalog().inc_global();
         self.datalog().insert(
             Relations::ImplicitGlobal as RelId,
-            ImplicitGlobal { id, name },
+            ImplicitGlobal {
+                id,
+                name: Intern::new(global.name.to_string()),
+            },
         );
 
         id
     }
 
-    fn decl_function(&self, id: FuncId, name: Option<Name>) -> DatalogFunction<'ddlog> {
+    fn decl_function(
+        &self,
+        id: FuncId,
+        name: Option<Name>,
+    ) -> (DatalogFunction<'ddlog>, DatalogScope<'ddlog>) {
+        let body = self.scope();
         self.datalog().insert(
             Relations::Function as RelId,
             Function {
                 id,
                 name: name.into(),
                 scope: self.scope_id(),
+                body: body.scope_id(),
             },
         );
 
-        DatalogFunction {
-            datalog: self.datalog(),
-            func_id: id,
-            scope_id: self.scope_id(),
-        }
+        (
+            DatalogFunction {
+                datalog: self.datalog(),
+                func_id: id,
+                scope_id: body.scope_id(),
+            },
+            body,
+        )
     }
 
     fn decl_let(

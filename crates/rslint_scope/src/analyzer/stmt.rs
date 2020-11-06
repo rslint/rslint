@@ -69,24 +69,22 @@ impl<'ddlog> Visit<'ddlog, FnDecl> for AnalyzerInner {
         let function_id = scope.next_function_id();
         let name = self.visit(scope, func.name());
 
-        let function = scope.decl_function(function_id, name);
+        let (function, mut body_scope) = scope.decl_function(function_id, name);
 
         // Implicitly introduce `arguments` into the function scope
         function.argument(IMPLICIT_ARGUMENTS.clone());
 
         if let Some(params) = func.parameters() {
             for param in params.parameters() {
-                function.argument(self.visit(scope, param));
+                function.argument(self.visit(&body_scope, param));
             }
         }
 
         if let Some(body) = func.body() {
-            let mut scope: Box<dyn DatalogBuilder<'_>> = Box::new(function);
-
             for stmt in body.stmts() {
                 // Enter a new scope after each statement that requires one
-                if let (_stmt_id, Some(new_scope)) = self.visit(&*scope, stmt) {
-                    scope = Box::new(new_scope);
+                if let (_stmt_id, Some(new_scope)) = self.visit(&body_scope, stmt) {
+                    body_scope = new_scope;
                 }
             }
         }
