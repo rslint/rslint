@@ -13,8 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+#### 🌟 Added TypeScript support 🌟
+
 - Added `util::contains_js_whitespace`
 - Added parser benchmarks
+- Added `syntax::typescript`
+- Added the `stop_on_r_curly` parameter to `block_items`
 
 ### Fixed
 

@@ -5,7 +5,7 @@
 
 use super::decl::*;
 use super::expr::{assign_expr, identifier_name, literal, template};
-use super::stmt::{semi, var_decl};
+use super::stmt::{block_items, semi, var_decl};
 use crate::ast::Template;
 use crate::{SyntaxKind::*, *};
 
@@ -98,11 +98,21 @@ pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     if p.cur_src() == "module" {
-        todo!("modules");
+        let m = p.start();
+        p.bump_any();
+        ts_module_or_namespace_decl(p, false, false)
+            .undo_completion(p)
+            .abandon(p);
+        return Some(m.complete(p, TS_MODULE_DECL));
     }
 
     if p.cur_src() == "namespace" {
-        todo!("namespaces");
+        let m = p.start();
+        p.bump_any();
+        ts_module_or_namespace_decl(p, true, false)
+            .undo_completion(p)
+            .abandon(p);
+        return Some(m.complete(p, TS_NAMESPACE_DECL));
     }
 
     if p.cur_src() == "type" {
@@ -121,6 +131,36 @@ pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     None
+}
+
+pub(crate) fn ts_module_or_namespace_decl(
+    p: &mut Parser,
+    namespace: bool,
+    eat_dot: bool,
+) -> CompletedMarker {
+    let m = p.start();
+    if eat_dot {
+        p.eat(T![.]);
+    }
+
+    identifier_name(p);
+
+    if p.at(T![.]) {
+        ts_module_or_namespace_decl(p, namespace, true);
+    } else {
+        ts_module_block(p);
+    }
+
+    m.complete(p, TS_NAMESPACE_DECL)
+}
+
+pub fn ts_module_block(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.expect(T!['{']);
+    // module blocks are considered top level
+    block_items(p, false, true, true, None);
+    p.expect(T!['}']);
+    m.complete(p, TS_MODULE_BLOCK)
 }
 
 // ambiguity is fun!

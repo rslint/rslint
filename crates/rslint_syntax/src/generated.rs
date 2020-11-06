@@ -258,6 +258,9 @@ pub enum SyntaxKind {
     TS_ENUM,
     TS_ENUM_MEMBER,
     TS_TYPE_ALIAS_DECL,
+    TS_NAMESPACE_DECL,
+    TS_MODULE_BLOCK,
+    TS_MODULE_DECL,
     #[doc(hidden)]
     __LAST,
 }

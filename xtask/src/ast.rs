@@ -270,6 +270,9 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_ENUM",
         "TS_ENUM_MEMBER",
         "TS_TYPE_ALIAS_DECL",
+        "TS_NAMESPACE_DECL",
+        "TS_MODULE_BLOCK",
+        "TS_MODULE_DECL",
     ],
 };
 
@@ -648,6 +651,28 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![ident],
             T![=],
             value: Expr
+        }
+
+        struct TsNamespaceDecl {
+            /* declare */
+            /* namespace */
+            T![.],
+            T![ident],
+            body: TsNamespaceBody
+        }
+
+        struct TsModuleBlock {
+            T!['{'],
+            items: [ModuleItem],
+            T!['}']
+        }
+
+        struct TsModuleDecl {
+            /* declare */
+            /* module */
+            T![.],
+            T![ident],
+            body: TsNamespaceBody
         }
 
         // --------------------------------------------------
@@ -1282,7 +1307,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             ClassDecl,
             VarDecl,
             TsEnum,
-            TsTypeAliasDecl
+            TsTypeAliasDecl,
+            TsNamespaceDecl,
+            TsModuleDecl
         }
 
         /*
@@ -1365,6 +1392,11 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         enum TsThisOrName {
             TsThis,
             TsTypeName
+        }
+
+        enum TsNamespaceBody {
+            TsModuleBlock,
+            TsNamespaceDecl
         }
     },
 };

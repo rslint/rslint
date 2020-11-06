@@ -457,6 +457,36 @@ impl TsEnumMember {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsNamespaceDecl {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsNamespaceDecl {
+    pub fn dot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [.]) }
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn body(&self) -> Option<TsNamespaceBody> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsModuleBlock {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsModuleBlock {
+    pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
+    pub fn items(&self) -> AstChildren<ModuleItem> { support::children(&self.syntax) }
+    pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsModuleDecl {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsModuleDecl {
+    pub fn dot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [.]) }
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn body(&self) -> Option<TsNamespaceBody> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
@@ -1384,6 +1414,8 @@ pub enum Decl {
     VarDecl(VarDecl),
     TsEnum(TsEnum),
     TsTypeAliasDecl(TsTypeAliasDecl),
+    TsNamespaceDecl(TsNamespaceDecl),
+    TsModuleDecl(TsModuleDecl),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1461,6 +1493,12 @@ pub enum TsType {
 pub enum TsThisOrName {
     TsThis(TsThis),
     TsTypeName(TsTypeName),
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TsNamespaceBody {
+    TsModuleBlock(TsModuleBlock),
+    TsNamespaceDecl(TsNamespaceDecl),
 }
 impl AstNode for TsAny {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_ANY }
@@ -1970,6 +2008,39 @@ impl AstNode for TsEnum {
 }
 impl AstNode for TsEnumMember {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_ENUM_MEMBER }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsNamespaceDecl {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_NAMESPACE_DECL }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsModuleBlock {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_MODULE_BLOCK }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsModuleDecl {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_MODULE_DECL }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3238,11 +3309,23 @@ impl From<TsEnum> for Decl {
 impl From<TsTypeAliasDecl> for Decl {
     fn from(node: TsTypeAliasDecl) -> Decl { Decl::TsTypeAliasDecl(node) }
 }
+impl From<TsNamespaceDecl> for Decl {
+    fn from(node: TsNamespaceDecl) -> Decl { Decl::TsNamespaceDecl(node) }
+}
+impl From<TsModuleDecl> for Decl {
+    fn from(node: TsModuleDecl) -> Decl { Decl::TsModuleDecl(node) }
+}
 impl AstNode for Decl {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
             kind,
-            FN_DECL | CLASS_DECL | VAR_DECL | TS_ENUM | TS_TYPE_ALIAS_DECL
+            FN_DECL
+                | CLASS_DECL
+                | VAR_DECL
+                | TS_ENUM
+                | TS_TYPE_ALIAS_DECL
+                | TS_NAMESPACE_DECL
+                | TS_MODULE_DECL
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3252,6 +3335,8 @@ impl AstNode for Decl {
             VAR_DECL => Decl::VarDecl(VarDecl { syntax }),
             TS_ENUM => Decl::TsEnum(TsEnum { syntax }),
             TS_TYPE_ALIAS_DECL => Decl::TsTypeAliasDecl(TsTypeAliasDecl { syntax }),
+            TS_NAMESPACE_DECL => Decl::TsNamespaceDecl(TsNamespaceDecl { syntax }),
+            TS_MODULE_DECL => Decl::TsModuleDecl(TsModuleDecl { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3263,6 +3348,8 @@ impl AstNode for Decl {
             Decl::VarDecl(it) => &it.syntax,
             Decl::TsEnum(it) => &it.syntax,
             Decl::TsTypeAliasDecl(it) => &it.syntax,
+            Decl::TsNamespaceDecl(it) => &it.syntax,
+            Decl::TsModuleDecl(it) => &it.syntax,
         }
     }
 }
@@ -3688,6 +3775,29 @@ impl AstNode for TsThisOrName {
         }
     }
 }
+impl From<TsModuleBlock> for TsNamespaceBody {
+    fn from(node: TsModuleBlock) -> TsNamespaceBody { TsNamespaceBody::TsModuleBlock(node) }
+}
+impl From<TsNamespaceDecl> for TsNamespaceBody {
+    fn from(node: TsNamespaceDecl) -> TsNamespaceBody { TsNamespaceBody::TsNamespaceDecl(node) }
+}
+impl AstNode for TsNamespaceBody {
+    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, TS_MODULE_BLOCK | TS_NAMESPACE_DECL) }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        let res = match syntax.kind() {
+            TS_MODULE_BLOCK => TsNamespaceBody::TsModuleBlock(TsModuleBlock { syntax }),
+            TS_NAMESPACE_DECL => TsNamespaceBody::TsNamespaceDecl(TsNamespaceDecl { syntax }),
+            _ => return None,
+        };
+        Some(res)
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            TsNamespaceBody::TsModuleBlock(it) => &it.syntax,
+            TsNamespaceBody::TsNamespaceDecl(it) => &it.syntax,
+        }
+    }
+}
 impl std::fmt::Display for ObjectProp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
@@ -3754,6 +3864,11 @@ impl std::fmt::Display for TsType {
     }
 }
 impl std::fmt::Display for TsThisOrName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsNamespaceBody {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
@@ -3989,6 +4104,21 @@ impl std::fmt::Display for TsEnum {
     }
 }
 impl std::fmt::Display for TsEnumMember {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsNamespaceDecl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsModuleBlock {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsModuleDecl {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
