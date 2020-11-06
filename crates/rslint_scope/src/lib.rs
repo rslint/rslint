@@ -5,7 +5,6 @@ mod tests;
 
 pub use datalog::{
     Datalog, DatalogBuilder, DatalogFunction, DatalogResult, DatalogScope, DatalogTransaction,
-    DerivedFacts,
 };
 
 use analyzer::AnalyzerInner;
@@ -29,9 +28,9 @@ impl ScopeAnalyzer {
     }
 
     pub fn analyze(&self, syntax: &SyntaxNode, ctx: &mut RuleCtx) -> DatalogResult<()> {
-        let facts = self.analyze_inner(syntax)?;
+        self.analyze_inner(syntax)?;
 
-        for InvalidNameUse { name, span, .. } in facts.invalid_name_uses {
+        for InvalidNameUse { name, span, .. } in self.datalog.invalid_name_uses(None)? {
             let error = ctx
                 .err(
                     "datalog-scoping",
@@ -46,7 +45,7 @@ impl ScopeAnalyzer {
             name,
             used_in,
             declared_in,
-        } in facts.var_use_before_decl
+        } in self.datalog.var_use_before_declaration(None)?
         {
             let error = ctx
                 .err(
@@ -62,13 +61,15 @@ impl ScopeAnalyzer {
         Ok(())
     }
 
-    fn analyze_inner(&self, syntax: &SyntaxNode) -> DatalogResult<DerivedFacts> {
+    fn analyze_inner(&self, syntax: &SyntaxNode) -> DatalogResult<()> {
         let analyzer = AnalyzerInner;
 
         self.datalog.transaction(|trans| {
-            let scope = trans.scope();
+            let mut scope = trans.scope();
             for stmt in syntax.children().filter_map(|node| node.try_to::<Stmt>()) {
-                analyzer.visit(&scope, stmt);
+                if let (_stmt_id, Some(new_scope)) = analyzer.visit(&scope, stmt) {
+                    scope = new_scope;
+                }
             }
 
             Ok(())

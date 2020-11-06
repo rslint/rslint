@@ -3,6 +3,14 @@ import vec
 #[has_side_effects]
 extern function debug(message: string)
 
+function last(vec: Vec<'T>): Option<'T> {
+    if (vec.is_empty()) {
+        None
+    } else {
+        vec.nth(vec.len() - 1)
+    }
+}
+
 typedef Scope = Scope { id: u32 }
 typedef Name = istring
 
@@ -295,8 +303,8 @@ input relation ImplicitGlobal(id: GlobalId, name: Name)
 // ```
 //
 relation ChildScope(parent: Scope, child: Scope)
-ChildScope(parent, child) :- InputScope(parent, child).
-ChildScope(parent, child) :- InputScope(parent, interum), InputScope(interum, child).
+ChildScope(parent, child) :- InputScope(parent, child), parent != child.
+ChildScope(parent, child) :- InputScope(parent, interum), ChildScope(interum, child), parent != child.
 
 relation ClosestFunction(scope: Scope, func: FuncId)
 ClosestFunction(body, func) :- Function(func, _, _, body).
@@ -496,6 +504,21 @@ NameInScope(name, scope, declared_in) :-
     NameInScope(name, interum, declared_in),
     ChildScope(interum, scope).
 
+relation WithinTypeOf(type_of: ExprId, expr: ExprId)
+// `typeof not_defined`
+WithinTypeOf(type_of, expr) :- UnaryOp(type_of, Some { UnaryTypeof }, Some { expr }).
+
+// `typeof (not_defined)`
+WithinTypeOf(type_of, grouped) :-
+    WithinTypeOf(type_of, expr),
+    Expression(expr, ExprGrouping { Some { grouped }}, _, _).
+
+// `typeof (defined, not_defined)`
+WithinTypeOf(type_of, last) :-
+    WithinTypeOf(type_of, expr),
+    Expression(expr, ExprSequence { sequence }, _, _),
+    Some { var last } = sequence.last().
+
 // Variable usages (`let` and `const` predecls or undefined symbols) that don't
 // have an accompanying variable in scope are reported
 // TODO: Use a levenshtein aggregate to try and correct and/or look in children
@@ -504,7 +527,10 @@ output relation InvalidNameUse(name: Name, scope: Scope, span: Span)
 InvalidNameUse(name, scope, span) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, scope, span),
-    not NameInScope(name, scope, _).
+    not NameInScope(name, scope, _),
+    not WithinTypeOf(_, expr).
+
+index Index_InvalidNameUse(name: Name) on InvalidNameUse(name, _, _)
 
 // `var` usages that happen before the declaration
 output relation VarUseBeforeDeclaration(name: Name, used_in: Span, declared_in: Span)
@@ -514,3 +540,5 @@ VarUseBeforeDeclaration(name, used_in, declared_in) :-
     NameInScope(name, used_scope, AnyIdStmt { .stmt = stmt }),
     Statement(stmt, StmtVarDecl, declared_scope, declared_in),
     ChildScope(used_scope, declared_scope).
+
+index Index_VarUseBeforeDeclaration(name: Name) on VarUseBeforeDeclaration(name, _, _)

@@ -1,13 +1,15 @@
+mod derived_facts;
+
 use crate::globals::JsGlobal;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
     int::Int,
-    program::{IdxId, RelId, Update},
+    program::{RelId, Update},
     record::Record,
     DDlog, DeltaMap,
 };
 use rslint_parser::{BigInt, TextRange};
-use rslint_scoping_ddlog::{api::HDDlog, relid2name, Indexes, Relations};
+use rslint_scoping_ddlog::{api::HDDlog, relid2name, Relations, INPUT_RELIDMAP};
 use std::{
     cell::{Cell, RefCell},
     mem,
@@ -19,12 +21,6 @@ use types::{ddlog_std::Either, internment::Intern, *};
 //       having to allocate strings for idents
 
 pub type DatalogResult<T> = Result<T, String>;
-
-#[derive(Debug, Clone)]
-pub struct DerivedFacts {
-    pub invalid_name_uses: Vec<InvalidNameUse>,
-    pub var_use_before_decl: Vec<VarUseBeforeDeclaration>,
-}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Weight {
@@ -50,17 +46,28 @@ pub struct Datalog {
 
 impl Datalog {
     pub fn new() -> DatalogResult<Self> {
-        let (hddlog, init_state) = HDDlog::run(2, false, |_: usize, _: &Record, _: isize| {})?;
+        let (hddlog, _init_state) = HDDlog::run(2, false, |_: usize, _: &Record, _: isize| {})?;
         let this = Self {
             datalog: Arc::new(Mutex::new(DatalogInner::new(hddlog))),
         };
-        this.update(init_state);
 
         Ok(this)
     }
 
+    pub fn reset(&self) -> DatalogResult<()> {
+        self.transaction(|trans| {
+            for relation in INPUT_RELIDMAP.keys().copied() {
+                trans.datalog.hddlog.clear_relation(relation as RelId)?;
+            }
+
+            Ok(())
+        })?;
+
+        Ok(())
+    }
+
     // TODO: Make this take an iterator
-    pub fn inject_globals(&self, globals: &[JsGlobal]) -> DatalogResult<DerivedFacts> {
+    pub fn inject_globals(&self, globals: &[JsGlobal]) -> DatalogResult<()> {
         self.transaction(|trans| {
             for global in globals {
                 trans.implicit_global(global);
@@ -70,7 +77,7 @@ impl Datalog {
         })
     }
 
-    pub fn clear_globals(&self) -> DatalogResult<DerivedFacts> {
+    pub fn clear_globals(&self) -> DatalogResult<()> {
         self.transaction(|trans| {
             trans
                 .datalog
@@ -81,76 +88,36 @@ impl Datalog {
         })
     }
 
-    pub fn variables_for_scope(&self, scope: Scope) -> DatalogResult<Vec<Name>> {
-        let mut vars = Vec::new();
+    pub fn dump_inputs(&self) -> DatalogResult<String> {
+        let mut inputs = Vec::new();
+        self.datalog
+            .lock()
+            .unwrap()
+            .hddlog
+            .dump_input_snapshot(&mut inputs)
+            .unwrap();
 
-        self.transaction(|trans| {
-            vars.extend(
-                trans
-                    .datalog
-                    .hddlog
-                    .query_index(
-                        Indexes::Index_VariablesForScope as IdxId,
-                        scope.into_ddvalue(),
-                    )?
-                    .into_iter()
-                    .map(|name| unsafe { NameInScope::from_ddvalue(name).name }),
-            );
-
-            Ok(())
-        })?;
-
-        Ok(vars)
+        Ok(String::from_utf8(inputs).unwrap())
     }
 
     // Note: Ddlog only allows one concurrent transaction, so all calls to this function
     //       will block until the previous completes
     // TODO: We can actually add to the transaction batch concurrently, but transactions
     //       themselves have to be synchronized in some fashion (barrier?)
-    pub fn transaction<F>(&self, transaction: F) -> DatalogResult<DerivedFacts>
+    pub fn transaction<T, F>(&self, transaction: F) -> DatalogResult<T>
     where
-        F: for<'trans> FnOnce(&mut DatalogTransaction<'trans>) -> DatalogResult<()>,
+        F: for<'trans> FnOnce(&mut DatalogTransaction<'trans>) -> DatalogResult<T>,
     {
-        let delta = {
-            let datalog = self
-                .datalog
-                .lock()
-                .expect("failed to lock datalog for transaction");
+        let datalog = self
+            .datalog
+            .lock()
+            .expect("failed to lock datalog for transaction");
 
-            let mut trans = DatalogTransaction::new(&*datalog)?;
-            transaction(&mut trans)?;
-            trans.commit()?
-        };
+        let mut trans = DatalogTransaction::new(&*datalog)?;
+        let result = transaction(&mut trans)?;
+        trans.commit()?;
 
-        Ok(self.update(delta))
-    }
-
-    fn update(&self, mut delta: DeltaMap<DDValue>) -> DerivedFacts {
-        macro_rules! drain_relations {
-            ($($relation:ident->$field:ident),* $(,)?) => {
-                $(
-                    let relation = delta.clear_rel(Relations::$relation as RelId);
-                    let mut $field = Vec::with_capacity(relation.len());
-                    for (usage, weight) in relation.into_iter() {
-                        match Weight::from(weight) {
-                            Weight::Insert => {
-                                // Safety: This is the correct type since we pulled it from
-                                //         the correct relation
-                                $field.push(unsafe { $relation::from_ddvalue(usage) });
-                            }
-                            Weight::Delete => {}
-                        }
-                    }
-                )*
-
-                DerivedFacts { $( $field, )* }
-            };
-        }
-
-        drain_relations! {
-            InvalidNameUse->invalid_name_uses,
-            VarUseBeforeDeclaration->var_use_before_decl,
-        }
+        Ok(result)
     }
 }
 
@@ -239,13 +206,13 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         let scope_id = self.datalog.inc_scope();
         self.datalog
             .insert(
-                Relations::EveryScope as RelId,
+                Relations::InputScope as RelId,
                 InputScope {
                     parent: scope_id,
                     child: scope_id,
                 },
             )
-            .insert(Relations::InputScope as RelId, scope_id);
+            .insert(Relations::EveryScope as RelId, scope_id);
 
         DatalogScope {
             datalog: self.datalog,
@@ -273,12 +240,12 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
 
         let delta = self.datalog.hddlog.transaction_commit_dump_changes()?;
 
-        #[cfg(debug_assertions)]
-        {
-            println!("== start transaction ==");
-            dump_delta(&delta);
-            println!("==  end transaction  ==\n\n");
-        }
+        // #[cfg(debug_assertions)]
+        // {
+        //     println!("== start transaction ==");
+        //     dump_delta(&delta);
+        //     println!("==  end transaction  ==\n\n");
+        // }
 
         Ok(delta)
     }
@@ -290,21 +257,17 @@ pub trait DatalogBuilder<'ddlog> {
     fn datalog(&self) -> &'ddlog DatalogInner;
 
     fn scope(&self) -> DatalogScope<'ddlog> {
-        let parent = self.datalog().scope_id.get();
-        let scope_id = self.datalog().inc_scope();
+        let parent = self.scope_id();
+        let child = self.datalog().inc_scope();
+        debug_assert_ne!(parent, child);
+
         self.datalog()
-            .insert(
-                Relations::EveryScope as RelId,
-                InputScope {
-                    parent,
-                    child: scope_id,
-                },
-            )
-            .insert(Relations::InputScope as RelId, scope_id);
+            .insert(Relations::InputScope as RelId, InputScope { parent, child })
+            .insert(Relations::EveryScope as RelId, child);
 
         DatalogScope {
             datalog: self.datalog(),
-            scope_id,
+            scope_id: child,
         }
     }
 
@@ -1684,6 +1647,7 @@ pub trait DatalogBuilder<'ddlog> {
 }
 
 #[derive(Clone)]
+#[must_use]
 pub struct DatalogFunction<'ddlog> {
     datalog: &'ddlog DatalogInner,
     func_id: FuncId,
@@ -1717,6 +1681,7 @@ impl<'ddlog> DatalogBuilder<'ddlog> for DatalogFunction<'ddlog> {
 }
 
 #[derive(Clone)]
+#[must_use]
 pub struct DatalogScope<'ddlog> {
     datalog: &'ddlog DatalogInner,
     scope_id: Scope,
@@ -1745,7 +1710,9 @@ fn dump_delta(delta: &DeltaMap<DDValue>) {
         println!("Changes to relation {}", relid2name(*rel).unwrap());
 
         for (val, weight) in changes.iter() {
-            println!(">> {} {:+}", val, weight);
+            if *weight == 1 {
+                println!(">> {} {:+}", val, weight);
+            }
         }
 
         if !changes.is_empty() {

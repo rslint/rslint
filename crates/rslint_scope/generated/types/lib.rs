@@ -3236,6 +3236,33 @@ impl ::std::fmt::Debug for With {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct WithinTypeOf {
+    pub type_of: crate::ExprId,
+    pub expr: crate::ExprId
+}
+impl abomonation::Abomonation for WithinTypeOf{}
+::differential_datalog::decl_struct_from_record!(WithinTypeOf["WithinTypeOf"]<>, ["WithinTypeOf"][2]{[0]type_of["type_of"]: crate::ExprId, [1]expr["expr"]: crate::ExprId});
+::differential_datalog::decl_struct_into_record!(WithinTypeOf, ["WithinTypeOf"]<>, type_of, expr);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(WithinTypeOf, <>, type_of: crate::ExprId, expr: crate::ExprId);
+impl ::std::fmt::Display for WithinTypeOf {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::WithinTypeOf{type_of,expr} => {
+                __formatter.write_str("WithinTypeOf{")?;
+                ::std::fmt::Debug::fmt(type_of, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(expr, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for WithinTypeOf {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct Yield {
     pub expr_id: crate::ExprId,
     pub value: crate::ddlog_std::Option<crate::ExprId>
@@ -3316,6 +3343,13 @@ pub fn bound_vars_internment_Intern__ObjectPatternProp_ddlog_std_Vec__internment
         _ => (*(&*crate::__STATIC_1)).clone()
     }
 }
+pub fn last<T: crate::Val>(vec: & crate::ddlog_std::Vec<T>) -> crate::ddlog_std::Option<T>
+{   if crate::ddlog_std::is_empty_ddlog_std_Vec__X___Boolval::<T>(vec) {
+        (crate::ddlog_std::Option::None{})
+    } else {
+        crate::ddlog_std::nth_ddlog_std_Vec__X___Bitval64_ddlog_std_Option__X::<T>(vec, (&(crate::ddlog_std::len_ddlog_std_Vec__X___Bitval64::<T>(vec).wrapping_sub((1 as u64)))))
+    }
+}
 pub fn to_string(span: & crate::Span) -> String
 {   string_append_str(string_append(string_append_str(string_append(String::from(r###"("###), (&crate::ddlog_std::__builtin_2string((&span.start)))), r###", "###), (&crate::ddlog_std::__builtin_2string((&span.end)))), r###")"###)
 }
@@ -3375,6 +3409,7 @@ pub fn to_string(span: & crate::Span) -> String
 ::differential_datalog::decl_ddval_convert!{crate::VarUseBeforeDeclaration}
 ::differential_datalog::decl_ddval_convert!{crate::While}
 ::differential_datalog::decl_ddval_convert!{crate::With}
+::differential_datalog::decl_ddval_convert!{crate::WithinTypeOf}
 ::differential_datalog::decl_ddval_convert!{crate::Yield}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::Scope, crate::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::Scope, crate::internment::Intern<String>>}
@@ -3390,5 +3425,7 @@ pub fn to_string(span: & crate::Span) -> String
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::StmtId, crate::FuncId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::StmtId, crate::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::StmtId, crate::internment::Intern<crate::Pattern>>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::ExprId, crate::internment::Intern<String>, crate::Scope, crate::Span>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::internment::Intern<String>, crate::Scope, crate::Span, crate::StmtId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple5<crate::internment::Intern<String>, crate::Scope, crate::Span, crate::Scope, crate::Span>}
+::differential_datalog::decl_ddval_convert!{crate::internment::Intern<String>}

@@ -6,8 +6,8 @@ use crate::{
     globals::{JsGlobal, BROWSER, BUILTIN, ES2021, NODE},
     ScopeAnalyzer,
 };
-use rslint_parser::parse_text;
-use std::borrow::Cow;
+use rslint_parser::{parse_module, parse_text};
+use std::{borrow::Cow, fmt::Write};
 
 struct DatalogTestHarness {
     datalog: ScopeAnalyzer,
@@ -24,11 +24,12 @@ impl DatalogTestHarness {
         }
     }
 
-    pub fn test<C>(&mut self, code: C) -> TestCase<'_>
+    pub fn test<C, R>(&mut self, code: C, rule_name: R) -> TestCase<'_>
     where
         C: Into<Cow<'static, str>>,
+        R: Into<Cow<'static, str>>,
     {
-        TestCase::new(self, code.into())
+        TestCase::new(self, code.into(), rule_name.into())
     }
 
     pub fn report_outcome(self) {
@@ -44,23 +45,33 @@ impl DatalogTestHarness {
 }
 
 struct TestCase<'a> {
+    rule_name: Cow<'static, str>,
     code: Cow<'static, str>,
     globals: Vec<Cow<'static, str>>,
     browser: bool,
     node: bool,
     ecma: bool,
+    is_module: bool,
+    es2021: bool,
     invalid_name_uses: Vec<Cow<'static, str>>,
     harness: &'a mut DatalogTestHarness,
 }
 
 impl<'a> TestCase<'a> {
-    pub fn new(harness: &'a mut DatalogTestHarness, code: Cow<'static, str>) -> Self {
+    pub fn new(
+        harness: &'a mut DatalogTestHarness,
+        code: Cow<'static, str>,
+        rule_name: Cow<'static, str>,
+    ) -> Self {
         Self {
+            rule_name,
             code,
             globals: Vec::new(),
             browser: false,
             node: false,
             ecma: false,
+            is_module: false,
+            es2021: false,
             invalid_name_uses: Vec::new(),
             harness,
         }
@@ -86,14 +97,30 @@ impl<'a> TestCase<'a> {
         self
     }
 
+    #[allow(clippy::wrong_self_convention)]
+    pub fn is_module(mut self, is_module: bool) -> Self {
+        self.is_module = is_module;
+        self
+    }
+
+    pub fn with_es2021(mut self, es2021: bool) -> Self {
+        self.es2021 = es2021;
+        self
+    }
+
     pub fn with_invalid_name_uses(mut self, invalid_name_uses: Vec<Cow<'static, str>>) -> Self {
         self.invalid_name_uses.extend(invalid_name_uses);
         self
     }
 
+    // TODO: This is so ugly
     pub fn run(mut self) {
         let mut failed = false;
-        let ast = parse_text(&*self.code, 0);
+        let ast = if self.is_module {
+            parse_module(&*self.code, 0).syntax()
+        } else {
+            parse_text(&*self.code, 0).syntax()
+        };
 
         self.harness
             .datalog
@@ -102,7 +129,7 @@ impl<'a> TestCase<'a> {
                 &self
                     .globals
                     .iter()
-                    .map(|g| JsGlobal::new(g.to_owned(), false))
+                    .map(|g| JsGlobal::new(g.to_string(), false))
                     .collect::<Vec<_>>(),
             )
             .expect("failed to inject global variables");
@@ -129,7 +156,7 @@ impl<'a> TestCase<'a> {
                 .expect("failed to add node globals");
         }
 
-        if self.ecma {
+        if self.ecma || self.es2021 {
             self.harness
                 .datalog
                 .datalog
@@ -137,20 +164,22 @@ impl<'a> TestCase<'a> {
                 .expect("failed to add ecma globals");
         }
 
+        self.harness
+            .datalog
+            .analyze_inner(&ast)
+            .expect("failed datalog transaction");
         let mut facts = self
             .harness
             .datalog
-            .analyze_inner(&ast.syntax())
-            .expect("failed datalog transaction");
+            .datalog
+            .invalid_name_uses(None)
+            .unwrap();
 
         for name in self.invalid_name_uses.drain(..) {
-            if let Some(idx) = facts
-                .invalid_name_uses
-                .iter()
-                .position(|n| *n.name == *name)
-            {
-                facts.invalid_name_uses.remove(idx);
+            if let Some(idx) = facts.iter().position(|n| *n.name == *name) {
+                facts.remove(idx);
             } else {
+                // FIXME: Make this detailed
                 self.harness
                     .failures
                     .push(format!("Missed invalid name use: {}", name));
@@ -158,44 +187,52 @@ impl<'a> TestCase<'a> {
             }
         }
 
-        if !facts.invalid_name_uses.is_empty() {
+        if !facts.is_empty() {
             failed = true;
-            for fact in facts.invalid_name_uses.drain(..) {
-                self.harness.failures.push(format!(
-                    "Extra invalid name use: {} in span {}",
-                    fact.name, fact.span,
-                ));
 
-                println!(
-                    "failed to find `{}` within {:?}",
+            for fact in facts.drain(..) {
+                let mut error = String::new();
+
+                let mut vars = self
+                    .harness
+                    .datalog
+                    .datalog
+                    .variables_for_scope(Some(fact.scope))
+                    .unwrap();
+                vars.sort();
+
+                // FIXME: This is ugly as hell
+                write!(
+                    &mut error,
+                    "- failed to find `{}`\n  Input: `{}`\n  Span: {:?}  \n  Scope: [\n{}\n  ]\n",
                     *fact.name,
-                    self.harness
-                        .datalog
-                        .datalog
-                        .variables_for_scope(fact.scope)
-                        .unwrap(),
-                );
-            }
+                    ast.text(),
+                    fact.span,
+                    vars.chunks(6)
+                        .map(|chunk| "      ".to_string()
+                            + &chunk
+                                .iter()
+                                .map(|s| s.name.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                            + ",")
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                )
+                .unwrap();
 
-            panic!("{}", ast.syntax().text());
+                self.harness.failures.push(format!(
+                    "failed to find `{}`\n  Input: `{}`\n",
+                    *fact.name,
+                    ast.text(),
+                ));
+            }
         }
 
         if !failed {
             self.harness.passing += 1;
         }
 
-        // TODO: An internal refresh function?
-        // if self.browser || self.node || self.ecma || !self.globals.is_empty() {
-        //     self.harness
-        //         .datalog
-        //         .datalog
-        //         .clear_globals()
-        //         .expect("failed to clear ddlog globals");
-        // }
-
-        // FIXME: A wee bit of a hack around *something* going weird with
-        //        scope isolation, maybe look into how scope ids are initially
-        //        fabricated for new files?
-        self.harness.datalog = ScopeAnalyzer::new().expect("failed to create ddlog instance");
+        self.harness.datalog.datalog.reset().unwrap();
     }
 }

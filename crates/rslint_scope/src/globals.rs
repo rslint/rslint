@@ -2,6 +2,7 @@
 
 use std::borrow::Cow;
 
+#[derive(Debug, Clone)]
 pub struct JsGlobal {
     pub(crate) name: Cow<'static, str>,
     pub(crate) writeable: bool,
