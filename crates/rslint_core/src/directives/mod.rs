@@ -80,24 +80,6 @@ pub enum Instruction {
     Either(Box<Instruction>, Box<Instruction>),
 }
 
-impl fmt::Display for Instruction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let slice = match self {
-            Instruction::RuleName => "rule name",
-            Instruction::Number => "number",
-            Instruction::CommandName(_) => "command name",
-            Instruction::Literal(_) => "literal",
-            Instruction::Optional(all) => {
-                let one_of = all.iter().map(ToString::to_string).collect::<Vec<_>>();
-                return write!(f, "one of {}", one_of.join(", "));
-            }
-            Instruction::Repetition(insn, _) => return write!(f, "sequence of {}", insn),
-            Instruction::Either(left, right) => return write!(f, "{} or {}", left, right),
-        };
-        write!(f, "{}", slice)
-    }
-}
-
 /// Any command that is given to the linter using an inline comment.
 #[derive(Debug, Clone)]
 pub struct Directive {

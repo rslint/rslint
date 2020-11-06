@@ -135,11 +135,11 @@ pub(crate) fn lint_file_inner(
     node: SyntaxNode,
     _parser_diagnostics: Vec<Diagnostic>,
     file_id: usize,
-    _store: &CstRuleStore,
+    store: &CstRuleStore,
     _verbose: bool,
 ) -> Result<LintResult, Diagnostic> {
-    let cmd = vec![Instruction::CommandName("ignore"), Instruction::Number];
-    let mut parser = DirectiveParser::new(node, file_id, vec![cmd]);
+    let cmd = vec![Instruction::CommandName("ignore"), Instruction::RuleName];
+    let mut parser = DirectiveParser::new(node, file_id, store, vec![cmd]);
 
     println!("directive: {:?}", parser.top_level_directives()?);
     Ok(todo!())

@@ -42,21 +42,19 @@ impl<'source> Lexer<'source> {
     }
 
     pub fn abs_cur(&self) -> usize {
-        self.offset + self.cur
+        self.offset + self.cur + 1
     }
 
-    pub fn source_of(&self, tok: &Token) -> &'source str {
-        let range = tok.range - TextSize::from((self.offset + 1) as u32);
+    pub fn source_range(&self, range: TextRange) -> &'source str {
+        let range = range - TextSize::from((self.offset + 1) as u32);
         &self.src[range]
     }
 
-    pub fn expect(&mut self, kind: SyntaxKind) -> Result<Token, Diagnostic> {
-        fn format_kind(kind: SyntaxKind) -> String {
-            kind.to_string()
-                .map(|x| x.to_string())
-                .unwrap_or_else(|| format!("{:?}", kind))
-        }
+    pub fn source_of(&self, tok: &Token) -> &'source str {
+        self.source_range(tok.range)
+    }
 
+    pub fn expect(&mut self, kind: SyntaxKind) -> Result<Token, Diagnostic> {
         match self.next() {
             Some(tok) if tok.kind == kind => Ok(tok),
             Some(tok) if tok.kind == SyntaxKind::EOF => {
@@ -109,6 +107,11 @@ impl<'source> Lexer<'source> {
             range,
         })
     }
+}
+pub fn format_kind(kind: SyntaxKind) -> String {
+    kind.to_string()
+        .map(|x| x.to_string())
+        .unwrap_or_else(|| format!("{:?}", kind))
 }
 
 #[cfg(test)]

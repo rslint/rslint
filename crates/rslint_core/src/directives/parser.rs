@@ -1,10 +1,10 @@
 use super::{
-    lexer::{Lexer, Token},
+    lexer::{format_kind, Lexer, Token},
     Component, ComponentKind, CstRuleStore, Directive, Instruction,
 };
 use rslint_errors::Diagnostic;
-use rslint_lexer::SyntaxKind;
-use rslint_parser::{util::Comment, JsNum, SyntaxNode, SyntaxToken, SyntaxTokenExt};
+use rslint_lexer::{SyntaxKind, T};
+use rslint_parser::{util::Comment, JsNum, SyntaxNode, SyntaxToken, SyntaxTokenExt, TextRange};
 
 /// A string that denotes that start of a directive (`rslint-`).
 pub const DECLARATOR: &str = "rslint-";
@@ -12,26 +12,33 @@ pub const DECLARATOR: &str = "rslint-";
 pub type Command = Vec<Instruction>;
 pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
 
-pub struct DirectiveParser {
+pub struct DirectiveParser<'store> {
     /// The root node of a file, `SCRIPT` or `MODULE`.
     root: SyntaxNode,
     file_id: usize,
     commands: Vec<Command>,
+    store: &'store CstRuleStore,
 }
 
-impl DirectiveParser {
+impl<'store> DirectiveParser<'store> {
     /// Create a new `DirectivesParser` with a root of a file.
     ///
     /// # Panics
     ///
     /// If the given `root` is not `SCRIPT` or `MODULE`.
-    pub fn new(root: SyntaxNode, file_id: usize, commands: Vec<Command>) -> Self {
+    pub fn new(
+        root: SyntaxNode,
+        file_id: usize,
+        store: &'store CstRuleStore,
+        commands: Vec<Command>,
+    ) -> Self {
         assert!(matches!(
             root.kind(),
             SyntaxKind::SCRIPT | SyntaxKind::MODULE
         ));
 
         Self {
+            store,
             root,
             file_id,
             commands,
@@ -159,7 +166,47 @@ impl DirectiveParser {
                     range: tok.range,
                 })
             }
-            Instruction::RuleName => todo!(),
+            Instruction::RuleName => {
+                fn is_rule_name(kind: SyntaxKind) -> bool {
+                    kind == T![-] || kind == T![ident] || kind.is_keyword()
+                }
+
+                let first = lexer
+                    .next()
+                    .filter(|tok| tok.kind != SyntaxKind::EOF)
+                    .ok_or_else(|| {
+                        self.err("expected rule name, but comment ends here")
+                            .primary(lexer.abs_cur()..lexer.abs_cur() + 1, "")
+                    })?;
+                if !is_rule_name(first.kind) {
+                    let d = self.err(&format!(
+                        "expected `identifier`, `-` or `keyword`, but found `{}`",
+                        format_kind(first.kind),
+                    ));
+                    return Err(d);
+                }
+                let start = first.range.start();
+
+                while lexer.peek().map_or(false, |tok| is_rule_name(tok.kind)) {
+                    lexer.next();
+                }
+
+                let end = lexer.abs_cur() as u32;
+                let name_range = TextRange::new(start, end.into());
+                let name = lexer.source_range(name_range);
+                if self.store.get(name).is_none() {
+                    // TODO: Suggest similair rule using `find_best_match_for_name`
+                    let d = self
+                        .err(&format!("invalid rule: `{}`", name))
+                        .primary(name_range, "");
+                    Err(d)
+                } else {
+                    Ok(Component {
+                        kind: ComponentKind::RuleName(name.into()),
+                        range: name_range,
+                    })
+                }
+            }
             Instruction::Literal(lit) => {
                 let tok = lexer.expect(SyntaxKind::IDENT)?;
                 let src = lexer.source_of(&tok);

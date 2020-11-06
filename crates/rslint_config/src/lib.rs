@@ -166,12 +166,13 @@ impl Config {
         };
 
         let rules = unique_rules(rule_cfg.errors.clone(), rule_cfg.warnings.clone());
-        let mut rules = self.intersect_allowed(rules).collect();
+        let mut rules = self.intersect_allowed(rules).collect::<Vec<_>>();
 
         for group in &rule_cfg.groups {
             if let Some(group_rules) = get_group_rules_by_name(group) {
                 let list = self.intersect_allowed(group_rules.into_iter());
-                rules = unique_rules(rules, list.collect()).collect();
+                let list = list.collect::<Vec<_>>();
+                rules = unique_rules(rules, list).collect();
             } else {
                 let d = Diagnostic::warning(1, "config", format!("unknown rule group '{}'", group));
                 self.warnings.borrow_mut().push(d);
@@ -213,7 +214,7 @@ impl Config {
                 self.warnings.borrow_mut().push(d)
             }
 
-            res
+            !res
         })
     }
 }
