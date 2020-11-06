@@ -98,13 +98,10 @@ impl<'store> DirectiveParser<'store> {
         let cmd = match cmd {
             Some(cmd) => cmd.clone(),
             None => {
-                let mut d = self
+                // TODO: Suggest name using `find_best_match_for_name`
+                let d = self
                     .err(&format!("unknown directive command: `{}`", cmd_name))
                     .primary(cmd_tok.range, "");
-
-                if let Some(suggestion) = get_rule_suggestion(cmd_name) {
-                    d = d.footer_help(format!("did you mean `{}`?", suggestion));
-                }
 
                 return Err(d);
             }
@@ -199,10 +196,14 @@ impl<'store> DirectiveParser<'store> {
                 let name_range = TextRange::new(start, end.into());
                 let name = lexer.source_range(name_range);
                 if self.store.get(name).is_none() {
-                    // TODO: Suggest similair rule using `find_best_match_for_name`
-                    let d = self
+                    let mut d = self
                         .err(&format!("invalid rule: `{}`", name))
                         .primary(name_range, "");
+
+                    if let Some(suggestion) = get_rule_suggestion(name) {
+                        d = d.footer_help(format!("did you mean `{}`?", suggestion))
+                    }
+
                     Err(d)
                 } else {
                     Ok(Component {
