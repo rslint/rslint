@@ -1,10 +1,10 @@
 use super::{
     lexer::{Lexer, Token},
-    Component, CstRuleStore, Directive, Instruction,
+    Component, ComponentKind, CstRuleStore, Directive, Instruction,
 };
 use rslint_errors::Diagnostic;
 use rslint_lexer::SyntaxKind;
-use rslint_parser::{util::Comment, SyntaxNode, SyntaxToken, SyntaxTokenExt};
+use rslint_parser::{util::Comment, JsNum, SyntaxNode, SyntaxToken, SyntaxTokenExt};
 
 /// A string that denotes that start of a directive (`rslint-`).
 pub const DECLARATOR: &str = "rslint-";
@@ -99,14 +99,89 @@ impl DirectiveParser {
             }
         };
 
-        let components = self.parse_command(&cmd)?;
+        let components = self.parse_command(
+            &mut lexer,
+            Component {
+                kind: ComponentKind::CommandName(cmd_name.into()),
+                range: cmd_tok.range,
+            },
+            &cmd,
+        )?;
         Ok(Directive {
             comment,
             components,
         })
     }
 
-    fn parse_command(&mut self, cmd: &Command) -> Result<Vec<Component>> {
-        todo!()
+    fn parse_command(
+        &mut self,
+        lexer: &mut Lexer<'_>,
+        first_component: Component,
+        cmd: &Command,
+    ) -> Result<Vec<Component>> {
+        let mut components = vec![first_component];
+
+        for insn in &cmd[1..] {
+            let component = self.parse_instruction(lexer, insn)?;
+            components.push(component);
+        }
+
+        Ok(components)
+    }
+
+    fn parse_instruction(
+        &mut self,
+        lexer: &mut Lexer<'_>,
+        insn: &Instruction,
+    ) -> Result<Component> {
+        match insn {
+            Instruction::CommandName(_) => {
+                panic!("command name is only allowed as the first element")
+            }
+            Instruction::Number => {
+                let tok = lexer.expect(SyntaxKind::NUMBER)?;
+                let num = lexer.source_of(&tok);
+                let num = match rslint_parser::parse_js_num(num.to_string()) {
+                    Some(JsNum::Float(val)) => val as u64,
+                    Some(JsNum::BigInt(_)) => {
+                        let d = self
+                            .err("bigints are not supported in directives")
+                            .primary(tok.range, "");
+                        return Err(d);
+                    }
+                    _ => {
+                        let d = self.err("invalid number").primary(tok.range, "");
+                        return Err(d);
+                    }
+                };
+                Ok(Component {
+                    kind: ComponentKind::Number(num),
+                    range: tok.range,
+                })
+            }
+            Instruction::RuleName => todo!(),
+            Instruction::Literal(lit) => {
+                let tok = lexer.expect(SyntaxKind::IDENT)?;
+                let src = lexer.source_of(&tok);
+
+                if !src.eq_ignore_ascii_case(lit) {
+                    let d = self
+                        .err(&format!(
+                            "expected literal `{}`, but found literal `{}`",
+                            lit, src
+                        ))
+                        .primary(tok.range, "");
+                    Err(d)
+                } else {
+                    Ok(Component {
+                        kind: ComponentKind::Literal(lit),
+                        range: tok.range,
+                    })
+                }
+            }
+            Instruction::Optional(_) => todo!(),
+            Instruction::Repetition(_, _) => todo!(),
+            Instruction::Either(_, _) => todo!(),
+        }
     }
 }

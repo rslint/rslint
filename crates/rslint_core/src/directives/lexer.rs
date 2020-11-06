@@ -1,5 +1,6 @@
 use std::iter::Peekable;
 
+use rslint_errors::Diagnostic;
 use rslint_lexer::{Lexer as RawLexer, SyntaxKind};
 use rslint_parser::{TextRange, TextSize};
 
@@ -14,6 +15,7 @@ pub struct Lexer<'source> {
     offset: usize,
     cur: usize,
     src: &'source str,
+    file_id: usize,
     tokens: Peekable<RawLexer<'source>>,
 }
 
@@ -23,6 +25,7 @@ impl<'source> Lexer<'source> {
             cur: 0,
             offset,
             src,
+            file_id,
             tokens: RawLexer::from_str(src, file_id).peekable(),
         }
     }
@@ -34,6 +37,10 @@ impl<'source> Lexer<'source> {
         TextRange::new(start.into(), end.into()) + offset
     }
 
+    fn err(&self, msg: &str) -> Diagnostic {
+        Diagnostic::error(self.file_id, "directives", msg)
+    }
+
     pub fn abs_cur(&self) -> usize {
         self.offset + self.cur
     }
@@ -41,6 +48,38 @@ impl<'source> Lexer<'source> {
     pub fn source_of(&self, tok: &Token) -> &'source str {
         let range = tok.range - TextSize::from((self.offset + 1) as u32);
         &self.src[range]
+    }
+
+    pub fn expect(&mut self, kind: SyntaxKind) -> Result<Token, Diagnostic> {
+        fn format_kind(kind: SyntaxKind) -> String {
+            kind.to_string()
+                .map(|x| x.to_string())
+                .unwrap_or_else(|| format!("{:?}", kind))
+        }
+
+        match self.next() {
+            Some(tok) if tok.kind == kind => Ok(tok),
+            Some(tok) if tok.kind == SyntaxKind::EOF => {
+                let d = self
+                    .err(&format!(
+                        "expected `{}`, but comment ends here",
+                        format_kind(kind)
+                    ))
+                    .primary(tok.range, "");
+                Err(d)
+            }
+            Some(tok) => {
+                let d = self
+                    .err(&format!(
+                        "expected `{}`, found `{}`",
+                        format_kind(kind),
+                        format_kind(tok.kind)
+                    ))
+                    .primary(tok.range, "");
+                Err(d)
+            }
+            _ => panic!("`expect` should not be called multiple times after EOF was reached"),
+        }
     }
 
     pub fn next(&mut self) -> Option<Token> {

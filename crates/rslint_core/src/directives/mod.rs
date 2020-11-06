@@ -15,6 +15,8 @@
 pub(self) mod lexer;
 mod parser;
 
+use std::fmt;
+
 pub use self::parser::*;
 
 use crate::{rule_tests, CstRule, CstRuleStore, Diagnostic, SyntaxNode};
@@ -27,7 +29,7 @@ pub enum ComponentKind {
     ///  This component is a rule name (e.g. `no-extra-boolean-cast` or `no-empty-block`)
     RuleName(SmolStr),
     /// This component is the name of a directive command (e.g. `ignore`)
-    CommandName(&'static str),
+    CommandName(SmolStr),
     /// A number that is parsed by the [`Number`] instruction.
     ///
     /// [`Number`]: ./enum.Instruction.html
@@ -76,6 +78,24 @@ pub enum Instruction {
     Optional(Vec<Instruction>),
     Repetition(Box<Instruction>, &'static str),
     Either(Box<Instruction>, Box<Instruction>),
+}
+
+impl fmt::Display for Instruction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let slice = match self {
+            Instruction::RuleName => "rule name",
+            Instruction::Number => "number",
+            Instruction::CommandName(_) => "command name",
+            Instruction::Literal(_) => "literal",
+            Instruction::Optional(all) => {
+                let one_of = all.iter().map(ToString::to_string).collect::<Vec<_>>();
+                return write!(f, "one of {}", one_of.join(", "));
+            }
+            Instruction::Repetition(insn, _) => return write!(f, "sequence of {}", insn),
+            Instruction::Either(left, right) => return write!(f, "{} or {}", left, right),
+        };
+        write!(f, "{}", slice)
+    }
 }
 
 /// Any command that is given to the linter using an inline comment.
