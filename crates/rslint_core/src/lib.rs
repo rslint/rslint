@@ -44,7 +44,7 @@ pub use rslint_errors::{Diagnostic, Severity, Span};
 
 use crate::directives::skip_node;
 #[doc(inline)]
-pub use crate::directives::Directive;
+pub use crate::directives::{Directive, DirectiveParser};
 use dyn_clone::clone_box;
 //use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
@@ -132,13 +132,20 @@ pub fn lint_file(
 
 /// used by lint_file and incrementally_relint to not duplicate code
 pub(crate) fn lint_file_inner(
-    _node: SyntaxNode,
+    node: SyntaxNode,
     _parser_diagnostics: Vec<Diagnostic>,
-    _file_id: usize,
+    file_id: usize,
     _store: &CstRuleStore,
     _verbose: bool,
 ) -> Result<LintResult, Diagnostic> {
-    todo!()
+    let mut parser = DirectiveParser::new(node, file_id, vec![]);
+
+    if let Err(d) = parser.top_level_directives() {
+        Err(d)
+    } else {
+        todo!()
+    }
+
     //let mut new_store = store.clone();
     //let results = DirectiveParser::new(node.clone(), file_id, store).get_file_directives()?;
     //let mut directive_diagnostics = vec![];

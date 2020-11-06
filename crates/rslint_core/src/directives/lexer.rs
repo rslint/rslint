@@ -28,19 +28,24 @@ impl<'source> Lexer<'source> {
     }
 
     fn abs_range(&self, len: usize) -> TextRange {
-        let offset = TextSize::from(self.offset as u32);
-        let start = (self.cur - len) as u32;
-        let end = self.cur as u32;
+        let offset = TextSize::from((self.offset + 1) as u32);
+        let start = self.cur as u32;
+        let end = (self.cur + len) as u32;
         TextRange::new(start.into(), end.into()) + offset
     }
 
+    pub fn abs_cur(&self) -> usize {
+        self.offset + self.cur
+    }
+
     pub fn source_of(&self, tok: &Token) -> &'source str {
-        let range = tok.range - TextSize::from(self.offset as u32);
+        let range = tok.range - TextSize::from((self.offset + 1) as u32);
         &self.src[range]
     }
 
     pub fn next(&mut self) -> Option<Token> {
         let (tok, _) = self.tokens.next()?;
+        let range = self.abs_range(tok.len);
         self.cur += tok.len;
         if tok.kind == SyntaxKind::WHITESPACE {
             return self.next();
@@ -48,13 +53,13 @@ impl<'source> Lexer<'source> {
 
         Some(Token {
             kind: tok.kind,
-            range: self.abs_range(tok.len),
+            range,
         })
     }
 
     pub fn peek(&mut self) -> Option<Token> {
         let (tok, _) = self.tokens.peek()?.clone();
-        self.cur += tok.len;
+        let range = self.abs_range(tok.len);
         if tok.kind == SyntaxKind::WHITESPACE {
             self.tokens.next();
             return self.peek();
@@ -62,7 +67,7 @@ impl<'source> Lexer<'source> {
 
         Some(Token {
             kind: tok.kind,
-            range: self.abs_range(tok.len),
+            range,
         })
     }
 }
