@@ -115,17 +115,19 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
         // TODO: handle `<T>() => {};` with less of a hack
         _ if p.at_ts(STARTS_EXPR) || p.at(T![<]) => {
             let start = p.cur_tok().range.start;
-            if matches!(
-                p.cur_src(),
-                "global"
-                    | "declare"
-                    | "abstract"
-                    | "enum"
-                    | "interface"
-                    | "module"
-                    | "namespace"
-                    | "type"
-            ) && !p.nth_at(1, T![:])
+            if p.typescript
+                && matches!(
+                    p.cur_src(),
+                    "global"
+                        | "declare"
+                        | "abstract"
+                        | "enum"
+                        | "interface"
+                        | "module"
+                        | "namespace"
+                        | "type"
+                )
+                && !p.nth_at(1, T![:])
                 && !p.nth_at(1, T![.])
             {
                 if let Some(mut res) = ts_expr_stmt(p) {
