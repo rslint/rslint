@@ -2,6 +2,7 @@ use super::{
     lexer::{format_kind, Lexer, Token},
     Component, ComponentKind, CstRuleStore, Directive, Instruction,
 };
+use crate::get_rule_suggestion;
 use rslint_errors::Diagnostic;
 use rslint_lexer::{SyntaxKind, T};
 use rslint_parser::{util::Comment, JsNum, SyntaxNode, SyntaxToken, SyntaxTokenExt, TextRange};
@@ -97,10 +98,13 @@ impl<'store> DirectiveParser<'store> {
         let cmd = match cmd {
             Some(cmd) => cmd.clone(),
             None => {
-                // TODO: Suggest name using `find_best_match_for_name`
-                let d = self
+                let mut d = self
                     .err(&format!("unknown directive command: `{}`", cmd_name))
                     .primary(cmd_tok.range, "");
+
+                if let Some(suggestion) = get_rule_suggestion(cmd_name) {
+                    d = d.footer_help(format!("did you mean `{}`?", suggestion));
+                }
 
                 return Err(d);
             }
