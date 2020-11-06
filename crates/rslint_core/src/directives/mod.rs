@@ -12,14 +12,85 @@
 //!                                      Directive
 //! ```
 
+pub(self) mod lexer;
 mod parser;
 
 pub use self::parser::*;
 
 use crate::{rule_tests, CstRule, CstRuleStore, Diagnostic, SyntaxNode};
-use rslint_parser::util::*;
+use rslint_parser::{util::*, SmolStr, TextRange, TextSize};
 
 // TODO: More complex warnings, things like ignoring node directives because of file level directives
+
+#[derive(Debug, Clone)]
+pub enum ComponentKind {
+    ///  This component is a rule name (e.g. `no-extra-boolean-cast` or `no-empty-block`)
+    RuleName(SmolStr),
+    /// This component is the name of a directive command (e.g. `ignore`)
+    CommandName(&'static str),
+    /// A number that is parsed by the [`Number`] instruction.
+    ///
+    /// [`Number`]: ./enum.Instruction.html
+    Number(u64),
+    /// Any literal that was parsed by the [`Literal`] instruction.
+    ///
+    /// [`Literal`]: ./enum.Instruction.html
+    Literal(&'static str),
+}
+
+/// A `Component` represents a parsed `Instruction`, that also has a span,
+/// so you can find the `Component` at any span in the directive.
+#[derive(Debug, Clone)]
+pub struct Component {
+    pub kind: ComponentKind,
+    pub range: TextRange,
+}
+
+/// `Instruction`s are used to add directives to the parser.
+///
+/// Directives are parsed based off all registered instructions.
+///
+/// # Example
+///
+/// To add an `ignore` rule, you can add the following instructions:
+/// ```ignore
+/// # use rslint_core::directives::Instruction::*;
+/// # fn main() {
+/// vec![
+///   CommandName("ignore"),
+///   Repetition(RuleName, ","),
+///   Optional(vec![
+///     Literal("until"),
+///     Either(Literal("eof"), Number)
+///   ])
+/// ]
+/// # }
+/// ```
+#[derive(Debug, Clone)]
+pub enum Instruction {
+    RuleName,
+    Number,
+
+    CommandName(&'static str),
+    Literal(&'static str),
+    Optional(Vec<Instruction>),
+    Repetition(Box<Instruction>, &'static str),
+    Either(Box<Instruction>, Box<Instruction>),
+}
+
+/// Any command that is given to the linter using an inline comment.
+#[derive(Debug, Clone)]
+pub struct Directive {
+    comment: Comment,
+    components: Vec<Component>,
+}
+
+impl Directive {
+    /// Finds the component which contains the given index in his span.
+    pub fn component_at(&self, idx: TextSize) -> Option<&Component> {
+        self.components.iter().find(|c| c.range.contains(idx))
+    }
+}
 
 /// Apply file level directives to a store and add their respective diagnostics to the pool of diagnostics.
 /// for file level ignores this will clear all the rules from the store.
@@ -27,93 +98,24 @@ use rslint_parser::util::*;
 /// This method furthermore issues more contextual warnings like disabling a rule after
 /// the entire file has been disabled.
 pub fn apply_top_level_directives(
-    directives: &[Directive],
-    store: &mut CstRuleStore,
-    diagnostics: &mut Vec<Diagnostic>,
-    file_id: usize,
+    _directives: &[Directive],
+    _store: &mut CstRuleStore,
+    _diagnostics: &mut Vec<Diagnostic>,
+    _file_id: usize,
 ) {
-    let mut ignored = Vec::new();
-    let mut cleared = None;
-
-    for directive in directives {
-        for command in &directive.commands {
-            if command.top_level() {
-                match command {
-                    Command::IgnoreFile => {
-                        store.rules.clear();
-                        cleared = Some(directive.comment.token.text_range());
-                    }
-                    Command::IgnoreRulesFile(rules) => {
-                        ignored.push(directive.comment.token.text_range());
-                        store.rules.retain(|rule| {
-                            !rules.iter().any(|allowed| allowed.name() == rule.name())
-                        });
-                    }
-                    _ => unreachable!(),
-                }
-            }
-        }
-    }
-
-    if let Some(range) = cleared {
-        for ignored_range in ignored {
-            let warn = Diagnostic::warning(
-                file_id,
-                "linter",
-                "ignoring redundant rule ignore directive",
-            )
-            .secondary(range, "this directive ignores all rules")
-            .primary(ignored_range, "this directive is ignored");
-
-            diagnostics.push(warn);
-        }
-    }
+    todo!()
 }
 
 pub fn apply_node_directives(
-    directives: &[Directive],
-    node: &SyntaxNode,
-    store: &CstRuleStore,
+    _directives: &[Directive],
+    _node: &SyntaxNode,
+    _store: &CstRuleStore,
 ) -> Option<CstRuleStore> {
-    let comment = node.first_token().and_then(|t| t.comment())?;
-    let directive = directives.iter().find(|dir| dir.comment == comment)?;
-    let mut store = store.clone();
-
-    for command in &directive.commands {
-        match command {
-            Command::IgnoreNode(_) => {
-                store.rules.clear();
-            }
-            Command::IgnoreRules(rules, _) => {
-                store
-                    .rules
-                    .retain(|rule| !rules.iter().any(|allowed| allowed.name() == rule.name()));
-            }
-            _ => {}
-        }
-    }
-    Some(store)
+    todo!()
 }
 
-pub fn skip_node(directives: &[Directive], node: &SyntaxNode, rule: &dyn CstRule) -> bool {
-    if let Some(comment) = node.first_token().and_then(|t| t.comment()) {
-        if let Some(directive) = directives.iter().find(|dir| dir.comment == comment) {
-            for command in &directive.commands {
-                match command {
-                    Command::IgnoreNode(_) => {
-                        return true;
-                    }
-                    Command::IgnoreRules(rules, _) => {
-                        if rules.iter().any(|allowed| allowed.name() == rule.name()) {
-                            return true;
-                        }
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-    false
+pub fn skip_node(_directives: &[Directive], _node: &SyntaxNode, _rule: &dyn CstRule) -> bool {
+    todo!()
 }
 
 rule_tests! {
