@@ -229,6 +229,7 @@ macro_rules! impl_id_traits {
 impl_id_traits! {
     Scope,
     GlobalId,
+    ImportId,
     ClassId,
     FuncId,
     StmtId,
@@ -319,6 +320,9 @@ pub enum AnyId {
     AnyIdGlobal {
         global: crate::GlobalId
     },
+    AnyIdImport {
+        import_: crate::ImportId
+    },
     AnyIdClass {
         class: crate::ClassId
     },
@@ -333,15 +337,20 @@ pub enum AnyId {
     }
 }
 impl abomonation::Abomonation for AnyId{}
-::differential_datalog::decl_enum_from_record!(AnyId["AnyId"]<>, AnyIdGlobal["AnyIdGlobal"][1]{[0]global["global"]: crate::GlobalId}, AnyIdClass["AnyIdClass"][1]{[0]class["class"]: crate::ClassId}, AnyIdFunc["AnyIdFunc"][1]{[0]func["func"]: crate::FuncId}, AnyIdStmt["AnyIdStmt"][1]{[0]stmt["stmt"]: crate::StmtId}, AnyIdExpr["AnyIdExpr"][1]{[0]expr["expr"]: crate::ExprId});
-::differential_datalog::decl_enum_into_record!(AnyId<>, AnyIdGlobal["AnyIdGlobal"]{global}, AnyIdClass["AnyIdClass"]{class}, AnyIdFunc["AnyIdFunc"]{func}, AnyIdStmt["AnyIdStmt"]{stmt}, AnyIdExpr["AnyIdExpr"]{expr});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(AnyId<>, AnyIdGlobal{global: crate::GlobalId}, AnyIdClass{class: crate::ClassId}, AnyIdFunc{func: crate::FuncId}, AnyIdStmt{stmt: crate::StmtId}, AnyIdExpr{expr: crate::ExprId});
+::differential_datalog::decl_enum_from_record!(AnyId["AnyId"]<>, AnyIdGlobal["AnyIdGlobal"][1]{[0]global["global"]: crate::GlobalId}, AnyIdImport["AnyIdImport"][1]{[0]import_["import_"]: crate::ImportId}, AnyIdClass["AnyIdClass"][1]{[0]class["class"]: crate::ClassId}, AnyIdFunc["AnyIdFunc"][1]{[0]func["func"]: crate::FuncId}, AnyIdStmt["AnyIdStmt"][1]{[0]stmt["stmt"]: crate::StmtId}, AnyIdExpr["AnyIdExpr"][1]{[0]expr["expr"]: crate::ExprId});
+::differential_datalog::decl_enum_into_record!(AnyId<>, AnyIdGlobal["AnyIdGlobal"]{global}, AnyIdImport["AnyIdImport"]{import_}, AnyIdClass["AnyIdClass"]{class}, AnyIdFunc["AnyIdFunc"]{func}, AnyIdStmt["AnyIdStmt"]{stmt}, AnyIdExpr["AnyIdExpr"]{expr});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(AnyId<>, AnyIdGlobal{global: crate::GlobalId}, AnyIdImport{import_: crate::ImportId}, AnyIdClass{class: crate::ClassId}, AnyIdFunc{func: crate::FuncId}, AnyIdStmt{stmt: crate::StmtId}, AnyIdExpr{expr: crate::ExprId});
 impl ::std::fmt::Display for AnyId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
             crate::AnyId::AnyIdGlobal{global} => {
                 __formatter.write_str("AnyIdGlobal{")?;
                 ::std::fmt::Debug::fmt(global, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::AnyId::AnyIdImport{import_} => {
+                __formatter.write_str("AnyIdImport{")?;
+                ::std::fmt::Debug::fmt(import_, __formatter)?;
                 __formatter.write_str("}")
             },
             crate::AnyId::AnyIdClass{class} => {
@@ -1868,6 +1877,104 @@ impl ::std::fmt::Debug for ImplicitGlobal {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub enum ImportClause {
+    WildcardImport {
+        alias: crate::ddlog_std::Option<crate::Name>
+    },
+    GroupedImport {
+        imports: crate::ddlog_std::Vec<crate::NamedImport>
+    },
+    SingleImport {
+        name: crate::Name
+    }
+}
+impl abomonation::Abomonation for ImportClause{}
+::differential_datalog::decl_enum_from_record!(ImportClause["ImportClause"]<>, WildcardImport["WildcardImport"][1]{[0]alias["alias"]: crate::ddlog_std::Option<crate::Name>}, GroupedImport["GroupedImport"][1]{[0]imports["imports"]: crate::ddlog_std::Vec<crate::NamedImport>}, SingleImport["SingleImport"][1]{[0]name["name"]: crate::Name});
+::differential_datalog::decl_enum_into_record!(ImportClause<>, WildcardImport["WildcardImport"]{alias}, GroupedImport["GroupedImport"]{imports}, SingleImport["SingleImport"]{name});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(ImportClause<>, WildcardImport{alias: crate::ddlog_std::Option<crate::Name>}, GroupedImport{imports: crate::ddlog_std::Vec<crate::NamedImport>}, SingleImport{name: crate::Name});
+impl ::std::fmt::Display for ImportClause {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::ImportClause::WildcardImport{alias} => {
+                __formatter.write_str("WildcardImport{")?;
+                ::std::fmt::Debug::fmt(alias, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::ImportClause::GroupedImport{imports} => {
+                __formatter.write_str("GroupedImport{")?;
+                ::std::fmt::Debug::fmt(imports, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::ImportClause::SingleImport{name} => {
+                __formatter.write_str("SingleImport{")?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ImportClause {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+impl ::std::default::Default for ImportClause {
+    fn default() -> Self {
+        crate::ImportClause::WildcardImport{alias : ::std::default::Default::default()}
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct ImportDecl {
+    pub id: crate::ImportId,
+    pub clause: crate::ImportClause
+}
+impl abomonation::Abomonation for ImportDecl{}
+::differential_datalog::decl_struct_from_record!(ImportDecl["ImportDecl"]<>, ["ImportDecl"][2]{[0]id["id"]: crate::ImportId, [1]clause["clause"]: crate::ImportClause});
+::differential_datalog::decl_struct_into_record!(ImportDecl, ["ImportDecl"]<>, id, clause);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ImportDecl, <>, id: crate::ImportId, clause: crate::ImportClause);
+impl ::std::fmt::Display for ImportDecl {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::ImportDecl{id,clause} => {
+                __formatter.write_str("ImportDecl{")?;
+                ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(clause, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ImportDecl {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct ImportId {
+    pub id: u32
+}
+impl abomonation::Abomonation for ImportId{}
+::differential_datalog::decl_struct_from_record!(ImportId["ImportId"]<>, ["ImportId"][1]{[0]id["id"]: u32});
+::differential_datalog::decl_struct_into_record!(ImportId, ["ImportId"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ImportId, <>, id: u32);
+impl ::std::fmt::Display for ImportId {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::ImportId{id} => {
+                __formatter.write_str("ImportId{")?;
+                ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ImportId {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct InlineFunc {
     pub expr_id: crate::ExprId,
@@ -2149,6 +2256,33 @@ impl ::std::fmt::Display for NameRef {
     }
 }
 impl ::std::fmt::Debug for NameRef {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct NamedImport {
+    pub name: crate::ddlog_std::Option<crate::Name>,
+    pub alias: crate::ddlog_std::Option<crate::Name>
+}
+impl abomonation::Abomonation for NamedImport{}
+::differential_datalog::decl_struct_from_record!(NamedImport["NamedImport"]<>, ["NamedImport"][2]{[0]name["name"]: crate::ddlog_std::Option<crate::Name>, [1]alias["alias"]: crate::ddlog_std::Option<crate::Name>});
+::differential_datalog::decl_struct_into_record!(NamedImport, ["NamedImport"]<>, name, alias);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NamedImport, <>, name: crate::ddlog_std::Option<crate::Name>, alias: crate::ddlog_std::Option<crate::Name>);
+impl ::std::fmt::Display for NamedImport {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::NamedImport{name,alias} => {
+                __formatter.write_str("NamedImport{")?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(alias, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for NamedImport {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
@@ -3013,6 +3147,33 @@ impl ::std::fmt::Debug for TryHandler {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct TypeofUndefinedAlwaysUndefined {
+    pub whole_expr: crate::ExprId,
+    pub undefined_expr: crate::ExprId
+}
+impl abomonation::Abomonation for TypeofUndefinedAlwaysUndefined{}
+::differential_datalog::decl_struct_from_record!(TypeofUndefinedAlwaysUndefined["TypeofUndefinedAlwaysUndefined"]<>, ["TypeofUndefinedAlwaysUndefined"][2]{[0]whole_expr["whole_expr"]: crate::ExprId, [1]undefined_expr["undefined_expr"]: crate::ExprId});
+::differential_datalog::decl_struct_into_record!(TypeofUndefinedAlwaysUndefined, ["TypeofUndefinedAlwaysUndefined"]<>, whole_expr, undefined_expr);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(TypeofUndefinedAlwaysUndefined, <>, whole_expr: crate::ExprId, undefined_expr: crate::ExprId);
+impl ::std::fmt::Display for TypeofUndefinedAlwaysUndefined {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::TypeofUndefinedAlwaysUndefined{whole_expr,undefined_expr} => {
+                __formatter.write_str("TypeofUndefinedAlwaysUndefined{")?;
+                ::std::fmt::Debug::fmt(whole_expr, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(undefined_expr, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for TypeofUndefinedAlwaysUndefined {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct UnaryOp {
     pub expr_id: crate::ExprId,
     pub op: crate::ddlog_std::Option<crate::UnaryOperand>,
@@ -3236,19 +3397,19 @@ impl ::std::fmt::Debug for With {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
-pub struct WithinTypeOf {
+pub struct WithinTypeofExpr {
     pub type_of: crate::ExprId,
     pub expr: crate::ExprId
 }
-impl abomonation::Abomonation for WithinTypeOf{}
-::differential_datalog::decl_struct_from_record!(WithinTypeOf["WithinTypeOf"]<>, ["WithinTypeOf"][2]{[0]type_of["type_of"]: crate::ExprId, [1]expr["expr"]: crate::ExprId});
-::differential_datalog::decl_struct_into_record!(WithinTypeOf, ["WithinTypeOf"]<>, type_of, expr);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(WithinTypeOf, <>, type_of: crate::ExprId, expr: crate::ExprId);
-impl ::std::fmt::Display for WithinTypeOf {
+impl abomonation::Abomonation for WithinTypeofExpr{}
+::differential_datalog::decl_struct_from_record!(WithinTypeofExpr["WithinTypeofExpr"]<>, ["WithinTypeofExpr"][2]{[0]type_of["type_of"]: crate::ExprId, [1]expr["expr"]: crate::ExprId});
+::differential_datalog::decl_struct_into_record!(WithinTypeofExpr, ["WithinTypeofExpr"]<>, type_of, expr);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(WithinTypeofExpr, <>, type_of: crate::ExprId, expr: crate::ExprId);
+impl ::std::fmt::Display for WithinTypeofExpr {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::WithinTypeOf{type_of,expr} => {
-                __formatter.write_str("WithinTypeOf{")?;
+            crate::WithinTypeofExpr{type_of,expr} => {
+                __formatter.write_str("WithinTypeofExpr{")?;
                 ::std::fmt::Debug::fmt(type_of, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(expr, __formatter)?;
@@ -3257,7 +3418,7 @@ impl ::std::fmt::Display for WithinTypeOf {
         }
     }
 }
-impl ::std::fmt::Debug for WithinTypeOf {
+impl ::std::fmt::Debug for WithinTypeofExpr {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
@@ -3343,11 +3504,42 @@ pub fn bound_vars_internment_Intern__ObjectPatternProp_ddlog_std_Vec__internment
         _ => (*(&*crate::__STATIC_1)).clone()
     }
 }
-pub fn last<T: crate::Val>(vec: & crate::ddlog_std::Vec<T>) -> crate::ddlog_std::Option<T>
-{   if crate::ddlog_std::is_empty_ddlog_std_Vec__X___Boolval::<T>(vec) {
-        (crate::ddlog_std::Option::None{})
-    } else {
-        crate::ddlog_std::nth_ddlog_std_Vec__X___Bitval64_ddlog_std_Option__X::<T>(vec, (&(crate::ddlog_std::len_ddlog_std_Vec__X___Bitval64::<T>(vec).wrapping_sub((1 as u64)))))
+pub fn free_variable(clause: & crate::NamedImport) -> crate::ddlog_std::Option<crate::Name>
+{   crate::or_else::<crate::internment::Intern<String>>((&clause.alias), (&clause.name))
+}
+pub fn free_variables(clause: & crate::ImportClause) -> crate::ddlog_std::Vec<crate::Name>
+{   match (*clause) {
+        crate::ImportClause::WildcardImport{alias: crate::ddlog_std::Option::Some{x: ref alias}} => {
+                                                                                                        let ref mut __vec: crate::ddlog_std::Vec<crate::Name> = (*(&*crate::__STATIC_0)).clone();
+                                                                                                        crate::ddlog_std::push::<crate::internment::Intern<String>>(__vec, alias);
+                                                                                                        (*__vec).clone()
+                                                                                                    },
+        crate::ImportClause::GroupedImport{imports: ref imports} => crate::vec::filter_map::<crate::NamedImport, crate::internment::Intern<String>>(imports, (&{
+                                                                                                                                                                   (Box::new(closure::ClosureImpl{
+                                                                                                                                                                       description: "(function(named: NamedImport):ddlog_std::Option<Name>{(free_variable(named))})",
+                                                                                                                                                                       captured: (),
+                                                                                                                                                                       f: {
+                                                                                                                                                                              fn __f(__args:*const crate::NamedImport, __captured: &()) -> crate::ddlog_std::Option<crate::Name>
+                                                                                                                                                                              {
+                                                                                                                                                                                  let named = unsafe{&*__args};
+                                                                                                                                                                                  crate::free_variable(named)
+                                                                                                                                                                              }
+                                                                                                                                                                              __f
+                                                                                                                                                                          }
+                                                                                                                                                                   }) as Box<dyn closure::Closure<(*const crate::NamedImport), crate::ddlog_std::Option<crate::Name>>>)
+                                                                                                                                                               })),
+        crate::ImportClause::SingleImport{name: ref name} => {
+                                                                 let ref mut __vec: crate::ddlog_std::Vec<crate::Name> = (*(&*crate::__STATIC_0)).clone();
+                                                                 crate::ddlog_std::push::<crate::internment::Intern<String>>(__vec, name);
+                                                                 (*__vec).clone()
+                                                             },
+        _ => (*(&*crate::__STATIC_1)).clone()
+    }
+}
+pub fn or_else<T: crate::Val>(option: & crate::ddlog_std::Option<T>, option_b: & crate::ddlog_std::Option<T>) -> crate::ddlog_std::Option<T>
+{   match (*option) {
+        crate::ddlog_std::Option::Some{x: _} => (*option).clone(),
+        crate::ddlog_std::Option::None{} => (*option_b).clone()
     }
 }
 pub fn to_string(span: & crate::Span) -> String
@@ -3384,6 +3576,7 @@ pub fn to_string(span: & crate::Span) -> String
 ::differential_datalog::decl_ddval_convert!{crate::FunctionArg}
 ::differential_datalog::decl_ddval_convert!{crate::If}
 ::differential_datalog::decl_ddval_convert!{crate::ImplicitGlobal}
+::differential_datalog::decl_ddval_convert!{crate::ImportDecl}
 ::differential_datalog::decl_ddval_convert!{crate::InlineFunc}
 ::differential_datalog::decl_ddval_convert!{crate::InlineFuncParam}
 ::differential_datalog::decl_ddval_convert!{crate::InputScope}
@@ -3404,19 +3597,22 @@ pub fn to_string(span: & crate::Span) -> String
 ::differential_datalog::decl_ddval_convert!{crate::Ternary}
 ::differential_datalog::decl_ddval_convert!{crate::Throw}
 ::differential_datalog::decl_ddval_convert!{crate::Try}
+::differential_datalog::decl_ddval_convert!{crate::TypeofUndefinedAlwaysUndefined}
 ::differential_datalog::decl_ddval_convert!{crate::UnaryOp}
 ::differential_datalog::decl_ddval_convert!{crate::VarDecl}
 ::differential_datalog::decl_ddval_convert!{crate::VarUseBeforeDeclaration}
 ::differential_datalog::decl_ddval_convert!{crate::While}
 ::differential_datalog::decl_ddval_convert!{crate::With}
-::differential_datalog::decl_ddval_convert!{crate::WithinTypeOf}
+::differential_datalog::decl_ddval_convert!{crate::WithinTypeofExpr}
 ::differential_datalog::decl_ddval_convert!{crate::Yield}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::Scope, crate::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::Scope, crate::internment::Intern<String>>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::ExprId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::FuncId>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::ImportId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::internment::Intern<String>, crate::StmtId>}
+::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::ExprId, crate::internment::Intern<String>, crate::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ExprId, crate::ExprId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ExprId, crate::StmtId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ExprId, crate::internment::Intern<crate::Pattern>>}

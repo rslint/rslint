@@ -108,6 +108,7 @@ macro_rules! impl_id_traits {
 impl_id_traits! {
     Scope,
     GlobalId,
+    ImportId,
     ClassId,
     FuncId,
     StmtId,

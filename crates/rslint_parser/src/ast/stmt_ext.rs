@@ -275,8 +275,8 @@ impl Specifier {
         self.syntax().children().nth(1).and_then(|x| x.try_to())
     }
 
-    pub fn name(&self) -> Option<SyntaxNode> {
-        self.syntax().first_child()
+    pub fn name(&self) -> Option<Name> {
+        self.syntax().first_child().and_then(|name| name.try_to())
     }
 }
 

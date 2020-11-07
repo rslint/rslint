@@ -117,7 +117,7 @@ fn test_insert_non_existent_relation() {
     let result = running.insert(1, U64(42).into_ddvalue());
     assert_eq!(
         &result.unwrap_err(),
-        "apply_updates: unknown input relation 1"
+        "apply_update: unknown input relation 1"
     );
     running.transaction_commit().unwrap();
 }

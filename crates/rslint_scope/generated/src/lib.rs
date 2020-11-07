@@ -197,7 +197,7 @@ impl TryFrom<&RelIdentifier> for Relations {
 }
 
 
-decl_update_deserializer!(UpdateSerializer,(0, ::types::Array), (1, ::types::Arrow), (2, ::types::ArrowParam), (3, ::types::Assign), (4, ::types::Await), (5, ::types::BinOp), (6, ::types::BracketAccess), (7, ::types::Break), (8, ::types::Call), (9, ::types::ChildScope), (10, ::types::Class), (11, ::types::ClassExpr), (12, ::types::ClosestFunction), (13, ::types::ConstDecl), (14, ::types::Continue), (15, ::types::DoWhile), (16, ::types::DotAccess), (17, ::types::EveryScope), (18, ::types::ExprBigInt), (19, ::types::ExprBool), (20, ::types::ExprNumber), (21, ::types::ExprString), (22, ::types::Expression), (23, ::types::For), (24, ::types::ForIn), (25, ::types::Function), (26, ::types::FunctionArg), (27, ::types::Array), (28, ::types::Arrow), (29, ::types::ArrowParam), (30, ::types::Assign), (31, ::types::Await), (32, ::types::BinOp), (33, ::types::BracketAccess), (34, ::types::Break), (35, ::types::Call), (36, ::types::Class), (37, ::types::ClassExpr), (38, ::types::ConstDecl), (39, ::types::Continue), (40, ::types::DoWhile), (41, ::types::DotAccess), (42, ::types::EveryScope), (43, ::types::ExprBigInt), (44, ::types::ExprBool), (45, ::types::ExprNumber), (46, ::types::ExprString), (47, ::types::Expression), (48, ::types::For), (49, ::types::ForIn), (50, ::types::Function), (51, ::types::FunctionArg), (52, ::types::If), (53, ::types::ImplicitGlobal), (54, ::types::InlineFunc), (55, ::types::InlineFuncParam), (56, ::types::InputScope), (57, ::types::Label), (58, ::types::LetDecl), (59, ::types::NameRef), (60, ::types::New), (61, ::types::Property), (62, ::types::Return), (63, ::types::Statement), (64, ::types::Switch), (65, ::types::SwitchCase), (66, ::types::Template), (67, ::types::Ternary), (68, ::types::Throw), (69, ::types::Try), (70, ::types::UnaryOp), (71, ::types::VarDecl), (72, ::types::While), (73, ::types::With), (74, ::types::Yield), (75, ::types::If), (76, ::types::ImplicitGlobal), (77, ::types::InlineFunc), (78, ::types::InlineFuncParam), (79, ::types::InputScope), (80, ::types::InvalidNameUse), (81, ::types::Label), (82, ::types::LetDecl), (83, ::types::NameInScope), (84, ::types::NameRef), (85, ::types::New), (86, ::types::Property), (87, ::types::Return), (88, ::types::Statement), (89, ::types::Switch), (90, ::types::SwitchCase), (91, ::types::Template), (92, ::types::Ternary), (93, ::types::Throw), (94, ::types::Try), (95, ::types::UnaryOp), (96, ::types::VarDecl), (97, ::types::VarUseBeforeDeclaration), (98, ::types::While), (99, ::types::With), (100, ::types::WithinTypeOf), (101, ::types::Yield));
+decl_update_deserializer!(UpdateSerializer,(0, ::types::Array), (1, ::types::Arrow), (2, ::types::ArrowParam), (3, ::types::Assign), (4, ::types::Await), (5, ::types::BinOp), (6, ::types::BracketAccess), (7, ::types::Break), (8, ::types::Call), (9, ::types::ChildScope), (10, ::types::Class), (11, ::types::ClassExpr), (12, ::types::ClosestFunction), (13, ::types::ConstDecl), (14, ::types::Continue), (15, ::types::DoWhile), (16, ::types::DotAccess), (17, ::types::EveryScope), (18, ::types::ExprBigInt), (19, ::types::ExprBool), (20, ::types::ExprNumber), (21, ::types::ExprString), (22, ::types::Expression), (23, ::types::For), (24, ::types::ForIn), (25, ::types::Function), (26, ::types::FunctionArg), (27, ::types::Array), (28, ::types::Arrow), (29, ::types::ArrowParam), (30, ::types::Assign), (31, ::types::Await), (32, ::types::BinOp), (33, ::types::BracketAccess), (34, ::types::Break), (35, ::types::Call), (36, ::types::Class), (37, ::types::ClassExpr), (38, ::types::ConstDecl), (39, ::types::Continue), (40, ::types::DoWhile), (41, ::types::DotAccess), (42, ::types::EveryScope), (43, ::types::ExprBigInt), (44, ::types::ExprBool), (45, ::types::ExprNumber), (46, ::types::ExprString), (47, ::types::Expression), (48, ::types::For), (49, ::types::ForIn), (50, ::types::Function), (51, ::types::FunctionArg), (52, ::types::If), (53, ::types::ImplicitGlobal), (54, ::types::ImportDecl), (55, ::types::InlineFunc), (56, ::types::InlineFuncParam), (57, ::types::InputScope), (58, ::types::Label), (59, ::types::LetDecl), (60, ::types::NameRef), (61, ::types::New), (62, ::types::Property), (63, ::types::Return), (64, ::types::Statement), (65, ::types::Switch), (66, ::types::SwitchCase), (67, ::types::Template), (68, ::types::Ternary), (69, ::types::Throw), (70, ::types::Try), (71, ::types::UnaryOp), (72, ::types::VarDecl), (73, ::types::While), (74, ::types::With), (75, ::types::Yield), (76, ::types::If), (77, ::types::ImplicitGlobal), (78, ::types::ImportDecl), (79, ::types::InlineFunc), (80, ::types::InlineFuncParam), (81, ::types::InputScope), (82, ::types::InvalidNameUse), (83, ::types::Label), (84, ::types::LetDecl), (85, ::types::NameInScope), (86, ::types::NameRef), (87, ::types::New), (88, ::types::Property), (89, ::types::Return), (90, ::types::Statement), (91, ::types::Switch), (92, ::types::SwitchCase), (93, ::types::Template), (94, ::types::Ternary), (95, ::types::Throw), (96, ::types::Try), (97, ::types::TypeofUndefinedAlwaysUndefined), (98, ::types::UnaryOp), (99, ::types::VarDecl), (100, ::types::VarUseBeforeDeclaration), (101, ::types::While), (102, ::types::With), (103, ::types::WithinTypeofExpr), (104, ::types::Yield));
 impl TryFrom<&str> for Relations {
     type Error = ();
     fn try_from(rname: &str) -> ::std::result::Result<Self, ()> {
@@ -256,6 +256,7 @@ impl TryFrom<&str> for Relations {
         "INPUT_FunctionArg" => Ok(Relations::INPUT_FunctionArg),
         "INPUT_If" => Ok(Relations::INPUT_If),
         "INPUT_ImplicitGlobal" => Ok(Relations::INPUT_ImplicitGlobal),
+        "INPUT_ImportDecl" => Ok(Relations::INPUT_ImportDecl),
         "INPUT_InlineFunc" => Ok(Relations::INPUT_InlineFunc),
         "INPUT_InlineFuncParam" => Ok(Relations::INPUT_InlineFuncParam),
         "INPUT_InputScope" => Ok(Relations::INPUT_InputScope),
@@ -279,6 +280,7 @@ impl TryFrom<&str> for Relations {
         "INPUT_Yield" => Ok(Relations::INPUT_Yield),
         "If" => Ok(Relations::If),
         "ImplicitGlobal" => Ok(Relations::ImplicitGlobal),
+        "ImportDecl" => Ok(Relations::ImportDecl),
         "InlineFunc" => Ok(Relations::InlineFunc),
         "InlineFuncParam" => Ok(Relations::InlineFuncParam),
         "InputScope" => Ok(Relations::InputScope),
@@ -297,12 +299,13 @@ impl TryFrom<&str> for Relations {
         "Ternary" => Ok(Relations::Ternary),
         "Throw" => Ok(Relations::Throw),
         "Try" => Ok(Relations::Try),
+        "TypeofUndefinedAlwaysUndefined" => Ok(Relations::TypeofUndefinedAlwaysUndefined),
         "UnaryOp" => Ok(Relations::UnaryOp),
         "VarDecl" => Ok(Relations::VarDecl),
         "VarUseBeforeDeclaration" => Ok(Relations::VarUseBeforeDeclaration),
         "While" => Ok(Relations::While),
         "With" => Ok(Relations::With),
-        "WithinTypeOf" => Ok(Relations::WithinTypeOf),
+        "WithinTypeofExpr" => Ok(Relations::WithinTypeofExpr),
         "Yield" => Ok(Relations::Yield),
         "__Prefix_0" => Ok(Relations::__Prefix_0),
         "__Prefix_1" => Ok(Relations::__Prefix_1),
@@ -342,6 +345,7 @@ impl Relations {
         Relations::INPUT_FunctionArg => true,
         Relations::INPUT_If => true,
         Relations::INPUT_ImplicitGlobal => true,
+        Relations::INPUT_ImportDecl => true,
         Relations::INPUT_InlineFunc => true,
         Relations::INPUT_InlineFuncParam => true,
         Relations::INPUT_InputScope => true,
@@ -365,8 +369,9 @@ impl Relations {
         Relations::INPUT_Yield => true,
         Relations::InvalidNameUse => true,
         Relations::NameInScope => true,
+        Relations::TypeofUndefinedAlwaysUndefined => true,
         Relations::VarUseBeforeDeclaration => true,
-        Relations::WithinTypeOf => true,
+        Relations::WithinTypeofExpr => true,
             _  => false
         }
     }
@@ -401,6 +406,7 @@ impl Relations {
         Relations::FunctionArg => true,
         Relations::If => true,
         Relations::ImplicitGlobal => true,
+        Relations::ImportDecl => true,
         Relations::InlineFunc => true,
         Relations::InlineFuncParam => true,
         Relations::InputScope => true,
@@ -484,56 +490,59 @@ impl TryFrom<RelId> for Relations {
         51 => Ok(Relations::INPUT_FunctionArg),
         52 => Ok(Relations::INPUT_If),
         53 => Ok(Relations::INPUT_ImplicitGlobal),
-        54 => Ok(Relations::INPUT_InlineFunc),
-        55 => Ok(Relations::INPUT_InlineFuncParam),
-        56 => Ok(Relations::INPUT_InputScope),
-        57 => Ok(Relations::INPUT_Label),
-        58 => Ok(Relations::INPUT_LetDecl),
-        59 => Ok(Relations::INPUT_NameRef),
-        60 => Ok(Relations::INPUT_New),
-        61 => Ok(Relations::INPUT_Property),
-        62 => Ok(Relations::INPUT_Return),
-        63 => Ok(Relations::INPUT_Statement),
-        64 => Ok(Relations::INPUT_Switch),
-        65 => Ok(Relations::INPUT_SwitchCase),
-        66 => Ok(Relations::INPUT_Template),
-        67 => Ok(Relations::INPUT_Ternary),
-        68 => Ok(Relations::INPUT_Throw),
-        69 => Ok(Relations::INPUT_Try),
-        70 => Ok(Relations::INPUT_UnaryOp),
-        71 => Ok(Relations::INPUT_VarDecl),
-        72 => Ok(Relations::INPUT_While),
-        73 => Ok(Relations::INPUT_With),
-        74 => Ok(Relations::INPUT_Yield),
-        75 => Ok(Relations::If),
-        76 => Ok(Relations::ImplicitGlobal),
-        77 => Ok(Relations::InlineFunc),
-        78 => Ok(Relations::InlineFuncParam),
-        79 => Ok(Relations::InputScope),
-        80 => Ok(Relations::InvalidNameUse),
-        81 => Ok(Relations::Label),
-        82 => Ok(Relations::LetDecl),
-        83 => Ok(Relations::NameInScope),
-        84 => Ok(Relations::NameRef),
-        85 => Ok(Relations::New),
-        86 => Ok(Relations::Property),
-        87 => Ok(Relations::Return),
-        88 => Ok(Relations::Statement),
-        89 => Ok(Relations::Switch),
-        90 => Ok(Relations::SwitchCase),
-        91 => Ok(Relations::Template),
-        92 => Ok(Relations::Ternary),
-        93 => Ok(Relations::Throw),
-        94 => Ok(Relations::Try),
-        95 => Ok(Relations::UnaryOp),
-        96 => Ok(Relations::VarDecl),
-        97 => Ok(Relations::VarUseBeforeDeclaration),
-        98 => Ok(Relations::While),
-        99 => Ok(Relations::With),
-        100 => Ok(Relations::WithinTypeOf),
-        101 => Ok(Relations::Yield),
-        102 => Ok(Relations::__Prefix_0),
-        103 => Ok(Relations::__Prefix_1),
+        54 => Ok(Relations::INPUT_ImportDecl),
+        55 => Ok(Relations::INPUT_InlineFunc),
+        56 => Ok(Relations::INPUT_InlineFuncParam),
+        57 => Ok(Relations::INPUT_InputScope),
+        58 => Ok(Relations::INPUT_Label),
+        59 => Ok(Relations::INPUT_LetDecl),
+        60 => Ok(Relations::INPUT_NameRef),
+        61 => Ok(Relations::INPUT_New),
+        62 => Ok(Relations::INPUT_Property),
+        63 => Ok(Relations::INPUT_Return),
+        64 => Ok(Relations::INPUT_Statement),
+        65 => Ok(Relations::INPUT_Switch),
+        66 => Ok(Relations::INPUT_SwitchCase),
+        67 => Ok(Relations::INPUT_Template),
+        68 => Ok(Relations::INPUT_Ternary),
+        69 => Ok(Relations::INPUT_Throw),
+        70 => Ok(Relations::INPUT_Try),
+        71 => Ok(Relations::INPUT_UnaryOp),
+        72 => Ok(Relations::INPUT_VarDecl),
+        73 => Ok(Relations::INPUT_While),
+        74 => Ok(Relations::INPUT_With),
+        75 => Ok(Relations::INPUT_Yield),
+        76 => Ok(Relations::If),
+        77 => Ok(Relations::ImplicitGlobal),
+        78 => Ok(Relations::ImportDecl),
+        79 => Ok(Relations::InlineFunc),
+        80 => Ok(Relations::InlineFuncParam),
+        81 => Ok(Relations::InputScope),
+        82 => Ok(Relations::InvalidNameUse),
+        83 => Ok(Relations::Label),
+        84 => Ok(Relations::LetDecl),
+        85 => Ok(Relations::NameInScope),
+        86 => Ok(Relations::NameRef),
+        87 => Ok(Relations::New),
+        88 => Ok(Relations::Property),
+        89 => Ok(Relations::Return),
+        90 => Ok(Relations::Statement),
+        91 => Ok(Relations::Switch),
+        92 => Ok(Relations::SwitchCase),
+        93 => Ok(Relations::Template),
+        94 => Ok(Relations::Ternary),
+        95 => Ok(Relations::Throw),
+        96 => Ok(Relations::Try),
+        97 => Ok(Relations::TypeofUndefinedAlwaysUndefined),
+        98 => Ok(Relations::UnaryOp),
+        99 => Ok(Relations::VarDecl),
+        100 => Ok(Relations::VarUseBeforeDeclaration),
+        101 => Ok(Relations::While),
+        102 => Ok(Relations::With),
+        103 => Ok(Relations::WithinTypeofExpr),
+        104 => Ok(Relations::Yield),
+        105 => Ok(Relations::__Prefix_0),
+        106 => Ok(Relations::__Prefix_1),
              _  => Err(())
          }
     }
@@ -594,56 +603,59 @@ pub fn relid2name(rid: RelId) -> Option<&'static str> {
         51 => Some(&"INPUT_FunctionArg"),
         52 => Some(&"INPUT_If"),
         53 => Some(&"INPUT_ImplicitGlobal"),
-        54 => Some(&"INPUT_InlineFunc"),
-        55 => Some(&"INPUT_InlineFuncParam"),
-        56 => Some(&"INPUT_InputScope"),
-        57 => Some(&"INPUT_Label"),
-        58 => Some(&"INPUT_LetDecl"),
-        59 => Some(&"INPUT_NameRef"),
-        60 => Some(&"INPUT_New"),
-        61 => Some(&"INPUT_Property"),
-        62 => Some(&"INPUT_Return"),
-        63 => Some(&"INPUT_Statement"),
-        64 => Some(&"INPUT_Switch"),
-        65 => Some(&"INPUT_SwitchCase"),
-        66 => Some(&"INPUT_Template"),
-        67 => Some(&"INPUT_Ternary"),
-        68 => Some(&"INPUT_Throw"),
-        69 => Some(&"INPUT_Try"),
-        70 => Some(&"INPUT_UnaryOp"),
-        71 => Some(&"INPUT_VarDecl"),
-        72 => Some(&"INPUT_While"),
-        73 => Some(&"INPUT_With"),
-        74 => Some(&"INPUT_Yield"),
-        75 => Some(&"If"),
-        76 => Some(&"ImplicitGlobal"),
-        77 => Some(&"InlineFunc"),
-        78 => Some(&"InlineFuncParam"),
-        79 => Some(&"InputScope"),
-        80 => Some(&"InvalidNameUse"),
-        81 => Some(&"Label"),
-        82 => Some(&"LetDecl"),
-        83 => Some(&"NameInScope"),
-        84 => Some(&"NameRef"),
-        85 => Some(&"New"),
-        86 => Some(&"Property"),
-        87 => Some(&"Return"),
-        88 => Some(&"Statement"),
-        89 => Some(&"Switch"),
-        90 => Some(&"SwitchCase"),
-        91 => Some(&"Template"),
-        92 => Some(&"Ternary"),
-        93 => Some(&"Throw"),
-        94 => Some(&"Try"),
-        95 => Some(&"UnaryOp"),
-        96 => Some(&"VarDecl"),
-        97 => Some(&"VarUseBeforeDeclaration"),
-        98 => Some(&"While"),
-        99 => Some(&"With"),
-        100 => Some(&"WithinTypeOf"),
-        101 => Some(&"Yield"),
-        102 => Some(&"__Prefix_0"),
-        103 => Some(&"__Prefix_1"),
+        54 => Some(&"INPUT_ImportDecl"),
+        55 => Some(&"INPUT_InlineFunc"),
+        56 => Some(&"INPUT_InlineFuncParam"),
+        57 => Some(&"INPUT_InputScope"),
+        58 => Some(&"INPUT_Label"),
+        59 => Some(&"INPUT_LetDecl"),
+        60 => Some(&"INPUT_NameRef"),
+        61 => Some(&"INPUT_New"),
+        62 => Some(&"INPUT_Property"),
+        63 => Some(&"INPUT_Return"),
+        64 => Some(&"INPUT_Statement"),
+        65 => Some(&"INPUT_Switch"),
+        66 => Some(&"INPUT_SwitchCase"),
+        67 => Some(&"INPUT_Template"),
+        68 => Some(&"INPUT_Ternary"),
+        69 => Some(&"INPUT_Throw"),
+        70 => Some(&"INPUT_Try"),
+        71 => Some(&"INPUT_UnaryOp"),
+        72 => Some(&"INPUT_VarDecl"),
+        73 => Some(&"INPUT_While"),
+        74 => Some(&"INPUT_With"),
+        75 => Some(&"INPUT_Yield"),
+        76 => Some(&"If"),
+        77 => Some(&"ImplicitGlobal"),
+        78 => Some(&"ImportDecl"),
+        79 => Some(&"InlineFunc"),
+        80 => Some(&"InlineFuncParam"),
+        81 => Some(&"InputScope"),
+        82 => Some(&"InvalidNameUse"),
+        83 => Some(&"Label"),
+        84 => Some(&"LetDecl"),
+        85 => Some(&"NameInScope"),
+        86 => Some(&"NameRef"),
+        87 => Some(&"New"),
+        88 => Some(&"Property"),
+        89 => Some(&"Return"),
+        90 => Some(&"Statement"),
+        91 => Some(&"Switch"),
+        92 => Some(&"SwitchCase"),
+        93 => Some(&"Template"),
+        94 => Some(&"Ternary"),
+        95 => Some(&"Throw"),
+        96 => Some(&"Try"),
+        97 => Some(&"TypeofUndefinedAlwaysUndefined"),
+        98 => Some(&"UnaryOp"),
+        99 => Some(&"VarDecl"),
+        100 => Some(&"VarUseBeforeDeclaration"),
+        101 => Some(&"While"),
+        102 => Some(&"With"),
+        103 => Some(&"WithinTypeofExpr"),
+        104 => Some(&"Yield"),
+        105 => Some(&"__Prefix_0"),
+        106 => Some(&"__Prefix_1"),
        _  => None
    }
 }
@@ -652,7 +664,7 @@ pub fn relid2cname(rid: RelId) -> Option<&'static ::std::ffi::CStr> {
 }   /// A map of `RelId`s to their name as an `&'static str`
 pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(104, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(107, ::fnv::FnvBuildHasher::default());
         map.insert(Relations::Array, "Array");
         map.insert(Relations::Arrow, "Arrow");
         map.insert(Relations::ArrowParam, "ArrowParam");
@@ -707,6 +719,7 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
         map.insert(Relations::INPUT_FunctionArg, "INPUT_FunctionArg");
         map.insert(Relations::INPUT_If, "INPUT_If");
         map.insert(Relations::INPUT_ImplicitGlobal, "INPUT_ImplicitGlobal");
+        map.insert(Relations::INPUT_ImportDecl, "INPUT_ImportDecl");
         map.insert(Relations::INPUT_InlineFunc, "INPUT_InlineFunc");
         map.insert(Relations::INPUT_InlineFuncParam, "INPUT_InlineFuncParam");
         map.insert(Relations::INPUT_InputScope, "INPUT_InputScope");
@@ -730,6 +743,7 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
         map.insert(Relations::INPUT_Yield, "INPUT_Yield");
         map.insert(Relations::If, "If");
         map.insert(Relations::ImplicitGlobal, "ImplicitGlobal");
+        map.insert(Relations::ImportDecl, "ImportDecl");
         map.insert(Relations::InlineFunc, "InlineFunc");
         map.insert(Relations::InlineFuncParam, "InlineFuncParam");
         map.insert(Relations::InputScope, "InputScope");
@@ -748,12 +762,13 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
         map.insert(Relations::Ternary, "Ternary");
         map.insert(Relations::Throw, "Throw");
         map.insert(Relations::Try, "Try");
+        map.insert(Relations::TypeofUndefinedAlwaysUndefined, "TypeofUndefinedAlwaysUndefined");
         map.insert(Relations::UnaryOp, "UnaryOp");
         map.insert(Relations::VarDecl, "VarDecl");
         map.insert(Relations::VarUseBeforeDeclaration, "VarUseBeforeDeclaration");
         map.insert(Relations::While, "While");
         map.insert(Relations::With, "With");
-        map.insert(Relations::WithinTypeOf, "WithinTypeOf");
+        map.insert(Relations::WithinTypeofExpr, "WithinTypeofExpr");
         map.insert(Relations::Yield, "Yield");
         map.insert(Relations::__Prefix_0, "__Prefix_0");
         map.insert(Relations::__Prefix_1, "__Prefix_1");
@@ -762,7 +777,7 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
     /// A map of `RelId`s to their name as an `&'static CStr`
 pub static RELIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<RelId, &'static ::std::ffi::CStr>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(104, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(107, ::fnv::FnvBuildHasher::default());
         map.insert(0, ::std::ffi::CStr::from_bytes_with_nul(b"Array\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(1, ::std::ffi::CStr::from_bytes_with_nul(b"Arrow\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(2, ::std::ffi::CStr::from_bytes_with_nul(b"ArrowParam\0").expect("Unreachable: A null byte was specifically inserted"));
@@ -817,62 +832,65 @@ pub static RELIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<RelId, &'static 
         map.insert(51, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_FunctionArg\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(52, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_If\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(53, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_ImplicitGlobal\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(54, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_InlineFunc\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(55, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_InlineFuncParam\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(56, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_InputScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(57, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Label\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(58, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_LetDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(59, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_NameRef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(60, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_New\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(61, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Property\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(62, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Return\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(63, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Statement\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(64, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Switch\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(65, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_SwitchCase\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(66, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Template\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(67, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Ternary\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(68, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Throw\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(69, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Try\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(70, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_UnaryOp\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(71, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_VarDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(72, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_While\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(73, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_With\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(74, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Yield\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(75, ::std::ffi::CStr::from_bytes_with_nul(b"If\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(76, ::std::ffi::CStr::from_bytes_with_nul(b"ImplicitGlobal\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(77, ::std::ffi::CStr::from_bytes_with_nul(b"InlineFunc\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(78, ::std::ffi::CStr::from_bytes_with_nul(b"InlineFuncParam\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(79, ::std::ffi::CStr::from_bytes_with_nul(b"InputScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(80, ::std::ffi::CStr::from_bytes_with_nul(b"InvalidNameUse\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(81, ::std::ffi::CStr::from_bytes_with_nul(b"Label\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(82, ::std::ffi::CStr::from_bytes_with_nul(b"LetDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(83, ::std::ffi::CStr::from_bytes_with_nul(b"NameInScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(84, ::std::ffi::CStr::from_bytes_with_nul(b"NameRef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(85, ::std::ffi::CStr::from_bytes_with_nul(b"New\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(86, ::std::ffi::CStr::from_bytes_with_nul(b"Property\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(87, ::std::ffi::CStr::from_bytes_with_nul(b"Return\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(88, ::std::ffi::CStr::from_bytes_with_nul(b"Statement\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(89, ::std::ffi::CStr::from_bytes_with_nul(b"Switch\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(90, ::std::ffi::CStr::from_bytes_with_nul(b"SwitchCase\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(91, ::std::ffi::CStr::from_bytes_with_nul(b"Template\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(92, ::std::ffi::CStr::from_bytes_with_nul(b"Ternary\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(93, ::std::ffi::CStr::from_bytes_with_nul(b"Throw\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(94, ::std::ffi::CStr::from_bytes_with_nul(b"Try\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(95, ::std::ffi::CStr::from_bytes_with_nul(b"UnaryOp\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(96, ::std::ffi::CStr::from_bytes_with_nul(b"VarDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(97, ::std::ffi::CStr::from_bytes_with_nul(b"VarUseBeforeDeclaration\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(98, ::std::ffi::CStr::from_bytes_with_nul(b"While\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(99, ::std::ffi::CStr::from_bytes_with_nul(b"With\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(100, ::std::ffi::CStr::from_bytes_with_nul(b"WithinTypeOf\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(101, ::std::ffi::CStr::from_bytes_with_nul(b"Yield\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(102, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_0\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(103, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_1\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(54, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_ImportDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(55, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_InlineFunc\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(56, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_InlineFuncParam\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(57, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_InputScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(58, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Label\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(59, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_LetDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(60, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_NameRef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(61, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_New\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(62, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Property\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(63, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Return\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(64, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Statement\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(65, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Switch\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(66, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_SwitchCase\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(67, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Template\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(68, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Ternary\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(69, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Throw\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(70, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Try\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(71, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_UnaryOp\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(72, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_VarDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(73, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_While\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(74, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_With\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(75, ::std::ffi::CStr::from_bytes_with_nul(b"INPUT_Yield\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(76, ::std::ffi::CStr::from_bytes_with_nul(b"If\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(77, ::std::ffi::CStr::from_bytes_with_nul(b"ImplicitGlobal\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(78, ::std::ffi::CStr::from_bytes_with_nul(b"ImportDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(79, ::std::ffi::CStr::from_bytes_with_nul(b"InlineFunc\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(80, ::std::ffi::CStr::from_bytes_with_nul(b"InlineFuncParam\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(81, ::std::ffi::CStr::from_bytes_with_nul(b"InputScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(82, ::std::ffi::CStr::from_bytes_with_nul(b"InvalidNameUse\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(83, ::std::ffi::CStr::from_bytes_with_nul(b"Label\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(84, ::std::ffi::CStr::from_bytes_with_nul(b"LetDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(85, ::std::ffi::CStr::from_bytes_with_nul(b"NameInScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(86, ::std::ffi::CStr::from_bytes_with_nul(b"NameRef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(87, ::std::ffi::CStr::from_bytes_with_nul(b"New\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(88, ::std::ffi::CStr::from_bytes_with_nul(b"Property\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(89, ::std::ffi::CStr::from_bytes_with_nul(b"Return\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(90, ::std::ffi::CStr::from_bytes_with_nul(b"Statement\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(91, ::std::ffi::CStr::from_bytes_with_nul(b"Switch\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(92, ::std::ffi::CStr::from_bytes_with_nul(b"SwitchCase\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(93, ::std::ffi::CStr::from_bytes_with_nul(b"Template\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(94, ::std::ffi::CStr::from_bytes_with_nul(b"Ternary\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(95, ::std::ffi::CStr::from_bytes_with_nul(b"Throw\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(96, ::std::ffi::CStr::from_bytes_with_nul(b"Try\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(97, ::std::ffi::CStr::from_bytes_with_nul(b"TypeofUndefinedAlwaysUndefined\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(98, ::std::ffi::CStr::from_bytes_with_nul(b"UnaryOp\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(99, ::std::ffi::CStr::from_bytes_with_nul(b"VarDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(100, ::std::ffi::CStr::from_bytes_with_nul(b"VarUseBeforeDeclaration\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(101, ::std::ffi::CStr::from_bytes_with_nul(b"While\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(102, ::std::ffi::CStr::from_bytes_with_nul(b"With\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(103, ::std::ffi::CStr::from_bytes_with_nul(b"WithinTypeofExpr\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(104, ::std::ffi::CStr::from_bytes_with_nul(b"Yield\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(105, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_0\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(106, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_1\0").expect("Unreachable: A null byte was specifically inserted"));
         map
     });
     /// A map of input `Relations`s to their name as an `&'static str`
 pub static INPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(48, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(49, ::fnv::FnvBuildHasher::default());
         map.insert(Relations::Array, "Array");
         map.insert(Relations::Arrow, "Arrow");
         map.insert(Relations::ArrowParam, "ArrowParam");
@@ -900,6 +918,7 @@ pub static INPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, 
         map.insert(Relations::FunctionArg, "FunctionArg");
         map.insert(Relations::If, "If");
         map.insert(Relations::ImplicitGlobal, "ImplicitGlobal");
+        map.insert(Relations::ImportDecl, "ImportDecl");
         map.insert(Relations::InlineFunc, "InlineFunc");
         map.insert(Relations::InlineFuncParam, "InlineFuncParam");
         map.insert(Relations::InputScope, "InputScope");
@@ -926,7 +945,7 @@ pub static INPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, 
     /// A map of output `Relations`s to their name as an `&'static str`
 pub static OUTPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(54, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(56, ::fnv::FnvBuildHasher::default());
         map.insert(Relations::ChildScope, "ChildScope");
         map.insert(Relations::ClosestFunction, "ClosestFunction");
         map.insert(Relations::INPUT_Array, "INPUT_Array");
@@ -956,6 +975,7 @@ pub static OUTPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations,
         map.insert(Relations::INPUT_FunctionArg, "INPUT_FunctionArg");
         map.insert(Relations::INPUT_If, "INPUT_If");
         map.insert(Relations::INPUT_ImplicitGlobal, "INPUT_ImplicitGlobal");
+        map.insert(Relations::INPUT_ImportDecl, "INPUT_ImportDecl");
         map.insert(Relations::INPUT_InlineFunc, "INPUT_InlineFunc");
         map.insert(Relations::INPUT_InlineFuncParam, "INPUT_InlineFuncParam");
         map.insert(Relations::INPUT_InputScope, "INPUT_InputScope");
@@ -979,8 +999,9 @@ pub static OUTPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations,
         map.insert(Relations::INPUT_Yield, "INPUT_Yield");
         map.insert(Relations::InvalidNameUse, "InvalidNameUse");
         map.insert(Relations::NameInScope, "NameInScope");
+        map.insert(Relations::TypeofUndefinedAlwaysUndefined, "TypeofUndefinedAlwaysUndefined");
         map.insert(Relations::VarUseBeforeDeclaration, "VarUseBeforeDeclaration");
-        map.insert(Relations::WithinTypeOf, "WithinTypeOf");
+        map.insert(Relations::WithinTypeofExpr, "WithinTypeofExpr");
         map
     });
 impl TryFrom<&str> for Indexes {
@@ -1202,6 +1223,9 @@ pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::R
         Relations::INPUT_ImplicitGlobal => {
             Ok(<::types::ImplicitGlobal>::from_record(_rec)?.into_ddvalue())
         },
+        Relations::INPUT_ImportDecl => {
+            Ok(<::types::ImportDecl>::from_record(_rec)?.into_ddvalue())
+        },
         Relations::INPUT_InlineFunc => {
             Ok(<::types::InlineFunc>::from_record(_rec)?.into_ddvalue())
         },
@@ -1271,6 +1295,9 @@ pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::R
         Relations::ImplicitGlobal => {
             Ok(<::types::ImplicitGlobal>::from_record(_rec)?.into_ddvalue())
         },
+        Relations::ImportDecl => {
+            Ok(<::types::ImportDecl>::from_record(_rec)?.into_ddvalue())
+        },
         Relations::InlineFunc => {
             Ok(<::types::InlineFunc>::from_record(_rec)?.into_ddvalue())
         },
@@ -1325,6 +1352,9 @@ pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::R
         Relations::Try => {
             Ok(<::types::Try>::from_record(_rec)?.into_ddvalue())
         },
+        Relations::TypeofUndefinedAlwaysUndefined => {
+            Ok(<::types::TypeofUndefinedAlwaysUndefined>::from_record(_rec)?.into_ddvalue())
+        },
         Relations::UnaryOp => {
             Ok(<::types::UnaryOp>::from_record(_rec)?.into_ddvalue())
         },
@@ -1340,8 +1370,8 @@ pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::R
         Relations::With => {
             Ok(<::types::With>::from_record(_rec)?.into_ddvalue())
         },
-        Relations::WithinTypeOf => {
-            Ok(<::types::WithinTypeOf>::from_record(_rec)?.into_ddvalue())
+        Relations::WithinTypeofExpr => {
+            Ok(<::types::WithinTypeofExpr>::from_record(_rec)?.into_ddvalue())
         },
         Relations::Yield => {
             Ok(<::types::Yield>::from_record(_rec)?.into_ddvalue())
@@ -1377,10 +1407,10 @@ pub fn idxkey_from_record(idx: Indexes, _rec: &differential_datalog::record::Rec
 }
 pub fn indexes2arrid(idx: Indexes) -> ArrId {
     match idx {
-        Indexes::Index_InvalidNameUse => ( 80, 0),
-        Indexes::Index_VarUseBeforeDeclaration => ( 97, 0),
-        Indexes::Index_VariableInScope => ( 83, 3),
-        Indexes::Index_VariablesForScope => ( 83, 4),
+        Indexes::Index_InvalidNameUse => ( 82, 0),
+        Indexes::Index_VarUseBeforeDeclaration => ( 100, 0),
+        Indexes::Index_VariableInScope => ( 85, 3),
+        Indexes::Index_VariablesForScope => ( 85, 4),
     }
 }
 #[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
@@ -1439,56 +1469,59 @@ pub enum Relations {
     INPUT_FunctionArg = 51,
     INPUT_If = 52,
     INPUT_ImplicitGlobal = 53,
-    INPUT_InlineFunc = 54,
-    INPUT_InlineFuncParam = 55,
-    INPUT_InputScope = 56,
-    INPUT_Label = 57,
-    INPUT_LetDecl = 58,
-    INPUT_NameRef = 59,
-    INPUT_New = 60,
-    INPUT_Property = 61,
-    INPUT_Return = 62,
-    INPUT_Statement = 63,
-    INPUT_Switch = 64,
-    INPUT_SwitchCase = 65,
-    INPUT_Template = 66,
-    INPUT_Ternary = 67,
-    INPUT_Throw = 68,
-    INPUT_Try = 69,
-    INPUT_UnaryOp = 70,
-    INPUT_VarDecl = 71,
-    INPUT_While = 72,
-    INPUT_With = 73,
-    INPUT_Yield = 74,
-    If = 75,
-    ImplicitGlobal = 76,
-    InlineFunc = 77,
-    InlineFuncParam = 78,
-    InputScope = 79,
-    InvalidNameUse = 80,
-    Label = 81,
-    LetDecl = 82,
-    NameInScope = 83,
-    NameRef = 84,
-    New = 85,
-    Property = 86,
-    Return = 87,
-    Statement = 88,
-    Switch = 89,
-    SwitchCase = 90,
-    Template = 91,
-    Ternary = 92,
-    Throw = 93,
-    Try = 94,
-    UnaryOp = 95,
-    VarDecl = 96,
-    VarUseBeforeDeclaration = 97,
-    While = 98,
-    With = 99,
-    WithinTypeOf = 100,
-    Yield = 101,
-    __Prefix_0 = 102,
-    __Prefix_1 = 103
+    INPUT_ImportDecl = 54,
+    INPUT_InlineFunc = 55,
+    INPUT_InlineFuncParam = 56,
+    INPUT_InputScope = 57,
+    INPUT_Label = 58,
+    INPUT_LetDecl = 59,
+    INPUT_NameRef = 60,
+    INPUT_New = 61,
+    INPUT_Property = 62,
+    INPUT_Return = 63,
+    INPUT_Statement = 64,
+    INPUT_Switch = 65,
+    INPUT_SwitchCase = 66,
+    INPUT_Template = 67,
+    INPUT_Ternary = 68,
+    INPUT_Throw = 69,
+    INPUT_Try = 70,
+    INPUT_UnaryOp = 71,
+    INPUT_VarDecl = 72,
+    INPUT_While = 73,
+    INPUT_With = 74,
+    INPUT_Yield = 75,
+    If = 76,
+    ImplicitGlobal = 77,
+    ImportDecl = 78,
+    InlineFunc = 79,
+    InlineFuncParam = 80,
+    InputScope = 81,
+    InvalidNameUse = 82,
+    Label = 83,
+    LetDecl = 84,
+    NameInScope = 85,
+    NameRef = 86,
+    New = 87,
+    Property = 88,
+    Return = 89,
+    Statement = 90,
+    Switch = 91,
+    SwitchCase = 92,
+    Template = 93,
+    Ternary = 94,
+    Throw = 95,
+    Try = 96,
+    TypeofUndefinedAlwaysUndefined = 97,
+    UnaryOp = 98,
+    VarDecl = 99,
+    VarUseBeforeDeclaration = 100,
+    While = 101,
+    With = 102,
+    WithinTypeofExpr = 103,
+    Yield = 104,
+    __Prefix_0 = 105,
+    __Prefix_1 = 106
 }
 #[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
 pub enum Indexes {
@@ -2838,6 +2871,49 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        ],
                                    change_cb:    Some(sync::Arc::new(sync::Mutex::new(__update_cb.clone())))
                                };
+    let ImportDecl = Relation {
+                         name:         "ImportDecl".to_string(),
+                         input:        true,
+                         distinct:     false,
+                         caching_mode: CachingMode::Set,
+                         key_func:     None,
+                         id:           Relations::ImportDecl as RelId,
+                         rules:        vec![
+                             ],
+                         arrangements: vec![
+                             ],
+                         change_cb:    None
+                     };
+    let INPUT_ImportDecl = Relation {
+                               name:         "INPUT_ImportDecl".to_string(),
+                               input:        false,
+                               distinct:     false,
+                               caching_mode: CachingMode::Set,
+                               key_func:     None,
+                               id:           Relations::INPUT_ImportDecl as RelId,
+                               rules:        vec![
+                                   /* INPUT_ImportDecl[x] :- ImportDecl[(x: ImportDecl)]. */
+                                   Rule::CollectionRule {
+                                       description: "INPUT_ImportDecl[x] :- ImportDecl[(x: ImportDecl)].".to_string(),
+                                       rel: Relations::ImportDecl as RelId,
+                                       xform: Some(XFormCollection::FilterMap{
+                                                       description: "head of INPUT_ImportDecl[x] :- ImportDecl[(x: ImportDecl)]." .to_string(),
+                                                       fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
+                                                       {
+                                                           let ref x = match *unsafe {<::types::ImportDecl>::from_ddvalue_ref(&__v) } {
+                                                               ref x => (*x).clone(),
+                                                               _ => return None
+                                                           };
+                                                           Some(((*x).clone()).into_ddvalue())
+                                                       }
+                                                       __f},
+                                                       next: Box::new(None)
+                                                   })
+                                   }],
+                               arrangements: vec![
+                                   ],
+                               change_cb:    Some(sync::Arc::new(sync::Mutex::new(__update_cb.clone())))
+                           };
     let InlineFunc = Relation {
                          name:         "InlineFunc".to_string(),
                          input:        true,
@@ -3771,112 +3847,112 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                           ],
                       change_cb:    None
                   };
-    let WithinTypeOf = Relation {
-                           name:         "WithinTypeOf".to_string(),
-                           input:        false,
-                           distinct:     false,
-                           caching_mode: CachingMode::Set,
-                           key_func:     None,
-                           id:           Relations::WithinTypeOf as RelId,
-                           rules:        vec![
-                               /* WithinTypeOf[(WithinTypeOf{.type_of=type_of, .expr=expr}: WithinTypeOf)] :- UnaryOp[(UnaryOp{.expr_id=(type_of: ExprId), .op=(ddlog_std::Some{.x=(UnaryTypeof{}: UnaryOperand)}: ddlog_std::Option<UnaryOperand>), .expr=(ddlog_std::Some{.x=(expr: ExprId)}: ddlog_std::Option<ExprId>)}: UnaryOp)]. */
-                               Rule::CollectionRule {
-                                   description: "WithinTypeOf[(WithinTypeOf{.type_of=type_of, .expr=expr}: WithinTypeOf)] :- UnaryOp[(UnaryOp{.expr_id=(type_of: ExprId), .op=(ddlog_std::Some{.x=(UnaryTypeof{}: UnaryOperand)}: ddlog_std::Option<UnaryOperand>), .expr=(ddlog_std::Some{.x=(expr: ExprId)}: ddlog_std::Option<ExprId>)}: UnaryOp)].".to_string(),
-                                   rel: Relations::UnaryOp as RelId,
-                                   xform: Some(XFormCollection::FilterMap{
-                                                   description: "head of WithinTypeOf[(WithinTypeOf{.type_of=type_of, .expr=expr}: WithinTypeOf)] :- UnaryOp[(UnaryOp{.expr_id=(type_of: ExprId), .op=(ddlog_std::Some{.x=(UnaryTypeof{}: UnaryOperand)}: ddlog_std::Option<UnaryOperand>), .expr=(ddlog_std::Some{.x=(expr: ExprId)}: ddlog_std::Option<ExprId>)}: UnaryOp)]." .to_string(),
-                                                   fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
-                                                   {
-                                                       let (ref type_of, ref expr) = match *unsafe {<::types::UnaryOp>::from_ddvalue_ref(&__v) } {
-                                                           ::types::UnaryOp{expr_id: ref type_of, op: ::types::ddlog_std::Option::Some{x: ::types::UnaryOperand::UnaryTypeof{}}, expr: ::types::ddlog_std::Option::Some{x: ref expr}} => ((*type_of).clone(), (*expr).clone()),
-                                                           _ => return None
-                                                       };
-                                                       Some(((::types::WithinTypeOf{type_of: (*type_of).clone(), expr: (*expr).clone()})).into_ddvalue())
-                                                   }
-                                                   __f},
-                                                   next: Box::new(None)
-                                               })
-                               },
-                               /* WithinTypeOf[(WithinTypeOf{.type_of=type_of, .expr=grouped}: WithinTypeOf)] :- WithinTypeOf[(WithinTypeOf{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprGrouping{.inner=(ddlog_std::Some{.x=(grouped: ExprId)}: ddlog_std::Option<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)]. */
-                               Rule::ArrangementRule {
-                                   description: "WithinTypeOf[(WithinTypeOf{.type_of=type_of, .expr=grouped}: WithinTypeOf)] :- WithinTypeOf[(WithinTypeOf{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprGrouping{.inner=(ddlog_std::Some{.x=(grouped: ExprId)}: ddlog_std::Option<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)].".to_string(),
-                                   arr: ( Relations::WithinTypeOf as RelId, 1),
-                                   xform: XFormArrangement::Join{
-                                              description: "WithinTypeOf[(WithinTypeOf{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprGrouping{.inner=(ddlog_std::Some{.x=(grouped: ExprId)}: ddlog_std::Option<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)]".to_string(),
-                                              ffun: None,
-                                              arrangement: (Relations::Expression as RelId,2),
-                                              jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
-                                              {
-                                                  let (ref type_of, ref expr) = match *unsafe {<::types::WithinTypeOf>::from_ddvalue_ref(__v1) } {
-                                                      ::types::WithinTypeOf{type_of: ref type_of, expr: ref expr} => ((*type_of).clone(), (*expr).clone()),
-                                                      _ => return None
-                                                  };
-                                                  let ref grouped = match *unsafe {<::types::Expression>::from_ddvalue_ref(__v2) } {
-                                                      ::types::Expression{id: _, kind: ::types::ExprKind::ExprGrouping{inner: ::types::ddlog_std::Option::Some{x: ref grouped}}, scope: _, span: _} => (*grouped).clone(),
-                                                      _ => return None
-                                                  };
-                                                  Some(((::types::WithinTypeOf{type_of: (*type_of).clone(), expr: (*grouped).clone()})).into_ddvalue())
+    let WithinTypeofExpr = Relation {
+                               name:         "WithinTypeofExpr".to_string(),
+                               input:        false,
+                               distinct:     false,
+                               caching_mode: CachingMode::Set,
+                               key_func:     None,
+                               id:           Relations::WithinTypeofExpr as RelId,
+                               rules:        vec![
+                                   /* WithinTypeofExpr[(WithinTypeofExpr{.type_of=type_of, .expr=expr}: WithinTypeofExpr)] :- UnaryOp[(UnaryOp{.expr_id=(type_of: ExprId), .op=(ddlog_std::Some{.x=(UnaryTypeof{}: UnaryOperand)}: ddlog_std::Option<UnaryOperand>), .expr=(ddlog_std::Some{.x=(expr: ExprId)}: ddlog_std::Option<ExprId>)}: UnaryOp)]. */
+                                   Rule::CollectionRule {
+                                       description: "WithinTypeofExpr[(WithinTypeofExpr{.type_of=type_of, .expr=expr}: WithinTypeofExpr)] :- UnaryOp[(UnaryOp{.expr_id=(type_of: ExprId), .op=(ddlog_std::Some{.x=(UnaryTypeof{}: UnaryOperand)}: ddlog_std::Option<UnaryOperand>), .expr=(ddlog_std::Some{.x=(expr: ExprId)}: ddlog_std::Option<ExprId>)}: UnaryOp)].".to_string(),
+                                       rel: Relations::UnaryOp as RelId,
+                                       xform: Some(XFormCollection::FilterMap{
+                                                       description: "head of WithinTypeofExpr[(WithinTypeofExpr{.type_of=type_of, .expr=expr}: WithinTypeofExpr)] :- UnaryOp[(UnaryOp{.expr_id=(type_of: ExprId), .op=(ddlog_std::Some{.x=(UnaryTypeof{}: UnaryOperand)}: ddlog_std::Option<UnaryOperand>), .expr=(ddlog_std::Some{.x=(expr: ExprId)}: ddlog_std::Option<ExprId>)}: UnaryOp)]." .to_string(),
+                                                       fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
+                                                       {
+                                                           let (ref type_of, ref expr) = match *unsafe {<::types::UnaryOp>::from_ddvalue_ref(&__v) } {
+                                                               ::types::UnaryOp{expr_id: ref type_of, op: ::types::ddlog_std::Option::Some{x: ::types::UnaryOperand::UnaryTypeof{}}, expr: ::types::ddlog_std::Option::Some{x: ref expr}} => ((*type_of).clone(), (*expr).clone()),
+                                                               _ => return None
+                                                           };
+                                                           Some(((::types::WithinTypeofExpr{type_of: (*type_of).clone(), expr: (*expr).clone()})).into_ddvalue())
+                                                       }
+                                                       __f},
+                                                       next: Box::new(None)
+                                                   })
+                                   },
+                                   /* WithinTypeofExpr[(WithinTypeofExpr{.type_of=type_of, .expr=grouped}: WithinTypeofExpr)] :- WithinTypeofExpr[(WithinTypeofExpr{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprGrouping{.inner=(ddlog_std::Some{.x=(grouped: ExprId)}: ddlog_std::Option<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)]. */
+                                   Rule::ArrangementRule {
+                                       description: "WithinTypeofExpr[(WithinTypeofExpr{.type_of=type_of, .expr=grouped}: WithinTypeofExpr)] :- WithinTypeofExpr[(WithinTypeofExpr{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprGrouping{.inner=(ddlog_std::Some{.x=(grouped: ExprId)}: ddlog_std::Option<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)].".to_string(),
+                                       arr: ( Relations::WithinTypeofExpr as RelId, 1),
+                                       xform: XFormArrangement::Join{
+                                                  description: "WithinTypeofExpr[(WithinTypeofExpr{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprGrouping{.inner=(ddlog_std::Some{.x=(grouped: ExprId)}: ddlog_std::Option<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)]".to_string(),
+                                                  ffun: None,
+                                                  arrangement: (Relations::Expression as RelId,2),
+                                                  jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                  {
+                                                      let (ref type_of, ref expr) = match *unsafe {<::types::WithinTypeofExpr>::from_ddvalue_ref(__v1) } {
+                                                          ::types::WithinTypeofExpr{type_of: ref type_of, expr: ref expr} => ((*type_of).clone(), (*expr).clone()),
+                                                          _ => return None
+                                                      };
+                                                      let ref grouped = match *unsafe {<::types::Expression>::from_ddvalue_ref(__v2) } {
+                                                          ::types::Expression{id: _, kind: ::types::ExprKind::ExprGrouping{inner: ::types::ddlog_std::Option::Some{x: ref grouped}}, scope: _, span: _} => (*grouped).clone(),
+                                                          _ => return None
+                                                      };
+                                                      Some(((::types::WithinTypeofExpr{type_of: (*type_of).clone(), expr: (*grouped).clone()})).into_ddvalue())
+                                                  }
+                                                  __f},
+                                                  next: Box::new(None)
                                               }
-                                              __f},
-                                              next: Box::new(None)
-                                          }
-                               },
-                               /* WithinTypeOf[(WithinTypeOf{.type_of=type_of, .expr=last}: WithinTypeOf)] :- WithinTypeOf[(WithinTypeOf{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprSequence{.exprs=(sequence: ddlog_std::Vec<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)], ((ddlog_std::Some{.x=(var last: ExprId)}: ddlog_std::Option<ExprId>) = ((last: function(ddlog_std::Vec<ExprId>):ddlog_std::Option<ExprId>)(sequence))). */
-                               Rule::ArrangementRule {
-                                   description: "WithinTypeOf[(WithinTypeOf{.type_of=type_of, .expr=last}: WithinTypeOf)] :- WithinTypeOf[(WithinTypeOf{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprSequence{.exprs=(sequence: ddlog_std::Vec<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)], ((ddlog_std::Some{.x=(var last: ExprId)}: ddlog_std::Option<ExprId>) = ((last: function(ddlog_std::Vec<ExprId>):ddlog_std::Option<ExprId>)(sequence))).".to_string(),
-                                   arr: ( Relations::WithinTypeOf as RelId, 1),
-                                   xform: XFormArrangement::Join{
-                                              description: "WithinTypeOf[(WithinTypeOf{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprSequence{.exprs=(sequence: ddlog_std::Vec<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)]".to_string(),
-                                              ffun: None,
-                                              arrangement: (Relations::Expression as RelId,3),
-                                              jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
-                                              {
-                                                  let (ref type_of, ref expr) = match *unsafe {<::types::WithinTypeOf>::from_ddvalue_ref(__v1) } {
-                                                      ::types::WithinTypeOf{type_of: ref type_of, expr: ref expr} => ((*type_of).clone(), (*expr).clone()),
-                                                      _ => return None
-                                                  };
-                                                  let ref sequence = match *unsafe {<::types::Expression>::from_ddvalue_ref(__v2) } {
-                                                      ::types::Expression{id: _, kind: ::types::ExprKind::ExprSequence{exprs: ref sequence}, scope: _, span: _} => (*sequence).clone(),
-                                                      _ => return None
-                                                  };
-                                                  let ref last: ::types::ExprId = match ::types::last::<::types::ExprId>(sequence) {
-                                                      ::types::ddlog_std::Option::Some{x: last} => last,
-                                                      _ => return None
-                                                  };
-                                                  Some(((::types::WithinTypeOf{type_of: (*type_of).clone(), expr: (*last).clone()})).into_ddvalue())
+                                   },
+                                   /* WithinTypeofExpr[(WithinTypeofExpr{.type_of=type_of, .expr=last}: WithinTypeofExpr)] :- WithinTypeofExpr[(WithinTypeofExpr{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprSequence{.exprs=(sequence: ddlog_std::Vec<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)], ((ddlog_std::Some{.x=(var last: ExprId)}: ddlog_std::Option<ExprId>) = ((vec::last: function(ddlog_std::Vec<ExprId>):ddlog_std::Option<ExprId>)(sequence))). */
+                                   Rule::ArrangementRule {
+                                       description: "WithinTypeofExpr[(WithinTypeofExpr{.type_of=type_of, .expr=last}: WithinTypeofExpr)] :- WithinTypeofExpr[(WithinTypeofExpr{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprSequence{.exprs=(sequence: ddlog_std::Vec<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)], ((ddlog_std::Some{.x=(var last: ExprId)}: ddlog_std::Option<ExprId>) = ((vec::last: function(ddlog_std::Vec<ExprId>):ddlog_std::Option<ExprId>)(sequence))).".to_string(),
+                                       arr: ( Relations::WithinTypeofExpr as RelId, 1),
+                                       xform: XFormArrangement::Join{
+                                                  description: "WithinTypeofExpr[(WithinTypeofExpr{.type_of=(type_of: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprSequence{.exprs=(sequence: ddlog_std::Vec<ExprId>)}: ExprKind), .scope=(_: Scope), .span=(_: Span)}: Expression)]".to_string(),
+                                                  ffun: None,
+                                                  arrangement: (Relations::Expression as RelId,3),
+                                                  jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                  {
+                                                      let (ref type_of, ref expr) = match *unsafe {<::types::WithinTypeofExpr>::from_ddvalue_ref(__v1) } {
+                                                          ::types::WithinTypeofExpr{type_of: ref type_of, expr: ref expr} => ((*type_of).clone(), (*expr).clone()),
+                                                          _ => return None
+                                                      };
+                                                      let ref sequence = match *unsafe {<::types::Expression>::from_ddvalue_ref(__v2) } {
+                                                          ::types::Expression{id: _, kind: ::types::ExprKind::ExprSequence{exprs: ref sequence}, scope: _, span: _} => (*sequence).clone(),
+                                                          _ => return None
+                                                      };
+                                                      let ref last: ::types::ExprId = match ::types::vec::last::<::types::ExprId>(sequence) {
+                                                          ::types::ddlog_std::Option::Some{x: last} => last,
+                                                          _ => return None
+                                                      };
+                                                      Some(((::types::WithinTypeofExpr{type_of: (*type_of).clone(), expr: (*last).clone()})).into_ddvalue())
+                                                  }
+                                                  __f},
+                                                  next: Box::new(None)
                                               }
-                                              __f},
-                                              next: Box::new(None)
-                                          }
-                               }],
-                           arrangements: vec![
-                               Arrangement::Set{
-                                   name: r###"(WithinTypeOf{.type_of=(_: ExprId), .expr=(_0: ExprId)}: WithinTypeOf) /*antijoin*/"###.to_string(),
-                                   fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
-                                   {
-                                       match unsafe {< ::types::WithinTypeOf>::from_ddvalue(__v) } {
-                                           ::types::WithinTypeOf{type_of: _, expr: ref _0} => Some(((*_0).clone()).into_ddvalue()),
-                                           _ => None
+                                   }],
+                               arrangements: vec![
+                                   Arrangement::Set{
+                                       name: r###"(WithinTypeofExpr{.type_of=(_: ExprId), .expr=(_0: ExprId)}: WithinTypeofExpr) /*antijoin*/"###.to_string(),
+                                       fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
+                                       {
+                                           match unsafe {< ::types::WithinTypeofExpr>::from_ddvalue(__v) } {
+                                               ::types::WithinTypeofExpr{type_of: _, expr: ref _0} => Some(((*_0).clone()).into_ddvalue()),
+                                               _ => None
+                                           }
                                        }
-                                   }
-                                   __f},
-                                   distinct: true
-                               },
-                               Arrangement::Map{
-                                  name: r###"(WithinTypeOf{.type_of=(_: ExprId), .expr=(_0: ExprId)}: WithinTypeOf) /*join*/"###.to_string(),
-                                   afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                   {
-                                       let __cloned = __v.clone();
-                                       match unsafe {< ::types::WithinTypeOf>::from_ddvalue(__v) } {
-                                           ::types::WithinTypeOf{type_of: _, expr: ref _0} => Some(((*_0).clone()).into_ddvalue()),
-                                           _ => None
-                                       }.map(|x|(x,__cloned))
-                                   }
-                                   __f},
-                                   queryable: false
-                               }],
-                           change_cb:    Some(sync::Arc::new(sync::Mutex::new(__update_cb.clone())))
-                       };
+                                       __f},
+                                       distinct: true
+                                   },
+                                   Arrangement::Map{
+                                      name: r###"(WithinTypeofExpr{.type_of=(_: ExprId), .expr=(_0: ExprId)}: WithinTypeofExpr) /*join*/"###.to_string(),
+                                       afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                       {
+                                           let __cloned = __v.clone();
+                                           match unsafe {< ::types::WithinTypeofExpr>::from_ddvalue(__v) } {
+                                               ::types::WithinTypeofExpr{type_of: _, expr: ref _0} => Some(((*_0).clone()).into_ddvalue()),
+                                               _ => None
+                                           }.map(|x|(x,__cloned))
+                                       }
+                                       __f},
+                                       queryable: false
+                                   }],
+                               change_cb:    Some(sync::Arc::new(sync::Mutex::new(__update_cb.clone())))
+                           };
     let INPUT_UnaryOp = Relation {
                             name:         "INPUT_UnaryOp".to_string(),
                             input:        false,
@@ -4035,6 +4111,50 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                              __f},
                                              next: Box::new(None)
                                          }
+                              },
+                              /* NameInScope[(NameInScope{.name=name, .scope=scope, .declared_in=(AnyIdImport{.import_=id}: AnyId)}: NameInScope)] :- ImportDecl[(ImportDecl{.id=(id: ImportId), .clause=(clause: ImportClause)}: ImportDecl)], var name = FlatMap((free_variables(clause))), EveryScope[(EveryScope{.scope=(scope: Scope)}: EveryScope)]. */
+                              Rule::CollectionRule {
+                                  description: "NameInScope[(NameInScope{.name=name, .scope=scope, .declared_in=(AnyIdImport{.import_=id}: AnyId)}: NameInScope)] :- ImportDecl[(ImportDecl{.id=(id: ImportId), .clause=(clause: ImportClause)}: ImportDecl)], var name = FlatMap((free_variables(clause))), EveryScope[(EveryScope{.scope=(scope: Scope)}: EveryScope)].".to_string(),
+                                  rel: Relations::ImportDecl as RelId,
+                                  xform: Some(XFormCollection::FlatMap{
+                                                  description: "ImportDecl[(ImportDecl{.id=(id: ImportId), .clause=(clause: ImportClause)}: ImportDecl)], var name = FlatMap((free_variables(clause)))" .to_string(),
+                                                  fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
+                                                  {
+                                                      let (ref id, ref clause) = match *unsafe {<::types::ImportDecl>::from_ddvalue_ref(&__v) } {
+                                                          ::types::ImportDecl{id: ref id, clause: ref clause} => ((*id).clone(), (*clause).clone()),
+                                                          _ => return None
+                                                      };
+                                                      let __flattened = ::types::free_variables(clause);
+                                                      let id = (*id).clone();
+                                                      Some(Box::new(__flattened.into_iter().map(move |name|(::types::ddlog_std::tuple2(name.clone(), id.clone())).into_ddvalue())))
+                                                  }
+                                                  __f},
+                                                  next: Box::new(Some(XFormCollection::Arrange {
+                                                                          description: "arrange ImportDecl[(ImportDecl{.id=(id: ImportId), .clause=(clause: ImportClause)}: ImportDecl)], var name = FlatMap((free_variables(clause))) by ()" .to_string(),
+                                                                          afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                          {
+                                                                              let ::types::ddlog_std::tuple2(ref name, ref id) = *unsafe {<::types::ddlog_std::tuple2<::types::internment::Intern<String>, ::types::ImportId>>::from_ddvalue_ref( &__v ) };
+                                                                              Some(((()).into_ddvalue(), (::types::ddlog_std::tuple2((*name).clone(), (*id).clone())).into_ddvalue()))
+                                                                          }
+                                                                          __f},
+                                                                          next: Box::new(XFormArrangement::Join{
+                                                                                             description: "ImportDecl[(ImportDecl{.id=(id: ImportId), .clause=(clause: ImportClause)}: ImportDecl)], var name = FlatMap((free_variables(clause))), EveryScope[(EveryScope{.scope=(scope: Scope)}: EveryScope)]".to_string(),
+                                                                                             ffun: None,
+                                                                                             arrangement: (Relations::EveryScope as RelId,0),
+                                                                                             jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                             {
+                                                                                                 let ::types::ddlog_std::tuple2(ref name, ref id) = *unsafe {<::types::ddlog_std::tuple2<::types::internment::Intern<String>, ::types::ImportId>>::from_ddvalue_ref( __v1 ) };
+                                                                                                 let ref scope = match *unsafe {<::types::EveryScope>::from_ddvalue_ref(__v2) } {
+                                                                                                     ::types::EveryScope{scope: ref scope} => (*scope).clone(),
+                                                                                                     _ => return None
+                                                                                                 };
+                                                                                                 Some(((::types::NameInScope{name: (*name).clone(), scope: (*scope).clone(), declared_in: (::types::AnyId::AnyIdImport{import_: (*id).clone()})})).into_ddvalue())
+                                                                                             }
+                                                                                             __f},
+                                                                                             next: Box::new(None)
+                                                                                         })
+                                                                      }))
+                                              })
                               },
                               /* NameInScope[(NameInScope{.name=name, .scope=scope, .declared_in=(AnyIdClass{.class=class}: AnyId)}: NameInScope)] :- Class[(Class{.id=(class: ClassId), .name=(ddlog_std::Some{.x=(name: internment::Intern<string>)}: ddlog_std::Option<Name>), .parent=(_: ddlog_std::Option<ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<IClassElement>>), .scope=(scope: Scope)}: Class)]. */
                               Rule::CollectionRule {
@@ -4610,9 +4730,9 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                              key_func:     None,
                              id:           Relations::InvalidNameUse as RelId,
                              rules:        vec![
-                                 /* InvalidNameUse[(InvalidNameUse{.name=name, .scope=scope, .span=span}: InvalidNameUse)] :- NameRef[(NameRef{.expr_id=(expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], not WithinTypeOf[(WithinTypeOf{.type_of=(_: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)]. */
+                                 /* InvalidNameUse[(InvalidNameUse{.name=name, .scope=scope, .span=span}: InvalidNameUse)] :- NameRef[(NameRef{.expr_id=(expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)]. */
                                  Rule::ArrangementRule {
-                                     description: "InvalidNameUse[(InvalidNameUse{.name=name, .scope=scope, .span=span}: InvalidNameUse)] :- NameRef[(NameRef{.expr_id=(expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], not WithinTypeOf[(WithinTypeOf{.type_of=(_: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)].".to_string(),
+                                     description: "InvalidNameUse[(InvalidNameUse{.name=name, .scope=scope, .span=span}: InvalidNameUse)] :- NameRef[(NameRef{.expr_id=(expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)].".to_string(),
                                      arr: ( Relations::NameRef as RelId, 0),
                                      xform: XFormArrangement::Join{
                                                 description: "NameRef[(NameRef{.expr_id=(expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)]".to_string(),
@@ -4652,11 +4772,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                    }
                                                                                                                    __f},
                                                                                                                    next: Box::new(XFormArrangement::Antijoin {
-                                                                                                                                      description: "NameRef[(NameRef{.expr_id=(expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], not WithinTypeOf[(WithinTypeOf{.type_of=(_: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)]".to_string(),
+                                                                                                                                      description: "NameRef[(NameRef{.expr_id=(expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)]".to_string(),
                                                                                                                                       ffun: None,
-                                                                                                                                      arrangement: (Relations::WithinTypeOf as RelId,0),
+                                                                                                                                      arrangement: (Relations::WithinTypeofExpr as RelId,0),
                                                                                                                                       next: Box::new(Some(XFormCollection::FilterMap{
-                                                                                                                                                              description: "head of InvalidNameUse[(InvalidNameUse{.name=name, .scope=scope, .span=span}: InvalidNameUse)] :- NameRef[(NameRef{.expr_id=(expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], not WithinTypeOf[(WithinTypeOf{.type_of=(_: ExprId), .expr=(expr: ExprId)}: WithinTypeOf)]." .to_string(),
+                                                                                                                                                              description: "head of InvalidNameUse[(InvalidNameUse{.name=name, .scope=scope, .span=span}: InvalidNameUse)] :- NameRef[(NameRef{.expr_id=(expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ExprId), .expr=(expr: ExprId)}: WithinTypeofExpr)]." .to_string(),
                                                                                                                                                               fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                               {
                                                                                                                                                                   let ::types::ddlog_std::tuple3(ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple3<::types::internment::Intern<String>, ::types::Scope, ::types::Span>>::from_ddvalue_ref( &__v ) };
@@ -4687,6 +4807,80 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  }],
                              change_cb:    Some(sync::Arc::new(sync::Mutex::new(__update_cb.clone())))
                          };
+    let TypeofUndefinedAlwaysUndefined = Relation {
+                                             name:         "TypeofUndefinedAlwaysUndefined".to_string(),
+                                             input:        false,
+                                             distinct:     true,
+                                             caching_mode: CachingMode::Set,
+                                             key_func:     None,
+                                             id:           Relations::TypeofUndefinedAlwaysUndefined as RelId,
+                                             rules:        vec![
+                                                 /* TypeofUndefinedAlwaysUndefined[(TypeofUndefinedAlwaysUndefined{.whole_expr=whole_expr, .undefined_expr=undefined_expr}: TypeofUndefinedAlwaysUndefined)] :- NameRef[(NameRef{.expr_id=(undefined_expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(undefined_expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], WithinTypeofExpr[(WithinTypeofExpr{.type_of=(whole_expr: ExprId), .expr=(undefined_expr: ExprId)}: WithinTypeofExpr)]. */
+                                                 Rule::ArrangementRule {
+                                                     description: "TypeofUndefinedAlwaysUndefined[(TypeofUndefinedAlwaysUndefined{.whole_expr=whole_expr, .undefined_expr=undefined_expr}: TypeofUndefinedAlwaysUndefined)] :- NameRef[(NameRef{.expr_id=(undefined_expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(undefined_expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], WithinTypeofExpr[(WithinTypeofExpr{.type_of=(whole_expr: ExprId), .expr=(undefined_expr: ExprId)}: WithinTypeofExpr)].".to_string(),
+                                                     arr: ( Relations::NameRef as RelId, 0),
+                                                     xform: XFormArrangement::Join{
+                                                                description: "NameRef[(NameRef{.expr_id=(undefined_expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(undefined_expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)]".to_string(),
+                                                                ffun: None,
+                                                                arrangement: (Relations::Expression as RelId,0),
+                                                                jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                {
+                                                                    let (ref undefined_expr, ref name) = match *unsafe {<::types::NameRef>::from_ddvalue_ref(__v1) } {
+                                                                        ::types::NameRef{expr_id: ref undefined_expr, value: ref name} => ((*undefined_expr).clone(), (*name).clone()),
+                                                                        _ => return None
+                                                                    };
+                                                                    let (ref scope, ref span) = match *unsafe {<::types::Expression>::from_ddvalue_ref(__v2) } {
+                                                                        ::types::Expression{id: _, kind: ::types::ExprKind::ExprNameRef{}, scope: ref scope, span: ref span} => ((*scope).clone(), (*span).clone()),
+                                                                        _ => return None
+                                                                    };
+                                                                    Some((::types::ddlog_std::tuple3((*undefined_expr).clone(), (*name).clone(), (*scope).clone())).into_ddvalue())
+                                                                }
+                                                                __f},
+                                                                next: Box::new(Some(XFormCollection::Arrange {
+                                                                                        description: "arrange NameRef[(NameRef{.expr_id=(undefined_expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(undefined_expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)] by (name, scope)" .to_string(),
+                                                                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                        {
+                                                                                            let ::types::ddlog_std::tuple3(ref undefined_expr, ref name, ref scope) = *unsafe {<::types::ddlog_std::tuple3<::types::ExprId, ::types::internment::Intern<String>, ::types::Scope>>::from_ddvalue_ref( &__v ) };
+                                                                                            Some(((::types::ddlog_std::tuple2((*name).clone(), (*scope).clone())).into_ddvalue(), ((*undefined_expr).clone()).into_ddvalue()))
+                                                                                        }
+                                                                                        __f},
+                                                                                        next: Box::new(XFormArrangement::Antijoin {
+                                                                                                           description: "NameRef[(NameRef{.expr_id=(undefined_expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(undefined_expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)]".to_string(),
+                                                                                                           ffun: None,
+                                                                                                           arrangement: (Relations::NameInScope as RelId,0),
+                                                                                                           next: Box::new(Some(XFormCollection::Arrange {
+                                                                                                                                   description: "arrange NameRef[(NameRef{.expr_id=(undefined_expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(undefined_expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)] by (undefined_expr)" .to_string(),
+                                                                                                                                   afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                   {
+                                                                                                                                       let ref undefined_expr = *unsafe {<::types::ExprId>::from_ddvalue_ref( &__v ) };
+                                                                                                                                       Some((((*undefined_expr).clone()).into_ddvalue(), ((*undefined_expr).clone()).into_ddvalue()))
+                                                                                                                                   }
+                                                                                                                                   __f},
+                                                                                                                                   next: Box::new(XFormArrangement::Join{
+                                                                                                                                                      description: "NameRef[(NameRef{.expr_id=(undefined_expr: ExprId), .value=(name: internment::Intern<string>)}: NameRef)], Expression[(Expression{.id=(undefined_expr: ExprId), .kind=(ExprNameRef{}: ExprKind), .scope=(scope: Scope), .span=(span: Span)}: Expression)], not NameInScope[(NameInScope{.name=(name: internment::Intern<string>), .scope=(scope: Scope), .declared_in=(_: AnyId)}: NameInScope)], WithinTypeofExpr[(WithinTypeofExpr{.type_of=(whole_expr: ExprId), .expr=(undefined_expr: ExprId)}: WithinTypeofExpr)]".to_string(),
+                                                                                                                                                      ffun: None,
+                                                                                                                                                      arrangement: (Relations::WithinTypeofExpr as RelId,1),
+                                                                                                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                                                      {
+                                                                                                                                                          let ref undefined_expr = *unsafe {<::types::ExprId>::from_ddvalue_ref( __v1 ) };
+                                                                                                                                                          let ref whole_expr = match *unsafe {<::types::WithinTypeofExpr>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                              ::types::WithinTypeofExpr{type_of: ref whole_expr, expr: _} => (*whole_expr).clone(),
+                                                                                                                                                              _ => return None
+                                                                                                                                                          };
+                                                                                                                                                          Some(((::types::TypeofUndefinedAlwaysUndefined{whole_expr: (*whole_expr).clone(), undefined_expr: (*undefined_expr).clone()})).into_ddvalue())
+                                                                                                                                                      }
+                                                                                                                                                      __f},
+                                                                                                                                                      next: Box::new(None)
+                                                                                                                                                  })
+                                                                                                                               }))
+                                                                                                       })
+                                                                                    }))
+                                                            }
+                                                 }],
+                                             arrangements: vec![
+                                                 ],
+                                             change_cb:    Some(sync::Arc::new(sync::Mutex::new(__update_cb.clone())))
+                                         };
     let VarUseBeforeDeclaration = Relation {
                                       name:         "VarUseBeforeDeclaration".to_string(),
                                       input:        false,
@@ -4989,6 +5183,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
             ProgNode::Rel{rel: INPUT_If},
             ProgNode::Rel{rel: ImplicitGlobal},
             ProgNode::Rel{rel: INPUT_ImplicitGlobal},
+            ProgNode::Rel{rel: ImportDecl},
+            ProgNode::Rel{rel: INPUT_ImportDecl},
             ProgNode::Rel{rel: InlineFunc},
             ProgNode::Rel{rel: INPUT_InlineFunc},
             ProgNode::Rel{rel: InlineFuncParam},
@@ -5024,13 +5220,14 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
             ProgNode::Rel{rel: Try},
             ProgNode::Rel{rel: INPUT_Try},
             ProgNode::Rel{rel: UnaryOp},
-            ProgNode::SCC{rels: vec![RecursiveRelation{rel: WithinTypeOf, distinct: true}]},
+            ProgNode::SCC{rels: vec![RecursiveRelation{rel: WithinTypeofExpr, distinct: true}]},
             ProgNode::Rel{rel: INPUT_UnaryOp},
             ProgNode::Rel{rel: VarDecl},
             ProgNode::Rel{rel: INPUT_VarDecl},
             ProgNode::Rel{rel: __Prefix_1},
             ProgNode::SCC{rels: vec![RecursiveRelation{rel: NameInScope, distinct: true}]},
             ProgNode::Rel{rel: InvalidNameUse},
+            ProgNode::Rel{rel: TypeofUndefinedAlwaysUndefined},
             ProgNode::Rel{rel: VarUseBeforeDeclaration},
             ProgNode::Rel{rel: While},
             ProgNode::Rel{rel: INPUT_While},

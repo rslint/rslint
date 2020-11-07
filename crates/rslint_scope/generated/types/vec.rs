@@ -122,6 +122,9 @@ pub fn find<A: crate::Val>(v: & crate::ddlog_std::Vec<A>, f: & Box<dyn closure::
     };
     (crate::ddlog_std::Option::None{})
 }
+pub fn first<T: crate::Val>(vec: & crate::ddlog_std::Vec<T>) -> crate::ddlog_std::Option<T>
+{   crate::ddlog_std::nth_ddlog_std_Vec__X___Bitval64_ddlog_std_Option__X::<T>(vec, (&(0 as u64)))
+}
 pub fn flatmap<A: crate::Val,B: crate::Val>(v: & crate::ddlog_std::Vec<A>, f: & Box<dyn closure::Closure<*const A, crate::ddlog_std::Vec<B>>>) -> crate::ddlog_std::Vec<B>
 {   let ref mut res: crate::ddlog_std::Vec<B> = crate::ddlog_std::vec_empty();
     for x in v.iter() {
@@ -135,6 +138,9 @@ pub fn fold<A: crate::Val,B: crate::Val>(v: & crate::ddlog_std::Vec<A>, f: & Box
         (*res) = f.call((res, x))
     };
     (*res).clone()
+}
+pub fn last<T: crate::Val>(vec: & crate::ddlog_std::Vec<T>) -> crate::ddlog_std::Option<T>
+{   crate::ddlog_std::nth_ddlog_std_Vec__X___Bitval64_ddlog_std_Option__X::<T>(vec, (&(crate::ddlog_std::len_ddlog_std_Vec__X___Bitval64::<T>(vec).wrapping_sub((1 as u64)))))
 }
 pub fn map<A: crate::Val,B: crate::Val>(v: & crate::ddlog_std::Vec<A>, f: & Box<dyn closure::Closure<*const A, B>>) -> crate::ddlog_std::Vec<B>
 {   let ref mut res: crate::ddlog_std::Vec<B> = crate::ddlog_std::vec_with_capacity((&crate::ddlog_std::len_ddlog_std_Vec__X___Bitval64::<A>(v)));

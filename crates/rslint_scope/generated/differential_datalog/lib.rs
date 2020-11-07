@@ -4,8 +4,10 @@
     clippy::missing_safety_doc,
     clippy::type_complexity,
     clippy::match_like_matches_macro,
-    //match_like_matches_macro not supported in older versions of clippy
-    clippy::unknown_clippy_lints
+    // match_like_matches_macro not supported in older versions of clippy
+    clippy::unknown_clippy_lints,
+    // required because of a bug in older clippy (1.41).
+    clippy::useless_let_if_seq
 )]
 
 mod callback;

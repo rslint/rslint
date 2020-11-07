@@ -193,12 +193,12 @@ impl<'a> TestCase<'a> {
             for fact in facts.drain(..) {
                 let mut error = String::new();
 
-                let mut vars = self
+                let mut vars = dbg!(self
                     .harness
                     .datalog
                     .datalog
                     .variables_for_scope(Some(fact.scope))
-                    .unwrap();
+                    .unwrap());
                 vars.sort();
 
                 // FIXME: This is ugly as hell
@@ -226,6 +226,7 @@ impl<'a> TestCase<'a> {
                     *fact.name,
                     ast.text(),
                 ));
+                dbg!(ast.text(), fact);
             }
         }
 

@@ -59,6 +59,7 @@ version = "0.2"
 [dev-dependencies]
 
 [features]
+c_api = ["differential_datalog/c_api"]
 default = []
 
 [lib]
@@ -88,7 +89,6 @@ publish = true
 version = "0.1.0"
 
 [patch]
-
 
 
 [target]

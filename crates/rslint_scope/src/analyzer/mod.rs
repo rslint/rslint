@@ -1,4 +1,5 @@
 mod expr;
+mod module;
 mod stmt;
 mod visit;
 

@@ -134,6 +134,7 @@ pub struct DatalogInner {
     updates: RefCell<Vec<Update<DDValue>>>,
     scope_id: Cell<Scope>,
     global_id: Cell<GlobalId>,
+    import_id: Cell<ImportId>,
     class_id: Cell<ClassId>,
     function_id: Cell<FuncId>,
     statement_id: Cell<StmtId>,
@@ -147,6 +148,7 @@ impl DatalogInner {
             updates: RefCell::new(Vec::with_capacity(100)),
             scope_id: Cell::new(Scope::new(0)),
             global_id: Cell::new(GlobalId::new(0)),
+            import_id: Cell::new(ImportId::new(0)),
             class_id: Cell::new(ClassId::new(0)),
             function_id: Cell::new(FuncId::new(0)),
             statement_id: Cell::new(StmtId::new(0)),
@@ -160,6 +162,10 @@ impl DatalogInner {
 
     fn inc_global(&self) -> GlobalId {
         self.global_id.inc()
+    }
+
+    fn inc_import(&self) -> ImportId {
+        self.import_id.inc()
     }
 
     fn inc_class(&self) -> ClassId {
@@ -1643,6 +1649,15 @@ pub trait DatalogBuilder<'ddlog> {
         };
 
         (id, scope)
+    }
+
+    fn import_decl(&self, clauses: Vec<ImportClause>) {
+        let datalog = self.datalog();
+        let id = datalog.inc_import();
+
+        for clause in clauses {
+            datalog.insert(Relations::ImportDecl as RelId, ImportDecl { id, clause });
+        }
     }
 }
 

@@ -3,11 +3,11 @@ import vec
 #[has_side_effects]
 extern function debug(message: string)
 
-function last(vec: Vec<'T>): Option<'T> {
-    if (vec.is_empty()) {
-        None
-    } else {
-        vec.nth(vec.len() - 1)
+// TODO: Put in ddlog std
+function or_else(option: Option<'T>, option_b: Option<'T>): Option<'T> {
+    match (option) {
+        Some -> option,
+        None -> option_b
     }
 }
 
@@ -16,12 +16,14 @@ typedef Name = istring
 
 // Ids
 typedef GlobalId = GlobalId { id: u32 }
+typedef ImportId = ImportId { id: u32 }
 typedef ClassId = ClassId { id: u32 }
 typedef FuncId = FuncId { id: u32 }
 typedef StmtId = StmtId { id: u32 }
 typedef ExprId = ExprId { id: u32 }
 typedef AnyId =
     AnyIdGlobal { global: GlobalId }
+    | AnyIdImport { import_: ImportId }
     | AnyIdClass { class: ClassId }
     | AnyIdFunc { func: FuncId }
     | AnyIdStmt { stmt: StmtId }
@@ -52,7 +54,7 @@ function bound_vars(pat: IPattern): Vec<Name> {
         AssignPattern { Some { key }, _ } -> key.bound_vars(),
         ObjectPattern { props } -> props.flatmap(|prop| prop.bound_vars()),
         ArrayPattern { elems } -> elems.flatmap(|elem| elem.bound_vars()),
-        _ -> vec_empty()
+        _ -> vec_empty(),
     }
 }
 
@@ -68,7 +70,7 @@ function bound_vars(pat: IObjectPatternProp): Vec<Name> {
         ObjKeyValuePattern { _, Some { value }} -> value.bound_vars(),
         ObjRestPattern { Some { rest }} -> rest.bound_vars(),
         ObjSinglePattern { Some { name }} -> [name],
-        _ -> vec_empty()
+        _ -> vec_empty(),
     }
 }
 
@@ -220,6 +222,26 @@ typedef ClassElement =
 
 typedef IClassElement = Intern<ClassElement>
 
+typedef ImportClause =
+    WildcardImport { alias: Option<Name> }
+    | GroupedImport { imports: Vec<NamedImport> }
+    | SingleImport { name: Name }
+
+function free_variables(clause: ImportClause): Vec<Name> {
+    match (clause) {
+        WildcardImport { Some { alias }} -> [alias],
+        GroupedImport { imports } -> imports.filter_map(|named| named.free_variable()),
+        SingleImport { name } -> [name],
+        _ -> vec_empty(),
+    }
+}
+
+typedef NamedImport = NamedImport { name: Option<Name>, alias: Option<Name> }
+
+function free_variable(clause: NamedImport): Option<Name> {
+    clause.alias.or_else(clause.name)
+}
+
 // The input scope relationships, just map parent<-child for one generation
 // TODO: Scope spans, make clear if a span is implicit or explicit
 input relation InputScope(parent: Scope, child: Scope)
@@ -228,6 +250,15 @@ input relation EveryScope(scope: Scope)
 // Functions
 input relation Function(id: FuncId, name: Option<Name>, scope: Scope, body: Scope)
 input relation FunctionArg(parent_func: FuncId, pattern: IPattern)
+
+// Class declarations
+input relation Class(id: ClassId, name: Option<Name>, parent: Option<ExprId>, elements: Option<Vec<IClassElement>>, scope: Scope)
+
+// Imports
+input relation ImportDecl(id: ImportId, clause: ImportClause)
+
+// Globals
+input relation ImplicitGlobal(id: GlobalId, name: Name)
 
 // Statements
 input relation Statement(id: StmtId, kind: StmtKind, scope: Scope, span: Span)
@@ -276,12 +307,6 @@ input relation Assign(expr_id: ExprId, lhs: Option<Either<IPattern, ExprId>>, rh
 input relation InlineFunc(expr_id: ExprId, name: Option<Name>, body: Option<StmtId>)
 input relation InlineFuncParam(expr_id: ExprId, param: IPattern) // TODO: Inline this?
 input relation ClassExpr(expr_id: ExprId, elements: Option<Vec<IClassElement>>)
-
-// Class declarations
-input relation Class(id: ClassId, name: Option<Name>, parent: Option<ExprId>, elements: Option<Vec<IClassElement>>, scope: Scope)
-
-// Globals
-input relation ImplicitGlobal(id: GlobalId, name: Name)
 
 // Build the scope graph, unrolling the parent<-child relationships to full trees
 //
@@ -333,6 +358,12 @@ index Index_VariableInScope(scope: Scope, variable: Name) on NameInScope(variabl
 
 // Add implicit globals to every scope
 NameInScope(name, scope, AnyIdGlobal { global }) :- ImplicitGlobal(global, name), EveryScope(scope).
+
+// Import declarations
+NameInScope(name, scope, AnyIdImport { id }) :-
+    ImportDecl(id, clause),
+    var name = FlatMap(clause.free_variables()),
+    EveryScope(scope).
 
 // Class declarations
 //
@@ -504,20 +535,29 @@ NameInScope(name, scope, declared_in) :-
     NameInScope(name, interum, declared_in),
     ChildScope(interum, scope).
 
-relation WithinTypeOf(type_of: ExprId, expr: ExprId)
+relation WithinTypeofExpr(type_of: ExprId, expr: ExprId)
 // `typeof not_defined`
-WithinTypeOf(type_of, expr) :- UnaryOp(type_of, Some { UnaryTypeof }, Some { expr }).
+WithinTypeofExpr(type_of, expr) :- UnaryOp(type_of, Some { UnaryTypeof }, Some { expr }).
 
 // `typeof (not_defined)`
-WithinTypeOf(type_of, grouped) :-
-    WithinTypeOf(type_of, expr),
+WithinTypeofExpr(type_of, grouped) :-
+    WithinTypeofExpr(type_of, expr),
     Expression(expr, ExprGrouping { Some { grouped }}, _, _).
 
 // `typeof (defined, not_defined)`
-WithinTypeOf(type_of, last) :-
-    WithinTypeOf(type_of, expr),
+WithinTypeofExpr(type_of, last) :-
+    WithinTypeofExpr(type_of, expr),
     Expression(expr, ExprSequence { sequence }, _, _),
     Some { var last } = sequence.last().
+
+output relation TypeofUndefinedAlwaysUndefined(whole_expr: ExprId, undefined_expr: ExprId)
+TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
+    NameRef(undefined_expr, name),
+    Expression(undefined_expr, ExprNameRef, scope, span),
+    not NameInScope(name, scope, _),
+    // Expressions like `typeof not_undefined` are allowed under InvalidNameUse
+    // and are instead output through TypeofUndefinedAlwaysUndefined
+    WithinTypeofExpr(whole_expr, undefined_expr).
 
 // Variable usages (`let` and `const` predecls or undefined symbols) that don't
 // have an accompanying variable in scope are reported
@@ -528,7 +568,9 @@ InvalidNameUse(name, scope, span) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, scope, span),
     not NameInScope(name, scope, _),
-    not WithinTypeOf(_, expr).
+    // Expressions like `typeof not_undefined` are allowed under InvalidNameUse
+    // and are instead output through TypeofUndefinedAlwaysUndefined
+    not WithinTypeofExpr(_, expr).
 
 index Index_InvalidNameUse(name: Name) on InvalidNameUse(name, _, _)
 

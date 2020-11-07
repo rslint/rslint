@@ -8,6 +8,7 @@ default = []
 flatbuf = []
 # Use 32-bit instead of 16-bit nested timestamps.
 nested_ts_32 = []
+c_api = []
 
 [dependencies]
 differential-dataflow = "0.11.0"

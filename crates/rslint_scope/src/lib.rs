@@ -10,7 +10,10 @@ pub use datalog::{
 use analyzer::AnalyzerInner;
 use analyzer::Visit;
 use rslint_core::{CstRule, Rule, RuleCtx};
-use rslint_parser::{ast::Stmt, SyntaxNode, SyntaxNodeExt};
+use rslint_parser::{
+    ast::{Module, ModuleItem, Script},
+    SyntaxNode, SyntaxNodeExt,
+};
 use serde::{Deserialize, Serialize};
 use types::{InvalidNameUse, VarUseBeforeDeclaration};
 
@@ -65,9 +68,14 @@ impl ScopeAnalyzer {
         let analyzer = AnalyzerInner;
 
         self.datalog.transaction(|trans| {
+            debug_assert!(
+                syntax.is::<Script>() || syntax.is::<Module>(),
+                "expected a Script or a Module to be analyzed",
+            );
+
             let mut scope = trans.scope();
-            for stmt in syntax.children().filter_map(|node| node.try_to::<Stmt>()) {
-                if let (_stmt_id, Some(new_scope)) = analyzer.visit(&scope, stmt) {
+            for item in syntax.children().filter_map(|x| x.try_to::<ModuleItem>()) {
+                if let Some(new_scope) = analyzer.visit(&scope, item) {
                     scope = new_scope;
                 }
             }
