@@ -15,18 +15,20 @@
 pub(self) mod lexer;
 mod parser;
 
-use std::fmt;
-
 pub use self::parser::*;
 
 use crate::{rule_tests, CstRule, CstRuleStore, Diagnostic, SyntaxNode};
+use rslint_lexer::SyntaxKind;
 use rslint_parser::{util::*, SmolStr, TextRange, TextSize};
 
 // TODO: More complex warnings, things like ignoring node directives because of file level directives
 
 #[derive(Debug, Clone)]
 pub enum ComponentKind {
-    ///  This component is a rule name (e.g. `no-extra-boolean-cast` or `no-empty-block`)
+    /// This component is a rule name (e.g. `no-extra-boolean-cast` or `no-empty-block`)
+    ///
+    /// The directive parser will not verify if the rule name is valid. This has to be done
+    /// separately.
     RuleName(SmolStr),
     /// This component is the name of a directive command (e.g. `ignore`)
     CommandName(SmolStr),
@@ -76,8 +78,40 @@ pub enum Instruction {
     CommandName(&'static str),
     Literal(&'static str),
     Optional(Vec<Instruction>),
-    Repetition(Box<Instruction>, &'static str),
+    Repetition(Box<Instruction>, SyntaxKind),
     Either(Box<Instruction>, Box<Instruction>),
+}
+
+impl Instruction {
+    pub fn display(&self, pluralize: bool) -> String {
+        fn plural(pluralize: bool) -> &'static str {
+            if pluralize {
+                "s"
+            } else {
+                ""
+            }
+        }
+
+        match self {
+            Instruction::RuleName => format!("`rule name{}`", plural(pluralize)),
+            Instruction::Number => format!("`number{}`", plural(pluralize)),
+            Instruction::CommandName(name) => format!("`{}`", name),
+            Instruction::Literal(lit) => format!("`{}`", lit),
+            Instruction::Optional(list) => {
+                let one_of = list
+                    .iter()
+                    .map(|insn| insn.display(pluralize))
+                    .collect::<Vec<_>>();
+                format!("one of: {}", one_of.join(", "))
+            }
+            Instruction::Repetition(insn, _) => format!("list of {}", insn.display(pluralize)),
+            Instruction::Either(left, right) => format!(
+                "either {} or {}",
+                left.display(pluralize),
+                right.display(pluralize)
+            ),
+        }
+    }
 }
 
 /// Any command that is given to the linter using an inline comment.

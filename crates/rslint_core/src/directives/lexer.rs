@@ -55,8 +55,8 @@ impl<'source> Lexer<'source> {
     }
 
     pub fn expect(&mut self, kind: SyntaxKind) -> Result<Token, Diagnostic> {
-        match self.next() {
-            Some(tok) if tok.kind == kind => Ok(tok),
+        match self.peek() {
+            Some(tok) if tok.kind == kind => Ok(self.next().unwrap()),
             Some(tok) if tok.kind == SyntaxKind::EOF => {
                 let d = self
                     .err(&format!(
@@ -94,11 +94,22 @@ impl<'source> Lexer<'source> {
         })
     }
 
+    pub fn peek_with_spaces(&mut self) -> Option<Token> {
+        let (tok, _) = self.tokens.peek()?.clone();
+        let range = self.abs_range(tok.len);
+
+        Some(Token {
+            kind: tok.kind,
+            range,
+        })
+    }
+
     pub fn peek(&mut self) -> Option<Token> {
         let (tok, _) = self.tokens.peek()?.clone();
         let range = self.abs_range(tok.len);
         if tok.kind == SyntaxKind::WHITESPACE {
             self.tokens.next();
+            self.cur += tok.len;
             return self.peek();
         }
 
@@ -130,7 +141,7 @@ mod tests {
         assert_eq!(l.source_of(&t), "-");
         let t = l.next().unwrap();
         assert_eq!(l.source_of(&t), "ignore");
-        let t = l.next().unwrap();
+        let t = l.peek().unwrap();
         assert_eq!(l.source_of(&t), "foo");
     }
 }

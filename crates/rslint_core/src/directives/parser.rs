@@ -130,8 +130,7 @@ impl<'store> DirectiveParser<'store> {
         let mut components = vec![first_component];
 
         for insn in &cmd[1..] {
-            let component = self.parse_instruction(lexer, insn)?;
-            components.push(component);
+            components.extend(self.parse_instruction(lexer, insn)?);
         }
 
         Ok(components)
@@ -141,7 +140,7 @@ impl<'store> DirectiveParser<'store> {
         &mut self,
         lexer: &mut Lexer<'_>,
         insn: &Instruction,
-    ) -> Result<Component> {
+    ) -> Result<Vec<Component>> {
         match insn {
             Instruction::CommandName(_) => {
                 panic!("command name is only allowed as the first element")
@@ -162,10 +161,10 @@ impl<'store> DirectiveParser<'store> {
                         return Err(d);
                     }
                 };
-                Ok(Component {
+                Ok(vec![Component {
                     kind: ComponentKind::Number(num),
                     range: tok.range,
-                })
+                }])
             }
             Instruction::RuleName => {
                 fn is_rule_name(kind: SyntaxKind) -> bool {
@@ -173,44 +172,38 @@ impl<'store> DirectiveParser<'store> {
                 }
 
                 let first = lexer
-                    .next()
+                    .peek()
                     .filter(|tok| tok.kind != SyntaxKind::EOF)
                     .ok_or_else(|| {
                         self.err("expected rule name, but comment ends here")
                             .primary(lexer.abs_cur()..lexer.abs_cur() + 1, "")
                     })?;
                 if !is_rule_name(first.kind) {
-                    let d = self.err(&format!(
-                        "expected `identifier`, `-` or `keyword`, but found `{}`",
-                        format_kind(first.kind),
-                    ));
+                    let d = self
+                        .err(&format!(
+                            "expected `identifier`, `-` or `keyword`, but found `{}`",
+                            format_kind(first.kind),
+                        ))
+                        .primary(first.range, "");
                     return Err(d);
                 }
+                let first = lexer.next().unwrap();
                 let start = first.range.start();
 
-                while lexer.peek().map_or(false, |tok| is_rule_name(tok.kind)) {
+                while lexer
+                    .peek_with_spaces()
+                    .map_or(false, |tok| is_rule_name(tok.kind))
+                {
                     lexer.next();
                 }
 
                 let end = lexer.abs_cur() as u32;
                 let name_range = TextRange::new(start, end.into());
                 let name = lexer.source_range(name_range);
-                if self.store.get(name).is_none() {
-                    let mut d = self
-                        .err(&format!("invalid rule: `{}`", name))
-                        .primary(name_range, "");
-
-                    if let Some(suggestion) = get_rule_suggestion(name) {
-                        d = d.footer_help(format!("did you mean `{}`?", suggestion))
-                    }
-
-                    Err(d)
-                } else {
-                    Ok(Component {
-                        kind: ComponentKind::RuleName(name.into()),
-                        range: name_range,
-                    })
-                }
+                Ok(vec![Component {
+                    kind: ComponentKind::RuleName(name.into()),
+                    range: name_range,
+                }])
             }
             Instruction::Literal(lit) => {
                 let tok = lexer.expect(SyntaxKind::IDENT)?;
@@ -225,15 +218,47 @@ impl<'store> DirectiveParser<'store> {
                         .primary(tok.range, "");
                     Err(d)
                 } else {
-                    Ok(Component {
+                    Ok(vec![Component {
                         kind: ComponentKind::Literal(lit),
                         range: tok.range,
-                    })
+                    }])
                 }
             }
-            Instruction::Optional(_) => todo!(),
-            Instruction::Repetition(_, _) => todo!(),
-            Instruction::Either(_, _) => todo!(),
+            Instruction::Optional(insns) => {
+                let first = insns
+                    .first()
+                    .expect("every `Optional` instruction needs at least one element");
+                if let Ok(first) = self.parse_instruction(lexer, first) {
+                    let mut components = vec![];
+                    components.extend(first);
+
+                    for insn in insns.iter().skip(1) {
+                        components.extend(self.parse_instruction(lexer, insn)?);
+                    }
+
+                    Ok(components)
+                } else {
+                    Ok(vec![])
+                }
+            }
+            Instruction::Repetition(insn, separator) => {
+                let mut first = true;
+                let mut components = vec![];
+
+                while lexer.peek().map_or(false, |tok| tok.kind == *separator) || first {
+                    if first {
+                        first = false;
+                    } else {
+                        lexer.expect(*separator)?;
+                    }
+                    components.extend(self.parse_instruction(lexer, insn)?);
+                }
+
+                Ok(components)
+            }
+            Instruction::Either(left, right) => self
+                .parse_instruction(lexer, left)
+                .or_else(|_| self.parse_instruction(lexer, right)),
         }
     }
 }
