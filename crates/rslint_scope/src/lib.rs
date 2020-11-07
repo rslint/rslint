@@ -7,14 +7,14 @@ pub use datalog::{
     Datalog, DatalogBuilder, DatalogFunction, DatalogResult, DatalogScope, DatalogTransaction,
 };
 
-use analyzer::AnalyzerInner;
-use analyzer::Visit;
+use analyzer::{AnalyzerInner, Visit};
 use rslint_core::{CstRule, Rule, RuleCtx};
 use rslint_parser::{
     ast::{Module, ModuleItem, Script},
     SyntaxNode, SyntaxNodeExt,
 };
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 use types::{InvalidNameUse, VarUseBeforeDeclaration};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -103,5 +103,13 @@ impl CstRule for ScopeAnalyzer {
         }
 
         Some(())
+    }
+}
+
+impl Deref for ScopeAnalyzer {
+    type Target = Datalog;
+
+    fn deref(&self) -> &Self::Target {
+        &self.datalog
     }
 }

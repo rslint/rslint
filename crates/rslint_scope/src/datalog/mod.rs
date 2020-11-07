@@ -1,5 +1,7 @@
 mod derived_facts;
 
+pub use derived_facts::Outputs;
+
 use crate::globals::JsGlobal;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
@@ -42,6 +44,7 @@ impl From<isize> for Weight {
 #[derive(Debug, Clone)]
 pub struct Datalog {
     datalog: Arc<Mutex<DatalogInner>>,
+    outputs: Outputs,
 }
 
 impl Datalog {
@@ -49,9 +52,14 @@ impl Datalog {
         let (hddlog, _init_state) = HDDlog::run(2, false, |_: usize, _: &Record, _: isize| {})?;
         let this = Self {
             datalog: Arc::new(Mutex::new(DatalogInner::new(hddlog))),
+            outputs: Outputs::new(),
         };
 
         Ok(this)
+    }
+
+    pub fn outputs(&self) -> &Outputs {
+        &self.outputs
     }
 
     pub fn reset(&self) -> DatalogResult<()> {
@@ -62,6 +70,8 @@ impl Datalog {
 
             Ok(())
         })?;
+
+        self.outputs.clear();
 
         Ok(())
     }
@@ -115,7 +125,7 @@ impl Datalog {
 
         let mut trans = DatalogTransaction::new(&*datalog)?;
         let result = transaction(&mut trans)?;
-        trans.commit()?;
+        self.outputs.batch_update(trans.commit()?);
 
         Ok(result)
     }

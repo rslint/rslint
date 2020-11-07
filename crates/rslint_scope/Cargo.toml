@@ -12,6 +12,7 @@ rslint_parser = { path = "../rslint_parser", version = "0.2.1" }
 rslint_core = { path = "../rslint_core", version = "0.2.2" }
 serde = { version = "1.0.115", features = ["derive"] }
 typetag = "0.1.5"
+dashmap = "3.11.10"
 # Datalog types
 types = { path = "./generated/types" }
 # Datalog

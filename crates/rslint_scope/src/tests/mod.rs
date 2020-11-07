@@ -226,7 +226,6 @@ impl<'a> TestCase<'a> {
                     *fact.name,
                     ast.text(),
                 ));
-                dbg!(ast.text(), fact);
             }
         }
 
@@ -234,6 +233,7 @@ impl<'a> TestCase<'a> {
             self.harness.passing += 1;
         }
 
+        dbg!(self.harness.datalog.outputs());
         self.harness.datalog.datalog.reset().unwrap();
     }
 }

@@ -93,35 +93,14 @@ rule_test! {
     { "b = 1;", globals: ["b"] },
     { "var b = 1;", globals: ["b"] },
     { "Array = 1;" },
+    { "class A { constructor() { new.target; } }" },
+    { "var {bacon, ...others} = stuff; foo(others)", globals: ["stuff", "foo"] },
+    { "export * as ns from \"source\"", module: true },
+    { "import.meta", module: true },
 }
 
 /*
 ruleTester.run("no-undef", rule, {
-    valid: [
-        // new.target: https://github.com/eslint/eslint/issues/5420
-        { code: "class A { constructor() { new.target; } }", parserOptions: { ecmaVersion: 6 } },
-
-        // Rest property
-        {
-            code: "var {bacon, ...others} = stuff; foo(others)",
-            parserOptions: {
-                ecmaVersion: 2018
-            },
-            globals: { stuff: false, foo: false }
-        },
-
-        // export * as ns from "source"
-        {
-            code: 'export * as ns from "source"',
-            parserOptions: { ecmaVersion: 2020, sourceType: "module" }
-        },
-
-        // import.meta
-        {
-            code: "import.meta",
-            parserOptions: { ecmaVersion: 2020, sourceType: "module" }
-        }
-    ],
     invalid: [
         { code: "a = 1;", errors: [{ messageId: "undef", data: { name: "a" }, type: "Identifier" }] },
         { code: "if (typeof anUndefinedVar === 'string') {}", options: [{ typeof: true }], errors: [{ messageId: "undef", data: { name: "anUndefinedVar" }, type: "Identifier" }] },
