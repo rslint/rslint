@@ -51,6 +51,7 @@ finally{}
 - Stopped using `parse_marker` in many places
 - Switched the backing of `TokenSet` from `u128` to `[u128; 2]` to accommodate tokens with a value over 128
 - Changed `ClassBody.elements` to return an `AstChildren<ClassElement>` instead of an `Option<ClassElement>`
+- Made `Specifier::name()` return a `Name`
 
 ## [0.2.1] - 2020-10-20
 
