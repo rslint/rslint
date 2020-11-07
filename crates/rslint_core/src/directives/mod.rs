@@ -117,14 +117,20 @@ impl Instruction {
 /// Any command that is given to the linter using an inline comment.
 #[derive(Debug, Clone)]
 pub struct Directive {
-    comment: Comment,
-    components: Vec<Component>,
+    pub comment: Comment,
+    pub components: Vec<Component>,
+    pub node: Option<SyntaxNode>,
 }
 
 impl Directive {
     /// Finds the component which contains the given index in his span.
     pub fn component_at(&self, idx: TextSize) -> Option<&Component> {
         self.components.iter().find(|c| c.range.contains(idx))
+    }
+
+    /// Whether this command applies to the entire file.
+    pub fn top_level(&self) -> bool {
+        self.node.is_none()
     }
 }
 
@@ -134,10 +140,10 @@ impl Directive {
 /// This method furthermore issues more contextual warnings like disabling a rule after
 /// the entire file has been disabled.
 pub fn apply_top_level_directives(
-    _directives: &[Directive],
-    _store: &mut CstRuleStore,
-    _diagnostics: &mut Vec<Diagnostic>,
-    _file_id: usize,
+    directives: &[Directive],
+    store: &mut CstRuleStore,
+    diagnostics: &mut Vec<Diagnostic>,
+    file_id: usize,
 ) {
     todo!()
 }

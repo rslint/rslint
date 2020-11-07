@@ -1,11 +1,10 @@
 use super::{
     lexer::{format_kind, Lexer, Token},
-    Component, ComponentKind, CstRuleStore, Directive, Instruction,
+    Component, ComponentKind, Directive, Instruction,
 };
-use crate::get_rule_suggestion;
 use rslint_errors::Diagnostic;
 use rslint_lexer::{SyntaxKind, T};
-use rslint_parser::{util::Comment, JsNum, SyntaxNode, SyntaxToken, SyntaxTokenExt, TextRange};
+use rslint_parser::{util::Comment, JsNum, SyntaxNode, SyntaxTokenExt, TextRange};
 
 /// A string that denotes that start of a directive (`rslint-`).
 pub const DECLARATOR: &str = "rslint-";
@@ -13,33 +12,26 @@ pub const DECLARATOR: &str = "rslint-";
 pub type Command = Vec<Instruction>;
 pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
 
-pub struct DirectiveParser<'store> {
+pub struct DirectiveParser {
     /// The root node of a file, `SCRIPT` or `MODULE`.
     root: SyntaxNode,
     file_id: usize,
     commands: Vec<Command>,
-    store: &'store CstRuleStore,
 }
 
-impl<'store> DirectiveParser<'store> {
+impl DirectiveParser {
     /// Create a new `DirectivesParser` with a root of a file.
     ///
     /// # Panics
     ///
     /// If the given `root` is not `SCRIPT` or `MODULE`.
-    pub fn new(
-        root: SyntaxNode,
-        file_id: usize,
-        store: &'store CstRuleStore,
-        commands: Vec<Command>,
-    ) -> Self {
+    pub fn new(root: SyntaxNode, file_id: usize, commands: Vec<Command>) -> Self {
         assert!(matches!(
             root.kind(),
             SyntaxKind::SCRIPT | SyntaxKind::MODULE
         ));
 
         Self {
-            store,
             root,
             file_id,
             commands,
@@ -50,17 +42,34 @@ impl<'store> DirectiveParser<'store> {
         Diagnostic::error(self.file_id, "directives", msg)
     }
 
+    pub fn get_file_directives(&mut self) -> Result<Vec<Directive>> {
+        let mut directives = self.top_level_directives()?;
+
+        for descendant in self.root.descendants().skip(1) {
+            if let Some(comment) = descendant
+                .first_token()
+                .and_then(|tok| tok.comment())
+                .filter(|c| c.content.trim_start().starts_with(DECLARATOR))
+            {
+                let directive = self.parse_directive(comment, Some(descendant))?;
+                directives.push(directive);
+            }
+        }
+
+        Ok(directives)
+    }
+
     pub fn top_level_directives(&mut self) -> Result<Vec<Directive>> {
         self.root
             .children_with_tokens()
             .flat_map(|item| item.into_token()?.comment())
             .filter(|comment| comment.content.trim_start().starts_with(DECLARATOR))
-            .map(|comment| self.parse_directive(comment))
+            .map(|comment| self.parse_directive(comment, None))
             .collect::<Result<Vec<_>>>()
     }
 
     /// Parses a directive, based on all commands inside this `DirectivesParser`.
-    fn parse_directive(&mut self, comment: Comment) -> Result<Directive> {
+    fn parse_directive(&mut self, comment: Comment, node: Option<SyntaxNode>) -> Result<Directive> {
         let text = comment
             .content
             .trim_start()
@@ -118,6 +127,7 @@ impl<'store> DirectiveParser<'store> {
         Ok(Directive {
             comment,
             components,
+            node,
         })
     }
 

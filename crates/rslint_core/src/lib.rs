@@ -148,10 +148,10 @@ pub(crate) fn lint_file_inner(
             Either(Box::new(Literal("eof")), Box::new(Number)),
         ]),
     ];
-    let mut parser = DirectiveParser::new(node, file_id, store, vec![cmd]);
+    let results = DirectiveParser::new(node, file_id, store, vec![cmd]).get_file_directives()?;
 
-    println!("directive: {:?}", parser.top_level_directives()?);
-    Ok(todo!())
+    println!("directives: {:#?}", results);
+    todo!()
 
     //let mut new_store = store.clone();
     //let results = DirectiveParser::new(node.clone(), file_id, store).get_file_directives()?;
