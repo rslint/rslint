@@ -17,7 +17,24 @@ use std::{
     mem,
     sync::{Arc, Mutex},
 };
-use types::{ddlog_std::Either, internment::Intern, *};
+use types::{
+    ast::{
+        ArrayElement, AssignOperand, BinOperand, ClassId, ExprId, ExprKind, ForInit, FuncId,
+        GlobalId, IClassElement, IPattern, ImportClause, ImportId, Increment, LitKind, Name,
+        Pattern, PropertyKey, PropertyVal, Scope, StmtId, StmtKind, SwitchClause, TryHandler,
+        UnaryOperand,
+    },
+    ddlog_std::Either,
+    inputs::{
+        Array, Arrow, ArrowParam, Assign, Await, BinOp, BracketAccess, Break, Call, Class,
+        ClassExpr, ConstDecl, Continue, DoWhile, DotAccess, ExprBigInt, ExprBool, ExprNumber,
+        ExprString, Expression, For, ForIn, Function, FunctionArg, If, ImplicitGlobal, ImportDecl,
+        InlineFunc, InlineFuncParam, InputScope, Label, LetDecl, NameRef, New, Property, Return,
+        Statement, Switch, SwitchCase, Template, Ternary, Throw, Try, UnaryOp, VarDecl, While,
+        With, Yield,
+    },
+    internment::Intern,
+};
 
 // TODO: Work on the internment situation, I don't like
 //       having to allocate strings for idents
@@ -92,7 +109,7 @@ impl Datalog {
             trans
                 .datalog
                 .hddlog
-                .clear_relation(Relations::ImplicitGlobal as RelId)?;
+                .clear_relation(Relations::inputs_ImplicitGlobal as RelId)?;
 
             Ok(())
         })
@@ -222,13 +239,13 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         let scope_id = self.datalog.inc_scope();
         self.datalog
             .insert(
-                Relations::InputScope as RelId,
+                Relations::inputs_InputScope as RelId,
                 InputScope {
                     parent: scope_id,
                     child: scope_id,
                 },
             )
-            .insert(Relations::EveryScope as RelId, scope_id);
+            .insert(Relations::inputs_EveryScope as RelId, scope_id);
 
         DatalogScope {
             datalog: self.datalog,
@@ -240,7 +257,7 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
     fn implicit_global(&self, global: &JsGlobal) -> GlobalId {
         let id = self.datalog.inc_global();
         self.datalog.insert(
-            Relations::ImplicitGlobal as RelId,
+            Relations::inputs_ImplicitGlobal as RelId,
             ImplicitGlobal {
                 id,
                 name: Intern::new(global.name.to_string()),
@@ -278,8 +295,11 @@ pub trait DatalogBuilder<'ddlog> {
         debug_assert_ne!(parent, child);
 
         self.datalog()
-            .insert(Relations::InputScope as RelId, InputScope { parent, child })
-            .insert(Relations::EveryScope as RelId, child);
+            .insert(
+                Relations::inputs_InputScope as RelId,
+                InputScope { parent, child },
+            )
+            .insert(Relations::inputs_EveryScope as RelId, child);
 
         DatalogScope {
             datalog: self.datalog(),
@@ -299,7 +319,7 @@ pub trait DatalogBuilder<'ddlog> {
     fn implicit_global(&self, global: &JsGlobal) -> GlobalId {
         let id = self.datalog().inc_global();
         self.datalog().insert(
-            Relations::ImplicitGlobal as RelId,
+            Relations::inputs_ImplicitGlobal as RelId,
             ImplicitGlobal {
                 id,
                 name: Intern::new(global.name.to_string()),
@@ -316,7 +336,7 @@ pub trait DatalogBuilder<'ddlog> {
     ) -> (DatalogFunction<'ddlog>, DatalogScope<'ddlog>) {
         let body = self.scope();
         self.datalog().insert(
-            Relations::Function as RelId,
+            Relations::inputs_Function as RelId,
             Function {
                 id,
                 name: name.into(),
@@ -348,7 +368,7 @@ pub trait DatalogBuilder<'ddlog> {
 
             datalog
                 .insert(
-                    Relations::LetDecl as RelId,
+                    Relations::inputs_LetDecl as RelId,
                     LetDecl {
                         stmt_id,
                         pattern: pattern.into(),
@@ -356,7 +376,7 @@ pub trait DatalogBuilder<'ddlog> {
                     },
                 )
                 .insert(
-                    Relations::Statement as RelId,
+                    Relations::inputs_Statement as RelId,
                     Statement {
                         id: stmt_id,
                         kind: StmtKind::StmtLetDecl,
@@ -384,7 +404,7 @@ pub trait DatalogBuilder<'ddlog> {
 
             datalog
                 .insert(
-                    Relations::ConstDecl as RelId,
+                    Relations::inputs_ConstDecl as RelId,
                     ConstDecl {
                         stmt_id,
                         pattern: pattern.into(),
@@ -392,7 +412,7 @@ pub trait DatalogBuilder<'ddlog> {
                     },
                 )
                 .insert(
-                    Relations::Statement as RelId,
+                    Relations::inputs_Statement as RelId,
                     Statement {
                         id: stmt_id,
                         kind: StmtKind::StmtConstDecl,
@@ -420,7 +440,7 @@ pub trait DatalogBuilder<'ddlog> {
 
             datalog
                 .insert(
-                    Relations::VarDecl as RelId,
+                    Relations::inputs_VarDecl as RelId,
                     VarDecl {
                         stmt_id,
                         pattern: pattern.into(),
@@ -428,7 +448,7 @@ pub trait DatalogBuilder<'ddlog> {
                     },
                 )
                 .insert(
-                    Relations::Statement as RelId,
+                    Relations::inputs_Statement as RelId,
                     Statement {
                         id: stmt_id,
                         kind: StmtKind::StmtVarDecl,
@@ -449,14 +469,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Return as RelId,
+                Relations::inputs_Return as RelId,
                 Return {
                     stmt_id,
                     value: value.into(),
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtReturn,
@@ -480,7 +500,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::If as RelId,
+                Relations::inputs_If as RelId,
                 If {
                     stmt_id,
                     cond: cond.into(),
@@ -489,7 +509,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtIf,
@@ -501,20 +521,20 @@ pub trait DatalogBuilder<'ddlog> {
         stmt_id
     }
 
-    fn brk(&self, label: Option<String>, span: TextRange) -> StmtId {
+    fn brk(&self, label: Option<Name>, span: TextRange) -> StmtId {
         let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
             .insert(
-                Relations::Break as RelId,
+                Relations::inputs_Break as RelId,
                 Break {
                     stmt_id,
-                    label: label.as_ref().map(internment::intern).into(),
+                    label: label.into(),
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtBreak,
@@ -532,7 +552,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::DoWhile as RelId,
+                Relations::inputs_DoWhile as RelId,
                 DoWhile {
                     stmt_id,
                     body: body.into(),
@@ -540,7 +560,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtDoWhile,
@@ -558,15 +578,15 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::While as RelId,
-                DoWhile {
+                Relations::inputs_While as RelId,
+                While {
                     stmt_id,
                     cond: cond.into(),
                     body: body.into(),
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtWhile,
@@ -591,7 +611,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::For as RelId,
+                Relations::inputs_For as RelId,
                 For {
                     stmt_id,
                     init: init.into(),
@@ -601,7 +621,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtFor,
@@ -625,7 +645,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::ForIn as RelId,
+                Relations::inputs_ForIn as RelId,
                 ForIn {
                     stmt_id,
                     elem: elem.into(),
@@ -634,7 +654,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtForIn,
@@ -646,20 +666,20 @@ pub trait DatalogBuilder<'ddlog> {
         stmt_id
     }
 
-    fn cont(&self, label: Option<String>, span: TextRange) -> StmtId {
+    fn cont(&self, label: Option<Name>, span: TextRange) -> StmtId {
         let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
             .insert(
-                Relations::Continue as RelId,
+                Relations::inputs_Continue as RelId,
                 Continue {
                     stmt_id,
-                    label: label.as_ref().map(internment::intern).into(),
+                    label: label.into(),
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtContinue,
@@ -677,7 +697,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::With as RelId,
+                Relations::inputs_With as RelId,
                 With {
                     stmt_id,
                     cond: cond.into(),
@@ -685,7 +705,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtWith,
@@ -697,21 +717,21 @@ pub trait DatalogBuilder<'ddlog> {
         stmt_id
     }
 
-    fn label(&self, name: Option<String>, body: Option<StmtId>, span: TextRange) -> StmtId {
+    fn label(&self, name: Option<Name>, body: Option<StmtId>, span: TextRange) -> StmtId {
         let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
         datalog
             .insert(
-                Relations::Label as RelId,
+                Relations::inputs_Label as RelId,
                 Label {
                     stmt_id,
-                    name: name.as_ref().map(internment::intern).into(),
+                    name: name.into(),
                     body: body.into(),
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtLabel,
@@ -734,14 +754,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Switch as RelId,
+                Relations::inputs_Switch as RelId,
                 Switch {
                     stmt_id,
                     test: test.into(),
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtSwitch,
@@ -752,7 +772,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         for (case, body) in cases {
             datalog.insert(
-                Relations::SwitchCase as RelId,
+                Relations::inputs_SwitchCase as RelId,
                 SwitchCase {
                     stmt_id,
                     case,
@@ -770,14 +790,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Throw as RelId,
+                Relations::inputs_Throw as RelId,
                 Throw {
                     stmt_id,
                     exception: exception.into(),
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtThrow,
@@ -801,7 +821,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Try as RelId,
+                Relations::inputs_Try as RelId,
                 Try {
                     stmt_id,
                     body: body.into(),
@@ -810,7 +830,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Statement as RelId,
+                Relations::inputs_Statement as RelId,
                 Statement {
                     id: stmt_id,
                     kind: StmtKind::StmtTry,
@@ -827,7 +847,7 @@ pub trait DatalogBuilder<'ddlog> {
         let stmt_id = datalog.inc_statement();
 
         datalog.insert(
-            Relations::Statement as RelId,
+            Relations::inputs_Statement as RelId,
             Statement {
                 id: stmt_id,
                 kind: StmtKind::StmtDebugger,
@@ -844,7 +864,7 @@ pub trait DatalogBuilder<'ddlog> {
         let stmt_id = datalog.inc_statement();
 
         datalog.insert(
-            Relations::Statement as RelId,
+            Relations::inputs_Statement as RelId,
             Statement {
                 id: stmt_id,
                 kind: StmtKind::StmtExpr {
@@ -863,7 +883,7 @@ pub trait DatalogBuilder<'ddlog> {
         let stmt_id = datalog.inc_statement();
 
         datalog.insert(
-            Relations::Statement as RelId,
+            Relations::inputs_Statement as RelId,
             Statement {
                 id: stmt_id,
                 kind: StmtKind::StmtEmpty,
@@ -881,14 +901,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::ExprNumber as RelId,
+                Relations::inputs_ExprNumber as RelId,
                 ExprNumber {
                     expr_id,
                     value: number.into(),
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprLit {
@@ -908,14 +928,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::ExprNumber as RelId,
+                Relations::inputs_ExprNumber as RelId,
                 ExprBigInt {
                     expr_id,
                     value: Int::from_bigint(bigint),
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprLit {
@@ -929,20 +949,17 @@ pub trait DatalogBuilder<'ddlog> {
         expr_id
     }
 
-    fn string(&self, string: String, span: TextRange) -> ExprId {
+    fn string(&self, value: Name, span: TextRange) -> ExprId {
         let datalog = self.datalog();
         let expr_id = datalog.inc_expression();
 
         datalog
             .insert(
-                Relations::ExprString as RelId,
-                ExprString {
-                    expr_id,
-                    value: internment::intern(&string),
-                },
+                Relations::inputs_ExprString as RelId,
+                ExprString { expr_id, value },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprLit {
@@ -961,7 +978,7 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprLit {
@@ -981,14 +998,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::ExprBool as RelId,
+                Relations::inputs_ExprBool as RelId,
                 ExprBool {
                     expr_id,
                     value: boolean,
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprLit {
@@ -1008,7 +1025,7 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprLit {
@@ -1022,20 +1039,17 @@ pub trait DatalogBuilder<'ddlog> {
         expr_id
     }
 
-    fn name_ref(&self, name: String, span: TextRange) -> ExprId {
+    fn name_ref(&self, value: Name, span: TextRange) -> ExprId {
         let datalog = self.datalog();
         let expr_id = datalog.inc_expression();
 
         datalog
             .insert(
-                Relations::NameRef as RelId,
-                NameRef {
-                    expr_id,
-                    value: internment::intern(&name),
-                },
+                Relations::inputs_NameRef as RelId,
+                NameRef { expr_id, value },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprNameRef,
@@ -1053,14 +1067,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Yield as RelId,
+                Relations::inputs_Yield as RelId,
                 Yield {
                     expr_id,
                     value: value.into(),
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprYield,
@@ -1078,14 +1092,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Await as RelId,
+                Relations::inputs_Await as RelId,
                 Await {
                     expr_id,
                     value: value.into(),
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprAwait,
@@ -1108,14 +1122,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Arrow as RelId,
+                Relations::inputs_Arrow as RelId,
                 Arrow {
                     expr_id,
                     body: body.into(),
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprArrow,
@@ -1126,7 +1140,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         for param in params {
             datalog.insert(
-                Relations::ArrowParam as RelId,
+                Relations::inputs_ArrowParam as RelId,
                 ArrowParam { expr_id, param },
             );
         }
@@ -1140,7 +1154,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::UnaryOp as RelId,
+                Relations::inputs_UnaryOp as RelId,
                 UnaryOp {
                     expr_id,
                     op: op.into(),
@@ -1148,7 +1162,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprUnaryOp,
@@ -1172,7 +1186,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::BinOp as RelId,
+                Relations::inputs_BinOp as RelId,
                 BinOp {
                     expr_id,
                     op: op.into(),
@@ -1181,7 +1195,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprBinOp,
@@ -1205,7 +1219,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Ternary as RelId,
+                Relations::inputs_Ternary as RelId,
                 Ternary {
                     expr_id,
                     test: test.into(),
@@ -1214,7 +1228,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprTernary,
@@ -1231,7 +1245,7 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprThis,
@@ -1249,7 +1263,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Template as RelId,
+                Relations::inputs_Template as RelId,
                 Template {
                     expr_id,
                     tag: tag.into(),
@@ -1257,7 +1271,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprTemplate,
@@ -1275,14 +1289,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Array as RelId,
+                Relations::inputs_Array as RelId,
                 Array {
                     expr_id,
                     elements: elements.into(),
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprArray,
@@ -1304,7 +1318,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         for (key, val) in properties {
             datalog.insert(
-                Relations::Property as RelId,
+                Relations::inputs_Property as RelId,
                 Property {
                     expr_id,
                     key: key.into(),
@@ -1314,7 +1328,7 @@ pub trait DatalogBuilder<'ddlog> {
         }
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprObject,
@@ -1331,7 +1345,7 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprGrouping {
@@ -1351,7 +1365,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::BracketAccess as RelId,
+                Relations::inputs_BracketAccess as RelId,
                 BracketAccess {
                     expr_id,
                     object: object.into(),
@@ -1359,7 +1373,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprBracket,
@@ -1377,7 +1391,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::DotAccess as RelId,
+                Relations::inputs_DotAccess as RelId,
                 DotAccess {
                     expr_id,
                     object: object.into(),
@@ -1385,7 +1399,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprDot,
@@ -1403,7 +1417,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::New as RelId,
+                Relations::inputs_New as RelId,
                 New {
                     expr_id,
                     object: object.into(),
@@ -1411,7 +1425,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprNew,
@@ -1429,7 +1443,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Call as RelId,
+                Relations::inputs_Call as RelId,
                 Call {
                     expr_id,
                     callee: callee.into(),
@@ -1437,7 +1451,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprCall,
@@ -1461,7 +1475,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::Assign as RelId,
+                Relations::inputs_Assign as RelId,
                 Assign {
                     expr_id,
                     lhs: lhs.into(),
@@ -1470,7 +1484,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprAssign,
@@ -1487,7 +1501,7 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprSequence {
@@ -1506,7 +1520,7 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprNewTarget,
@@ -1523,7 +1537,7 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprImportMeta,
@@ -1547,7 +1561,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::InlineFunc as RelId,
+                Relations::inputs_InlineFunc as RelId,
                 InlineFunc {
                     expr_id,
                     name: name.into(),
@@ -1555,7 +1569,7 @@ pub trait DatalogBuilder<'ddlog> {
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprInlineFunc,
@@ -1566,7 +1580,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         for param in params {
             datalog.insert(
-                Relations::InlineFuncParam as RelId,
+                Relations::inputs_InlineFuncParam as RelId,
                 InlineFuncParam { expr_id, param },
             );
         }
@@ -1579,7 +1593,7 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprSuperCall {
@@ -1597,7 +1611,7 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog.insert(
-            Relations::Expression as RelId,
+            Relations::inputs_Expression as RelId,
             Expression {
                 id: expr_id,
                 kind: ExprKind::ExprImportCall { arg: arg.into() },
@@ -1614,14 +1628,14 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::ClassExpr as RelId,
+                Relations::inputs_ClassExpr as RelId,
                 ClassExpr {
                     expr_id,
                     elements: elements.map(Into::into).into(),
                 },
             )
             .insert(
-                Relations::Expression as RelId,
+                Relations::inputs_Expression as RelId,
                 Expression {
                     id: expr_id,
                     kind: ExprKind::ExprClass,
@@ -1645,7 +1659,7 @@ pub trait DatalogBuilder<'ddlog> {
             let id = datalog.inc_class();
 
             datalog.insert(
-                Relations::Class as RelId,
+                Relations::inputs_Class as RelId,
                 Class {
                     id,
                     name: name.into(),
@@ -1666,7 +1680,10 @@ pub trait DatalogBuilder<'ddlog> {
         let id = datalog.inc_import();
 
         for clause in clauses {
-            datalog.insert(Relations::ImportDecl as RelId, ImportDecl { id, clause });
+            datalog.insert(
+                Relations::inputs_ImportDecl as RelId,
+                ImportDecl { id, clause },
+            );
         }
     }
 }
@@ -1686,7 +1703,7 @@ impl<'ddlog> DatalogFunction<'ddlog> {
 
     pub fn argument(&self, pattern: Intern<Pattern>) {
         self.datalog.insert(
-            Relations::FunctionArg as RelId,
+            Relations::inputs_FunctionArg as RelId,
             FunctionArg {
                 parent_func: self.func_id(),
                 pattern,

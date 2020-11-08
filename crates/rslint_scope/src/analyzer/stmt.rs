@@ -10,7 +10,11 @@ use rslint_core::rule_prelude::{
     },
     AstNode, SyntaxNodeExt,
 };
-use types::{ClassId, ForInit, FuncId, StmtId, SwitchClause, TryHandler, IMPLICIT_ARGUMENTS};
+use types::{
+    ast::{ClassId, ForInit, FuncId, StmtId, SwitchClause, TryHandler},
+    internment::Intern,
+    IMPLICIT_ARGUMENTS,
+};
 
 impl<'ddlog> Visit<'ddlog, Stmt> for AnalyzerInner {
     type Output = (Option<StmtId>, Option<DatalogScope<'ddlog>>);
@@ -190,7 +194,10 @@ impl<'ddlog> Visit<'ddlog, BreakStmt> for AnalyzerInner {
     type Output = StmtId;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, brk: BreakStmt) -> Self::Output {
-        let label = brk.ident_token().map(|label| label.to_string());
+        let label = brk
+            .ident_token()
+            .map(|label| Intern::new(label.to_string()));
+
         scope.brk(label, brk.range())
     }
 }
@@ -292,7 +299,10 @@ impl<'ddlog> Visit<'ddlog, ContinueStmt> for AnalyzerInner {
     type Output = StmtId;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, cont: ContinueStmt) -> Self::Output {
-        let label = cont.ident_token().map(|label| label.to_string());
+        let label = cont
+            .ident_token()
+            .map(|label| Intern::new(label.to_string()));
+
         scope.cont(label, cont.range())
     }
 }
@@ -314,7 +324,7 @@ impl<'ddlog> Visit<'ddlog, LabelledStmt> for AnalyzerInner {
     type Output = StmtId;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, label: LabelledStmt) -> Self::Output {
-        let name = label.label().map(|name| name.to_string());
+        let name = self.visit(scope, label.label());
         let body = label.stmt().and_then(|stmt| self.visit(scope, stmt).0);
 
         scope.label(name, body, label.range())

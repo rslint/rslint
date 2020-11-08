@@ -1,0 +1,10 @@
+#[has_side_effects]
+extern function debug(message: string)
+
+// TODO: Put in ddlog std
+function or_else(option: Option<'T>, option_b: Option<'T>): Option<'T> {
+    match (option) {
+        Some -> option,
+        None -> option_b
+    }
+}

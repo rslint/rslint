@@ -11,8 +11,12 @@ use rslint_core::rule_prelude::{
 };
 use rslint_parser::ast::ExprOrBlock;
 use types::{
-    ddlog_std::Either, internment::Intern, ArrayElement, ClassElement as DatalogClassElement,
-    ExprId, Pattern as DatalogPattern, PropertyKey, PropertyVal,
+    ast::{
+        ArrayElement, ClassElement as DatalogClassElement, ExprId, Pattern as DatalogPattern,
+        PropertyKey, PropertyVal,
+    },
+    ddlog_std::Either,
+    internment::Intern,
 };
 
 impl<'ddlog> Visit<'ddlog, Expr> for AnalyzerInner {
@@ -53,7 +57,7 @@ impl<'ddlog> Visit<'ddlog, NameRef> for AnalyzerInner {
     type Output = ExprId;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, name: NameRef) -> Self::Output {
-        scope.name_ref(name.to_string(), name.syntax().trimmed_range())
+        scope.name_ref(Intern::new(name.to_string()), name.syntax().trimmed_range())
     }
 }
 
@@ -66,9 +70,10 @@ impl<'ddlog> Visit<'ddlog, Literal> for AnalyzerInner {
         match literal.kind() {
             LiteralKind::Number(number) => scope.number(number, span),
             LiteralKind::BigInt(bigint) => scope.bigint(bigint, span),
-            LiteralKind::String => {
-                scope.string(literal.inner_string_text().unwrap().to_string(), span)
-            }
+            LiteralKind::String => scope.string(
+                Intern::new(literal.inner_string_text().unwrap().to_string()),
+                span,
+            ),
             LiteralKind::Null => scope.null(span),
             LiteralKind::Bool(boolean) => scope.boolean(boolean, span),
             LiteralKind::Regex => scope.regex(span),

@@ -187,7 +187,7 @@ if [ "$subcommand" = "compile" ] || [ -z "$subcommand" ]; then
     mv rslint_scoping_ddlog generated
 fi
 
-if [ "$no_xtask" != "true" ]; then
+if ( [ "$subcommand" = "compile" ] || [ -z "$subcommand" ] ) && [ "$no_xtask" != "true" ]; then
     printf "running xtask code cleanup...\n"
     cargo --quiet run --package xtask --bin xtask -- datalog
 

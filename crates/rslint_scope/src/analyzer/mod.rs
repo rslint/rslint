@@ -8,7 +8,8 @@ pub(crate) use visit::Visit;
 use crate::DatalogBuilder;
 use rslint_parser::ast::{AstChildren, Name, ObjectPatternProp, Pattern};
 use types::{
-    internment::Intern, ObjectPatternProp as DatalogObjectPatternProp, Pattern as DatalogPattern,
+    ast::{ObjectPatternProp as DatalogObjectPatternProp, Pattern as DatalogPattern},
+    internment::Intern,
 };
 
 pub(super) struct AnalyzerInner;

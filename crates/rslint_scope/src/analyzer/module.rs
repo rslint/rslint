@@ -4,7 +4,7 @@ use crate::{
 };
 use rslint_core::rule_prelude::ast::{AstChildren, ImportClause, ImportDecl, ModuleItem};
 use rslint_parser::ast::NamedImports;
-use types::{ImportClause as DatalogImportClause, NamedImport as DatalogNamedImport};
+use types::ast::{ImportClause as DatalogImportClause, NamedImport as DatalogNamedImport};
 
 impl<'ddlog> Visit<'ddlog, ModuleItem> for AnalyzerInner {
     type Output = Option<DatalogScope<'ddlog>>;

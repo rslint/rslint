@@ -8,7 +8,10 @@ use differential_datalog::{
 };
 use rslint_scoping_ddlog::{Indexes, Relations};
 use std::{ops::Deref, sync::Arc};
-use types::*;
+use types::{
+    ast::{Name, Scope},
+    InvalidNameUse, NameInScope, TypeofUndefinedAlwaysUndefined, VarUseBeforeDeclaration,
+};
 
 macro_rules! derived_facts {
     ($($function_name:ident($arg_name:ident : $arg_ty:ty) -> $relation_type:ident from $index_name:ident),* $(,)?) => {

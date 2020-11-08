@@ -1,0 +1,233 @@
+import vec
+import utils
+
+typedef Scope = Scope { id: u32 }
+typedef Name = istring
+
+// Ids
+typedef GlobalId = GlobalId { id: u32 }
+typedef ImportId = ImportId { id: u32 }
+typedef ClassId = ClassId { id: u32 }
+typedef FuncId = FuncId { id: u32 }
+typedef StmtId = StmtId { id: u32 }
+typedef ExprId = ExprId { id: u32 }
+typedef AnyId =
+    AnyIdGlobal { global: GlobalId }
+    | AnyIdImport { import_: ImportId }
+    | AnyIdClass { class: ClassId }
+    | AnyIdFunc { func: FuncId }
+    | AnyIdStmt { stmt: StmtId }
+    | AnyIdExpr { expr: ExprId }
+
+typedef Span = Span { start: u32, end: u32 }
+
+function to_string(span: Span): string {
+    "(${span.start}, ${span.end})"
+}
+
+typedef OneOf<'A, 'B, 'C> =
+    First { a: 'A }
+    | Second { b: 'B }
+    | Third { c: 'C }
+
+typedef Pattern =
+    SinglePattern { name: Option<Name> }
+    | RestPattern { rest: Option<Intern<Pattern>> }
+    | AssignPattern { key: Option<Intern<Pattern>>, value: Option<ExprId> }
+    | ObjectPattern { props: Vec<Intern<ObjectPatternProp>> }
+    | ArrayPattern { elems: Vec<Intern<Pattern>> }
+
+function bound_vars(pat: IPattern): Vec<Name> {
+    match (pat.ival()) {
+        SinglePattern { Some { name }} -> [name],
+        RestPattern { Some { rest }} -> rest.bound_vars(),
+        AssignPattern { Some { key }, _ } -> key.bound_vars(),
+        ObjectPattern { props } -> props.flatmap(|prop| prop.bound_vars()),
+        ArrayPattern { elems } -> elems.flatmap(|elem| elem.bound_vars()),
+        _ -> vec_empty(),
+    }
+}
+
+typedef ObjectPatternProp =
+    ObjAssignPattern { assign_key: Option<Intern<Pattern>>, assign_value: Option<ExprId> }
+    | ObjKeyValuePattern { key: Option<PropertyKey>, value: Option<Intern<Pattern>> }
+    | ObjRestPattern { rest: Option<Intern<Pattern>> }
+    | ObjSinglePattern { name: Option<Name> }
+
+function bound_vars(pat: IObjectPatternProp): Vec<Name> {
+    match (pat.ival()) {
+        ObjAssignPattern { Some { key }, _ } -> key.bound_vars(),
+        ObjKeyValuePattern { _, Some { value }} -> value.bound_vars(),
+        ObjRestPattern { Some { rest }} -> rest.bound_vars(),
+        ObjSinglePattern { Some { name }} -> [name],
+        _ -> vec_empty(),
+    }
+}
+
+typedef IPattern = Intern<Pattern>
+typedef IObjectPatternProp = Intern<ObjectPatternProp>
+
+typedef StmtKind =
+    StmtVarDecl
+    | StmtLetDecl
+    | StmtConstDecl
+    // No statement relation, use expr_id to find the
+    // associated expression
+    | StmtExpr { expr_id: Option<ExprId> }
+    | StmtReturn
+    | StmtIf
+    | StmtBreak
+    | StmtDoWhile
+    | StmtWhile
+    | StmtFor
+    | StmtForIn
+    | StmtContinue
+    | StmtWith
+    | StmtLabel
+    | StmtSwitch
+    | StmtThrow
+    | StmtTry
+    // No associated relation, they carry no data
+    | StmtDebugger
+    // No associated relation, literally nothing
+    | StmtEmpty
+
+typedef ExprKind =
+    ExprLit { kind: LitKind }
+    | ExprNameRef
+    | ExprYield
+    | ExprAwait
+    | ExprArrow
+    | ExprUnaryOp
+    | ExprBinOp
+    | ExprTernary
+    // No associated relation
+    | ExprThis
+    | ExprTemplate
+    | ExprArray
+    // Associated with the Property relation
+    | ExprObject
+    | ExprGrouping { inner: Option<ExprId> }
+    | ExprBracket
+    | ExprDot
+    | ExprNew
+    | ExprCall
+    | ExprAssign
+    | ExprSequence { exprs: Vec<ExprId> }
+    | ExprNewTarget
+    | ExprImportMeta
+    | ExprInlineFunc
+    | ExprSuperCall { args: Option<Vec<ExprId>> }
+    | ExprImportCall { arg: Option<ExprId> }
+    | ExprClass
+
+typedef UnaryOperand =
+    UnaryIncrement
+    | UnaryDecrement
+    | UnaryDelete
+    | UnaryVoid
+    | UnaryTypeof
+    | UnaryPlus
+    | UnaryMinus
+    | UnaryBitwiseNot
+    | UnaryLogicalNot
+    | UnaryAwait
+
+typedef BinOperand =
+    BinLessThan
+    | BinGreaterThan
+    | BinLessThanOrEqual
+    | BinGreaterThanOrEqual
+    | BinEquality
+    | BinStrictEquality
+    | BinInequality
+    | BinStrictInequality
+    | BinPlus
+    | BinMinus
+    | BinTimes
+    | BinDivide
+    | BinRemainder
+    | BinExponent
+    | BinLeftShift
+    | BinRightShift
+    | BinUnsignedRightShift
+    | BinBitwiseAnd
+    | BinBitwiseOr
+    | BinBitwiseXor
+    | BinNullishCoalescing
+    | BinLogicalOr
+    | BinLogicalAnd
+    | BinIn
+    | BinInstanceof
+
+typedef AssignOperand =
+    OpAssign
+    | OpAddAssign
+    | OpSubtractAssign
+    | OpTimesAssign
+    | OpRemainderAssign
+    | OpExponentAssign
+    | OpLeftShiftAssign
+    | OpRightShiftAssign
+    | OpUnsignedRightShiftAssign
+    | OpBitwiseAndAssign
+    | OpBitwiseOrAssign
+    | OpBitwiseXorAssign
+    | OpLogicalAndAssign
+    | OpLogicalOrAssign
+    | OpNullishCoalescingAssign
+
+typedef LitKind = LitNumber | LitBigInt | LitString | LitNull | LitBool | LitRegex
+typedef ForInit = ForDecl { stmt_id: Option<StmtId> } | ForExpr { expr_id: ExprId }
+typedef SwitchClause = CaseClause { test: Option<ExprId> } | DefaultClause
+typedef TryHandler = TryHandler { error: Option<IPattern>, body: Option<StmtId> }
+typedef ArrayElement = ArrExpr { expr: ExprId } | ArrSpread { spread: Option<ExprId> }
+
+typedef PropertyKey =
+    ComputedKey { prop: Option<ExprId> }
+    | LiteralKey { lit: ExprId }
+    | IdentKey { ident: Name }
+
+typedef PropertyVal =
+    PropLit { lit: Option<ExprId> }
+    | PropGetter { body: Option<StmtId> }
+    | PropSetter { params: Option<Vec<IPattern>> }
+    | PropSpread { value: Option<ExprId> }
+    | PropInit { value: Option<ExprId> }
+    | PropIdent
+    | PropMethod { params: Option<Vec<IPattern>>, body: Option<StmtId> }
+
+typedef ClassElement =
+    ClassEmptyElem
+    | ClassMethod {
+        name: Option<PropertyKey>,
+        params: Option<Vec<IPattern>>,
+        body: Option<StmtId>
+    }
+    | ClassStaticMethod {
+        name: Option<PropertyKey>,
+        params: Option<Vec<IPattern>>,
+        body: Option<StmtId>
+    }
+
+typedef IClassElement = Intern<ClassElement>
+
+typedef ImportClause =
+    WildcardImport { alias: Option<Name> }
+    | GroupedImport { imports: Vec<NamedImport> }
+    | SingleImport { name: Name }
+
+function free_variables(clause: ImportClause): Vec<Name> {
+    match (clause) {
+        WildcardImport { Some { alias }} -> [alias],
+        GroupedImport { imports } -> imports.filter_map(|named| named.free_variable()),
+        SingleImport { name } -> [name],
+        _ -> vec_empty(),
+    }
+}
+
+typedef NamedImport = NamedImport { name: Option<Name>, alias: Option<Name> }
+
+function free_variable(clause: NamedImport): Option<Name> {
+    clause.alias.or_else(clause.name)
+}
