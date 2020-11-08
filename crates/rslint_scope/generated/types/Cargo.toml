@@ -59,6 +59,7 @@ version = "0.2"
 [dev-dependencies]
 
 [features]
+c_api = ["differential_datalog/c_api"]
 default = []
 
 [lib]

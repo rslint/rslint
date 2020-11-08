@@ -1,3 +1,4 @@
+//! Logging Configuration API, (detailed documentation in `ddlog_log.h`)
 #![allow(clippy::ptr_arg, clippy::trivially_copy_pass_by_ref)]
 
 use once_cell::sync::Lazy;
@@ -24,16 +25,13 @@ impl LogConfig {
     }
 }
 
-/* Logger configuration for each module consists of the maximal enabled
- * log level (messages above this level are ignored) and callback.
- */
+/// Logger configuration for each module consists of the maximal enabled
+/// log level (messages above this level are ignored) and callback.
 static LOG_CONFIG: Lazy<sync::RwLock<LogConfig>> =
     Lazy::new(|| sync::RwLock::new(LogConfig::new()));
 
-/*
- * Logging API exposed to the DDlog program.
- * (see detailed documentation in `log.dl`)
- */
+/// Logging API exposed to the DDlog program.
+/// (see detailed documentation in `log.dl`)
 pub fn log(module: &i32, level: &i32, msg: &String) {
     let cfg = LOG_CONFIG.read().unwrap();
     if let Some((cb, current_level)) = cfg.mod_callbacks.get(&module) {
@@ -45,17 +43,9 @@ pub fn log(module: &i32, level: &i32, msg: &String) {
     }
 }
 
-/*
- * Configuration API
- * (detailed documentation in `ddlog_log.h`)
- */
-
-/*
- * `cb = None` - disables logging for the given module.
- *
- * NOTE: we set callback and log level simultaneously.  A more flexible API
- * would allow changing log level without changing the callback.
- */
+/// `cb = None` - disables logging for the given module.
+// NOTE: we set callback and log level simultaneously.  A more flexible API
+// would allow changing log level without changing the callback.
 pub fn log_set_callback(module: i32, cb: Option<log_callback_t>, max_level: i32) {
     let mut cfg = LOG_CONFIG.write().unwrap();
     match cb {
@@ -68,20 +58,17 @@ pub fn log_set_callback(module: i32, cb: Option<log_callback_t>, max_level: i32)
     }
 }
 
-/*
- * Set default callback and log level for modules that were not configured
- * via `log_set_callback`.
- */
+/// Set default callback and log level for modules that were not configured
+/// via `log_set_callback`.
 pub fn log_set_default_callback(cb: Option<log_callback_t>, max_level: i32) {
     let mut cfg = LOG_CONFIG.write().unwrap();
     cfg.default_callback = cb;
     cfg.default_level = max_level;
 }
 
-/*
- * C bindings for the config API
- */
+/// C bindings for the config API
 #[no_mangle]
+#[cfg(feature = "c_api")]
 pub unsafe extern "C" fn ddlog_log_set_callback(
     module: raw::c_int,
     cb: Option<extern "C" fn(arg: libc::uintptr_t, level: raw::c_int, msg: *const raw::c_char)>,
@@ -105,6 +92,7 @@ pub unsafe extern "C" fn ddlog_log_set_callback(
 }
 
 #[no_mangle]
+#[cfg(feature = "c_api")]
 pub unsafe extern "C" fn ddlog_log_set_default_callback(
     cb: Option<extern "C" fn(arg: libc::uintptr_t, level: raw::c_int, msg: *const raw::c_char)>,
     cb_arg: libc::uintptr_t,

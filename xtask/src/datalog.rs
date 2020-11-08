@@ -69,6 +69,10 @@ fn trim_generated_code(scopes_dir: &Path, generated_dir: &Path) -> Result<()> {
         fs2::remove_file(generated_dir.join(file)).ok();
     }
 
+    // Edit out extra code
+    println!("removing extra code...");
+    edit_code()?;
+
     Ok(())
 }
 
@@ -113,4 +117,25 @@ fn write_toml(name: &str, path: &Path, manifest: &Manifest) -> Result<()> {
             path.display(),
         )
     })
+}
+
+fn edit_code() -> Result<()> {
+    let path = Path::new(SCOPES_DIR).join(GENERATED_DIR).join("src/lib.rs");
+    let lib = fs2::read_to_string(&path)?
+        .replace(
+            "pub static RELIDMAP:",
+            "#[cfg(feature = \"globals\")]\npub static RELIDMAP:",
+        )
+        .replace(
+            "pub static OUTPUT_RELIDMAP:",
+            "#[cfg(feature = \"globals\")]\npub static OUTPUT_RELIDMAP:",
+        )
+        .replace(
+            "pub static IDXIDMAP:",
+            "#[cfg(feature = \"globals\")]\npub static IDXIDMAP:",
+        );
+
+    fs2::write(&path, lib)?;
+
+    Ok(())
 }

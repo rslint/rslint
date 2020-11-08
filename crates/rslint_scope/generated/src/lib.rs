@@ -11,7 +11,14 @@
     unused_variables,
     clippy::unknown_clippy_lints,
     clippy::missing_safety_doc,
-    clippy::toplevel_ref_arg
+    clippy::toplevel_ref_arg,
+    clippy::double_parens,
+    clippy::clone_on_copy,
+    clippy::just_underscores_and_digits,
+    clippy::match_single_binding,
+    clippy::op_ref,
+    clippy::nonminimal_bool,
+    clippy::redundant_clone
 )]
 
 use num::bigint::BigInt;
@@ -663,9 +670,11 @@ pub fn relid2name(rid: RelId) -> Option<&'static str> {
        _  => None
    }
 }
+#[cfg(feature = "c_api")]
 pub fn relid2cname(rid: RelId) -> Option<&'static ::std::ffi::CStr> {
     RELIDMAPC.get(&rid).copied()
 }   /// A map of `RelId`s to their name as an `&'static str`
+#[cfg(feature = "globals")]
 pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
         let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(108, ::fnv::FnvBuildHasher::default());
@@ -780,6 +789,7 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
         map
     });
     /// A map of `RelId`s to their name as an `&'static CStr`
+#[cfg(feature = "c_api")]
 pub static RELIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<RelId, &'static ::std::ffi::CStr>> =
     ::once_cell::sync::Lazy::new(|| {
         let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(108, ::fnv::FnvBuildHasher::default());
@@ -949,6 +959,7 @@ pub static INPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, 
         map
     });
     /// A map of output `Relations`s to their name as an `&'static str`
+#[cfg(feature = "globals")]
 pub static OUTPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
         let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(57, ::fnv::FnvBuildHasher::default());
@@ -1059,9 +1070,11 @@ pub fn indexid2name(iid: IdxId) -> Option<&'static str> {
        _  => None
    }
 }
+#[cfg(feature = "c_api")]
 pub fn indexid2cname(iid: IdxId) -> Option<&'static ::std::ffi::CStr> {
     IDXIDMAPC.get(&iid).copied()
 }   /// A map of `Indexes` to their name as an `&'static str`
+#[cfg(feature = "globals")]
 pub static IDXIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Indexes, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
         let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(9, ::fnv::FnvBuildHasher::default());
@@ -1077,6 +1090,7 @@ pub static IDXIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Indexes, &'static
         map
     });
     /// A map of `IdxId`s to their name as an `&'static CStr`
+#[cfg(feature = "c_api")]
 pub static IDXIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<IdxId, &'static ::std::ffi::CStr>> =
     ::once_cell::sync::Lazy::new(|| {
         let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(9, ::fnv::FnvBuildHasher::default());

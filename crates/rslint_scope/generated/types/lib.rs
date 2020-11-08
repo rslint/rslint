@@ -12,7 +12,25 @@
     unused_variables,
     clippy::unknown_clippy_lints,
     clippy::missing_safety_doc,
-    clippy::match_single_binding
+    clippy::match_single_binding,
+    clippy::ptr_arg,
+    clippy::redundant_closure,
+    clippy::needless_lifetimes,
+    clippy::borrowed_box,
+    clippy::map_clone,
+    clippy::toplevel_ref_arg,
+    clippy::double_parens,
+    clippy::collapsible_if,
+    clippy::clone_on_copy,
+    clippy::unused_unit,
+    clippy::deref_addrof,
+    clippy::clone_on_copy,
+    clippy::needless_return,
+    clippy::op_ref,
+    clippy::match_like_matches_macro,
+    clippy::comparison_chain,
+    clippy::len_zero,
+    clippy::extra_unused_lifetimes
 )]
 
 //use ::serde::de::DeserializeOwned;

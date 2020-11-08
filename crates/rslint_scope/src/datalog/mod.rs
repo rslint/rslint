@@ -11,7 +11,7 @@ use differential_datalog::{
     DDlog, DeltaMap,
 };
 use rslint_parser::{BigInt, TextRange};
-use rslint_scoping_ddlog::{api::HDDlog, relid2name, Indexes, Relations, INPUT_RELIDMAP};
+use rslint_scoping_ddlog::{api::HDDlog, Indexes, Relations, INPUT_RELIDMAP};
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeSet,
@@ -1755,7 +1755,10 @@ impl<'ddlog> DatalogBuilder<'ddlog> for DatalogScope<'ddlog> {
 #[allow(dead_code)]
 fn dump_delta(delta: &DeltaMap<DDValue>) {
     for (rel, changes) in delta.iter() {
-        println!("Changes to relation {}", relid2name(*rel).unwrap());
+        println!(
+            "Changes to relation {}",
+            rslint_scoping_ddlog::relid2name(*rel).unwrap()
+        );
 
         for (val, weight) in changes.iter() {
             if *weight == 1 {

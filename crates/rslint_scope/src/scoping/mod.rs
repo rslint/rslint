@@ -80,7 +80,7 @@ impl<'a> ScopeInfo<'a> {
         })
     }
 
-    pub fn has_in_scope(&self, name: &str) -> bool {
+    pub fn contains(&self, name: &str) -> bool {
         // TODO: Log errors if they occur
         let query = self.handle.datalog.query(
             Indexes::Index_VariableInScope,
@@ -201,9 +201,9 @@ mod tests {
 
         let info = ProgramInfo::new(datalog);
         let empty = info.scope(empty);
-        assert!(!empty.has_in_scope("foo"));
+        assert!(!empty.contains("foo"));
 
         let filled = info.scope(filled);
-        assert!(filled.has_in_scope("foo"));
+        assert!(filled.contains("foo"));
     }
 }
