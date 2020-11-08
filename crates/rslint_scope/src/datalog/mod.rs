@@ -14,6 +14,7 @@ use rslint_parser::{BigInt, TextRange};
 use rslint_scoping_ddlog::{api::HDDlog, relid2name, Relations, INPUT_RELIDMAP};
 use std::{
     cell::{Cell, RefCell},
+    fs::File,
     mem,
     sync::{Arc, Mutex},
 };
@@ -21,8 +22,8 @@ use types::{
     ast::{
         ArrayElement, AssignOperand, BinOperand, ClassId, ExprId, ExprKind, ForInit, FuncId,
         GlobalId, IClassElement, IPattern, ImportClause, ImportId, Increment, LitKind, Name,
-        Pattern, PropertyKey, PropertyVal, Scope, StmtId, StmtKind, SwitchClause, TryHandler,
-        UnaryOperand,
+        Pattern, PropertyKey, PropertyVal, Scope, Spanned, StmtId, StmtKind, SwitchClause,
+        TryHandler, UnaryOperand,
     },
     ddlog_std::Either,
     inputs::{
@@ -77,6 +78,14 @@ impl Datalog {
 
     pub fn outputs(&self) -> &Outputs {
         &self.outputs
+    }
+
+    pub fn with_replay_file(&self, file: File) {
+        self.datalog
+            .lock()
+            .unwrap()
+            .hddlog
+            .record_commands(&mut Some(Mutex::new(file)));
     }
 
     pub fn reset(&self) -> DatalogResult<()> {
@@ -332,7 +341,7 @@ pub trait DatalogBuilder<'ddlog> {
     fn decl_function(
         &self,
         id: FuncId,
-        name: Option<Name>,
+        name: Option<Spanned<Name>>,
     ) -> (DatalogFunction<'ddlog>, DatalogScope<'ddlog>) {
         let body = self.scope();
         self.datalog().insert(
@@ -717,7 +726,7 @@ pub trait DatalogBuilder<'ddlog> {
         stmt_id
     }
 
-    fn label(&self, name: Option<Name>, body: Option<StmtId>, span: TextRange) -> StmtId {
+    fn label(&self, name: Option<Spanned<Name>>, body: Option<StmtId>, span: TextRange) -> StmtId {
         let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
@@ -1385,7 +1394,7 @@ pub trait DatalogBuilder<'ddlog> {
         expr_id
     }
 
-    fn dot(&self, object: Option<ExprId>, prop: Option<Name>, span: TextRange) -> ExprId {
+    fn dot(&self, object: Option<ExprId>, prop: Option<Spanned<Name>>, span: TextRange) -> ExprId {
         let datalog = self.datalog();
         let expr_id = datalog.inc_expression();
 
@@ -1551,7 +1560,7 @@ pub trait DatalogBuilder<'ddlog> {
 
     fn fn_expr(
         &self,
-        name: Option<Name>,
+        name: Option<Spanned<Name>>,
         params: Vec<IPattern>,
         body: Option<StmtId>,
         span: TextRange,
@@ -1649,7 +1658,7 @@ pub trait DatalogBuilder<'ddlog> {
 
     fn class_decl(
         &self,
-        name: Option<Name>,
+        name: Option<Spanned<Name>>,
         parent: Option<ExprId>,
         elements: Option<Vec<IClassElement>>,
     ) -> (ClassId, DatalogScope<'ddlog>) {

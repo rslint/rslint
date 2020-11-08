@@ -6,8 +6,13 @@ use differential_datalog::{
     program::{IdxId, RelId},
     DDlog, DeltaMap,
 };
-use rslint_scoping_ddlog::{Indexes, Relations};
-use std::{ops::Deref, sync::Arc};
+use rslint_scoping_ddlog::{relid2name, Indexes, Relations};
+use std::{
+    fs::File,
+    io::Write,
+    ops::Deref,
+    sync::{Arc, Mutex},
+};
 use types::{
     ast::{Name, Scope},
     InvalidNameUse, NameInScope, TypeofUndefinedAlwaysUndefined, VarUseBeforeDeclaration,
@@ -82,6 +87,7 @@ macro_rules! outputs {
             $(
                 pub $output_field: DashMap<$output_type, isize>,
             )*
+            output_file: Mutex<Option<File>>,
         }
 
         impl InnerOutputs {
@@ -90,6 +96,7 @@ macro_rules! outputs {
                     $(
                         $output_field: DashMap::new(),
                     )*
+                    output_file: Mutex::new(None),
                 }
             }
 
@@ -143,7 +150,28 @@ macro_rules! outputs {
 }
 
 impl InnerOutputs {
+    pub fn with_output_file(&self, file: File) {
+        *self.output_file.lock().unwrap() = Some(file);
+    }
+
     pub fn batch_update(&self, updates: DeltaMap<DDValue>) {
+        {
+            let mut file = self.output_file.lock().unwrap();
+            if let Some(file) = &mut *file {
+                for (rel, changes) in updates.iter() {
+                    writeln!(file, "Changes to relation {}", relid2name(*rel).unwrap()).unwrap();
+
+                    for (val, weight) in changes.iter() {
+                        writeln!(file, ">> {} {:+}", val, weight).unwrap();
+                    }
+
+                    if !changes.is_empty() {
+                        writeln!(file).unwrap();
+                    }
+                }
+            }
+        }
+
         for (relation, values) in updates {
             for (value, weight) in values {
                 self.update(relation, value, weight);

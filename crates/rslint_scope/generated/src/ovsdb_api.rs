@@ -1,5 +1,5 @@
 //! OVSDB JSON interface to RunningProgram
-#![cfg(all(feature = "ovsdb", feature = "c_api"))]
+#![cfg(feature = "ovsdb")]
 
 use std::collections::BTreeMap;
 use std::convert::TryFrom;

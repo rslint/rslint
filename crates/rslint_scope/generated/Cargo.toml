@@ -54,7 +54,6 @@ path = "./types"
 [dev-dependencies]
 
 [features]
-c_api = ["differential_datalog/c_api", "types/c_api"]
 default = []
 nested_ts_32 = ["differential_datalog/nested_ts_32"]
 profile = ["cpuprofiler"]

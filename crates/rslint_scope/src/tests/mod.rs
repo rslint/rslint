@@ -7,20 +7,26 @@ use crate::{
     ScopeAnalyzer,
 };
 use rslint_parser::{parse_module, parse_text};
-use std::{borrow::Cow, fmt::Write};
+use std::{
+    borrow::Cow,
+    fs::{self, OpenOptions},
+    io::Write as _,
+    ops::Range,
+    path::Path,
+};
 
 struct DatalogTestHarness {
     datalog: ScopeAnalyzer,
-    failures: Vec<String>,
     passing: usize,
+    failing: usize,
 }
 
 impl DatalogTestHarness {
     pub fn new() -> Self {
         Self {
             datalog: ScopeAnalyzer::new().expect("failed to create ddlog instance"),
-            failures: Vec::new(),
             passing: 0,
+            failing: 0,
         }
     }
 
@@ -33,12 +39,12 @@ impl DatalogTestHarness {
     }
 
     pub fn report_outcome(self) {
-        if !self.failures.is_empty() {
+        if self.failing != 0 {
             panic!(
-                "Test failed with {} passing, {} failing:\n{}",
+                "Test failed with {} passing, {} failing, logs stored in `{}/output.log/`",
                 self.passing,
-                self.failures.len(),
-                self.failures.join("\n"),
+                self.failing,
+                env!("CARGO_MANIFEST_DIR"),
             );
         }
     }
@@ -53,8 +59,9 @@ struct TestCase<'a> {
     ecma: bool,
     is_module: bool,
     es2021: bool,
-    invalid_name_uses: Vec<Cow<'static, str>>,
+    invalid_name_uses: Vec<(Cow<'static, str>, Range<u32>)>,
     harness: &'a mut DatalogTestHarness,
+    counter: usize,
 }
 
 impl<'a> TestCase<'a> {
@@ -74,6 +81,7 @@ impl<'a> TestCase<'a> {
             es2021: false,
             invalid_name_uses: Vec::new(),
             harness,
+            counter: 0,
         }
     }
 
@@ -108,13 +116,40 @@ impl<'a> TestCase<'a> {
         self
     }
 
-    pub fn with_invalid_name_uses(mut self, invalid_name_uses: Vec<Cow<'static, str>>) -> Self {
+    pub fn with_invalid_name_uses(
+        mut self,
+        invalid_name_uses: Vec<(Cow<'static, str>, Range<u32>)>,
+    ) -> Self {
         self.invalid_name_uses.extend(invalid_name_uses);
         self
     }
 
     // TODO: This is so ugly
     pub fn run(mut self) {
+        let path = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/output.log"));
+        if !path.exists() {
+            fs::create_dir_all(path).unwrap();
+        }
+
+        self.harness.datalog.with_replay_file(
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(path.join(&format!("{}-{}.replay", self.rule_name, self.counter)))
+                .unwrap(),
+        );
+        self.harness.datalog.outputs().with_output_file(
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(path.join(&format!("{}-{}.state", self.rule_name, self.counter)))
+                .unwrap(),
+        );
+
         let mut failed = false;
         let ast = if self.is_module {
             parse_module(&*self.code, 0).syntax()
@@ -168,72 +203,79 @@ impl<'a> TestCase<'a> {
             .datalog
             .analyze_inner(&ast)
             .expect("failed datalog transaction");
-        let mut facts = self
+        let mut facts: Vec<_> = self
             .harness
             .datalog
-            .datalog
-            .invalid_name_uses(None)
-            .unwrap();
+            .outputs()
+            .invalid_name_use
+            .iter()
+            .map(|usage| usage.key().clone())
+            .collect();
+        let uses = self.invalid_name_uses.clone();
 
-        for name in self.invalid_name_uses.drain(..) {
-            if let Some(idx) = facts.iter().position(|n| *n.name == *name) {
+        for (name, range) in self.invalid_name_uses.drain(..) {
+            if let Some(idx) = facts
+                .iter()
+                .position(|n| *n.name == *name && n.span == range.clone().into())
+            {
                 facts.remove(idx);
             } else {
-                // FIXME: Make this detailed
-                self.harness
-                    .failures
-                    .push(format!("Missed invalid name use: {}", name));
                 failed = true;
             }
         }
 
-        if !facts.is_empty() {
-            failed = true;
+        if failed || !facts.is_empty() {
+            self.harness.failing += 1;
 
-            for fact in facts.drain(..) {
-                let mut error = String::new();
-
-                let mut vars = dbg!(self
-                    .harness
-                    .datalog
-                    .datalog
-                    .variables_for_scope(Some(fact.scope))
-                    .unwrap());
-                vars.sort();
-
-                // FIXME: This is ugly as hell
-                write!(
-                    &mut error,
-                    "- failed to find `{}`\n  Input: `{}`\n  Span: {:?}  \n  Scope: [\n{}\n  ]\n",
-                    *fact.name,
-                    ast.text(),
-                    fact.span,
-                    vars.chunks(6)
-                        .map(|chunk| "      ".to_string()
-                            + &chunk
-                                .iter()
-                                .map(|s| s.name.to_string())
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                            + ",")
-                        .collect::<Vec<_>>()
-                        .join("\n")
-                )
+            let mut file = OpenOptions::new()
+                .truncate(true)
+                .write(true)
+                .create(true)
+                .open(&format!(
+                    "{}/output.log/{}-{}.failure",
+                    env!("CARGO_MANIFEST_DIR"),
+                    self.rule_name,
+                    self.counter,
+                ))
                 .unwrap();
 
-                self.harness.failures.push(format!(
-                    "failed to find `{}`\n  Input: `{}`\n",
-                    *fact.name,
-                    ast.text(),
-                ));
-            }
-        }
-
-        if !failed {
+            write!(
+                &mut file,
+                "============ FAILURE ============\n\n\
+                => Source:\n{}\n\n\
+                => Expected:\n{}\n\n\
+                => Got:\n{}\n\n\
+                => Inputs:\n{}\n\n\
+                => Outputs:\n{:#?}\n\n\
+                ============ END FAILURE ============\n\n",
+                ast.text(),
+                uses.into_iter()
+                    .map(|(name, range)| format!("  {:?} @ {:?}", name, range))
+                    .collect::<Vec<_>>()
+                    .join("\n"),
+                self.harness
+                    .datalog
+                    .outputs()
+                    .invalid_name_use
+                    .iter()
+                    .map(|usage| {
+                        if facts.contains(usage.key()) {
+                            format!("+ {:?}", usage.key())
+                        } else {
+                            format!("  {:?}", usage.key())
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n"),
+                self.harness.datalog.dump_inputs().unwrap(),
+                self.harness.datalog.outputs(),
+            )
+            .unwrap();
+        } else {
             self.harness.passing += 1;
         }
 
-        dbg!(self.harness.datalog.outputs());
         self.harness.datalog.datalog.reset().unwrap();
+        self.counter += 1;
     }
 }

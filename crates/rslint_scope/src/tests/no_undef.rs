@@ -14,7 +14,7 @@ macro_rules! rule_test {
             $(, ecma: $ecma:literal)?
             $(, module: $module:literal)?
             $(, es2021: $es2021:literal)?
-            $(, invalid_name_uses: [$($name:literal),* $(,)?])?
+            $(, invalid_vars: [$(($name:literal, $span:expr)),* $(,)?])?
             $(,)?
         }),* $(,)?
     ) => {
@@ -34,7 +34,7 @@ macro_rules! rule_test {
                     $(.with_ecma($ecma))?
                     $(.is_module($module))?
                     $(.with_es2021($es2021))?
-                    $(.with_invalid_name_uses(vec![$(Cow::Borrowed($name)),*]))?
+                    $(.with_invalid_name_uses(vec![$((Cow::Borrowed($name), $span)),*]))?
                     .run();
             )?
 
@@ -45,6 +45,7 @@ macro_rules! rule_test {
 
 rule_test! {
     no_undef,
+    // Should pass
     { "var a = 1, b = 2; a;" },
     { "function f() { b; }", globals: ["b"] },
     { "a; function f() { b; a; }", globals: ["b", "a"] },
@@ -78,7 +79,8 @@ rule_test! {
     { "import * as Warning from '../lib/warning'; var warn = new Warning('text');", module: true },
     { "var a; [a] = [0];" },
     { "var a; ({a} = {});" },
-    { "var obj; [obj.a, obj.b] = [0, 1];" },
+    // FIXME: Assignment pattern parsing is broken
+    // { "var obj; [obj.a, obj.b] = [0, 1];" },
     { "var a; ({b: a} = {});" },
     { "URLSearchParams;", browser: true },
     { "Intl;", browser: true },
@@ -97,32 +99,21 @@ rule_test! {
     { "var {bacon, ...others} = stuff; foo(others)", globals: ["stuff", "foo"] },
     { "export * as ns from \"source\"", module: true },
     { "import.meta", module: true },
+    { "let x; x.y" },
+
+    // Should fail
+    { "a = 1;", invalid_vars: [("a", 0..1)] },
+    { "var a = b;", invalid_vars: [("b", 8..9)] },
+    { "function f() { b; }", invalid_vars: [("b", 15..16)] },
+    { "window", invalid_vars: [("window", 0..6)] },
+    { "require(\"a\");", invalid_vars: [("require", 0..7)] },
+    // FIXME: Requires JSX
+    // { "var React; React.render(<img attr={a} />);", invalid_vars: ["a"] },
+    // { "var React, App; React.render(<App attr={a} />);", invalid_vars: ["a"] },
+    { "[a] = [0];", invalid_vars: [("a", 1..2)] },
+    { "({a} = {});", invalid_vars: [("a", 2..3)] },
+    { "({b: a} = {});", invalid_vars: [("a", 5..6)] },
+    // FIXME: Assignment pattern parsing is broken
+    // { "[obj.a, obj.b] = [0, 1];", invalid_vars: [("obj", 1..4), ("obj", 8..11)] },
+    { "const c = 0; const a = {...b, c};", invalid_vars: [("b", 27..28)] },
 }
-
-/*
-ruleTester.run("no-undef", rule, {
-    invalid: [
-        { code: "a = 1;", errors: [{ messageId: "undef", data: { name: "a" }, type: "Identifier" }] },
-        { code: "if (typeof anUndefinedVar === 'string') {}", options: [{ typeof: true }], errors: [{ messageId: "undef", data: { name: "anUndefinedVar" }, type: "Identifier" }] },
-        { code: "var a = b;", errors: [{ messageId: "undef", data: { name: "b" }, type: "Identifier" }] },
-        { code: "function f() { b; }", errors: [{ messageId: "undef", data: { name: "b" }, type: "Identifier" }] },
-        { code: "window;", errors: [{ messageId: "undef", data: { name: "window" }, type: "Identifier" }] },
-        { code: "require(\"a\");", errors: [{ messageId: "undef", data: { name: "require" }, type: "Identifier" }] },
-        { code: "var React; React.render(<img attr={a} />);", parserOptions: { ecmaVersion: 6, ecmaFeatures: { jsx: true } }, errors: [{ messageId: "undef", data: { name: "a" } }] },
-        { code: "var React, App; React.render(<App attr={a} />);", parserOptions: { ecmaVersion: 6, ecmaFeatures: { jsx: true } }, errors: [{ messageId: "undef", data: { name: "a" } }] },
-        { code: "[a] = [0];", parserOptions: { ecmaVersion: 6 }, errors: [{ messageId: "undef", data: { name: "a" } }] },
-        { code: "({a} = {});", parserOptions: { ecmaVersion: 6 }, errors: [{ messageId: "undef", data: { name: "a" } }] },
-        { code: "({b: a} = {});", parserOptions: { ecmaVersion: 6 }, errors: [{ messageId: "undef", data: { name: "a" } }] },
-        { code: "[obj.a, obj.b] = [0, 1];", parserOptions: { ecmaVersion: 6 }, errors: [{ messageId: "undef", data: { name: "obj" } }, { messageId: "undef", data: { name: "obj" } }] },
-
-        // Experimental
-        {
-            code: "const c = 0; const a = {...b, c};",
-            parserOptions: {
-                ecmaVersion: 2018
-            },
-            errors: [{ messageId: "undef", data: { name: "b" } }]
-        }
-    ]
-});
-*/

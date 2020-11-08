@@ -39,6 +39,26 @@ use std::{
     ops::{Add, AddAssign, Range},
 };
 
+impl<T> Spanned<T> {
+    /// Create a new `Spanned`
+    pub fn new<S>(data: T, span: S) -> Self
+    where
+        S: Into<Span>,
+    {
+        Self {
+            data,
+            span: span.into(),
+        }
+    }
+}
+
+impl Span {
+    /// Create a new `Span`
+    pub const fn new(start: u32, end: u32) -> Self {
+        Self { start, end }
+    }
+}
+
 /// Implement the `Span` trait for ddlog `Span`s
 impl rslint_errors::Span for Span {
     fn as_range(&self) -> Range<usize> {
@@ -944,19 +964,19 @@ pub type IPattern = crate::internment::Intern<crate::ast::Pattern>;
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum ImportClause {
     WildcardImport {
-        alias: crate::ddlog_std::Option<crate::ast::Name>
+        alias: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
     },
     GroupedImport {
         imports: crate::ddlog_std::Vec<crate::ast::NamedImport>
     },
     SingleImport {
-        name: crate::ast::Name
+        name: crate::ast::Spanned<crate::ast::Name>
     }
 }
 impl abomonation::Abomonation for ImportClause{}
-::differential_datalog::decl_enum_from_record!(ImportClause["ast::ImportClause"]<>, WildcardImport["ast::WildcardImport"][1]{[0]alias["alias"]: crate::ddlog_std::Option<crate::ast::Name>}, GroupedImport["ast::GroupedImport"][1]{[0]imports["imports"]: crate::ddlog_std::Vec<crate::ast::NamedImport>}, SingleImport["ast::SingleImport"][1]{[0]name["name"]: crate::ast::Name});
+::differential_datalog::decl_enum_from_record!(ImportClause["ast::ImportClause"]<>, WildcardImport["ast::WildcardImport"][1]{[0]alias["alias"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>}, GroupedImport["ast::GroupedImport"][1]{[0]imports["imports"]: crate::ddlog_std::Vec<crate::ast::NamedImport>}, SingleImport["ast::SingleImport"][1]{[0]name["name"]: crate::ast::Spanned<crate::ast::Name>});
 ::differential_datalog::decl_enum_into_record!(ImportClause<>, WildcardImport["ast::WildcardImport"]{alias}, GroupedImport["ast::GroupedImport"]{imports}, SingleImport["ast::SingleImport"]{name});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(ImportClause<>, WildcardImport{alias: crate::ddlog_std::Option<crate::ast::Name>}, GroupedImport{imports: crate::ddlog_std::Vec<crate::ast::NamedImport>}, SingleImport{name: crate::ast::Name});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(ImportClause<>, WildcardImport{alias: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>}, GroupedImport{imports: crate::ddlog_std::Vec<crate::ast::NamedImport>}, SingleImport{name: crate::ast::Spanned<crate::ast::Name>});
 impl ::std::fmt::Display for ImportClause {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -1068,13 +1088,13 @@ impl ::std::default::Default for LitKind {
 pub type Name = crate::internment::istring;
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct NamedImport {
-    pub name: crate::ddlog_std::Option<crate::ast::Name>,
-    pub alias: crate::ddlog_std::Option<crate::ast::Name>
+    pub name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>,
+    pub alias: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
 }
 impl abomonation::Abomonation for NamedImport{}
-::differential_datalog::decl_struct_from_record!(NamedImport["ast::NamedImport"]<>, ["ast::NamedImport"][2]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::Name>, [1]alias["alias"]: crate::ddlog_std::Option<crate::ast::Name>});
+::differential_datalog::decl_struct_from_record!(NamedImport["ast::NamedImport"]<>, ["ast::NamedImport"][2]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, [1]alias["alias"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>});
 ::differential_datalog::decl_struct_into_record!(NamedImport, ["ast::NamedImport"]<>, name, alias);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NamedImport, <>, name: crate::ddlog_std::Option<crate::ast::Name>, alias: crate::ddlog_std::Option<crate::ast::Name>);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NamedImport, <>, name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, alias: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>);
 impl ::std::fmt::Display for NamedImport {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -1107,13 +1127,13 @@ pub enum ObjectPatternProp {
         rest: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>
     },
     ObjSinglePattern {
-        name: crate::ddlog_std::Option<crate::ast::Name>
+        name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
     }
 }
 impl abomonation::Abomonation for ObjectPatternProp{}
-::differential_datalog::decl_enum_from_record!(ObjectPatternProp["ast::ObjectPatternProp"]<>, ObjAssignPattern["ast::ObjAssignPattern"][2]{[0]assign_key["assign_key"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>, [1]assign_value["assign_value"]: crate::ddlog_std::Option<crate::ast::ExprId>}, ObjKeyValuePattern["ast::ObjKeyValuePattern"][2]{[0]key["key"]: crate::ddlog_std::Option<crate::ast::PropertyKey>, [1]value["value"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, ObjRestPattern["ast::ObjRestPattern"][1]{[0]rest["rest"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, ObjSinglePattern["ast::ObjSinglePattern"][1]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::Name>});
+::differential_datalog::decl_enum_from_record!(ObjectPatternProp["ast::ObjectPatternProp"]<>, ObjAssignPattern["ast::ObjAssignPattern"][2]{[0]assign_key["assign_key"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>, [1]assign_value["assign_value"]: crate::ddlog_std::Option<crate::ast::ExprId>}, ObjKeyValuePattern["ast::ObjKeyValuePattern"][2]{[0]key["key"]: crate::ddlog_std::Option<crate::ast::PropertyKey>, [1]value["value"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, ObjRestPattern["ast::ObjRestPattern"][1]{[0]rest["rest"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, ObjSinglePattern["ast::ObjSinglePattern"][1]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>});
 ::differential_datalog::decl_enum_into_record!(ObjectPatternProp<>, ObjAssignPattern["ast::ObjAssignPattern"]{assign_key, assign_value}, ObjKeyValuePattern["ast::ObjKeyValuePattern"]{key, value}, ObjRestPattern["ast::ObjRestPattern"]{rest}, ObjSinglePattern["ast::ObjSinglePattern"]{name});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(ObjectPatternProp<>, ObjAssignPattern{assign_key: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>, assign_value: crate::ddlog_std::Option<crate::ast::ExprId>}, ObjKeyValuePattern{key: crate::ddlog_std::Option<crate::ast::PropertyKey>, value: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, ObjRestPattern{rest: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, ObjSinglePattern{name: crate::ddlog_std::Option<crate::ast::Name>});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(ObjectPatternProp<>, ObjAssignPattern{assign_key: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>, assign_value: crate::ddlog_std::Option<crate::ast::ExprId>}, ObjKeyValuePattern{key: crate::ddlog_std::Option<crate::ast::PropertyKey>, value: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, ObjRestPattern{rest: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, ObjSinglePattern{name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>});
 impl ::std::fmt::Display for ObjectPatternProp {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -1204,7 +1224,7 @@ impl <A: ::std::default::Default, B: ::std::default::Default, C: ::std::default:
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum Pattern {
     SinglePattern {
-        name: crate::ddlog_std::Option<crate::ast::Name>
+        name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
     },
     RestPattern {
         rest: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>
@@ -1221,9 +1241,9 @@ pub enum Pattern {
     }
 }
 impl abomonation::Abomonation for Pattern{}
-::differential_datalog::decl_enum_from_record!(Pattern["ast::Pattern"]<>, SinglePattern["ast::SinglePattern"][1]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::Name>}, RestPattern["ast::RestPattern"][1]{[0]rest["rest"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, AssignPattern["ast::AssignPattern"][2]{[0]key["key"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>, [1]value["value"]: crate::ddlog_std::Option<crate::ast::ExprId>}, ObjectPattern["ast::ObjectPattern"][1]{[0]props["props"]: crate::ddlog_std::Vec<crate::internment::Intern<crate::ast::ObjectPatternProp>>}, ArrayPattern["ast::ArrayPattern"][1]{[0]elems["elems"]: crate::ddlog_std::Vec<crate::internment::Intern<crate::ast::Pattern>>});
+::differential_datalog::decl_enum_from_record!(Pattern["ast::Pattern"]<>, SinglePattern["ast::SinglePattern"][1]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>}, RestPattern["ast::RestPattern"][1]{[0]rest["rest"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, AssignPattern["ast::AssignPattern"][2]{[0]key["key"]: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>, [1]value["value"]: crate::ddlog_std::Option<crate::ast::ExprId>}, ObjectPattern["ast::ObjectPattern"][1]{[0]props["props"]: crate::ddlog_std::Vec<crate::internment::Intern<crate::ast::ObjectPatternProp>>}, ArrayPattern["ast::ArrayPattern"][1]{[0]elems["elems"]: crate::ddlog_std::Vec<crate::internment::Intern<crate::ast::Pattern>>});
 ::differential_datalog::decl_enum_into_record!(Pattern<>, SinglePattern["ast::SinglePattern"]{name}, RestPattern["ast::RestPattern"]{rest}, AssignPattern["ast::AssignPattern"]{key, value}, ObjectPattern["ast::ObjectPattern"]{props}, ArrayPattern["ast::ArrayPattern"]{elems});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(Pattern<>, SinglePattern{name: crate::ddlog_std::Option<crate::ast::Name>}, RestPattern{rest: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, AssignPattern{key: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>, value: crate::ddlog_std::Option<crate::ast::ExprId>}, ObjectPattern{props: crate::ddlog_std::Vec<crate::internment::Intern<crate::ast::ObjectPatternProp>>}, ArrayPattern{elems: crate::ddlog_std::Vec<crate::internment::Intern<crate::ast::Pattern>>});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(Pattern<>, SinglePattern{name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>}, RestPattern{rest: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>}, AssignPattern{key: crate::ddlog_std::Option<crate::internment::Intern<crate::ast::Pattern>>, value: crate::ddlog_std::Option<crate::ast::ExprId>}, ObjectPattern{props: crate::ddlog_std::Vec<crate::internment::Intern<crate::ast::ObjectPatternProp>>}, ArrayPattern{elems: crate::ddlog_std::Vec<crate::internment::Intern<crate::ast::Pattern>>});
 impl ::std::fmt::Display for Pattern {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -1276,13 +1296,13 @@ pub enum PropertyKey {
         lit: crate::ast::ExprId
     },
     IdentKey {
-        ident: crate::ast::Name
+        ident: crate::ast::Spanned<crate::ast::Name>
     }
 }
 impl abomonation::Abomonation for PropertyKey{}
-::differential_datalog::decl_enum_from_record!(PropertyKey["ast::PropertyKey"]<>, ComputedKey["ast::ComputedKey"][1]{[0]prop["prop"]: crate::ddlog_std::Option<crate::ast::ExprId>}, LiteralKey["ast::LiteralKey"][1]{[0]lit["lit"]: crate::ast::ExprId}, IdentKey["ast::IdentKey"][1]{[0]ident["ident"]: crate::ast::Name});
+::differential_datalog::decl_enum_from_record!(PropertyKey["ast::PropertyKey"]<>, ComputedKey["ast::ComputedKey"][1]{[0]prop["prop"]: crate::ddlog_std::Option<crate::ast::ExprId>}, LiteralKey["ast::LiteralKey"][1]{[0]lit["lit"]: crate::ast::ExprId}, IdentKey["ast::IdentKey"][1]{[0]ident["ident"]: crate::ast::Spanned<crate::ast::Name>});
 ::differential_datalog::decl_enum_into_record!(PropertyKey<>, ComputedKey["ast::ComputedKey"]{prop}, LiteralKey["ast::LiteralKey"]{lit}, IdentKey["ast::IdentKey"]{ident});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(PropertyKey<>, ComputedKey{prop: crate::ddlog_std::Option<crate::ast::ExprId>}, LiteralKey{lit: crate::ast::ExprId}, IdentKey{ident: crate::ast::Name});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(PropertyKey<>, ComputedKey{prop: crate::ddlog_std::Option<crate::ast::ExprId>}, LiteralKey{lit: crate::ast::ExprId}, IdentKey{ident: crate::ast::Spanned<crate::ast::Name>});
 impl ::std::fmt::Display for PropertyKey {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -1440,6 +1460,33 @@ impl ::std::fmt::Display for Span {
     }
 }
 impl ::std::fmt::Debug for Span {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct Spanned<T> {
+    pub data: T,
+    pub span: crate::ast::Span
+}
+impl <T: crate::Val> abomonation::Abomonation for Spanned<T>{}
+::differential_datalog::decl_struct_from_record!(Spanned["ast::Spanned"]<T>, ["ast::Spanned"][2]{[0]data["data"]: T, [1]span["span"]: crate::ast::Span});
+::differential_datalog::decl_struct_into_record!(Spanned, ["ast::Spanned"]<T>, data, span);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Spanned, <T>, data: T, span: crate::ast::Span);
+impl <T: ::std::fmt::Debug> ::std::fmt::Display for Spanned<T> {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::ast::Spanned{data,span} => {
+                __formatter.write_str("ast::Spanned{")?;
+                ::std::fmt::Debug::fmt(data, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(span, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl <T: ::std::fmt::Debug> ::std::fmt::Debug for Spanned<T> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
@@ -1725,86 +1772,86 @@ impl ::std::default::Default for UnaryOperand {
         crate::ast::UnaryOperand::UnaryIncrement{}
     }
 }
-pub fn bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__internment_Intern____Stringval(pat: & crate::ast::IPattern) -> crate::ddlog_std::Vec<crate::ast::Name>
+pub fn bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat: & crate::ast::IPattern) -> crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>
 {   match (*crate::internment::ival(pat)) {
         crate::ast::Pattern::SinglePattern{name: crate::ddlog_std::Option::Some{x: ref name}} => {
-                                                                                                     let ref mut __vec: crate::ddlog_std::Vec<crate::ast::Name> = (*(&*crate::__STATIC_0)).clone();
-                                                                                                     crate::ddlog_std::push::<crate::internment::Intern<String>>(__vec, name);
+                                                                                                     let ref mut __vec: crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>> = (*(&*crate::__STATIC_0)).clone();
+                                                                                                     crate::ddlog_std::push::<crate::ast::Spanned<crate::ast::Name>>(__vec, name);
                                                                                                      (*__vec).clone()
                                                                                                  },
-        crate::ast::Pattern::RestPattern{rest: crate::ddlog_std::Option::Some{x: ref rest}} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__internment_Intern____Stringval(rest),
-        crate::ast::Pattern::AssignPattern{key: crate::ddlog_std::Option::Some{x: ref key}, value: _} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__internment_Intern____Stringval(key),
-        crate::ast::Pattern::ObjectPattern{props: ref props} => crate::vec::flatmap::<crate::internment::Intern<crate::ast::ObjectPatternProp>, crate::internment::Intern<String>>(props, (&{
-                                                                                                                                                                                                (Box::new(closure::ClosureImpl{
-                                                                                                                                                                                                    description: "(function(prop: internment::Intern<ast::ObjectPatternProp>):ddlog_std::Vec<internment::Intern<string>>{(ast::bound_vars(prop))})",
-                                                                                                                                                                                                    captured: (),
-                                                                                                                                                                                                    f: {
-                                                                                                                                                                                                           fn __f(__args:*const crate::internment::Intern<crate::ast::ObjectPatternProp>, __captured: &()) -> crate::ddlog_std::Vec<crate::internment::Intern<String>>
-                                                                                                                                                                                                           {
-                                                                                                                                                                                                               let prop = unsafe{&*__args};
-                                                                                                                                                                                                               crate::ast::bound_vars_internment_Intern__ast_ObjectPatternProp_ddlog_std_Vec__internment_Intern____Stringval(prop)
+        crate::ast::Pattern::RestPattern{rest: crate::ddlog_std::Option::Some{x: ref rest}} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(rest),
+        crate::ast::Pattern::AssignPattern{key: crate::ddlog_std::Option::Some{x: ref key}, value: _} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(key),
+        crate::ast::Pattern::ObjectPattern{props: ref props} => crate::vec::flatmap::<crate::internment::Intern<crate::ast::ObjectPatternProp>, crate::ast::Spanned<crate::ast::Name>>(props, (&{
+                                                                                                                                                                                                    (Box::new(closure::ClosureImpl{
+                                                                                                                                                                                                        description: "(function(prop: internment::Intern<ast::ObjectPatternProp>):ddlog_std::Vec<ast::Spanned<ast::Name>>{(ast::bound_vars(prop))})",
+                                                                                                                                                                                                        captured: (),
+                                                                                                                                                                                                        f: {
+                                                                                                                                                                                                               fn __f(__args:*const crate::internment::Intern<crate::ast::ObjectPatternProp>, __captured: &()) -> crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>
+                                                                                                                                                                                                               {
+                                                                                                                                                                                                                   let prop = unsafe{&*__args};
+                                                                                                                                                                                                                   crate::ast::bound_vars_internment_Intern__ast_ObjectPatternProp_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(prop)
+                                                                                                                                                                                                               }
+                                                                                                                                                                                                               __f
                                                                                                                                                                                                            }
-                                                                                                                                                                                                           __f
-                                                                                                                                                                                                       }
-                                                                                                                                                                                                }) as Box<dyn closure::Closure<(*const crate::internment::Intern<crate::ast::ObjectPatternProp>), crate::ddlog_std::Vec<crate::internment::Intern<String>>>>)
-                                                                                                                                                                                            })),
-        crate::ast::Pattern::ArrayPattern{elems: ref elems} => crate::vec::flatmap::<crate::internment::Intern<crate::ast::Pattern>, crate::internment::Intern<String>>(elems, (&{
-                                                                                                                                                                                     (Box::new(closure::ClosureImpl{
-                                                                                                                                                                                         description: "(function(elem: internment::Intern<ast::Pattern>):ddlog_std::Vec<internment::Intern<string>>{(ast::bound_vars(elem))})",
-                                                                                                                                                                                         captured: (),
-                                                                                                                                                                                         f: {
-                                                                                                                                                                                                fn __f(__args:*const crate::internment::Intern<crate::ast::Pattern>, __captured: &()) -> crate::ddlog_std::Vec<crate::internment::Intern<String>>
-                                                                                                                                                                                                {
-                                                                                                                                                                                                    let elem = unsafe{&*__args};
-                                                                                                                                                                                                    crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__internment_Intern____Stringval(elem)
+                                                                                                                                                                                                    }) as Box<dyn closure::Closure<(*const crate::internment::Intern<crate::ast::ObjectPatternProp>), crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>>>)
+                                                                                                                                                                                                })),
+        crate::ast::Pattern::ArrayPattern{elems: ref elems} => crate::vec::flatmap::<crate::internment::Intern<crate::ast::Pattern>, crate::ast::Spanned<crate::ast::Name>>(elems, (&{
+                                                                                                                                                                                         (Box::new(closure::ClosureImpl{
+                                                                                                                                                                                             description: "(function(elem: internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>{(ast::bound_vars(elem))})",
+                                                                                                                                                                                             captured: (),
+                                                                                                                                                                                             f: {
+                                                                                                                                                                                                    fn __f(__args:*const crate::internment::Intern<crate::ast::Pattern>, __captured: &()) -> crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>
+                                                                                                                                                                                                    {
+                                                                                                                                                                                                        let elem = unsafe{&*__args};
+                                                                                                                                                                                                        crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(elem)
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                    __f
                                                                                                                                                                                                 }
-                                                                                                                                                                                                __f
-                                                                                                                                                                                            }
-                                                                                                                                                                                     }) as Box<dyn closure::Closure<(*const crate::internment::Intern<crate::ast::Pattern>), crate::ddlog_std::Vec<crate::internment::Intern<String>>>>)
-                                                                                                                                                                                 })),
+                                                                                                                                                                                         }) as Box<dyn closure::Closure<(*const crate::internment::Intern<crate::ast::Pattern>), crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>>>)
+                                                                                                                                                                                     })),
         _ => (*(&*crate::__STATIC_1)).clone()
     }
 }
-pub fn bound_vars_internment_Intern__ast_ObjectPatternProp_ddlog_std_Vec__internment_Intern____Stringval(pat: & crate::ast::IObjectPatternProp) -> crate::ddlog_std::Vec<crate::ast::Name>
+pub fn bound_vars_internment_Intern__ast_ObjectPatternProp_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat: & crate::ast::IObjectPatternProp) -> crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>
 {   match (*crate::internment::ival(pat)) {
-        crate::ast::ObjectPatternProp::ObjAssignPattern{assign_key: crate::ddlog_std::Option::Some{x: ref key}, assign_value: _} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__internment_Intern____Stringval(key),
-        crate::ast::ObjectPatternProp::ObjKeyValuePattern{key: _, value: crate::ddlog_std::Option::Some{x: ref value}} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__internment_Intern____Stringval(value),
-        crate::ast::ObjectPatternProp::ObjRestPattern{rest: crate::ddlog_std::Option::Some{x: ref rest}} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__internment_Intern____Stringval(rest),
+        crate::ast::ObjectPatternProp::ObjAssignPattern{assign_key: crate::ddlog_std::Option::Some{x: ref key}, assign_value: _} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(key),
+        crate::ast::ObjectPatternProp::ObjKeyValuePattern{key: _, value: crate::ddlog_std::Option::Some{x: ref value}} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(value),
+        crate::ast::ObjectPatternProp::ObjRestPattern{rest: crate::ddlog_std::Option::Some{x: ref rest}} => crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(rest),
         crate::ast::ObjectPatternProp::ObjSinglePattern{name: crate::ddlog_std::Option::Some{x: ref name}} => {
-                                                                                                                  let ref mut __vec: crate::ddlog_std::Vec<crate::ast::Name> = (*(&*crate::__STATIC_0)).clone();
-                                                                                                                  crate::ddlog_std::push::<crate::internment::Intern<String>>(__vec, name);
+                                                                                                                  let ref mut __vec: crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>> = (*(&*crate::__STATIC_0)).clone();
+                                                                                                                  crate::ddlog_std::push::<crate::ast::Spanned<crate::ast::Name>>(__vec, name);
                                                                                                                   (*__vec).clone()
                                                                                                               },
         _ => (*(&*crate::__STATIC_1)).clone()
     }
 }
-pub fn free_variable(clause: & crate::ast::NamedImport) -> crate::ddlog_std::Option<crate::ast::Name>
-{   crate::utils::or_else::<crate::internment::Intern<String>>((&clause.alias), (&clause.name))
+pub fn free_variable(clause: & crate::ast::NamedImport) -> crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
+{   crate::utils::or_else::<crate::ast::Spanned<crate::ast::Name>>((&clause.alias), (&clause.name))
 }
-pub fn free_variables(clause: & crate::ast::ImportClause) -> crate::ddlog_std::Vec<crate::ast::Name>
+pub fn free_variables(clause: & crate::ast::ImportClause) -> crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>
 {   match (*clause) {
         crate::ast::ImportClause::WildcardImport{alias: crate::ddlog_std::Option::Some{x: ref alias}} => {
-                                                                                                             let ref mut __vec: crate::ddlog_std::Vec<crate::ast::Name> = (*(&*crate::__STATIC_0)).clone();
-                                                                                                             crate::ddlog_std::push::<crate::internment::Intern<String>>(__vec, alias);
+                                                                                                             let ref mut __vec: crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>> = (*(&*crate::__STATIC_0)).clone();
+                                                                                                             crate::ddlog_std::push::<crate::ast::Spanned<crate::ast::Name>>(__vec, alias);
                                                                                                              (*__vec).clone()
                                                                                                          },
-        crate::ast::ImportClause::GroupedImport{imports: ref imports} => crate::vec::filter_map::<crate::ast::NamedImport, crate::internment::Intern<String>>(imports, (&{
-                                                                                                                                                                             (Box::new(closure::ClosureImpl{
-                                                                                                                                                                                 description: "(function(named: ast::NamedImport):ddlog_std::Option<ast::Name>{(ast::free_variable(named))})",
-                                                                                                                                                                                 captured: (),
-                                                                                                                                                                                 f: {
-                                                                                                                                                                                        fn __f(__args:*const crate::ast::NamedImport, __captured: &()) -> crate::ddlog_std::Option<crate::ast::Name>
-                                                                                                                                                                                        {
-                                                                                                                                                                                            let named = unsafe{&*__args};
-                                                                                                                                                                                            crate::ast::free_variable(named)
+        crate::ast::ImportClause::GroupedImport{imports: ref imports} => crate::vec::filter_map::<crate::ast::NamedImport, crate::ast::Spanned<crate::ast::Name>>(imports, (&{
+                                                                                                                                                                                 (Box::new(closure::ClosureImpl{
+                                                                                                                                                                                     description: "(function(named: ast::NamedImport):ddlog_std::Option<ast::Spanned<ast::Name>>{(ast::free_variable(named))})",
+                                                                                                                                                                                     captured: (),
+                                                                                                                                                                                     f: {
+                                                                                                                                                                                            fn __f(__args:*const crate::ast::NamedImport, __captured: &()) -> crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
+                                                                                                                                                                                            {
+                                                                                                                                                                                                let named = unsafe{&*__args};
+                                                                                                                                                                                                crate::ast::free_variable(named)
+                                                                                                                                                                                            }
+                                                                                                                                                                                            __f
                                                                                                                                                                                         }
-                                                                                                                                                                                        __f
-                                                                                                                                                                                    }
-                                                                                                                                                                             }) as Box<dyn closure::Closure<(*const crate::ast::NamedImport), crate::ddlog_std::Option<crate::ast::Name>>>)
-                                                                                                                                                                         })),
+                                                                                                                                                                                 }) as Box<dyn closure::Closure<(*const crate::ast::NamedImport), crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>>>)
+                                                                                                                                                                             })),
         crate::ast::ImportClause::SingleImport{name: ref name} => {
-                                                                      let ref mut __vec: crate::ddlog_std::Vec<crate::ast::Name> = (*(&*crate::__STATIC_0)).clone();
-                                                                      crate::ddlog_std::push::<crate::internment::Intern<String>>(__vec, name);
+                                                                      let ref mut __vec: crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>> = (*(&*crate::__STATIC_0)).clone();
+                                                                      crate::ddlog_std::push::<crate::ast::Spanned<crate::ast::Name>>(__vec, name);
                                                                       (*__vec).clone()
                                                                   },
         _ => (*(&*crate::__STATIC_1)).clone()

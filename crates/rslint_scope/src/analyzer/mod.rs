@@ -6,24 +6,30 @@ mod visit;
 pub(crate) use visit::Visit;
 
 use crate::DatalogBuilder;
-use rslint_parser::ast::{AstChildren, Name, ObjectPatternProp, Pattern};
+use rslint_parser::{
+    ast::{AstChildren, Name, ObjectPatternProp, Pattern},
+    AstNode,
+};
 use types::{
-    ast::{ObjectPatternProp as DatalogObjectPatternProp, Pattern as DatalogPattern},
+    ast::{
+        IPattern, Name as DatalogName, ObjectPatternProp as DatalogObjectPatternProp,
+        Pattern as DatalogPattern, Spanned,
+    },
     internment::Intern,
 };
 
 pub(super) struct AnalyzerInner;
 
 impl<'ddlog> Visit<'ddlog, Name> for AnalyzerInner {
-    type Output = Intern<String>;
+    type Output = Spanned<DatalogName>;
 
     fn visit(&self, _scope: &dyn DatalogBuilder<'ddlog>, name: Name) -> Self::Output {
-        Intern::new(name.to_string())
+        Spanned::new(Intern::new(name.to_string()), name.range())
     }
 }
 
 impl<'ddlog> Visit<'ddlog, Pattern> for AnalyzerInner {
-    type Output = Intern<DatalogPattern>;
+    type Output = IPattern;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, pattern: Pattern) -> Self::Output {
         Intern::new(match pattern {

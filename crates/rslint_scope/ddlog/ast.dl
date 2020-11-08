@@ -25,26 +25,28 @@ function to_string(span: Span): string {
     "(${span.start}, ${span.end})"
 }
 
+typedef Spanned<'T> = Spanned { data: 'T, span: Span }
+
 typedef OneOf<'A, 'B, 'C> =
     First { a: 'A }
     | Second { b: 'B }
     | Third { c: 'C }
 
 typedef Pattern =
-    SinglePattern { name: Option<Name> }
+    SinglePattern { name: Option<Spanned<Name>> }
     | RestPattern { rest: Option<Intern<Pattern>> }
     | AssignPattern { key: Option<Intern<Pattern>>, value: Option<ExprId> }
     | ObjectPattern { props: Vec<Intern<ObjectPatternProp>> }
     | ArrayPattern { elems: Vec<Intern<Pattern>> }
 
-function bound_vars(pat: IPattern): Vec<Name> {
+function bound_vars(pat: IPattern): Vec<Spanned<Name>> {
     match (pat.ival()) {
         SinglePattern { Some { name }} -> [name],
         RestPattern { Some { rest }} -> rest.bound_vars(),
         AssignPattern { Some { key }, _ } -> key.bound_vars(),
         ObjectPattern { props } -> props.flatmap(|prop| prop.bound_vars()),
         ArrayPattern { elems } -> elems.flatmap(|elem| elem.bound_vars()),
-        _ -> vec_empty(),
+        _ -> vec_empty()
     }
 }
 
@@ -52,15 +54,15 @@ typedef ObjectPatternProp =
     ObjAssignPattern { assign_key: Option<Intern<Pattern>>, assign_value: Option<ExprId> }
     | ObjKeyValuePattern { key: Option<PropertyKey>, value: Option<Intern<Pattern>> }
     | ObjRestPattern { rest: Option<Intern<Pattern>> }
-    | ObjSinglePattern { name: Option<Name> }
+    | ObjSinglePattern { name: Option<Spanned<Name>> }
 
-function bound_vars(pat: IObjectPatternProp): Vec<Name> {
+function bound_vars(pat: IObjectPatternProp): Vec<Spanned<Name>> {
     match (pat.ival()) {
         ObjAssignPattern { Some { key }, _ } -> key.bound_vars(),
         ObjKeyValuePattern { _, Some { value }} -> value.bound_vars(),
         ObjRestPattern { Some { rest }} -> rest.bound_vars(),
         ObjSinglePattern { Some { name }} -> [name],
-        _ -> vec_empty(),
+        _ -> vec_empty()
     }
 }
 
@@ -186,7 +188,7 @@ typedef ArrayElement = ArrExpr { expr: ExprId } | ArrSpread { spread: Option<Exp
 typedef PropertyKey =
     ComputedKey { prop: Option<ExprId> }
     | LiteralKey { lit: ExprId }
-    | IdentKey { ident: Name }
+    | IdentKey { ident: Spanned<Name> }
 
 typedef PropertyVal =
     PropLit { lit: Option<ExprId> }
@@ -195,7 +197,10 @@ typedef PropertyVal =
     | PropSpread { value: Option<ExprId> }
     | PropInit { value: Option<ExprId> }
     | PropIdent
-    | PropMethod { params: Option<Vec<IPattern>>, body: Option<StmtId> }
+    | PropMethod {
+        params: Option<Vec<IPattern>>,
+        body: Option<StmtId>
+    }
 
 typedef ClassElement =
     ClassEmptyElem
@@ -213,21 +218,24 @@ typedef ClassElement =
 typedef IClassElement = Intern<ClassElement>
 
 typedef ImportClause =
-    WildcardImport { alias: Option<Name> }
+    WildcardImport { alias: Option<Spanned<Name>> }
     | GroupedImport { imports: Vec<NamedImport> }
-    | SingleImport { name: Name }
+    | SingleImport { name: Spanned<Name> }
 
-function free_variables(clause: ImportClause): Vec<Name> {
+function free_variables(clause: ImportClause): Vec<Spanned<Name>> {
     match (clause) {
         WildcardImport { Some { alias }} -> [alias],
         GroupedImport { imports } -> imports.filter_map(|named| named.free_variable()),
         SingleImport { name } -> [name],
-        _ -> vec_empty(),
+        _ -> vec_empty()
     }
 }
 
-typedef NamedImport = NamedImport { name: Option<Name>, alias: Option<Name> }
+typedef NamedImport = NamedImport {
+    name: Option<Spanned<Name>>,
+    alias: Option<Spanned<Name>>
+}
 
-function free_variable(clause: NamedImport): Option<Name> {
+function free_variable(clause: NamedImport): Option<Spanned<Name>> {
     clause.alias.or_else(clause.name)
 }

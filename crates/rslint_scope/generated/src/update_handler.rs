@@ -152,31 +152,27 @@ impl<F: Callback> MTUpdateHandler for CallbackUpdateHandler<F> {
     }
 }
 
-#[cfg(feature = "c_api")]
-pub type ExternCCallback = extern "C" fn(
-    arg: libc::uintptr_t,
-    table: libc::size_t,
-    rec: *const record::Record,
-    weight: libc::ssize_t,
-);
-
 /* `UpdateHandler` implementation that invokes user-provided C function.
  */
-#[cfg(feature = "c_api")]
 #[derive(Clone, Copy, Debug)]
 pub struct ExternCUpdateHandler {
     cb: ExternCCallback,
     cb_arg: libc::uintptr_t,
 }
 
-#[cfg(feature = "c_api")]
+type ExternCCallback = extern "C" fn(
+    arg: libc::uintptr_t,
+    table: libc::size_t,
+    rec: *const record::Record,
+    weight: libc::ssize_t,
+);
+
 impl ExternCUpdateHandler {
     pub fn new(cb: ExternCCallback, cb_arg: libc::uintptr_t) -> Self {
         Self { cb, cb_arg }
     }
 }
 
-#[cfg(feature = "c_api")]
 impl UpdateHandler for ExternCUpdateHandler {
     fn update_cb(&self) -> Box<dyn ST_CBFn> {
         let cb = self.cb;
@@ -194,7 +190,6 @@ impl UpdateHandler for ExternCUpdateHandler {
     fn after_commit(&self, _success: bool) {}
 }
 
-#[cfg(feature = "c_api")]
 impl MTUpdateHandler for ExternCUpdateHandler {
     fn mt_update_cb(&self) -> Box<dyn CBFn> {
         let cb = self.cb;
@@ -478,7 +473,6 @@ impl ThreadUpdateHandler {
         let (tx_msg_channel, rx_message_channel) = channel();
         let commit_barrier = Arc::new(Barrier::new(2));
         let commit_barrier2 = commit_barrier.clone();
-
         spawn(move || {
             let handler = handler_generator();
             let mut update_cb = handler.update_cb();
@@ -487,28 +481,36 @@ impl ThreadUpdateHandler {
                     Ok(Msg::Update { relid, v, w }) => {
                         update_cb(relid, &v, w);
                     }
-                    Ok(Msg::BeforeCommit) => handler.before_commit(),
+                    Ok(Msg::BeforeCommit) => {
+                        handler.before_commit();
+                    }
                     Ok(Msg::AfterCommit { success }) => {
-                        // All updates have been sent to channel by now: flush the channel.
+                        /* All updates have been sent to channel by now: flush the channel. */
                         loop {
                             match rx_message_channel.try_recv() {
                                 Ok(Msg::Update { relid, v, w }) => {
                                     update_cb(relid, &v, w);
                                 }
-                                Ok(Msg::Stop) => return,
-                                _ => break,
+                                Ok(Msg::Stop) => {
+                                    return;
+                                }
+                                _ => {
+                                    break;
+                                }
                             }
                         }
-
                         handler.after_commit(success);
                         commit_barrier2.wait();
                     }
-                    Ok(Msg::Stop) => return,
-                    _ => return,
+                    Ok(Msg::Stop) => {
+                        return;
+                    }
+                    _ => {
+                        return;
+                    }
                 }
             }
         });
-
         Self {
             msg_channel: Arc::new(Mutex::new(tx_msg_channel)),
             commit_barrier,
@@ -535,7 +537,6 @@ impl UpdateHandler for ThreadUpdateHandler {
                 .unwrap();
         })
     }
-
     fn before_commit(&self) {
         self.msg_channel
             .lock()
@@ -543,7 +544,6 @@ impl UpdateHandler for ThreadUpdateHandler {
             .send(Msg::BeforeCommit)
             .unwrap();
     }
-
     fn after_commit(&self, success: bool) {
         if self
             .msg_channel

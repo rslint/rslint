@@ -294,15 +294,15 @@ impl ::std::fmt::Debug for Call {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct Class {
     pub id: crate::ast::ClassId,
-    pub name: crate::ddlog_std::Option<crate::ast::Name>,
+    pub name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>,
     pub parent: crate::ddlog_std::Option<crate::ast::ExprId>,
     pub elements: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IClassElement>>,
     pub scope: crate::ast::Scope
 }
 impl abomonation::Abomonation for Class{}
-::differential_datalog::decl_struct_from_record!(Class["inputs::Class"]<>, ["inputs::Class"][5]{[0]id["id"]: crate::ast::ClassId, [1]name["name"]: crate::ddlog_std::Option<crate::ast::Name>, [2]parent["parent"]: crate::ddlog_std::Option<crate::ast::ExprId>, [3]elements["elements"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IClassElement>>, [4]scope["scope"]: crate::ast::Scope});
+::differential_datalog::decl_struct_from_record!(Class["inputs::Class"]<>, ["inputs::Class"][5]{[0]id["id"]: crate::ast::ClassId, [1]name["name"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, [2]parent["parent"]: crate::ddlog_std::Option<crate::ast::ExprId>, [3]elements["elements"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IClassElement>>, [4]scope["scope"]: crate::ast::Scope});
 ::differential_datalog::decl_struct_into_record!(Class, ["inputs::Class"]<>, id, name, parent, elements, scope);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Class, <>, id: crate::ast::ClassId, name: crate::ddlog_std::Option<crate::ast::Name>, parent: crate::ddlog_std::Option<crate::ast::ExprId>, elements: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IClassElement>>, scope: crate::ast::Scope);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Class, <>, id: crate::ast::ClassId, name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, parent: crate::ddlog_std::Option<crate::ast::ExprId>, elements: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IClassElement>>, scope: crate::ast::Scope);
 impl ::std::fmt::Display for Class {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -445,12 +445,12 @@ impl ::std::fmt::Debug for DoWhile {
 pub struct DotAccess {
     pub expr_id: crate::ast::ExprId,
     pub object: crate::ddlog_std::Option<crate::ast::ExprId>,
-    pub prop: crate::ddlog_std::Option<crate::ast::Name>
+    pub prop: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
 }
 impl abomonation::Abomonation for DotAccess{}
-::differential_datalog::decl_struct_from_record!(DotAccess["inputs::DotAccess"]<>, ["inputs::DotAccess"][3]{[0]expr_id["expr_id"]: crate::ast::ExprId, [1]object["object"]: crate::ddlog_std::Option<crate::ast::ExprId>, [2]prop["prop"]: crate::ddlog_std::Option<crate::ast::Name>});
+::differential_datalog::decl_struct_from_record!(DotAccess["inputs::DotAccess"]<>, ["inputs::DotAccess"][3]{[0]expr_id["expr_id"]: crate::ast::ExprId, [1]object["object"]: crate::ddlog_std::Option<crate::ast::ExprId>, [2]prop["prop"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>});
 ::differential_datalog::decl_struct_into_record!(DotAccess, ["inputs::DotAccess"]<>, expr_id, object, prop);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(DotAccess, <>, expr_id: crate::ast::ExprId, object: crate::ddlog_std::Option<crate::ast::ExprId>, prop: crate::ddlog_std::Option<crate::ast::Name>);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(DotAccess, <>, expr_id: crate::ast::ExprId, object: crate::ddlog_std::Option<crate::ast::ExprId>, prop: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>);
 impl ::std::fmt::Display for DotAccess {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -708,14 +708,14 @@ impl ::std::fmt::Debug for ForIn {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct Function {
     pub id: crate::ast::FuncId,
-    pub name: crate::ddlog_std::Option<crate::ast::Name>,
+    pub name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>,
     pub scope: crate::ast::Scope,
     pub body: crate::ast::Scope
 }
 impl abomonation::Abomonation for Function{}
-::differential_datalog::decl_struct_from_record!(Function["inputs::Function"]<>, ["inputs::Function"][4]{[0]id["id"]: crate::ast::FuncId, [1]name["name"]: crate::ddlog_std::Option<crate::ast::Name>, [2]scope["scope"]: crate::ast::Scope, [3]body["body"]: crate::ast::Scope});
+::differential_datalog::decl_struct_from_record!(Function["inputs::Function"]<>, ["inputs::Function"][4]{[0]id["id"]: crate::ast::FuncId, [1]name["name"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, [2]scope["scope"]: crate::ast::Scope, [3]body["body"]: crate::ast::Scope});
 ::differential_datalog::decl_struct_into_record!(Function, ["inputs::Function"]<>, id, name, scope, body);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Function, <>, id: crate::ast::FuncId, name: crate::ddlog_std::Option<crate::ast::Name>, scope: crate::ast::Scope, body: crate::ast::Scope);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Function, <>, id: crate::ast::FuncId, name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, scope: crate::ast::Scope, body: crate::ast::Scope);
 impl ::std::fmt::Display for Function {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -855,13 +855,13 @@ impl ::std::fmt::Debug for ImportDecl {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct InlineFunc {
     pub expr_id: crate::ast::ExprId,
-    pub name: crate::ddlog_std::Option<crate::ast::Name>,
+    pub name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>,
     pub body: crate::ddlog_std::Option<crate::ast::StmtId>
 }
 impl abomonation::Abomonation for InlineFunc{}
-::differential_datalog::decl_struct_from_record!(InlineFunc["inputs::InlineFunc"]<>, ["inputs::InlineFunc"][3]{[0]expr_id["expr_id"]: crate::ast::ExprId, [1]name["name"]: crate::ddlog_std::Option<crate::ast::Name>, [2]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>});
+::differential_datalog::decl_struct_from_record!(InlineFunc["inputs::InlineFunc"]<>, ["inputs::InlineFunc"][3]{[0]expr_id["expr_id"]: crate::ast::ExprId, [1]name["name"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, [2]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>});
 ::differential_datalog::decl_struct_into_record!(InlineFunc, ["inputs::InlineFunc"]<>, expr_id, name, body);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(InlineFunc, <>, expr_id: crate::ast::ExprId, name: crate::ddlog_std::Option<crate::ast::Name>, body: crate::ddlog_std::Option<crate::ast::StmtId>);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(InlineFunc, <>, expr_id: crate::ast::ExprId, name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, body: crate::ddlog_std::Option<crate::ast::StmtId>);
 impl ::std::fmt::Display for InlineFunc {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -939,13 +939,13 @@ impl ::std::fmt::Debug for InputScope {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct Label {
     pub stmt_id: crate::ast::StmtId,
-    pub name: crate::ddlog_std::Option<crate::ast::Name>,
+    pub name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>,
     pub body: crate::ddlog_std::Option<crate::ast::StmtId>
 }
 impl abomonation::Abomonation for Label{}
-::differential_datalog::decl_struct_from_record!(Label["inputs::Label"]<>, ["inputs::Label"][3]{[0]stmt_id["stmt_id"]: crate::ast::StmtId, [1]name["name"]: crate::ddlog_std::Option<crate::ast::Name>, [2]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>});
+::differential_datalog::decl_struct_from_record!(Label["inputs::Label"]<>, ["inputs::Label"][3]{[0]stmt_id["stmt_id"]: crate::ast::StmtId, [1]name["name"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, [2]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>});
 ::differential_datalog::decl_struct_into_record!(Label, ["inputs::Label"]<>, stmt_id, name, body);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Label, <>, stmt_id: crate::ast::StmtId, name: crate::ddlog_std::Option<crate::ast::Name>, body: crate::ddlog_std::Option<crate::ast::StmtId>);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Label, <>, stmt_id: crate::ast::StmtId, name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, body: crate::ddlog_std::Option<crate::ast::StmtId>);
 impl ::std::fmt::Display for Label {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {

@@ -7,6 +7,26 @@ use std::{
     ops::{Add, AddAssign, Range},
 };
 
+impl<T> Spanned<T> {
+    /// Create a new `Spanned`
+    pub fn new<S>(data: T, span: S) -> Self
+    where
+        S: Into<Span>,
+    {
+        Self {
+            data,
+            span: span.into(),
+        }
+    }
+}
+
+impl Span {
+    /// Create a new `Span`
+    pub const fn new(start: u32, end: u32) -> Self {
+        Self { start, end }
+    }
+}
+
 /// Implement the `Span` trait for ddlog `Span`s
 impl rslint_errors::Span for Span {
     fn as_range(&self) -> Range<usize> {
