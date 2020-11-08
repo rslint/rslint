@@ -6,14 +6,15 @@ use crate::globals::JsGlobal;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
     int::Int,
-    program::{RelId, Update},
+    program::{IdxId, RelId, Update},
     record::Record,
     DDlog, DeltaMap,
 };
 use rslint_parser::{BigInt, TextRange};
-use rslint_scoping_ddlog::{api::HDDlog, relid2name, Relations, INPUT_RELIDMAP};
+use rslint_scoping_ddlog::{api::HDDlog, relid2name, Indexes, Relations, INPUT_RELIDMAP};
 use std::{
     cell::{Cell, RefCell},
+    collections::BTreeSet,
     fs::File,
     mem,
     sync::{Arc, Mutex},
@@ -41,23 +42,6 @@ use types::{
 //       having to allocate strings for idents
 
 pub type DatalogResult<T> = Result<T, String>;
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum Weight {
-    Insert,
-    Delete,
-}
-
-impl From<isize> for Weight {
-    fn from(weight: isize) -> Self {
-        match weight {
-            1 => Self::Insert,
-            -1 => Self::Delete,
-
-            invalid => unreachable!("invalid weight given: {}", invalid),
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct Datalog {
@@ -154,6 +138,19 @@ impl Datalog {
         self.outputs.batch_update(trans.commit()?);
 
         Ok(result)
+    }
+
+    pub(crate) fn query(
+        &self,
+        index: Indexes,
+        key: Option<DDValue>,
+    ) -> DatalogResult<BTreeSet<DDValue>> {
+        let ddlog = self.datalog.lock().unwrap();
+        if let Some(key) = key {
+            ddlog.hddlog.query_index(index as IdxId, key)
+        } else {
+            ddlog.hddlog.dump_index(index as IdxId)
+        }
     }
 }
 

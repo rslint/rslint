@@ -23,6 +23,8 @@ import inputs
 // ```
 //
 relation ChildScope(parent: Scope, child: Scope)
+index ChildScopeByParent(parent: Scope) on ChildScope(parent, _)
+
 ChildScope(parent, child) :- InputScope(parent, child), parent != child.
 ChildScope(parent, child) :- InputScope(parent, interum), ChildScope(interum, child), parent != child.
 

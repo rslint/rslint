@@ -378,6 +378,7 @@ impl ::std::fmt::Debug for WithinTypeofExpr {
 ::differential_datalog::decl_ddval_convert!{crate::ast::ExprId}
 ::differential_datalog::decl_ddval_convert!{crate::ast::FuncId}
 ::differential_datalog::decl_ddval_convert!{crate::ast::Scope}
+::differential_datalog::decl_ddval_convert!{crate::ast::Span}
 ::differential_datalog::decl_ddval_convert!{crate::ast::StmtId}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::ast::Scope, crate::ast::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple2<crate::ast::Scope, crate::internment::Intern<String>>}
@@ -398,7 +399,6 @@ impl ::std::fmt::Debug for WithinTypeofExpr {
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ast::Span, crate::ast::Span>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::ast::ExprId, crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span, crate::ast::ExprId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span, crate::ast::StmtId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple5<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span, crate::ast::Scope, crate::ast::Span>}
 ::differential_datalog::decl_ddval_convert!{crate::inputs::Array}

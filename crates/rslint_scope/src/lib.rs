@@ -1,6 +1,7 @@
 mod analyzer;
 mod datalog;
 pub mod globals;
+pub mod scoping;
 mod tests;
 
 pub use datalog::{
