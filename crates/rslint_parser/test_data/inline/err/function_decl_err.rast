@@ -9,10 +9,10 @@ MODULE@0..114
       L_CURLY@11..12 "{"
       R_CURLY@12..13 "}"
   WHITESPACE@13..14 "\n"
-  FN_DECL@14..36
+  FN_DECL@14..41
     FUNCTION_KW@14..22 "function"
     WHITESPACE@22..23 " "
-    PARAMETER_LIST@23..36
+    PARAMETER_LIST@23..38
       ERROR@23..24
         L_CURLY@23..24 "{"
       ERROR@24..25
@@ -23,14 +23,13 @@ MODULE@0..114
       WHITESPACE@34..35 " "
       ERROR@35..36
         STAR@35..36 "*"
-  EXPR_STMT@36..38
-    GROUPING_EXPR@36..38
-      L_PAREN@36..37 "("
+      ERROR@36..37
+        L_PAREN@36..37 "("
       R_PAREN@37..38 ")"
-  WHITESPACE@38..39 " "
-  BLOCK_STMT@39..41
-    L_CURLY@39..40 "{"
-    R_CURLY@40..41 "}"
+    WHITESPACE@38..39 " "
+    BLOCK_STMT@39..41
+      L_CURLY@39..40 "{"
+      R_CURLY@40..41 "}"
   WHITESPACE@41..42 "\n"
   FN_DECL@42..61
     IDENT@42..47 "async"
@@ -122,37 +121,6 @@ error[SyntaxError]: Expected an identifier or pattern, but found none
   │
 3 │ function *() {}
   │          ^
-
---
-error[SyntaxError]: expected `')'` but instead found `(`
-  ┌─ function_decl_err.js:3:11
-  │
-3 │ function *() {}
-  │           ^ unexpected
-
---
-error[SyntaxError]: expected a block statement but instead found `(`
-  ┌─ function_decl_err.js:3:11
-  │
-3 │ function *() {}
-  │           ^
-
---
-error[SyntaxError]: grouping expressions cannot be empty
-  ┌─ function_decl_err.js:3:11
-  │
-3 │ function *() {}
-  │           ^^^
-
---
-error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
-  ┌─ function_decl_err.js:3:14
-  │
-3 │ function *() {}
-  │           ---^
-  │           │  │
-  │           │  An explicit or implicit semicolon is expected here...
-  │           ...Which is required to end this statement
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none

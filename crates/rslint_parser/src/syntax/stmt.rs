@@ -894,7 +894,7 @@ fn catch_clause(p: &mut Parser) {
     p.expect(T![catch]);
 
     if p.eat(T!['(']) {
-        pattern(p, false);
+        pattern(p);
         p.expect(T![')']);
     }
 

@@ -79,7 +79,7 @@ fn formal_param_pat(p: &mut Parser) -> Option<CompletedMarker> {
         }
     }
 
-    let pat = pattern(p, true)?;
+    let pat = pattern(p)?;
     let pat_range = pat.range(p);
     let mut kind = pat.kind();
     pat.undo_completion(p).abandon(p);
@@ -210,9 +210,7 @@ fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarke
         if p.at(T![...]) {
             let m = p.start();
             p.bump_any();
-            if let Some(pat) = pattern(p, false) {
-                pat.undo_completion(p).abandon(p);
-            }
+            pattern(p);
 
             // rest patterns cannot be optional: `...foo?: number[]`
             if p.at(T![?]) {
@@ -280,7 +278,6 @@ fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarke
                         T![await],
                         T![yield],
                         T![,],
-                        T![=],
                         T!['['],
                         T![...],
                         T![')'],

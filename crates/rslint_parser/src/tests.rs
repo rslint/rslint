@@ -1,7 +1,8 @@
-use crate::{parse_module, ParserError};
+use crate::{ast::Module, parse_module, Parse, ParserError};
 use expect_test::expect_file;
 use rslint_errors::{file::SimpleFiles, Emitter};
 use std::fs;
+use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
 
 #[test]
@@ -17,16 +18,24 @@ fn test_data_dir() -> PathBuf {
     project_dir().join("rslint_parser/test_data")
 }
 
+fn try_parse(path: &str, text: &str) -> Parse<Module> {
+    let res = catch_unwind(|| parse_module(text, 0));
+    if res.is_err() {
+        panic!("Trying to parse `{}` caused infinite recursion", path);
+    };
+    res.unwrap()
+}
+
 #[test]
 fn parser_tests() {
     dir_tests(&test_data_dir(), &["inline/ok"], "rast", |text, path| {
-        let parse = parse_module(text, 0);
+        let parse = try_parse(path.to_str().unwrap(), text);
         let errors = parse.errors();
         assert_errors_are_absent(&errors, path);
         format!("{:#?}", parse.syntax())
     });
     dir_tests(&test_data_dir(), &["inline/err"], "rast", |text, path| {
-        let parse = parse_module(text, 0);
+        let parse = try_parse(path.to_str().unwrap(), text);
         let errors = parse.errors();
         assert_errors_are_present(&errors, path);
         let mut files = SimpleFiles::new();

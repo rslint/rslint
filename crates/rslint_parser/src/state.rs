@@ -82,15 +82,6 @@ impl Default for ParserState {
 }
 
 impl ParserState {
-    pub fn module() -> Self {
-        Self {
-            strict: Some(StrictMode::Module),
-            is_module: true,
-            expr_recovery_set: EXPR_RECOVERY_SET,
-            ..Default::default()
-        }
-    }
-
     /// Check for duplicate defaults and update state
     pub fn check_default(
         &mut self,

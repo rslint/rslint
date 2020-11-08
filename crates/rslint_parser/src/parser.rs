@@ -25,7 +25,8 @@ use crate::*;
 ///     LosslessTreeSink,
 ///     SyntaxNode,
 ///     process,
-///     AstNode
+///     AstNode,
+///     Syntax
 /// };
 ///
 /// let source = "(delete b)";
@@ -40,7 +41,7 @@ use crate::*;
 /// // and giving raw tokens to allow the parser to turn completed markers into syntax nodes
 /// let token_source = TokenSource::new(source, &tokens);
 ///
-/// let mut parser = Parser::new(token_source, 0);
+/// let mut parser = Parser::new(token_source, 0, Syntax::default());
 ///
 /// // Use one of the syntax parsing functions to parse an expression.
 /// // This adds node and token events to the parser which are then used to make a node.
@@ -89,12 +90,20 @@ pub struct Parser<'t> {
 impl<'t> Parser<'t> {
     /// Make a new parser
     pub fn new(tokens: TokenSource<'t>, file_id: usize, syntax: Syntax) -> Parser<'t> {
+        let mut state = ParserState::default();
+        // TODO(RDambrosio016): Does TypeScript imply Module/Strict?
+        state.is_module = syntax.file_kind == FileKind::Module;
+        state.strict = if syntax.file_kind == FileKind::Module {
+            Some(StrictMode::Module)
+        } else {
+            None
+        };
         Parser {
             file_id,
             tokens,
             events: vec![],
             steps: Cell::new(0),
-            state: ParserState::default(),
+            state,
             syntax,
         }
     }

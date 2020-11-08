@@ -185,7 +185,7 @@ fn assign_expr_recursive(
         if p.at(T![=]) {
             if !is_valid_target(p, &target) && target.kind() != TEMPLATE {
                 p.rewind(checkpoint);
-                target = pattern(p, false)?;
+                target = pattern(p)?;
             }
         } else {
             check_assign_target_from_marker(p, &target);
