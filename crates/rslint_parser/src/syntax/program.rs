@@ -6,36 +6,18 @@ use super::pat::binding_identifier;
 use super::stmt::{block_items, semi, var_decl, STMT_RECOVERY_SET};
 use crate::{SyntaxKind::*, *};
 
-/// Parse an ECMAScript script.
-///
-/// # Panics
-/// Panics if the parser is configured to parse a module.
-#[tracing::instrument(name = "parse script", skip(p))]
-pub fn script(p: &mut Parser) -> CompletedMarker {
-    assert!(
-        !p.state.is_module,
-        "Using the script parsing function for modules is erroneous"
-    );
+pub fn parse(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.eat(T![shebang]);
     block_items(p, true, true, false, None);
-    m.complete(p, SyntaxKind::SCRIPT)
-}
-
-/// Parse an ECMAScript module.
-///
-/// # Panics
-/// Panics if the parser is configured to parse a script.
-#[tracing::instrument(name = "parse module", skip(p))]
-pub fn module(p: &mut Parser) -> CompletedMarker {
-    assert!(
-        p.state.is_module,
-        "Using the module parsing function for scripts is erroneous"
-    );
-    let m = p.start();
-    p.eat(T![shebang]);
-    block_items(p, true, true, false, None);
-    m.complete(p, SyntaxKind::MODULE)
+    m.complete(
+        p,
+        if p.syntax.file_kind == FileKind::Script {
+            SyntaxKind::SCRIPT
+        } else {
+            SyntaxKind::MODULE
+        },
+    )
 }
 
 /// A module import declaration such as `import * from "a"`

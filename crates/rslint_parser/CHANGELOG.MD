@@ -6,10 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Removed
+
+- Removed `new_module`
+- Removed `syntax::program::script` and `syntax::program::module` in favor of just `ast::program::parse`
+
 ### Changed
 
 - Made `cur_event_pos` and `token_pos` private in favor of a specialized checkpoint struct
 - Changed `rewind` to take a Checkpoint
+- Added a new parameter to `Parser::new`
 
 ### Added
 
@@ -19,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added parser benchmarks
 - Added `syntax::typescript`
 - Added the `stop_on_r_curly` parameter to `block_items`
+- Added `Syntax`
+- Added the `recover_with_eq` param to `syntax::pat::pattern`
 
 ### Fixed
 

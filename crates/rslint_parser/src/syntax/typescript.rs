@@ -172,6 +172,28 @@ macro_rules! no_recover {
     };
 }
 
+// pub fn ts_type_member(p: &mut Parser) -> Option<CompletedMarker> {
+//     if p.at(T!['(']) || p.at(T![<]) {
+
+//     }
+// }
+
+// pub fn ts_signature_member(p: &mut Parser, construct_sig: bool) -> CompletedMarker {
+//     let m = p.start();
+//     if construct_sig {
+//         p.expect(T![new]);
+//     }
+
+//     if p.at(T![<]) {
+//         ts_type_params(p);
+//     }
+
+//     p.expect(T!['(']);
+//     if p.at(T![:]) {
+//         ts_type_or_type_predicate_ann(p, T![:]);
+//     }
+// }
+
 pub fn ts_enum(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.eat(T![const]);
@@ -419,6 +441,7 @@ pub fn ts_array_type_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
 
     if !p.has_linebreak_before_n(0) && p.at(T!['[']) {
         let m = ty.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
+        p.bump_any();
         if p.eat(T![']']) {
             Some(m.complete(p, TS_ARRAY))
         } else {
@@ -770,7 +793,7 @@ pub fn ts_predicate(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
-fn maybe_eat_incorrect_modifier(p: &mut Parser) -> Option<CompletedMarker> {
+pub(crate) fn maybe_eat_incorrect_modifier(p: &mut Parser) -> Option<CompletedMarker> {
     if matches!(p.cur_src(), "public" | "private" | "protected" | "readonly") {
         let m = p.start();
         p.bump_any();

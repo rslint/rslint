@@ -1,8 +1,9 @@
 //! Class and function declarations.
 
-use super::expr::{assign_expr, lhs_expr, object_prop_name, EXPR_RECOVERY_SET};
-use super::pat::{binding_element, binding_identifier, opt_binding_identifier, pattern};
+use super::expr::{assign_expr, lhs_expr, object_prop_name};
+use super::pat::{binding_identifier, opt_binding_identifier, pattern};
 use super::stmt::block_stmt;
+use super::typescript::*;
 use crate::{SyntaxKind::*, *};
 use std::collections::HashMap;
 
@@ -65,7 +66,132 @@ pub fn function_decl(p: &mut Parser, m: Marker, fn_expr: bool) -> CompletedMarke
     m.complete(p, FN_DECL)
 }
 
+#[allow(clippy::unnecessary_unwrap)]
+fn formal_param_pat(p: &mut Parser) -> Option<CompletedMarker> {
+    let m = p.start();
+    if p.typescript() {
+        if let Some(modifier) = maybe_eat_incorrect_modifier(p) {
+            let err = p
+                .err_builder("modifiers on parameters are only allowed in constructors")
+                .primary(modifier.range(p), "");
+
+            p.error(err);
+        }
+    }
+
+    let pat = pattern(p, true)?;
+    let pat_range = pat.range(p);
+    let mut kind = pat.kind();
+    pat.undo_completion(p).abandon(p);
+
+    let mut opt = None;
+
+    if p.at(T![?]) {
+        opt = Some(p.cur_tok().range);
+        let range = p.cur_tok().range;
+        match kind {
+            SINGLE_PATTERN | ARRAY_PATTERN | OBJECT_PATTERN => {
+                p.bump_any();
+            }
+            _ if p.state.in_declare => {
+                let m = p.start();
+                p.bump_any();
+                m.complete(p, ERROR);
+            }
+            _ => {
+                let m = p.start();
+                p.bump_any();
+                m.complete(p, ERROR);
+                let err = p
+                    .err_builder("Binding patterns cannot be optional")
+                    .primary(pat_range, "");
+
+                p.error(err);
+            }
+        }
+        if !p.typescript() {
+            let err = p
+                .err_builder(
+                    "optional parameter syntax with `?` can only be used in TypeScript files",
+                )
+                .primary(range, "");
+
+            p.error(err);
+        }
+    }
+    if p.at(T![:]) {
+        let maybe_err = p.start();
+        let start = p.cur_tok().range.start;
+        p.bump_any();
+        let compl = ts_type(p);
+        let end = compl
+            .map(|x| usize::from(x.range(p).end()))
+            .unwrap_or_else(|| p.cur_tok().range.start);
+
+        if !p.typescript() {
+            let err = p
+                .err_builder("patterns can only have type parameters in TypeScript files")
+                .primary(start..end, "");
+
+            p.error(err);
+            maybe_err.complete(p, ERROR);
+        } else {
+            m.abandon(p);
+        }
+    }
+
+    if p.at(T![=]) {
+        let start = p.cur_tok().range.start;
+        p.bump_any();
+
+        let expr = assign_expr(p);
+        let end = expr
+            .map(|x| usize::from(x.range(p).end()))
+            .unwrap_or_else(|| p.cur_tok().range.start);
+        if let Some(range) = opt {
+            let err = p
+                .err_builder("optional parameters cannot have initializers")
+                .primary(start..end, "")
+                .secondary(range, "");
+
+            p.error(err);
+        }
+
+        kind = ASSIGN_PATTERN;
+    }
+
+    Some(m.complete(p, kind))
+}
+
+fn access_modifier<'a>(p: &'a mut Parser) -> Option<&'a str> {
+    if matches!(p.cur_src(), "public" | "private" | "protected") {
+        Some(p.cur_src())
+    } else {
+        None
+    }
+}
+
+fn constructor_param_pat(p: &mut Parser) -> Option<CompletedMarker> {
+    todo!();
+    // let m = p.start();
+    // let readonly = if  {
+    //     let readonly = p.cur_src() == "readonly";
+    //     p.bump_any();
+    //     readonly
+    // } else {
+    //     false
+    // };
+}
+
 pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
+    parameters_common(p, false)
+}
+
+pub fn constructor_params(p: &mut Parser) -> CompletedMarker {
+    parameters_common(p, true)
+}
+
+fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarker {
     let m = p.start();
     let mut first = true;
 
@@ -84,19 +210,47 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
         if p.at(T![...]) {
             let m = p.start();
             p.bump_any();
-            pattern(p);
-            let complete = m.complete(p, REST_PATTERN);
-            if p.at(T![=]) {
+            if let Some(pat) = pattern(p, false) {
+                pat.undo_completion(p).abandon(p);
+            }
+
+            // rest patterns cannot be optional: `...foo?: number[]`
+            if p.at(T![?]) {
+                let err = p
+                    .err_builder("rest patterns cannot be optional")
+                    .primary(p.cur_tok().range, "");
+
+                p.error(err);
                 let m = p.start();
                 p.bump_any();
-                assign_expr(&mut *p);
+                m.complete(p, ERROR);
+            }
+
+            // type annotation `...foo: number[]`
+            if p.eat(T![:]) {
+                let complete = ts_type(p);
+                if let Some(mut res) = complete {
+                    res.err_if_not_ts(p, "type annotations can only be used in TypeScript files");
+                }
+            }
+
+            if p.at(T![=]) {
+                let start = p.cur_tok().range.start;
+                let m = p.start();
+                p.bump_any();
+                let expr = assign_expr(&mut *p);
+                let end = expr
+                    .map(|x| usize::from(x.range(p).end()))
+                    .unwrap_or_else(|| p.cur_tok().range.start);
                 let err = p
                     .err_builder("rest elements may not have default initializers")
-                    .primary(complete.range(p), "");
+                    .primary(start..end, "");
 
                 p.error(err);
                 m.complete(p, ERROR);
             }
+            m.complete(p, REST_PATTERN);
+
             // FIXME: this should be handled better, we should keep trying to parse params but issue an error for each one
             // which would allow for better recovery from `foo, ...bar, foo`
             if p.at(T![,]) {
@@ -112,10 +266,27 @@ pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
             }
             break;
         } else {
+            let func = if constructor_params {
+                constructor_param_pat
+            } else {
+                formal_param_pat
+            };
             // test_err formal_params_no_binding_element
             // function foo(true) {}
-            if binding_element(p).is_none() {
-                p.err_recover_no_err(EXPR_RECOVERY_SET.union(token_set![T![,]]), true);
+            if func(p).is_none() {
+                p.err_recover_no_err(
+                    token_set![
+                        T![ident],
+                        T![await],
+                        T![yield],
+                        T![,],
+                        T![=],
+                        T!['['],
+                        T![...],
+                        T![')'],
+                    ],
+                    true,
+                );
             }
         }
     }

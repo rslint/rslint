@@ -1119,22 +1119,30 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct ArrayPattern {
             T!['['],
             elements: [Pattern],
-            T![']']
+            T![']'],
+            T![:],
+            ty: TsType
         }
 
         struct ObjectPattern {
             T!['{'],
             elements: [ObjectPatternProp],
-            T!['}']
+            T!['}'],
+            T![:],
+            ty: TsType
         }
 
         struct RestPattern {
             T![...],
-            pat: Pattern
+            pat: Pattern,
+            T![:],
+            ty: TsType
         }
 
         struct AssignPattern {
             key: Pattern,
+            T![:],
+            ty: TsType,
             T![=],
             value: Expr
         }
@@ -1152,7 +1160,10 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct SinglePattern {
-            name: Name
+            name: Name,
+            T![?],
+            T![:],
+            ty: TsType
         }
 
         struct ArrowExpr {

@@ -1184,6 +1184,8 @@ impl ArrayPattern {
     pub fn l_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['[']) }
     pub fn elements(&self) -> AstChildren<Pattern> { support::children(&self.syntax) }
     pub fn r_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![']']) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1194,6 +1196,8 @@ impl ObjectPattern {
     pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
     pub fn elements(&self) -> AstChildren<ObjectPatternProp> { support::children(&self.syntax) }
     pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1203,6 +1207,8 @@ pub struct RestPattern {
 impl RestPattern {
     pub fn dotdotdot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [...]) }
     pub fn pat(&self) -> Option<Pattern> { support::child(&self.syntax) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1211,6 +1217,8 @@ pub struct AssignPattern {
 }
 impl AssignPattern {
     pub fn key(&self) -> Option<Pattern> { support::child(&self.syntax) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
     pub fn eq_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [=]) }
     pub fn value(&self) -> Option<Expr> { support::child(&self.syntax) }
 }
@@ -1240,6 +1248,11 @@ pub struct SinglePattern {
 }
 impl SinglePattern {
     pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
+    pub fn question_mark_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T ! [?])
+    }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

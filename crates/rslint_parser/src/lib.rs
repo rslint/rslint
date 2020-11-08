@@ -160,3 +160,72 @@ macro_rules! match_ast {
         { $catch_all }
     }};
 }
+
+/// A structure describing the syntax features the parser will accept. The
+/// default is an ECMAScript 2021 Script without any proposals.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Syntax {
+    pub file_kind: FileKind,
+    pub top_level_await: bool,
+    pub global_return: bool,
+    pub class_fields: bool,
+    pub decorators: bool,
+}
+
+impl Syntax {
+    pub fn new(file_kind: FileKind) -> Self {
+        Self {
+            file_kind,
+            ..Default::default()
+        }
+    }
+
+    pub fn top_level_await(mut self) -> Self {
+        self.top_level_await = true;
+        self
+    }
+
+    pub fn global_return(mut self) -> Self {
+        self.global_return = true;
+        self
+    }
+
+    pub fn class_fields(mut self) -> Self {
+        self.class_fields = true;
+        self
+    }
+
+    pub fn decorators(mut self) -> Self {
+        self.decorators = true;
+        self
+    }
+
+    pub fn script(mut self) -> Self {
+        self.file_kind = FileKind::Script;
+        self
+    }
+
+    pub fn module(mut self) -> Self {
+        self.file_kind = FileKind::Module;
+        self
+    }
+
+    pub fn typescript(mut self) -> Self {
+        self.file_kind = FileKind::TypeScript;
+        self
+    }
+}
+
+/// The kind of file we are parsing
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FileKind {
+    Script,
+    Module,
+    TypeScript,
+}
+
+impl Default for FileKind {
+    fn default() -> Self {
+        FileKind::Script
+    }
+}

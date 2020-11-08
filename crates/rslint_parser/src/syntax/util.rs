@@ -43,7 +43,7 @@ fn is_simple_assign_target(p: &mut Parser, target: &Expr) -> bool {
 }
 
 pub fn check_assign_target(p: &mut Parser, target: &Expr, range: TextRange, deny_call: bool) {
-    if p.typescript {
+    if p.typescript() {
         let is_eval_or_args = target.text() == "eval" || target.text() == "arguments";
         if is_eval_or_args && p.state.strict.is_some() {
             let err = p
