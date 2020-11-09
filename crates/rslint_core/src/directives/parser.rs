@@ -9,14 +9,13 @@ use rslint_parser::{util::Comment, JsNum, SyntaxNode, SyntaxTokenExt, TextRange}
 /// A string that denotes that start of a directive (`rslint-`).
 pub const DECLARATOR: &str = "rslint-";
 
-pub type Command = Vec<Instruction>;
 pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
 
 pub struct DirectiveParser {
     /// The root node of a file, `SCRIPT` or `MODULE`.
     root: SyntaxNode,
     file_id: usize,
-    commands: Vec<Command>,
+    commands: Vec<Vec<Instruction>>,
 }
 
 impl DirectiveParser {
@@ -25,7 +24,7 @@ impl DirectiveParser {
     /// # Panics
     ///
     /// If the given `root` is not `SCRIPT` or `MODULE`.
-    pub fn new(root: SyntaxNode, file_id: usize, commands: Vec<Command>) -> Self {
+    pub fn new(root: SyntaxNode, file_id: usize) -> Self {
         assert!(matches!(
             root.kind(),
             SyntaxKind::SCRIPT | SyntaxKind::MODULE
@@ -34,7 +33,7 @@ impl DirectiveParser {
         Self {
             root,
             file_id,
-            commands,
+            commands: vec![],
         }
     }
 
@@ -135,7 +134,7 @@ impl DirectiveParser {
         &mut self,
         lexer: &mut Lexer<'_>,
         first_component: Component,
-        cmd: &Command,
+        cmd: &[Instruction],
     ) -> Result<Vec<Component>> {
         let mut components = vec![first_component];
 
@@ -255,6 +254,7 @@ impl DirectiveParser {
                 let mut first = true;
                 let mut components = vec![];
 
+                let start = lexer.abs_cur() as u32;
                 while lexer.peek().map_or(false, |tok| tok.kind == *separator) || first {
                     if first {
                         first = false;
@@ -263,8 +263,12 @@ impl DirectiveParser {
                     }
                     components.extend(self.parse_instruction(lexer, insn)?);
                 }
+                let end = lexer.abs_cur() as u32;
 
-                Ok(components)
+                Ok(vec![Component {
+                    kind: ComponentKind::Repetition(components),
+                    range: TextRange::new(start.into(), end.into()),
+                }])
             }
             Instruction::Either(left, right) => self
                 .parse_instruction(lexer, left)

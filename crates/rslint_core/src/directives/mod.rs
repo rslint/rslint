@@ -13,6 +13,8 @@
 //! ```
 
 pub(self) mod lexer;
+
+mod commands;
 mod parser;
 
 pub use self::parser::*;
@@ -40,6 +42,38 @@ pub enum ComponentKind {
     ///
     /// [`Literal`]: ./enum.Instruction.html
     Literal(&'static str),
+    /// A sequence list of parsed `ComponentKind`s.
+    Repetition(Vec<Component>),
+}
+
+impl ComponentKind {
+    pub fn rule_name(&self) -> Option<&str> {
+        match self {
+            ComponentKind::RuleName(name) => Some(name.as_str()),
+            _ => None,
+        }
+    }
+
+    pub fn command_name(&self) -> Option<&str> {
+        match self {
+            ComponentKind::CommandName(name) => Some(name.as_str()),
+            _ => None,
+        }
+    }
+
+    pub fn number(&self) -> Option<u64> {
+        match self {
+            ComponentKind::Number(val) => Some(*val),
+            _ => None,
+        }
+    }
+
+    pub fn repetition(&self) -> Option<&[Component]> {
+        match self {
+            ComponentKind::Repetition(components) => Some(components.as_slice()),
+            _ => None,
+        }
+    }
 }
 
 /// A `Component` represents a parsed `Instruction`, that also has a span,
@@ -80,38 +114,6 @@ pub enum Instruction {
     Optional(Vec<Instruction>),
     Repetition(Box<Instruction>, SyntaxKind),
     Either(Box<Instruction>, Box<Instruction>),
-}
-
-impl Instruction {
-    pub fn display(&self, pluralize: bool) -> String {
-        fn plural(pluralize: bool) -> &'static str {
-            if pluralize {
-                "s"
-            } else {
-                ""
-            }
-        }
-
-        match self {
-            Instruction::RuleName => format!("`rule name{}`", plural(pluralize)),
-            Instruction::Number => format!("`number{}`", plural(pluralize)),
-            Instruction::CommandName(name) => format!("`{}`", name),
-            Instruction::Literal(lit) => format!("`{}`", lit),
-            Instruction::Optional(list) => {
-                let one_of = list
-                    .iter()
-                    .map(|insn| insn.display(pluralize))
-                    .collect::<Vec<_>>();
-                format!("one of: {}", one_of.join(", "))
-            }
-            Instruction::Repetition(insn, _) => format!("list of {}", insn.display(pluralize)),
-            Instruction::Either(left, right) => format!(
-                "either {} or {}",
-                left.display(pluralize),
-                right.display(pluralize)
-            ),
-        }
-    }
 }
 
 /// Any command that is given to the linter using an inline comment.

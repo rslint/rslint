@@ -43,8 +43,7 @@ pub use self::{
 pub use rslint_errors::{Diagnostic, Severity, Span};
 
 use crate::directives::skip_node;
-#[doc(inline)]
-pub use crate::directives::{Directive, DirectiveParser, Instruction};
+use crate::directives::{Directive, DirectiveParser, Instruction};
 use dyn_clone::clone_box;
 //use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
@@ -148,7 +147,7 @@ pub(crate) fn lint_file_inner(
             Either(Box::new(Literal("eof")), Box::new(Number)),
         ]),
     ];
-    let results = DirectiveParser::new(node, file_id, store, vec![cmd]).get_file_directives()?;
+    let results = DirectiveParser::new(node, file_id, vec![cmd]).get_file_directives()?;
 
     println!("directives: {:#?}", results);
     todo!()
