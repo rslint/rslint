@@ -166,7 +166,7 @@ fn parse_common(
 /// assert_eq!(&util::concat_tokens(&tokens), "foo. bar[2]")
 /// ```
 pub fn parse_text(text: &str, file_id: usize) -> Parse<Script> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, Syntax::default().typescript());
+    let (events, mut errors, tokens) = parse_common(text, file_id, Syntax::default());
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
