@@ -2,8 +2,7 @@ use crate::{
     datalog::{DatalogBuilder, DatalogScope},
     AnalyzerInner, Visit,
 };
-use rslint_core::rule_prelude::ast::{AstChildren, ImportClause, ImportDecl, ModuleItem};
-use rslint_parser::ast::NamedImports;
+use rslint_parser::ast::{AstChildren, ImportClause, ImportDecl, ModuleItem, NamedImports};
 use types::ast::{ImportClause as DatalogImportClause, NamedImport as DatalogNamedImport};
 
 impl<'ddlog> Visit<'ddlog, ModuleItem> for AnalyzerInner {

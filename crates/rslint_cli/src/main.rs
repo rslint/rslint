@@ -57,11 +57,14 @@ arg_enum! {
         Tokenize,
         DumpAst,
 <<<<<<< HEAD
+<<<<<<< HEAD
         Flame,
         Log,
 =======
         Datalog,
 >>>>>>> 7e327f2... Initial ddlog work
+=======
+>>>>>>> 80aa631... Working on no-unused-vars
     }
 }
 
@@ -121,9 +124,6 @@ fn execute(opt: Options) {
             opt.dirty,
             opt.formatter,
             opt.no_global_config,
-            opt.dev_flag
-                .map(|flag| flag == DevFlag::Datalog)
-                .unwrap_or_default(),
         ),
     }
 }

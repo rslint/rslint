@@ -1,6 +1,7 @@
 import vec
 import ast
 import utils
+import group
 import inputs
 
 // Build the scope graph, unrolling the parent<-child relationships to full trees
@@ -45,21 +46,27 @@ ClosestFunction(scope, func) :- Function(func, _, _, body), ChildScope(body, sco
 //  └-'b: { foo, bar }
 // ```
 //
-relation NameInScope(name: Name, scope: Scope, span: Option<Span>, declared_in: AnyId)
+relation NameInScope(
+    name: Name,
+    scope: Scope,
+    span: Option<Span>,
+    declared_in: AnyId,
+    implicit: bool,
+)
 
 // An index that returns all variables avaliable in a given scope
-index Index_VariablesForScope(scope: Scope) on NameInScope(_, scope, _, _)
+index Index_VariablesForScope(scope: Scope) on NameInScope(_, scope, _, _, _)
 
 // An index that returns all variables by the given name in the given scope
-index Index_VariableInScope(scope: Scope, variable: Name) on NameInScope(variable, scope, _, _)
+index Index_VariableInScope(scope: Scope, variable: Name) on NameInScope(variable, scope, _, _, _)
 
 // Add implicit globals to every scope
-NameInScope(name, scope, None, AnyIdGlobal { global }) :-
+NameInScope(name, scope, None, AnyIdGlobal { global }, true) :-
     ImplicitGlobal(global, name),
     EveryScope(scope).
 
 // Import declarations
-NameInScope(name.data, scope, Some { name.span }, AnyIdImport { id }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdImport { id }, false) :-
     ImportDecl(id, clause),
     var name = FlatMap(clause.free_variables()),
     EveryScope(scope).
@@ -75,7 +82,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdImport { id }) :-
 // // Scope: { Baz, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdClass { class }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdClass { class }, false) :-
     Class(class, Some { name }, _, _, scope).
 
 // `let` declarations
@@ -89,7 +96,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdClass { class }) :-
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     LetDecl(stmt, Some { pat }, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _).
@@ -105,7 +112,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }) :-
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     ConstDecl(stmt, Some { pat }, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _).
@@ -124,7 +131,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }) :-
 // // Scope: { ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     VarDecl(stmt, Some { pat }, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, decl_scope, _),
@@ -132,7 +139,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }) :-
     ClosestFunction(decl_scope, func), // FIXME: This or the Function clause is wrong
     Function(func, _, _, scope).
 
-NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     VarDecl(stmt, Some { pat }, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _),
@@ -152,7 +159,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }) :-
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdFunc { func }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdFunc { func }, false) :-
     Function(func, Some { name }, scope, _).
 
 // Introduce function arguments within the body of their enclosing function
@@ -165,8 +172,8 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdFunc { func }) :-
 // // Scope: { ... }
 // ```
 //
-NameInScope(name.data, body, Some { name.span }, AnyIdFunc { func }) :-
-    FunctionArg(func, pat),
+NameInScope(name.data, body, Some { name.span }, AnyIdFunc { func }, implicit) :-
+    FunctionArg(func, pat, implicit),
     var name = FlatMap(pat.bound_vars()),
     Function(func, _, _, body).
 
@@ -180,7 +187,7 @@ NameInScope(name.data, body, Some { name.span }, AnyIdFunc { func }) :-
 // // Scope: { ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
     ArrowParam(expr, pat),
     var name = FlatMap(pat.bound_vars()),
     // Get the body's expression and put the parameters in-scope
@@ -190,7 +197,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }) :-
     Arrow(expr, Some { Left { expr_body }}),
     Expression(expr_body, _, scope, _).
 
-NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
     ArrowParam(expr, pat),
     var name = FlatMap(pat.bound_vars()),
     // Get the body's statement and put the parameters in-scope
@@ -211,7 +218,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }) :-
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
     InlineFunc(expr, Some { name }, _),
     Expression(expr, _, scope, _).
 
@@ -225,16 +232,55 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }) :-
 // // Scope: { ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }) :-
+NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
     InlineFuncParam(expr, pat),
-    var name = FlatMap(pat.bound_vars()),
     InlineFunc(expr, _, Some { body }),
-    Statement(body, _, scope, _).
+    Statement(body, _, scope, _),
+    var name = FlatMap(pat.bound_vars()).
+
+// `catch` statement patterns
+NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { catcher }, false) :-
+    Try(stmt, _, TryHandler { Some { error }, Some { catcher } }, _),
+    Statement(expr, _, scope, _),
+    var name = FlatMap(error.bound_vars()).
 
 // Walk variables down scopes
-NameInScope(name, scope, span, declared_in) :-
-    NameInScope(name, interum, span, declared_in),
+NameInScope(name, scope, span, declared_in, implicit) :-
+    NameInScope(name, interum, span, declared_in, implicit),
     ChildScope(interum, scope).
+
+relation VariableUsages(name: Name, scope: Scope, declared_in: AnyId)
+VariableUsages(name, scope, declared) :-
+    NameInScope(name, scope, _, declared, _),
+    NameRef(expr, name),
+    Expression(expr, _, scope, _).
+
+output relation UnusedVariables(name: Name, declared: AnyId, span: Span)
+// TODO: Are these to rules all that's needed? Is the grouping bs even
+//       useful?
+UnusedVariables(name, declared, span) :-
+    NameInScope(name, _, Some { span }, declared, false),
+    not declared.is_global(),
+    not VariableUsages(name, _, declared).
+
+UnusedVariables(name, declared, span) :-
+    NameInScope(name, _, Some { span }, declared @ AnyIdGlobal { global }, false),
+    not ImplicitGlobal(global, _),
+    not VariableUsages(name, _, declared).
+
+UnusedVariables(name, declared, span) :-
+    NameInScope(name, name_scope, Some { span }, declared, false),
+    not declared.is_global(),
+    VariableUsages(name, use_scope, declared),
+    var grouped = (name_scope, use_scope).group_by((name, declared, span)),
+    not grouped.any(|scopes| scopes.0 == scopes.1).
+
+UnusedVariables(name, declared, span) :-
+    NameInScope(name, name_scope, Some { span }, declared @ AnyIdGlobal { global }, false),
+    not ImplicitGlobal(global, _),
+    VariableUsages(name, use_scope, declared),
+    var grouped = (name_scope, use_scope).group_by((name, declared, span)),
+    not grouped.any(|scopes| scopes.0 == scopes.1).
 
 // The successors of an expression, property accesses or method calls
 relation ChainedWith(object: ExprId, property: ExprId)
@@ -261,7 +307,7 @@ output relation TypeofUndefinedAlwaysUndefined(whole_expr: ExprId, undefined_exp
 TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
     NameRef(undefined_expr, name),
     Expression(undefined_expr, ExprNameRef, scope, span),
-    not NameInScope(name, scope, _, _),
+    not NameInScope(name, scope, _, _, _),
     // Expressions like `typeof not_undefined` are allowed under InvalidNameUse
     // and are instead output through TypeofUndefinedAlwaysUndefined
     WithinTypeofExpr(whole_expr, undefined_expr).
@@ -274,7 +320,7 @@ output relation InvalidNameUse(name: Name, scope: Scope, span: Span)
 InvalidNameUse(name, scope, span) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, scope, span),
-    not NameInScope(name, scope, _, _),
+    not NameInScope(name, scope, _, _, _),
     // Expressions like `typeof not_undefined` are allowed under InvalidNameUse
     // and are instead output through TypeofUndefinedAlwaysUndefined
     not WithinTypeofExpr(_, expr),
@@ -285,17 +331,13 @@ InvalidNameUse(name.data, scope, name.span) :-
     Assign(expr, Some { Left { pat }}, _, _),
     Expression(expr, _, scope, _),
     var name = FlatMap(pat.bound_vars()),
-    not NameInScope(name.data, scope, _, _).
-
-index Index_InvalidNameUse(name: Name) on InvalidNameUse(name, _, _)
+    not NameInScope(name.data, scope, _, _, _).
 
 // `var` usages that happen before the declaration
 output relation VarUseBeforeDeclaration(name: Name, used_in: Span, declared_in: Span)
 VarUseBeforeDeclaration(name, used_in, declared_in) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, used_scope, used_in),
-    NameInScope(name, used_scope, _, AnyIdStmt { .stmt = stmt }),
+    NameInScope(name, used_scope, _, AnyIdStmt { .stmt = stmt }, _),
     Statement(stmt, StmtVarDecl, declared_scope, declared_in),
     ChildScope(used_scope, declared_scope).
-
-index Index_VarUseBeforeDeclaration(name: Name) on VarUseBeforeDeclaration(name, _, _)

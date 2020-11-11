@@ -2,7 +2,7 @@ use crate::{
     datalog::{DatalogBuilder, DatalogScope},
     AnalyzerInner, Visit,
 };
-use rslint_core::rule_prelude::{
+use rslint_parser::{
     ast::{
         AstChildren, BlockStmt, BreakStmt, ClassDecl, ContinueStmt, DebuggerStmt, Decl,
         DoWhileStmt, FnDecl, ForHead, ForInStmt, ForStmt, IfStmt, LabelledStmt, ReturnStmt, Stmt,
@@ -76,11 +76,11 @@ impl<'ddlog> Visit<'ddlog, FnDecl> for AnalyzerInner {
         let (function, mut body_scope) = scope.decl_function(function_id, name);
 
         // Implicitly introduce `arguments` into the function scope
-        function.argument(IMPLICIT_ARGUMENTS.clone());
+        function.argument(IMPLICIT_ARGUMENTS.clone(), true);
 
         if let Some(params) = func.parameters() {
             for param in params.parameters() {
-                function.argument(self.visit(&body_scope, param));
+                function.argument(self.visit(&body_scope, param), false);
             }
         }
 
@@ -383,7 +383,12 @@ impl<'ddlog> Visit<'ddlog, TryStmt> for AnalyzerInner {
             .handler()
             .map(|handler| {
                 let pattern = handler.error().map(|pat| self.visit(scope, pat));
-                let body = self.visit(scope, handler.cons()).flatten();
+                let body = handler.cons().map(|handler| {
+                    let range = handler.range();
+
+                    self.visit(scope, handler)
+                        .unwrap_or_else(|| scope.empty(range))
+                });
 
                 (pattern.into(), body.into())
             })
@@ -397,8 +402,13 @@ impl<'ddlog> Visit<'ddlog, TryStmt> for AnalyzerInner {
 
         let finalizer = try_stmt
             .finalizer()
-            .and_then(|finalizer| self.visit(scope, finalizer.cons()))
-            .flatten();
+            .and_then(|finalizer| finalizer.cons())
+            .map(|finalizer| {
+                let range = finalizer.range();
+
+                self.visit(scope, finalizer)
+                    .unwrap_or_else(|| scope.empty(range))
+            });
 
         scope.try_stmt(body, handler, finalizer, try_stmt.range())
     }

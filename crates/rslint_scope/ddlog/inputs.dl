@@ -11,7 +11,7 @@ input relation EveryScope(scope: Scope)
 
 // Functions
 input relation Function(id: FuncId, name: Option<Spanned<Name>>, scope: Scope, body: Scope)
-input relation FunctionArg(parent_func: FuncId, pattern: IPattern)
+input relation FunctionArg(parent_func: FuncId, pattern: IPattern, implicit: bool)
 
 // Class declarations
 input relation Class(id: ClassId, name: Option<Spanned<Name>>, parent: Option<ExprId>, elements: Option<Vec<IClassElement>>, scope: Scope)

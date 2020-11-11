@@ -1,8 +1,55 @@
 #![cfg(test)]
 
+macro_rules! rule_test {
+    (
+        $rule_name:ident,
+        $(filter: $filter:expr,)?
+        $({
+            $code:literal
+            $(, globals: [$($global:literal),* $(,)?])?
+            $(, browser: $browser:literal)?
+            $(, node: $node:literal)?
+            $(, ecma: $ecma:literal)?
+            $(, module: $module:literal)?
+            $(, es2021: $es2021:literal)?
+            $(, errors: [$($error:expr),* $(,)?])?
+            $(,)?
+        }),* $(,)?
+    ) => {
+        #[test]
+        fn $rule_name() {
+            #[allow(unused_imports)]
+            use crate::{tests::DatalogTestHarness, datalog::DatalogLint::{self, *}};
+            #[allow(unused_imports)]
+            use types::ast::Span;
+            use std::borrow::Cow;
+
+            let mut analyzer = DatalogTestHarness::new()
+                $(.with_filter($filter as fn(&DatalogLint) -> bool))?;
+
+            $(
+                analyzer
+                    .test($code, stringify!($rule_name))
+                    $(.with_globals(vec![$(Cow::Borrowed($global)),*]))?
+                    $(.with_browser($browser))?
+                    $(.with_node($node))?
+                    $(.with_ecma($ecma))?
+                    $(.is_module($module))?
+                    $(.with_es2021($es2021))?
+                    $(.with_errors(vec![$($error),*]))?
+                    .run();
+            )?
+
+            analyzer.report_outcome();
+        }
+    };
+}
+
 mod no_undef;
+mod no_unused_vars;
 
 use crate::{
+    datalog::DatalogLint,
     globals::{JsGlobal, BROWSER, BUILTIN, ES2021, NODE},
     ScopeAnalyzer,
 };
@@ -11,7 +58,6 @@ use std::{
     borrow::Cow,
     fs::{self, OpenOptions},
     io::Write as _,
-    ops::Range,
     path::Path,
 };
 
@@ -19,6 +65,8 @@ struct DatalogTestHarness {
     datalog: ScopeAnalyzer,
     passing: usize,
     failing: usize,
+    counter: usize,
+    filter: Option<fn(&DatalogLint) -> bool>,
 }
 
 impl DatalogTestHarness {
@@ -27,7 +75,14 @@ impl DatalogTestHarness {
             datalog: ScopeAnalyzer::new().expect("failed to create ddlog instance"),
             passing: 0,
             failing: 0,
+            counter: 0,
+            filter: None,
         }
+    }
+
+    pub fn with_filter(mut self, filter: fn(&DatalogLint) -> bool) -> Self {
+        self.filter = Some(filter);
+        self
     }
 
     pub fn test<C, R>(&mut self, code: C, rule_name: R) -> TestCase<'_>
@@ -59,9 +114,8 @@ struct TestCase<'a> {
     ecma: bool,
     is_module: bool,
     es2021: bool,
-    invalid_name_uses: Vec<(Cow<'static, str>, Range<u32>)>,
+    errors: Vec<DatalogLint>,
     harness: &'a mut DatalogTestHarness,
-    counter: usize,
 }
 
 impl<'a> TestCase<'a> {
@@ -79,9 +133,8 @@ impl<'a> TestCase<'a> {
             ecma: false,
             is_module: false,
             es2021: false,
-            invalid_name_uses: Vec::new(),
+            errors: Vec::new(),
             harness,
-            counter: 0,
         }
     }
 
@@ -116,19 +169,17 @@ impl<'a> TestCase<'a> {
         self
     }
 
-    pub fn with_invalid_name_uses(
-        mut self,
-        invalid_name_uses: Vec<(Cow<'static, str>, Range<u32>)>,
-    ) -> Self {
-        self.invalid_name_uses.extend(invalid_name_uses);
+    pub fn with_errors(mut self, errors: Vec<DatalogLint>) -> Self {
+        self.errors.extend(errors);
         self
     }
 
     // TODO: This is so ugly
     pub fn run(mut self) {
-        let path = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/output.log"));
+        let path = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/output.log"))
+            .join(format!("{}-{}", self.rule_name, self.harness.counter));
         if !path.exists() {
-            fs::create_dir_all(path).unwrap();
+            fs::create_dir_all(&path).unwrap();
         }
 
         self.harness.datalog.with_replay_file(
@@ -137,7 +188,7 @@ impl<'a> TestCase<'a> {
                 .write(true)
                 .create(true)
                 .truncate(true)
-                .open(path.join(&format!("{}-{}.replay", self.rule_name, self.counter)))
+                .open(path.join("replay"))
                 .unwrap(),
         );
         self.harness.datalog.outputs().with_output_file(
@@ -146,7 +197,7 @@ impl<'a> TestCase<'a> {
                 .write(true)
                 .create(true)
                 .truncate(true)
-                .open(path.join(&format!("{}-{}.state", self.rule_name, self.counter)))
+                .open(path.join("state"))
                 .unwrap(),
         );
 
@@ -201,81 +252,54 @@ impl<'a> TestCase<'a> {
 
         self.harness
             .datalog
-            .analyze_inner(&ast)
+            .analyze(&ast)
             .expect("failed datalog transaction");
-        let mut facts: Vec<_> = self
-            .harness
-            .datalog
-            .outputs()
-            .invalid_name_use
-            .iter()
-            .map(|usage| usage.key().clone())
-            .collect();
-        let uses = self.invalid_name_uses.clone();
 
-        for (name, range) in self.invalid_name_uses.drain(..) {
-            if let Some(idx) = facts
-                .iter()
-                .position(|n| *n.name == *name && n.span == range.clone().into())
-            {
-                facts.remove(idx);
+        let mut errors = self.harness.datalog.get_lints().unwrap();
+        if let Some(filter) = self.harness.filter {
+            errors = errors.into_iter().filter(filter).collect();
+        }
+
+        for error in self.errors.iter() {
+            if let Some(idx) = errors.iter().position(|err| err == error) {
+                errors.remove(idx);
             } else {
                 failed = true;
             }
         }
 
-        if failed || !facts.is_empty() {
+        if failed || !errors.is_empty() {
             self.harness.failing += 1;
 
             let mut file = OpenOptions::new()
                 .truncate(true)
                 .write(true)
                 .create(true)
-                .open(&format!(
-                    "{}/output.log/{}-{}.failure",
-                    env!("CARGO_MANIFEST_DIR"),
-                    self.rule_name,
-                    self.counter,
-                ))
+                .open(path.join("failure"))
                 .unwrap();
 
             write!(
                 &mut file,
                 "============ FAILURE ============\n\n\
                 => Source:\n{}\n\n\
-                => Expected:\n{}\n\n\
-                => Got:\n{}\n\n\
+                => Expected:\n{:#?}\n\n\
+                => Got:\n{:#?}\n\n\
                 => Inputs:\n{}\n\n\
                 => Outputs:\n{:#?}\n\n\
                 ============ END FAILURE ============\n\n",
                 ast.text(),
-                uses.into_iter()
-                    .map(|(name, range)| format!("  {:?} @ {:?}", name, range))
-                    .collect::<Vec<_>>()
-                    .join("\n"),
-                self.harness
-                    .datalog
-                    .outputs()
-                    .invalid_name_use
-                    .iter()
-                    .map(|usage| {
-                        if facts.contains(usage.key()) {
-                            format!("+ {:?}", usage.key())
-                        } else {
-                            format!("  {:?}", usage.key())
-                        }
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\n"),
+                self.errors,
+                self.harness.datalog.get_lints().unwrap(),
                 self.harness.datalog.dump_inputs().unwrap(),
                 self.harness.datalog.outputs(),
             )
             .unwrap();
         } else {
+            fs::remove_dir_all(&path).unwrap();
             self.harness.passing += 1;
         }
 
         self.harness.datalog.datalog.reset().unwrap();
-        self.counter += 1;
+        self.harness.counter += 1;
     }
 }

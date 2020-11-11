@@ -1,15 +1,15 @@
 use crate::{datalog::DatalogBuilder, AnalyzerInner, Visit};
-use rslint_core::rule_prelude::{
+use rslint_parser::{
     ast::{
         ArgList, ArrayExpr, ArrowExpr, ArrowExprParams, AssignExpr, AstChildren, AwaitExpr,
         BinExpr, BracketExpr, CallExpr, ClassElement, ClassExpr, CondExpr, DotExpr, Expr,
-        ExprOrSpread, FnExpr, GroupingExpr, ImportCall, ImportMeta, Literal, LiteralKind, NameRef,
-        NewExpr, NewTarget, ObjectExpr, ObjectProp, ParameterList, PatternOrExpr, PropName,
-        SequenceExpr, SuperCall, Template, TemplateElement, ThisExpr, UnaryExpr, YieldExpr,
+        ExprOrBlock, ExprOrSpread, FnExpr, GroupingExpr, ImportCall, ImportMeta, Literal,
+        LiteralKind, NameRef, NewExpr, NewTarget, ObjectExpr, ObjectProp, ParameterList,
+        PatternOrExpr, PropName, SequenceExpr, SuperCall, Template, TemplateElement, ThisExpr,
+        UnaryExpr, YieldExpr,
     },
     AstNode, SyntaxNodeExt,
 };
-use rslint_parser::ast::ExprOrBlock;
 use types::{
     ast::{
         ArrayElement, ClassElement as DatalogClassElement, ExprId, Pattern as DatalogPattern,

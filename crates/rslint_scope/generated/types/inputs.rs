@@ -741,20 +741,23 @@ impl ::std::fmt::Debug for Function {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct FunctionArg {
     pub parent_func: crate::ast::FuncId,
-    pub pattern: crate::ast::IPattern
+    pub pattern: crate::ast::IPattern,
+    pub implicit: bool
 }
 impl abomonation::Abomonation for FunctionArg{}
-::differential_datalog::decl_struct_from_record!(FunctionArg["inputs::FunctionArg"]<>, ["inputs::FunctionArg"][2]{[0]parent_func["parent_func"]: crate::ast::FuncId, [1]pattern["pattern"]: crate::ast::IPattern});
-::differential_datalog::decl_struct_into_record!(FunctionArg, ["inputs::FunctionArg"]<>, parent_func, pattern);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(FunctionArg, <>, parent_func: crate::ast::FuncId, pattern: crate::ast::IPattern);
+::differential_datalog::decl_struct_from_record!(FunctionArg["inputs::FunctionArg"]<>, ["inputs::FunctionArg"][3]{[0]parent_func["parent_func"]: crate::ast::FuncId, [1]pattern["pattern"]: crate::ast::IPattern, [2]implicit["implicit"]: bool});
+::differential_datalog::decl_struct_into_record!(FunctionArg, ["inputs::FunctionArg"]<>, parent_func, pattern, implicit);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(FunctionArg, <>, parent_func: crate::ast::FuncId, pattern: crate::ast::IPattern, implicit: bool);
 impl ::std::fmt::Display for FunctionArg {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::inputs::FunctionArg{parent_func,pattern} => {
+            crate::inputs::FunctionArg{parent_func,pattern,implicit} => {
                 __formatter.write_str("inputs::FunctionArg{")?;
                 ::std::fmt::Debug::fmt(parent_func, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(pattern, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(implicit, __formatter)?;
                 __formatter.write_str("}")
             }
         }

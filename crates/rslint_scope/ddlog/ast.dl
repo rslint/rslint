@@ -2,6 +2,11 @@ import vec
 import utils
 
 typedef Scope = Scope { id: u32 }
+
+function to_string(scope: Scope): string {
+    "Scope_${scope.id}"
+}
+
 typedef Name = istring
 
 // Ids
@@ -18,6 +23,24 @@ typedef AnyId =
     | AnyIdFunc { func: FuncId }
     | AnyIdStmt { stmt: StmtId }
     | AnyIdExpr { expr: ExprId }
+
+function to_string(id: AnyId): string {
+    match (id) {
+        AnyIdGlobal { GlobalId { id }} -> "Global_${id}",
+        AnyIdImport { ImportId { id }} -> "Import_${id}",
+        AnyIdClass { ClassId { id }} -> "Class_${id}",
+        AnyIdFunc { FuncId { id }} -> "Func_${id}",
+        AnyIdStmt { StmtId { id }} -> "Stmt_${id}",
+        AnyIdExpr { ExprId { id }} -> "Expr_${id}",
+    }
+}
+
+function is_global(id: AnyId): bool {
+    match (id) {
+        AnyIdGlobal {} -> true,
+        _ -> false,
+    }
+}
 
 typedef Span = Span { start: u32, end: u32 }
 
@@ -93,6 +116,12 @@ typedef StmtKind =
     | StmtDebugger
     // No associated relation, literally nothing
     | StmtEmpty
+
+function is_variable_decl(kind: StmtKind): bool {
+    kind == StmtVarDecl
+    or kind == StmtLetDecl
+    or kind == StmtConstDecl
+}
 
 typedef ExprKind =
     ExprLit { kind: LitKind }

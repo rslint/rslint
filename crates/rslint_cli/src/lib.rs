@@ -32,10 +32,8 @@ pub fn run(
     dirty: bool,
     formatter: Option<String>,
     no_global_config: bool,
-    datalog_scope_analysis: bool,
 ) {
     let exit_code = run_inner(globs, verbose, fix, dirty, formatter, no_global_config);
-    #[cfg(not(debug_assertions))]
     process::exit(exit_code);
 }
 
@@ -47,7 +45,6 @@ fn run_inner(
     dirty: bool,
     formatter: Option<String>,
     no_global_config: bool,
-    datalog_scope_analysis: bool,
 ) -> i32 {
     let handle =
         config::Config::new_threaded(no_global_config, |file, d| emit_diagnostic(&d, &file));
@@ -58,13 +55,7 @@ fn run_inner(
 
     let mut formatter = formatter.unwrap_or_else(|| config.formatter());
 
-    #[cfg_attr(not(feature = "datalog_scope_analysis"), allow(unused_mut))]
-    let mut store = config.rules_store();
-    if datalog_scope_analysis {
-        #[cfg(feature = "datalog_scope_analysis")]
-        store.load_rule(Box::new(rslint_scope::ScopeAnalyzer::new().unwrap()));
-    }
-
+    let store = config.rules_store();
     verify_formatter(&mut formatter);
 
     if walker.files.is_empty() {

@@ -73,7 +73,7 @@ extra_args=""
 for arg in "$@"; do
     if [ "$arg" = "--debug" ]; then
         check_undeclared "$debug_flag" "--debug"
-        extra_args="$extra_args --output-internal-relations --output-input-relations=INPUT_"
+        extra_args="$extra_args --output-internal-relations"
         debug_flag="true"
 
     elif [ "$arg" = "--no-color" ]; then
@@ -86,7 +86,6 @@ for arg in "$@"; do
 
     elif [ "$arg" = "--no-fmt" ]; then
         check_undeclared "$no_rustfmt" "--no-fmt"
-        extra_args="$extra_args --run-rustfmt"
         no_rustfmt="true"
 
     elif [ "$arg" = "-o" ] || [ "$arg" = "--output-dir" ]; then
@@ -165,13 +164,11 @@ else
     printf "ddlog... "
 fi
 
-ddlog -i $DDLOG_INPUT_FILE \
-      -L $DDLOG_LIBRARY_DIR \
-      --action $compile_action \
-      --output-dir=$DDLOG_OUTPUT_DIR \
-      --omit-profile \
-      --omit-workspace \
-      $extra_args
+if [ "$no_rustfmt" != "true" ]; then
+    extra_args="$extra_args --run-rustfmt"
+fi
+
+ddlog -i $DDLOG_INPUT_FILE -L $DDLOG_LIBRARY_DIR --action $compile_action --output-dir=$DDLOG_OUTPUT_DIR --omit-profile --omit-workspace $extra_args
 
 exit_code=$?
 if [ $exit_code -ne 0 ]; then

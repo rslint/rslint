@@ -30,6 +30,7 @@ use crate::closure;
 //
 // use crate::ddlog_std;
 
+use super::internment::Intern;
 use rslint_parser::{
     ast::{AssignOp as AstAssignOp, BinOp as AstBinOp, UnaryOp as AstUnaryOp},
     TextRange,
@@ -38,6 +39,18 @@ use std::{
     cell::Cell,
     ops::{Add, AddAssign, Range},
 };
+
+impl From<&str> for Intern<String> {
+    fn from(string: &str) -> Self {
+        Self::new(string.to_owned())
+    }
+}
+
+impl From<String> for Intern<String> {
+    fn from(string: String) -> Self {
+        Self::new(string)
+    }
+}
 
 impl<T> Spanned<T> {
     /// Create a new `Spanned`
@@ -93,6 +106,10 @@ impl From<Range<usize>> for Span {
         }
     }
 }
+
+impl Copy for Span {}
+
+impl Copy for AnyId {}
 
 macro_rules! impl_id_traits {
     ($($ty:ty),* $(,)?) => {
@@ -1857,6 +1874,28 @@ pub fn free_variables(clause: & crate::ast::ImportClause) -> crate::ddlog_std::V
         _ => (*(&*crate::__STATIC_1)).clone()
     }
 }
-pub fn to_string(span: & crate::ast::Span) -> String
+pub fn is_global(id: & crate::ast::AnyId) -> bool
+{   match (*id) {
+        crate::ast::AnyId::AnyIdGlobal{global: _} => true,
+        _ => false
+    }
+}
+pub fn is_variable_decl(kind: & crate::ast::StmtKind) -> bool
+{   ((((&*kind) == (&*(&(crate::ast::StmtKind::StmtVarDecl{})))) || ((&*kind) == (&*(&(crate::ast::StmtKind::StmtLetDecl{}))))) || ((&*kind) == (&*(&(crate::ast::StmtKind::StmtConstDecl{})))))
+}
+pub fn to_string_ast_Scope___Stringval(scope: & crate::ast::Scope) -> String
+{   string_append(String::from(r###"Scope_"###), (&crate::ddlog_std::__builtin_2string((&scope.id))))
+}
+pub fn to_string_ast_AnyId___Stringval(id: & crate::ast::AnyId) -> String
+{   match (*id) {
+        crate::ast::AnyId::AnyIdGlobal{global: crate::ast::GlobalId{id: ref id}} => string_append(String::from(r###"Global_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdImport{import_: crate::ast::ImportId{id: ref id}} => string_append(String::from(r###"Import_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdClass{class: crate::ast::ClassId{id: ref id}} => string_append(String::from(r###"Class_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdFunc{func: crate::ast::FuncId{id: ref id}} => string_append(String::from(r###"Func_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdStmt{stmt: crate::ast::StmtId{id: ref id}} => string_append(String::from(r###"Stmt_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdExpr{expr: crate::ast::ExprId{id: ref id}} => string_append(String::from(r###"Expr_"###), (&crate::ddlog_std::__builtin_2string(id)))
+    }
+}
+pub fn to_string_ast_Span___Stringval(span: & crate::ast::Span) -> String
 {   string_append_str(string_append(string_append_str(string_append(String::from(r###"("###), (&crate::ddlog_std::__builtin_2string((&span.start)))), r###", "###), (&crate::ddlog_std::__builtin_2string((&span.end)))), r###")"###)
 }

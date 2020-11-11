@@ -23,7 +23,7 @@ use types::{
     ast::{
         ArrayElement, AssignOperand, BinOperand, ClassId, ExprId, ExprKind, ForInit, FuncId,
         GlobalId, IClassElement, IPattern, ImportClause, ImportId, Increment, LitKind, Name,
-        Pattern, PropertyKey, PropertyVal, Scope, Spanned, StmtId, StmtKind, SwitchClause,
+        Pattern, PropertyKey, PropertyVal, Scope, Span, Spanned, StmtId, StmtKind, SwitchClause,
         TryHandler, UnaryOperand,
     },
     ddlog_std::Either,
@@ -42,6 +42,22 @@ use types::{
 //       having to allocate strings for idents
 
 pub type DatalogResult<T> = Result<T, String>;
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum DatalogLint {
+    NoUndef { var: Name, span: Span },
+    NoUnusedVars { var: Name, declared: Span },
+}
+
+impl DatalogLint {
+    pub fn is_no_undef(&self) -> bool {
+        matches!(self, Self::NoUndef { .. })
+    }
+
+    pub fn is_no_unused_vars(&self) -> bool {
+        matches!(self, Self::NoUnusedVars { .. })
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Datalog {
@@ -140,6 +156,7 @@ impl Datalog {
         Ok(result)
     }
 
+    // TODO: Batched queries
     pub(crate) fn query(
         &self,
         index: Indexes,
@@ -151,6 +168,28 @@ impl Datalog {
         } else {
             ddlog.hddlog.dump_index(index as IdxId)
         }
+    }
+
+    pub fn get_lints(&self) -> DatalogResult<Vec<DatalogLint>> {
+        let mut lints = Vec::new();
+
+        lints.extend(
+            self.outputs()
+                .invalid_name_use
+                .iter()
+                .map(|usage| DatalogLint::NoUndef {
+                    var: usage.key().name.clone(),
+                    span: usage.key().span,
+                }),
+        );
+        lints.extend(self.outputs().unused_variables.iter().map(|unused| {
+            DatalogLint::NoUnusedVars {
+                var: unused.key().name.clone(),
+                declared: unused.key().span,
+            }
+        }));
+
+        Ok(lints)
     }
 }
 
@@ -1707,12 +1746,13 @@ impl<'ddlog> DatalogFunction<'ddlog> {
         self.func_id
     }
 
-    pub fn argument(&self, pattern: Intern<Pattern>) {
+    pub fn argument(&self, pattern: IPattern, implicit: bool) {
         self.datalog.insert(
             Relations::inputs_FunctionArg as RelId,
             FunctionArg {
                 parent_func: self.func_id(),
                 pattern,
+                implicit,
             },
         );
     }

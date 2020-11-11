@@ -1,52 +1,10 @@
 //! Tests for detecting undefined variables
 
-// let ast = parse_text($valid_code).expect("failed to parse test code");
-// analyzer.clear_globals().expect("failed to clear globals");
-
-macro_rules! rule_test {
-    (
-        $rule_name:ident,
-        $({
-            $code:literal
-            $(, globals: [$($global:literal),* $(,)?])?
-            $(, browser: $browser:literal)?
-            $(, node: $node:literal)?
-            $(, ecma: $ecma:literal)?
-            $(, module: $module:literal)?
-            $(, es2021: $es2021:literal)?
-            $(, invalid_vars: [$(($name:literal, $span:expr)),* $(,)?])?
-            $(,)?
-        }),* $(,)?
-    ) => {
-        #[test]
-        fn $rule_name() {
-            use crate::tests::DatalogTestHarness;
-            use std::borrow::Cow;
-
-            let mut analyzer = DatalogTestHarness::new();
-
-            $(
-                analyzer
-                    .test($code, stringify!($rule_name))
-                    $(.with_globals(vec![$(Cow::Borrowed($global)),*]))?
-                    $(.with_browser($browser))?
-                    $(.with_node($node))?
-                    $(.with_ecma($ecma))?
-                    $(.is_module($module))?
-                    $(.with_es2021($es2021))?
-                    $(.with_invalid_name_uses(vec![$((Cow::Borrowed($name), $span)),*]))?
-                    .run();
-            )?
-
-            analyzer.report_outcome();
-        }
-    };
-}
-
 rule_test! {
     no_undef,
+    filter: DatalogLint::is_no_undef,
     // Should pass
-    { "var a = 1, b = 2; a;" },
+    { "var a = 1, b = 2; a + b;" },
     { "function f() { b; }", globals: ["b"] },
     { "a; function f() { b; a; }", globals: ["b", "a"] },
     { "function a(){}  a();" },
@@ -102,18 +60,18 @@ rule_test! {
     { "let x; x.y" },
 
     // Should fail
-    { "a = 1;", invalid_vars: [("a", 0..1)] },
-    { "var a = b;", invalid_vars: [("b", 8..9)] },
-    { "function f() { b; }", invalid_vars: [("b", 15..16)] },
-    { "window", invalid_vars: [("window", 0..6)] },
-    { "require(\"a\");", invalid_vars: [("require", 0..7)] },
+    { "a = 1;", errors: [NoUndef { var: "a".into(), span: Span::new(0, 1) }] },
+    { "var a = b;", errors: [NoUndef { var: "b".into(), span: Span::new(8, 9) }] },
+    { "function f() { b; }", errors: [NoUndef { var: "b".into(), span: Span::new(15, 16) }] },
+    { "window", errors: [NoUndef { var: "window".into(), span: Span::new(0, 6) }] },
+    { "require(\"a\");", errors: [NoUndef { var: "require".into(), span: Span::new(0, 7) }] },
     // FIXME: Requires JSX
-    // { "var React; React.render(<img attr={a} />);", invalid_vars: ["a"] },
-    // { "var React, App; React.render(<App attr={a} />);", invalid_vars: ["a"] },
-    { "[a] = [0];", invalid_vars: [("a", 1..2)] },
-    { "({a} = {});", invalid_vars: [("a", 2..3)] },
-    { "({b: a} = {});", invalid_vars: [("a", 5..6)] },
+    // { "var React; React.render(<img attr={a} />);", errors: ["a"] },
+    // { "var React, App; React.render(<App attr={a} />);", errors: ["a"] },
+    { "[a] = [0];", errors: [NoUndef { var: "a".into(), span: Span::new(1, 2) }] },
+    { "({a} = {});", errors: [NoUndef { var: "a".into(), span: Span::new(2, 3) }] },
+    { "({b: a} = {});", errors: [NoUndef { var: "a".into(), span: Span::new(5, 6) }] },
     // FIXME: Assignment pattern parsing is broken
-    // { "[obj.a, obj.b] = [0, 1];", invalid_vars: [("obj", 1..4), ("obj", 8..11)] },
-    { "const c = 0; const a = {...b, c};", invalid_vars: [("b", 27..28)] },
+    // { "[obj.a, obj.b] = [0, 1];", errors: [NoUndef { var: "obj".into(), Span::new(1, 4) }, NoUndef { var: "obj".into(), span: Span::new(8, 11) }] },
+    { "const c = 0; const a = {...b, c};", errors: [NoUndef { var: "b".into(), span: Span::new(27, 28) }] },
 }
