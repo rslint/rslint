@@ -20,10 +20,11 @@ use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
 use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
+#[allow(unused_imports)]
 use std::process;
 use std::{fs::write, path::PathBuf};
 
-#[allow(unused_must_use)]
+#[allow(unused_must_use, unused_variables)]
 pub fn run(
     globs: Vec<String>,
     verbose: bool,
@@ -33,6 +34,7 @@ pub fn run(
     no_global_config: bool,
 ) {
     let exit_code = run_inner(globs, verbose, fix, dirty, formatter, no_global_config);
+    #[cfg(not(debug_assertions))]
     process::exit(exit_code);
 }
 
