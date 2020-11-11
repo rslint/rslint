@@ -127,6 +127,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "WHITESPACE",
         "COMMENT",
         "SHEBANG",
+        "HASH", // #
     ],
     nodes: &[
         "SCRIPT",
@@ -220,6 +221,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "FOR_STMT_TEST",
         "FOR_STMT_UPDATE",
         "FOR_STMT_INIT",
+        "PRIVATE_NAME",
         // TypeScript
         "TS_ANY",
         "TS_UNKNOWN",
@@ -273,6 +275,14 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_NAMESPACE_DECL",
         "TS_MODULE_BLOCK",
         "TS_MODULE_DECL",
+        "TS_CONSTRUCTOR_PARAM",
+        "TS_CALL_SIGNATURE_DECL",
+        "TS_CONSTRUCT_SIGNATURE_DECL",
+        "TS_INDEX_SIGNATURE",
+        "TS_METHOD_SIGNATURE",
+        "TS_PROPERTY_SIGNATURE",
+        "TS_HERITAGE_CLAUSE",
+        "TS_INTERFACE_DECL",
     ],
 };
 
@@ -673,6 +683,70 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![.],
             T![ident],
             body: TsNamespaceBody
+        }
+
+        struct TsConstructorParam {
+            /* accessibility */
+            /* readonly */
+            pat: Pattern
+        }
+
+        struct TsCallSignatureDecl {
+            type_params: TsTypeParams,
+            parameters: ParameterList,
+            T![:],
+            return_type: TsType,
+        }
+
+        struct TsConstructSignatureDecl {
+            T![new],
+            type_params: TsTypeParams,
+            parameters: ParameterList,
+            T![:],
+            return_type: TsType,
+        }
+
+        struct TsIndexSignature {
+            T!['['],
+            pat: SinglePattern,
+            T![']'],
+            T![:],
+            ty: TsType
+        }
+
+        struct TsMethodSignature {
+            /* readonly */
+            key: Expr,
+            T![?],
+            type_params: TsTypeParams,
+            parameters: ParameterList,
+            T![:],
+            return_type: TsType
+        }
+
+        struct TsPropertySignature {
+            /* readonly */
+            prop: Expr,
+            T![?],
+            T![:],
+            ty: TsType,
+        }
+
+        struct TsHeritageClause {
+            /* extends */
+            item: TsEntityName,
+            type_params: TsTypeParams
+        }
+
+        struct TsInterfaceDecl {
+            /* declare */
+            /* interface */
+            T![ident],
+            type_params: TsTypeParams,
+            extends: TsHeritageClause,
+            T!['{'],
+            members: [TsTypeElement],
+            T!['}']
         }
 
         // --------------------------------------------------
@@ -1231,6 +1305,11 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![await],
             expr: Expr
         }
+
+        struct PrivateName {
+            T![#],
+            name: Name
+        }
     },
     enums: &ast_enums! {
         enum ObjectProp {
@@ -1320,7 +1399,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsEnum,
             TsTypeAliasDecl,
             TsNamespaceDecl,
-            TsModuleDecl
+            TsModuleDecl,
+            TsInterfaceDecl
         }
 
         /*
@@ -1408,6 +1488,14 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         enum TsNamespaceBody {
             TsModuleBlock,
             TsNamespaceDecl
+        }
+
+        enum TsTypeElement {
+            TsCallSignatureDecl,
+            TsConstructSignatureDecl,
+            TsPropertySignature,
+            TsMethodSignature,
+            TsIndexSignature
         }
     },
 };

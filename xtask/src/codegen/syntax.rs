@@ -361,6 +361,7 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
             #([#all_keywords_idents] => { $crate::SyntaxKind::#all_keywords };)*
             [ident] => { $crate::SyntaxKind::IDENT };
             [shebang] => { $crate::SyntaxKind::SHEBANG };
+            [#] => { $crate::SyntaxKind::HASH };
         }
     };
 
@@ -432,6 +433,7 @@ impl Field<'_> {
                     "?" => "question_mark",
                     "+" => "plus",
                     "-" => "minus",
+                    "#" => "hash",
                     _ => name,
                 };
                 format_ident!("{}_token", name)

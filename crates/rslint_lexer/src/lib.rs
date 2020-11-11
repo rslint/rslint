@@ -736,12 +736,9 @@ impl<'src> Lexer<'src> {
     fn read_shebang(&mut self) -> LexerReturn {
         let start = self.cur;
         self.next();
-        if start != 0 {
-            let err =
-                Diagnostic::error(self.file_id, "", "`#` must be at the beginning of the file")
-                    .primary(start..(start + 1), "but it's found here");
-            return (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err));
-        }
+        // if start != 0 {
+        //     return tok!(HASH, self.cur);
+        // }
 
         if let Some(b'!') = self.bytes.get(1) {
             while self.next().is_some() {

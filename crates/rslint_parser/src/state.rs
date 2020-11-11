@@ -46,6 +46,7 @@ pub struct ParserState {
     pub in_case_cond: bool,
     pub(crate) no_recovery: bool,
     pub in_declare: bool,
+    pub in_binding_list_for_signature: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -77,6 +78,7 @@ impl Default for ParserState {
             in_case_cond: false,
             no_recovery: false,
             in_declare: false,
+            in_binding_list_for_signature: false,
         }
     }
 }

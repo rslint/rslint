@@ -487,6 +487,99 @@ impl TsModuleDecl {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsConstructorParam {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsConstructorParam {
+    pub fn pat(&self) -> Option<Pattern> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsCallSignatureDecl {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsCallSignatureDecl {
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
+    pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn return_type(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsConstructSignatureDecl {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsConstructSignatureDecl {
+    pub fn new_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![new]) }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
+    pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn return_type(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsIndexSignature {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsIndexSignature {
+    pub fn l_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['[']) }
+    pub fn pat(&self) -> Option<SinglePattern> { support::child(&self.syntax) }
+    pub fn r_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![']']) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsMethodSignature {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsMethodSignature {
+    pub fn key(&self) -> Option<Expr> { support::child(&self.syntax) }
+    pub fn question_mark_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T ! [?])
+    }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
+    pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn return_type(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsPropertySignature {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsPropertySignature {
+    pub fn prop(&self) -> Option<Expr> { support::child(&self.syntax) }
+    pub fn question_mark_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T ! [?])
+    }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsHeritageClause {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsHeritageClause {
+    pub fn item(&self) -> Option<TsEntityName> { support::child(&self.syntax) }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsInterfaceDecl {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsInterfaceDecl {
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
+    pub fn extends(&self) -> Option<TsHeritageClause> { support::child(&self.syntax) }
+    pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
+    pub fn members(&self) -> AstChildren<TsTypeElement> { support::children(&self.syntax) }
+    pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
@@ -1354,6 +1447,15 @@ impl AwaitExpr {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PrivateName {
+    pub(crate) syntax: SyntaxNode,
+}
+impl PrivateName {
+    pub fn hash_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [#]) }
+    pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ObjectProp {
     LiteralProp(LiteralProp),
     Getter(Getter),
@@ -1429,6 +1531,7 @@ pub enum Decl {
     TsTypeAliasDecl(TsTypeAliasDecl),
     TsNamespaceDecl(TsNamespaceDecl),
     TsModuleDecl(TsModuleDecl),
+    TsInterfaceDecl(TsInterfaceDecl),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1512,6 +1615,15 @@ pub enum TsThisOrName {
 pub enum TsNamespaceBody {
     TsModuleBlock(TsModuleBlock),
     TsNamespaceDecl(TsNamespaceDecl),
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TsTypeElement {
+    TsCallSignatureDecl(TsCallSignatureDecl),
+    TsConstructSignatureDecl(TsConstructSignatureDecl),
+    TsPropertySignature(TsPropertySignature),
+    TsMethodSignature(TsMethodSignature),
+    TsIndexSignature(TsIndexSignature),
 }
 impl AstNode for TsAny {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_ANY }
@@ -2054,6 +2166,94 @@ impl AstNode for TsModuleBlock {
 }
 impl AstNode for TsModuleDecl {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_MODULE_DECL }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsConstructorParam {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_CONSTRUCTOR_PARAM }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsCallSignatureDecl {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_CALL_SIGNATURE_DECL }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsConstructSignatureDecl {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_CONSTRUCT_SIGNATURE_DECL }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsIndexSignature {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_INDEX_SIGNATURE }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsMethodSignature {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_METHOD_SIGNATURE }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsPropertySignature {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_PROPERTY_SIGNATURE }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsHeritageClause {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_HERITAGE_CLAUSE }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsInterfaceDecl {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_INTERFACE_DECL }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3020,6 +3220,17 @@ impl AstNode for AwaitExpr {
     }
     fn syntax(&self) -> &SyntaxNode { &self.syntax }
 }
+impl AstNode for PrivateName {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == PRIVATE_NAME }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
 impl From<LiteralProp> for ObjectProp {
     fn from(node: LiteralProp) -> ObjectProp { ObjectProp::LiteralProp(node) }
 }
@@ -3328,6 +3539,9 @@ impl From<TsNamespaceDecl> for Decl {
 impl From<TsModuleDecl> for Decl {
     fn from(node: TsModuleDecl) -> Decl { Decl::TsModuleDecl(node) }
 }
+impl From<TsInterfaceDecl> for Decl {
+    fn from(node: TsInterfaceDecl) -> Decl { Decl::TsInterfaceDecl(node) }
+}
 impl AstNode for Decl {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -3339,6 +3553,7 @@ impl AstNode for Decl {
                 | TS_TYPE_ALIAS_DECL
                 | TS_NAMESPACE_DECL
                 | TS_MODULE_DECL
+                | TS_INTERFACE_DECL
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3350,6 +3565,7 @@ impl AstNode for Decl {
             TS_TYPE_ALIAS_DECL => Decl::TsTypeAliasDecl(TsTypeAliasDecl { syntax }),
             TS_NAMESPACE_DECL => Decl::TsNamespaceDecl(TsNamespaceDecl { syntax }),
             TS_MODULE_DECL => Decl::TsModuleDecl(TsModuleDecl { syntax }),
+            TS_INTERFACE_DECL => Decl::TsInterfaceDecl(TsInterfaceDecl { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3363,6 +3579,7 @@ impl AstNode for Decl {
             Decl::TsTypeAliasDecl(it) => &it.syntax,
             Decl::TsNamespaceDecl(it) => &it.syntax,
             Decl::TsModuleDecl(it) => &it.syntax,
+            Decl::TsInterfaceDecl(it) => &it.syntax,
         }
     }
 }
@@ -3811,6 +4028,61 @@ impl AstNode for TsNamespaceBody {
         }
     }
 }
+impl From<TsCallSignatureDecl> for TsTypeElement {
+    fn from(node: TsCallSignatureDecl) -> TsTypeElement { TsTypeElement::TsCallSignatureDecl(node) }
+}
+impl From<TsConstructSignatureDecl> for TsTypeElement {
+    fn from(node: TsConstructSignatureDecl) -> TsTypeElement {
+        TsTypeElement::TsConstructSignatureDecl(node)
+    }
+}
+impl From<TsPropertySignature> for TsTypeElement {
+    fn from(node: TsPropertySignature) -> TsTypeElement { TsTypeElement::TsPropertySignature(node) }
+}
+impl From<TsMethodSignature> for TsTypeElement {
+    fn from(node: TsMethodSignature) -> TsTypeElement { TsTypeElement::TsMethodSignature(node) }
+}
+impl From<TsIndexSignature> for TsTypeElement {
+    fn from(node: TsIndexSignature) -> TsTypeElement { TsTypeElement::TsIndexSignature(node) }
+}
+impl AstNode for TsTypeElement {
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            TS_CALL_SIGNATURE_DECL
+                | TS_CONSTRUCT_SIGNATURE_DECL
+                | TS_PROPERTY_SIGNATURE
+                | TS_METHOD_SIGNATURE
+                | TS_INDEX_SIGNATURE
+        )
+    }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        let res = match syntax.kind() {
+            TS_CALL_SIGNATURE_DECL => {
+                TsTypeElement::TsCallSignatureDecl(TsCallSignatureDecl { syntax })
+            }
+            TS_CONSTRUCT_SIGNATURE_DECL => {
+                TsTypeElement::TsConstructSignatureDecl(TsConstructSignatureDecl { syntax })
+            }
+            TS_PROPERTY_SIGNATURE => {
+                TsTypeElement::TsPropertySignature(TsPropertySignature { syntax })
+            }
+            TS_METHOD_SIGNATURE => TsTypeElement::TsMethodSignature(TsMethodSignature { syntax }),
+            TS_INDEX_SIGNATURE => TsTypeElement::TsIndexSignature(TsIndexSignature { syntax }),
+            _ => return None,
+        };
+        Some(res)
+    }
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            TsTypeElement::TsCallSignatureDecl(it) => &it.syntax,
+            TsTypeElement::TsConstructSignatureDecl(it) => &it.syntax,
+            TsTypeElement::TsPropertySignature(it) => &it.syntax,
+            TsTypeElement::TsMethodSignature(it) => &it.syntax,
+            TsTypeElement::TsIndexSignature(it) => &it.syntax,
+        }
+    }
+}
 impl std::fmt::Display for ObjectProp {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
@@ -3882,6 +4154,11 @@ impl std::fmt::Display for TsThisOrName {
     }
 }
 impl std::fmt::Display for TsNamespaceBody {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsTypeElement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
@@ -4132,6 +4409,46 @@ impl std::fmt::Display for TsModuleBlock {
     }
 }
 impl std::fmt::Display for TsModuleDecl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsConstructorParam {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsCallSignatureDecl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsConstructSignatureDecl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsIndexSignature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsMethodSignature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsPropertySignature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsHeritageClause {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsInterfaceDecl {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
@@ -4567,6 +4884,11 @@ impl std::fmt::Display for ClassBody {
     }
 }
 impl std::fmt::Display for AwaitExpr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for PrivateName {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

@@ -1,6 +1,6 @@
 //! Class and function declarations.
 
-use super::expr::{assign_expr, lhs_expr, object_prop_name};
+use super::expr::{assign_expr, identifier_name, lhs_expr, object_prop_name};
 use super::pat::{binding_identifier, opt_binding_identifier, pattern};
 use super::stmt::block_stmt;
 use super::typescript::*;
@@ -17,6 +17,17 @@ pub const BASE_METHOD_RECOVERY_SET: TokenSet = token_set![
     NUMBER,
     STRING
 ];
+
+pub fn maybe_private_name(p: &mut Parser) -> Option<CompletedMarker> {
+    if p.at(T![#]) {
+        let m = p.start();
+        p.bump_any();
+        identifier_name(p);
+        Some(m.complete(p, PRIVATE_NAME))
+    } else {
+        identifier_name(p)
+    }
+}
 
 /// A function declaration, this could be async and or a generator. This takes a marker
 /// because you need to first advance over async or start a marker and feed it in.
@@ -271,7 +282,17 @@ fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarke
             };
             // test_err formal_params_no_binding_element
             // function foo(true) {}
-            if func(p).is_none() {
+            if let Some(res) = func(p) {
+                if res.kind() == ASSIGN_PATTERN && p.state.in_binding_list_for_signature {
+                    let err = p
+                        .err_builder(
+                            "assignment patterns cannot be used in function/constructor types",
+                        )
+                        .primary(res.range(p), "");
+
+                    p.error(err);
+                }
+            } else {
                 p.err_recover_no_err(
                     token_set![
                         T![ident],

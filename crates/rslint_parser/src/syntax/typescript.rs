@@ -94,7 +94,7 @@ pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     if p.cur_src() == "interface" {
-        todo!("interfaces");
+        return ts_interface(p);
     }
 
     if p.cur_src() == "module" {
@@ -172,27 +172,215 @@ macro_rules! no_recover {
     };
 }
 
-// pub fn ts_type_member(p: &mut Parser) -> Option<CompletedMarker> {
-//     if p.at(T!['(']) || p.at(T![<]) {
+pub fn ts_interface(p: &mut Parser) -> Option<CompletedMarker> {
+    const DISALLOWED: [&str; 12] = [
+        "string",
+        "null",
+        "number",
+        "object",
+        "any",
+        "unknown",
+        "boolean",
+        "bigint",
+        "symbol",
+        "void",
+        "never",
+        "intrinsic",
+    ];
 
-//     }
-// }
+    let m = p.start();
+    if p.cur_src() != "interface" {
+        let err = p
+            .err_builder(&format!(
+                "expected keyword `interface`, but instead found `{}`",
+                p.cur_src()
+            ))
+            .primary(p.cur_tok().range, "");
 
-// pub fn ts_signature_member(p: &mut Parser, construct_sig: bool) -> CompletedMarker {
-//     let m = p.start();
-//     if construct_sig {
-//         p.expect(T![new]);
-//     }
+        p.error(err);
+    } else {
+        p.bump_any();
+    }
 
-//     if p.at(T![<]) {
-//         ts_type_params(p);
-//     }
+    if DISALLOWED.contains(&p.cur_src()) {
+        let err = p
+            .err_builder(&format!(
+                "`{}` cannot be used as the name of an interface",
+                p.cur_src()
+            ))
+            .primary(p.cur_tok().range, "")
+            .footer_note(format!("`{}` is already reserved as a type", p.cur_src()));
 
-//     p.expect(T!['(']);
-//     if p.at(T![:]) {
-//         ts_type_or_type_predicate_ann(p, T![:]);
-//     }
-// }
+        p.error(err);
+    }
+    identifier_name(p);
+    if p.at(T![<]) {
+        ts_type_params(p);
+    }
+
+    let heritage_clause = if p.cur_src() == "extends" {
+        Some(ts_heritage_clause(p))
+    } else {
+        None
+    };
+
+    while p.cur_src() == "extends" {
+        let clause = heritage_clause.as_ref().unwrap();
+        let mut complete = ts_heritage_clause(p);
+        complete.change_kind(p, ERROR);
+        let err = p
+            .err_builder("interfaces cannot extend multiple interfaces")
+            .secondary(clause.range(p), "first heritage occurs here")
+            .primary(complete.range(p), "another heritage is invalid");
+
+        p.error(err);
+    }
+    p.expect(T!['{']);
+    while !p.at(EOF) && !p.at(T!['}']) {
+        ts_type_member(p);
+    }
+    p.expect(T!['}']);
+    Some(m.complete(p, TS_INTERFACE_DECL))
+}
+
+fn ts_heritage_clause(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.bump_any();
+    ts_entity_name(p, None, false);
+    if p.at(T![<]) {
+        ts_type_params(p);
+    }
+    m.complete(p, TS_HERITAGE_CLAUSE)
+}
+
+pub fn ts_type_member(p: &mut Parser) -> Option<CompletedMarker> {
+    if p.at(T!['(']) || p.at(T![<]) {
+        return ts_signature_member(p, false);
+    }
+
+    if p.at(T![new]) && token_set!(T![<], T!['(']).contains(p.nth(1)) {
+        return ts_signature_member(p, true);
+    }
+
+    let (m, readonly) = if p.cur_src() == "readonly" {
+        let m = p.start();
+        p.bump_any();
+        (m, true)
+    } else {
+        (p.start(), false)
+    };
+
+    if let Some(idx) = try_parse_index_signature(p, m) {
+        return Some(idx);
+    }
+
+    ts_property_or_method_sig(p, m, readonly)
+}
+
+fn ts_property_or_method_sig(p: &mut Parser, m: Marker, readonly: bool) -> Option<CompletedMarker> {
+    if p.eat(T!['[']) {
+        assign_expr(p);
+        p.expect_no_recover(T![']'])?;
+    } else {
+        match p.cur() {
+            STRING | NUMBER => {
+                literal(p);
+            }
+            _ => {
+                let complete = maybe_private_name(p);
+                if let Some(PRIVATE_NAME) = complete.as_ref().map(|x| x.kind()) {
+                    let err = p
+                        .err_builder("private names are not allowed outside of class bodies")
+                        .primary(complete.as_ref().unwrap().range(p), "");
+
+                    p.error(err);
+                    complete.unwrap().change_kind(p, ERROR);
+                }
+            }
+        }
+    };
+
+    p.eat(T![?]);
+    Some(if !readonly && p.at_ts(token_set![T!['('], T![<]]) {
+        if p.at(T![<]) {
+            no_recover!(p, ts_type_params(p));
+        }
+        p.expect(T!['(']);
+        formal_parameters(p);
+        if p.eat(T![:]) {
+            ts_type_or_type_predicate_ann(p, T![:]);
+        }
+        type_member_semi(p);
+        m.complete(p, TS_METHOD_SIGNATURE)
+    } else {
+        if p.eat(T![:]) {
+            ts_type(p);
+        }
+        type_member_semi(p);
+        m.complete(p, TS_PROPERTY_SIGNATURE)
+    })
+}
+
+fn try_parse_index_signature(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
+    if !p.at(T!['['])
+        || token_set![T![ident], T![await], T![yield]].contains(p.nth(1))
+        || p.nth(1).is_keyword()
+        || token_set![T![:], T![,]].contains(p.nth(2))
+    {
+        return None;
+    }
+
+    p.expect_no_recover(T!['['])?;
+    let pat_m = p.start();
+    identifier_name(p);
+    p.expect_no_recover(T![:])?;
+    no_recover!(p, ts_type(p));
+    pat_m.complete(p, SINGLE_PATTERN);
+    p.expect_no_recover(T![']'])?;
+
+    if p.eat(T![:]) {
+        no_recover!(p, ts_type(p));
+    }
+    type_member_semi(p);
+    Some(m.complete(p, TS_INDEX_SIGNATURE))
+}
+
+pub fn ts_signature_member(p: &mut Parser, construct_sig: bool) -> Option<CompletedMarker> {
+    let m = p.start();
+    if construct_sig {
+        p.expect(T![new]);
+    }
+
+    if p.at(T![<]) {
+        no_recover!(p, ts_type_params(p));
+    }
+
+    p.expect(T!['(']);
+    formal_parameters(&mut *p.with_state(ParserState {
+        in_binding_list_for_signature: true,
+        ..p.state.clone()
+    }));
+    if p.at(T![:]) {
+        no_recover!(p, ts_type_or_type_predicate_ann(p, T![:]));
+    }
+    type_member_semi(p);
+
+    Some(m.complete(
+        p,
+        if construct_sig {
+            TS_CONSTRUCT_SIGNATURE_DECL
+        } else {
+            TS_CALL_SIGNATURE_DECL
+        },
+    ))
+}
+
+// TODO(RDambrosio016): is this logic correct?
+fn type_member_semi(p: &mut Parser) {
+    if p.at_ts(token_set![T![,], T![;]]) {
+        p.bump_any();
+    }
+}
 
 pub fn ts_enum(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
