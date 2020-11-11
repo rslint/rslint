@@ -134,10 +134,7 @@ pub fn show_all_rules() {
         }
         println!();
     }
-    println!(
-        "{}: https://rdambrosio016.github.io/RSLint/rules/index.html",
-        "more info".bright_green()
-    );
+    println!("{}: https://rslint.org/rules/", "more info".bright_green());
     println!(
         "{}: use the explain command to show info about individual rules",
         "help".bright_green()

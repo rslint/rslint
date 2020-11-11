@@ -10,7 +10,7 @@ use std::fs::{read_dir, read_to_string, write};
 
 const GROUPS_ROOT: &str = "crates/rslint_core/src/groups";
 
-const REPO: &str = "https://github.com/RDambrosio016/RSLint/tree/master";
+const REPO: &str = "https://github.com/rslint/rslint/tree/master";
 
 pub fn run() {
     let mut groups = vec![];
