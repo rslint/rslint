@@ -60,6 +60,7 @@ use std::{
     io::Write as _,
     path::Path,
 };
+use types::ast::FileId;
 
 struct DatalogTestHarness {
     datalog: ScopeAnalyzer,
@@ -176,6 +177,8 @@ impl<'a> TestCase<'a> {
 
     // TODO: This is so ugly
     pub fn run(mut self) {
+        let file_id = FileId::new(self.harness.counter as u32);
+
         let path = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/output.log"))
             .join(format!("{}-{}", self.rule_name, self.harness.counter));
         if !path.exists() {
@@ -212,6 +215,7 @@ impl<'a> TestCase<'a> {
             .datalog
             .datalog
             .inject_globals(
+                file_id,
                 &self
                     .globals
                     .iter()
@@ -223,14 +227,14 @@ impl<'a> TestCase<'a> {
         self.harness
             .datalog
             .datalog
-            .inject_globals(BUILTIN)
+            .inject_globals(file_id, BUILTIN)
             .expect("failed to inject builtin variables");
 
         if self.browser {
             self.harness
                 .datalog
                 .datalog
-                .inject_globals(BROWSER)
+                .inject_globals(file_id, BROWSER)
                 .expect("failed to add browser globals");
         }
 
@@ -238,7 +242,7 @@ impl<'a> TestCase<'a> {
             self.harness
                 .datalog
                 .datalog
-                .inject_globals(NODE)
+                .inject_globals(file_id, NODE)
                 .expect("failed to add node globals");
         }
 
@@ -246,13 +250,13 @@ impl<'a> TestCase<'a> {
             self.harness
                 .datalog
                 .datalog
-                .inject_globals(ES2021)
+                .inject_globals(file_id, ES2021)
                 .expect("failed to add ecma globals");
         }
 
         self.harness
             .datalog
-            .analyze(&ast)
+            .analyze(file_id, &ast)
             .expect("failed datalog transaction");
 
         let mut errors = self.harness.datalog.get_lints().unwrap();

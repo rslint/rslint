@@ -1,20 +1,25 @@
 // All datalog input relations, derived from the program's ast
 import ast
 
+input relation File(
+    id: FileId,
+    kind: FileKind,
+)
+
 // The input scope relationships, just map parent<-child for one generation
 // TODO: Scope spans, make clear if a span is implicit or explicit
-input relation InputScope(parent: Scope, child: Scope)
-index InputScopeByParent(parent: Scope) on InputScope(parent, _)
-index InputScopeByChild(child: Scope) on InputScope(_, child)
+input relation InputScope(parent: ScopeId, child: ScopeId)
+index InputScopeByParent(parent: ScopeId) on InputScope(parent, _)
+index InputScopeByChild(child: ScopeId) on InputScope(_, child)
 
-input relation EveryScope(scope: Scope)
+input relation EveryScope(scope: ScopeId)
 
 // Functions
 input relation Function(
     id: FuncId,
     name: Option<Spanned<Name>>,
-    scope: Scope,
-    body: Scope,
+    scope: ScopeId,
+    body: ScopeId,
     exported: bool,
 )
 input relation FunctionArg(parent_func: FuncId, pattern: IPattern, implicit: bool)
@@ -25,7 +30,7 @@ input relation Class(
     name: Option<Spanned<Name>>,
     parent: Option<ExprId>,
     elements: Option<Vec<IClassElement>>,
-    scope: Scope,
+    scope: ScopeId,
     exported: bool,
 )
 
@@ -36,7 +41,7 @@ input relation ImportDecl(id: ImportId, clause: ImportClause)
 input relation ImplicitGlobal(id: GlobalId, name: Name)
 
 // Statements
-input relation Statement(id: StmtId, kind: StmtKind, scope: Scope, span: Span)
+input relation Statement(id: StmtId, kind: StmtKind, scope: ScopeId, span: Span)
 
 input relation VarDecl(
     stmt_id: StmtId,
@@ -105,7 +110,7 @@ input relation Try(
 )
 
 // Expressions
-input relation Expression(id: ExprId, kind: ExprKind, scope: Scope, span: Span)
+input relation Expression(id: ExprId, kind: ExprKind, scope: ScopeId, span: Span)
 index ExpressionById(id: ExprId) on Expression(id, _, _, _)
 index ExpressionBySpan(span: Span) on Expression(_, _, _, span)
 

@@ -14,7 +14,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use types::{
-    ast::Scope, InvalidNameUse, NameInScope, TypeofUndefinedAlwaysUndefined, UnusedVariables,
+    ast::ScopeId, InvalidNameUse, NameInScope, TypeofUndefinedAlwaysUndefined, UnusedVariables,
     VarUseBeforeDeclaration,
 };
 
@@ -48,7 +48,7 @@ macro_rules! derived_facts {
 }
 
 derived_facts! {
-    variables_for_scope(scope: Scope) -> NameInScope from Index_VariablesForScope,
+    variables_for_scope(scope: ScopeId) -> NameInScope from Index_VariablesForScope,
 }
 
 #[derive(Debug, Clone)]

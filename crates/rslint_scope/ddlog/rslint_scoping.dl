@@ -23,13 +23,13 @@ import inputs
 // └╴d
 // ```
 //
-relation ChildScope(parent: Scope, child: Scope)
-index ChildScopeByParent(parent: Scope) on ChildScope(parent, _)
+relation ChildScope(parent: ScopeId, child: ScopeId)
+index ChildScopeByParent(parent: ScopeId) on ChildScope(parent, _)
 
 ChildScope(parent, child) :- InputScope(parent, child), parent != child.
 ChildScope(parent, child) :- InputScope(parent, interum), ChildScope(interum, child), parent != child.
 
-relation ClosestFunction(scope: Scope, func: FuncId)
+relation ClosestFunction(scope: ScopeId, func: FuncId)
 ClosestFunction(body, func) :- Function(func, _, _, body, _).
 ClosestFunction(scope, func) :- Function(func, _, _, body, _), ChildScope(body, scope).
 
@@ -47,29 +47,32 @@ ClosestFunction(scope, func) :- Function(func, _, _, body, _), ChildScope(body, 
 // ```
 //
 relation NameInScope(
+    file: FileId,
     name: Name,
-    scope: Scope,
+    scope: ScopeId,
     span: Option<Span>,
     declared_in: AnyId,
     implicit: bool,
 )
 
 // An index that returns all variables avaliable in a given scope
-index Index_VariablesForScope(scope: Scope) on NameInScope(_, scope, _, _, _)
+index Index_VariablesForScope(file: FileId, scope: ScopeId) on NameInScope(file, _, scope, _, _, _)
 
 // An index that returns all variables by the given name in the given scope
-index Index_VariableInScope(scope: Scope, variable: Name) on NameInScope(variable, scope, _, _, _)
+index Index_VariableInScope(file: FileId, scope: ScopeId, variable: Name) on NameInScope(file, variable, scope, _, _, _)
 
 // Add implicit globals to every scope
-NameInScope(name, scope, None, AnyIdGlobal { global }, true) :-
+NameInScope(global.file, name, scope, None, AnyIdGlobal { global }, true) :-
     ImplicitGlobal(global, name),
-    EveryScope(scope).
+    EveryScope(scope),
+    scope.file == global.file.
 
 // Import declarations
-NameInScope(name.data, scope, Some { name.span }, AnyIdImport { id }, false) :-
+NameInScope(id.file, name.data, scope, Some { name.span }, AnyIdImport { id }, false) :-
     ImportDecl(id, clause),
     var name = FlatMap(clause.free_variables()),
-    EveryScope(scope).
+    EveryScope(scope),
+    scope.file == id.file.
 
 // Class declarations
 //
@@ -82,7 +85,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdImport { id }, false) :-
 // // Scope: { Baz, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdClass { class }, false) :-
+NameInScope(class.file, name.data, scope, Some { name.span }, AnyIdClass { class }, false) :-
     Class(class, Some { name }, _, _, scope, _).
 
 // `let` declarations
@@ -96,7 +99,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdClass { class }, false) :
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
+NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     LetDecl(stmt, Some { pat }, _, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _).
@@ -112,7 +115,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
+NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     ConstDecl(stmt, Some { pat }, _, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _).
@@ -131,7 +134,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
 // // Scope: { ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
+NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     VarDecl(stmt, Some { pat }, _, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, decl_scope, _),
@@ -139,7 +142,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     ClosestFunction(decl_scope, func), // FIXME: This or the Function clause is wrong
     Function(func, _, _, scope, _).
 
-NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
+NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     VarDecl(stmt, Some { pat }, _, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _),
@@ -159,7 +162,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdFunc { func }, false) :-
+NameInScope(func.file, name.data, scope, Some { name.span }, AnyIdFunc { func }, false) :-
     Function(func, Some { name }, scope, _, _).
 
 // Introduce function arguments within the body of their enclosing function
@@ -172,7 +175,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdFunc { func }, false) :-
 // // Scope: { ... }
 // ```
 //
-NameInScope(name.data, body, Some { name.span }, AnyIdFunc { func }, implicit) :-
+NameInScope(func.file, name.data, body, Some { name.span }, AnyIdFunc { func }, implicit) :-
     FunctionArg(func, pat, implicit),
     var name = FlatMap(pat.bound_vars()),
     Function(func, _, _, body, _).
@@ -187,17 +190,17 @@ NameInScope(name.data, body, Some { name.span }, AnyIdFunc { func }, implicit) :
 // // Scope: { ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
+NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
     ArrowParam(expr, pat),
-    var name = FlatMap(pat.bound_vars()),
     // Get the body's expression and put the parameters in-scope
     // there, not within the arrow expression's scope
     // TODO: Can I address Expr/Stmt at the same time instead
     //       of seperate rules?
     Arrow(expr, Some { Left { expr_body }}),
-    Expression(expr_body, _, scope, _).
+    Expression(expr_body, _, scope, _),
+    var name = FlatMap(pat.bound_vars()).
 
-NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
+NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
     ArrowParam(expr, pat),
     var name = FlatMap(pat.bound_vars()),
     // Get the body's statement and put the parameters in-scope
@@ -218,7 +221,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
+NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
     InlineFunc(expr, Some { name }, _),
     Expression(expr, _, scope, _).
 
@@ -232,28 +235,29 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
 // // Scope: { ... }
 // ```
 //
-NameInScope(name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
+NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
     InlineFuncParam(expr, pat),
     InlineFunc(expr, _, Some { body }),
     Statement(body, _, scope, _),
     var name = FlatMap(pat.bound_vars()).
 
 // `catch` statement patterns
-NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { catcher }, false) :-
+NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { catcher }, false) :-
     Try(stmt, _, TryHandler { Some { error }, Some { catcher } }, _),
     Statement(expr, _, scope, _),
     var name = FlatMap(error.bound_vars()).
 
 // Walk variables down scopes
-NameInScope(name, scope, span, declared_in, implicit) :-
-    NameInScope(name, interum, span, declared_in, implicit),
+NameInScope(file, name, scope, span, declared_in, implicit) :-
+    NameInScope(file, name, interum, span, declared_in, implicit),
     ChildScope(interum, scope).
 
 
-relation VariableUsages(name: Name, scope: Scope, declared_in: AnyId)
+relation VariableUsages(name: Name, scope: ScopeId, declared_in: AnyId)
 VariableUsages(name, scope, declared) :-
-    NameInScope(name, scope, _, declared, _),
+    NameInScope(file, name, scope, _, declared, _),
     NameRef(expr, name),
+    file == expr.file,
     Expression(expr, _, scope, _).
 
 
@@ -261,15 +265,15 @@ output relation UnusedVariables(name: Name, declared: AnyId, span: Span)
 // TODO: Are these to rules all that's needed? Is the grouping bs even
 //       useful?
 UnusedVariables(name, declared, span) :-
-    NameInScope(name, _, Some { span }, declared, false),
+    NameInScope(file, name, _, Some { span }, declared, false),
     not declared.is_global(),
-    not IsExported(declared),
+    not IsExported(file, declared),
     not VariableUsages(name, _, declared).
 
 UnusedVariables(name, declared, span) :-
-    NameInScope(name, _, Some { span }, declared @ AnyIdGlobal { global }, false),
+    NameInScope(file, name, _, Some { span }, declared @ AnyIdGlobal { global }, false),
     not ImplicitGlobal(global, _),
-    not IsExported(declared),
+    not IsExported(file, declared),
     not VariableUsages(name, _, declared).
 
 
@@ -300,7 +304,7 @@ output relation TypeofUndefinedAlwaysUndefined(whole_expr: ExprId, undefined_exp
 TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
     NameRef(undefined_expr, name),
     Expression(undefined_expr, ExprNameRef, scope, span),
-    not NameInScope(name, scope, _, _, _),
+    not NameInScope(scope.file, name, scope, _, _, _),
     // Expressions like `typeof not_undefined` are allowed under InvalidNameUse
     // and are instead output through TypeofUndefinedAlwaysUndefined
     WithinTypeofExpr(whole_expr, undefined_expr).
@@ -310,11 +314,11 @@ TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
 // have an accompanying variable in scope are reported
 // TODO: Use a levenshtein aggregate to try and correct and/or look in children
 //       scopes for a declaration
-output relation InvalidNameUse(name: Name, scope: Scope, span: Span)
+output relation InvalidNameUse(name: Name, scope: ScopeId, span: Span)
 InvalidNameUse(name, scope, span) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, scope, span),
-    not NameInScope(name, scope, _, _, _),
+    not NameInScope(expr.file, name, scope, _, _, _),
     // Expressions like `typeof not_undefined` are allowed under InvalidNameUse
     // and are instead output through TypeofUndefinedAlwaysUndefined
     not WithinTypeofExpr(_, expr),
@@ -325,7 +329,7 @@ InvalidNameUse(name.data, scope, name.span) :-
     Assign(expr, Some { Left { pat }}, _, _),
     Expression(expr, _, scope, _),
     var name = FlatMap(pat.bound_vars()),
-    not NameInScope(name.data, scope, _, _, _).
+    not NameInScope(expr.file, name.data, scope, _, _, _).
 
 
 // `var` usages that happen before the declaration
@@ -333,13 +337,28 @@ output relation VarUseBeforeDeclaration(name: Name, used_in: Span, declared_in: 
 VarUseBeforeDeclaration(name, used_in, declared_in) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, used_scope, used_in),
-    NameInScope(name, used_scope, _, AnyIdStmt { .stmt = stmt }, _),
+    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { .stmt = stmt }, _),
     Statement(stmt, StmtVarDecl, declared_scope, declared_in),
     ChildScope(used_scope, declared_scope).
 
-relation IsExported(id: AnyId)
-IsExported(AnyIdFunc { id }) :- Function(id, _, _, _, true).
-IsExported(AnyIdClass { id }) :- Class(id, _, _, _, _, true).
-IsExported(AnyIdStmt { id }) :- VarDecl(id, _, _, true).
-IsExported(AnyIdStmt { id }) :- LetDecl(id, _, _, true).
-IsExported(AnyIdStmt { id }) :- ConstDecl(id, _, _, true).
+relation IsExported(file: FileId, id: AnyId)
+
+IsExported(file, AnyIdFunc { id }) :-
+    Function(id, _, _, _, true),
+    var file = id.file.
+
+IsExported(file, AnyIdClass { id }) :-
+    Class(id, _, _, _, _, true),
+    var file = id.file.
+
+IsExported(file, AnyIdStmt { id }) :-
+    VarDecl(id, _, _, true),
+    var file = id.file.
+
+IsExported(file, AnyIdStmt { id }) :-
+    LetDecl(id, _, _, true),
+    var file = id.file.
+
+IsExported(file, AnyIdStmt { id }) :-
+    ConstDecl(id, _, _, true),
+    var file = id.file.

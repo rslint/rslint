@@ -15,6 +15,7 @@ use rslint_parser::{
 };
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
+use types::ast::{FileId, FileKind, JSFlavor};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ScopeAnalyzer {
@@ -29,7 +30,7 @@ impl ScopeAnalyzer {
         })
     }
 
-    pub fn analyze(&self, syntax: &SyntaxNode) -> DatalogResult<()> {
+    pub fn analyze(&self, file: FileId, syntax: &SyntaxNode) -> DatalogResult<()> {
         let analyzer = AnalyzerInner;
 
         self.datalog.transaction(|trans| {
@@ -38,7 +39,21 @@ impl ScopeAnalyzer {
                 "expected a Script or a Module to be analyzed",
             );
 
-            let mut scope = trans.scope();
+            let file_kind = if syntax.is::<Script>() {
+                FileKind::JavaScript {
+                    flavor: JSFlavor::Vanilla,
+                }
+            } else if syntax.is::<Module>() {
+                FileKind::JavaScript {
+                    flavor: JSFlavor::Module,
+                }
+            } else {
+                FileKind::JavaScript {
+                    flavor: JSFlavor::Vanilla,
+                }
+            };
+
+            let mut scope = trans.file(file, file_kind);
             for item in syntax.children().filter_map(|x| x.try_to::<ModuleItem>()) {
                 if let Some(new_scope) = analyzer.visit(&scope, item) {
                     scope = new_scope;

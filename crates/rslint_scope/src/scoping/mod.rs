@@ -4,13 +4,13 @@ use rslint_parser::ast::{AstNode, Expr};
 use rslint_scoping_ddlog::Indexes;
 use types::{
     ast::{ExprKind, Span},
-    ddlog_std::tuple2,
+    ddlog_std::tuple3,
     inputs::{Expression, InputScope},
     internment::Intern,
     ChildScope,
 };
 
-pub use types::ast::{ExprId, Scope};
+pub use types::ast::{ExprId, ScopeId};
 
 #[derive(Debug, Clone)]
 pub struct ProgramInfo {
@@ -37,7 +37,7 @@ impl ProgramInfo {
             .map(Into::into)
     }
 
-    pub fn scope(&self, scope: Scope) -> ScopeInfo<'_> {
+    pub fn scope(&self, scope: ScopeId) -> ScopeInfo<'_> {
         ScopeInfo {
             handle: self,
             scope,
@@ -47,11 +47,11 @@ impl ProgramInfo {
 
 pub struct ScopeInfo<'a> {
     handle: &'a ProgramInfo,
-    scope: Scope,
+    scope: ScopeId,
 }
 
 impl<'a> ScopeInfo<'a> {
-    pub fn parent(&self) -> Option<Scope> {
+    pub fn parent(&self) -> Option<ScopeId> {
         // TODO: Log errors if they occur
         let query = self.handle.datalog.query(
             Indexes::inputs_InputScopeByChild,
@@ -65,7 +65,7 @@ impl<'a> ScopeInfo<'a> {
             .map(|scope| unsafe { InputScope::from_ddvalue(scope).parent })
     }
 
-    pub fn children(&self) -> Option<Vec<Scope>> {
+    pub fn children(&self) -> Option<Vec<ScopeId>> {
         // TODO: Log errors if they occur
         let query = self
             .handle
@@ -84,7 +84,7 @@ impl<'a> ScopeInfo<'a> {
         // TODO: Log errors if they occur
         let query = self.handle.datalog.query(
             Indexes::Index_VariableInScope,
-            Some(tuple2(self.scope, Intern::new(name.to_owned())).into_ddvalue()),
+            Some(tuple3(self.scope.file, self.scope, Intern::new(name.to_owned())).into_ddvalue()),
         );
 
         query.map_or(false, |query| !query.is_empty())
@@ -94,7 +94,7 @@ impl<'a> ScopeInfo<'a> {
 pub struct ExprInfo {
     pub id: ExprId,
     _kind: ExprKind,
-    pub scope: Scope,
+    pub scope: ScopeId,
 }
 
 impl From<Expression> for ExprInfo {

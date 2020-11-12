@@ -1,131 +1,133 @@
 start;
 commit dump_changes;
 start;
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 302}, .name = "Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 303}, .name = "ArrayBuffer"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 304}, .name = "Atomics"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 305}, .name = "BigInt"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 306}, .name = "BigInt64Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 307}, .name = "BigUint64Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 308}, .name = "Boolean"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 309}, .name = "DataView"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 310}, .name = "Date"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 311}, .name = "Error"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 312}, .name = "EvalError"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 313}, .name = "FinalizationRegistry"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 314}, .name = "Float32Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 315}, .name = "Float64Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 316}, .name = "Function"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 317}, .name = "Infinity"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 318}, .name = "Int16Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 319}, .name = "Int32Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 320}, .name = "Int8Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 321}, .name = "JSON"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 322}, .name = "Map"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 323}, .name = "Math"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 324}, .name = "NaN"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 325}, .name = "Number"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 326}, .name = "Object"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 327}, .name = "Promise"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 328}, .name = "Proxy"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 329}, .name = "RangeError"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 330}, .name = "ReferenceError"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 331}, .name = "Reflect"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 332}, .name = "RegExp"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 333}, .name = "Set"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 334}, .name = "SharedArrayBuffer"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 335}, .name = "String"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 336}, .name = "Symbol"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 337}, .name = "SyntaxError"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 338}, .name = "TypeError"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 339}, .name = "URIError"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 340}, .name = "Uint16Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 341}, .name = "Uint32Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 342}, .name = "Uint8Array"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 343}, .name = "Uint8ClampedArray"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 344}, .name = "WeakMap"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 345}, .name = "WeakRef"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 346}, .name = "WeakSet"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 347}, .name = "constructor"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 348}, .name = "decodeURI"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 349}, .name = "decodeURIComponent"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 350}, .name = "encodeURI"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 351}, .name = "encodeURIComponent"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 352}, .name = "escape"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 353}, .name = "eval"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 354}, .name = "globalThis"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 355}, .name = "hasOwnProperty"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 356}, .name = "isFinite"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 357}, .name = "isNaN"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 358}, .name = "isPrototypeOf"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 359}, .name = "parseFloat"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 360}, .name = "parseInt"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 361}, .name = "propertyIsEnumerable"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 362}, .name = "toLocaleString"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 363}, .name = "toString"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 364}, .name = "undefined"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 365}, .name = "unescape"}],
-insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 366}, .name = "valueOf"}];
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 0, .file = ast::FileId{.id = 4}}, .name = "Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 1, .file = ast::FileId{.id = 4}}, .name = "ArrayBuffer"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 2, .file = ast::FileId{.id = 4}}, .name = "Atomics"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 3, .file = ast::FileId{.id = 4}}, .name = "BigInt"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 4, .file = ast::FileId{.id = 4}}, .name = "BigInt64Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 5, .file = ast::FileId{.id = 4}}, .name = "BigUint64Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 6, .file = ast::FileId{.id = 4}}, .name = "Boolean"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 7, .file = ast::FileId{.id = 4}}, .name = "DataView"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 8, .file = ast::FileId{.id = 4}}, .name = "Date"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 9, .file = ast::FileId{.id = 4}}, .name = "Error"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 10, .file = ast::FileId{.id = 4}}, .name = "EvalError"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 11, .file = ast::FileId{.id = 4}}, .name = "FinalizationRegistry"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 12, .file = ast::FileId{.id = 4}}, .name = "Float32Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 13, .file = ast::FileId{.id = 4}}, .name = "Float64Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 14, .file = ast::FileId{.id = 4}}, .name = "Function"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 15, .file = ast::FileId{.id = 4}}, .name = "Infinity"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 16, .file = ast::FileId{.id = 4}}, .name = "Int16Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 17, .file = ast::FileId{.id = 4}}, .name = "Int32Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 18, .file = ast::FileId{.id = 4}}, .name = "Int8Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 19, .file = ast::FileId{.id = 4}}, .name = "JSON"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 20, .file = ast::FileId{.id = 4}}, .name = "Map"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 21, .file = ast::FileId{.id = 4}}, .name = "Math"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 22, .file = ast::FileId{.id = 4}}, .name = "NaN"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 23, .file = ast::FileId{.id = 4}}, .name = "Number"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 24, .file = ast::FileId{.id = 4}}, .name = "Object"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 25, .file = ast::FileId{.id = 4}}, .name = "Promise"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 26, .file = ast::FileId{.id = 4}}, .name = "Proxy"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 27, .file = ast::FileId{.id = 4}}, .name = "RangeError"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 28, .file = ast::FileId{.id = 4}}, .name = "ReferenceError"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 29, .file = ast::FileId{.id = 4}}, .name = "Reflect"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 30, .file = ast::FileId{.id = 4}}, .name = "RegExp"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 31, .file = ast::FileId{.id = 4}}, .name = "Set"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 32, .file = ast::FileId{.id = 4}}, .name = "SharedArrayBuffer"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 33, .file = ast::FileId{.id = 4}}, .name = "String"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 34, .file = ast::FileId{.id = 4}}, .name = "Symbol"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 35, .file = ast::FileId{.id = 4}}, .name = "SyntaxError"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 36, .file = ast::FileId{.id = 4}}, .name = "TypeError"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 37, .file = ast::FileId{.id = 4}}, .name = "URIError"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 38, .file = ast::FileId{.id = 4}}, .name = "Uint16Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 39, .file = ast::FileId{.id = 4}}, .name = "Uint32Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 40, .file = ast::FileId{.id = 4}}, .name = "Uint8Array"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 41, .file = ast::FileId{.id = 4}}, .name = "Uint8ClampedArray"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 42, .file = ast::FileId{.id = 4}}, .name = "WeakMap"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 43, .file = ast::FileId{.id = 4}}, .name = "WeakRef"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 44, .file = ast::FileId{.id = 4}}, .name = "WeakSet"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 45, .file = ast::FileId{.id = 4}}, .name = "constructor"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 46, .file = ast::FileId{.id = 4}}, .name = "decodeURI"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 47, .file = ast::FileId{.id = 4}}, .name = "decodeURIComponent"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 48, .file = ast::FileId{.id = 4}}, .name = "encodeURI"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 49, .file = ast::FileId{.id = 4}}, .name = "encodeURIComponent"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 50, .file = ast::FileId{.id = 4}}, .name = "escape"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 51, .file = ast::FileId{.id = 4}}, .name = "eval"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 52, .file = ast::FileId{.id = 4}}, .name = "globalThis"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 53, .file = ast::FileId{.id = 4}}, .name = "hasOwnProperty"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 54, .file = ast::FileId{.id = 4}}, .name = "isFinite"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 55, .file = ast::FileId{.id = 4}}, .name = "isNaN"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 56, .file = ast::FileId{.id = 4}}, .name = "isPrototypeOf"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 57, .file = ast::FileId{.id = 4}}, .name = "parseFloat"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 58, .file = ast::FileId{.id = 4}}, .name = "parseInt"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 59, .file = ast::FileId{.id = 4}}, .name = "propertyIsEnumerable"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 60, .file = ast::FileId{.id = 4}}, .name = "toLocaleString"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 61, .file = ast::FileId{.id = 4}}, .name = "toString"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 62, .file = ast::FileId{.id = 4}}, .name = "undefined"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 63, .file = ast::FileId{.id = 4}}, .name = "unescape"}],
+insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 64, .file = ast::FileId{.id = 4}}, .name = "valueOf"}];
 commit dump_changes;
 start;
-insert inputs::InputScope[inputs::InputScope{.parent = ast::Scope{.id = 14}, .child = ast::Scope{.id = 14}}],
-insert inputs::EveryScope[ast::Scope{.id = 14}],
-insert inputs::NameRef[inputs::NameRef{.expr_id = ast::ExprId{.id = 34}, .value = "a"}],
-insert inputs::Expression[inputs::Expression{.id = ast::ExprId{.id = 34}, .kind = ast::ExprNameRef{}, .scope = ast::Scope{.id = 14}, .span = ast::Span{.start = 0, .end = 1}}],
-insert inputs::Statement[inputs::Statement{.id = ast::StmtId{.id = 17}, .kind = ast::StmtExpr{.expr_id = ddlog_std::Some{.x = ast::ExprId{.id = 34}}}, .scope = ast::Scope{.id = 14}, .span = ast::Span{.start = 0, .end = 2}}],
-insert inputs::InputScope[inputs::InputScope{.parent = ast::Scope{.id = 14}, .child = ast::Scope{.id = 15}}],
-insert inputs::EveryScope[ast::Scope{.id = 15}],
-insert inputs::VarDecl[inputs::VarDecl{.stmt_id = ast::StmtId{.id = 18}, .pattern = ddlog_std::Some{.x = ast::SinglePattern{.name = ddlog_std::Some{.x = ast::Spanned{.data = "a", .span = ast::Span{.start = 7, .end = 8}}}}}, .value = ddlog_std::None{}, .exported = false}],
-insert inputs::Statement[inputs::Statement{.id = ast::StmtId{.id = 18}, .kind = ast::StmtVarDecl{}, .scope = ast::Scope{.id = 15}, .span = ast::Span{.start = 3, .end = 9}}];
+insert inputs::File[inputs::File{.id = ast::FileId{.id = 4}, .kind = ast::JavaScript{.flavor = ast::Vanilla{}}}],
+insert inputs::InputScope[inputs::InputScope{.parent = ast::ScopeId{.id = 0, .file = ast::FileId{.id = 4}}, .child = ast::ScopeId{.id = 0, .file = ast::FileId{.id = 4}}}],
+insert inputs::EveryScope[ast::ScopeId{.id = 0, .file = ast::FileId{.id = 4}}],
+insert inputs::NameRef[inputs::NameRef{.expr_id = ast::ExprId{.id = 0, .file = ast::FileId{.id = 4}}, .value = "a"}],
+insert inputs::Expression[inputs::Expression{.id = ast::ExprId{.id = 0, .file = ast::FileId{.id = 4}}, .kind = ast::ExprNameRef{}, .scope = ast::ScopeId{.id = 0, .file = ast::FileId{.id = 4}}, .span = ast::Span{.start = 0, .end = 1}}],
+insert inputs::Statement[inputs::Statement{.id = ast::StmtId{.id = 0, .file = ast::FileId{.id = 4}}, .kind = ast::StmtExpr{.expr_id = ddlog_std::Some{.x = ast::ExprId{.id = 0, .file = ast::FileId{.id = 4}}}}, .scope = ast::ScopeId{.id = 0, .file = ast::FileId{.id = 4}}, .span = ast::Span{.start = 0, .end = 2}}],
+insert inputs::InputScope[inputs::InputScope{.parent = ast::ScopeId{.id = 0, .file = ast::FileId{.id = 4}}, .child = ast::ScopeId{.id = 1, .file = ast::FileId{.id = 4}}}],
+insert inputs::EveryScope[ast::ScopeId{.id = 1, .file = ast::FileId{.id = 4}}],
+insert inputs::VarDecl[inputs::VarDecl{.stmt_id = ast::StmtId{.id = 1, .file = ast::FileId{.id = 4}}, .pattern = ddlog_std::Some{.x = ast::SinglePattern{.name = ddlog_std::Some{.x = ast::Spanned{.data = "a", .span = ast::Span{.start = 7, .end = 8}}}}}, .value = ddlog_std::None{}, .exported = false}],
+insert inputs::Statement[inputs::Statement{.id = ast::StmtId{.id = 1, .file = ast::FileId{.id = 4}}, .kind = ast::StmtVarDecl{}, .scope = ast::ScopeId{.id = 1, .file = ast::FileId{.id = 4}}, .span = ast::Span{.start = 3, .end = 9}}];
 commit dump_changes;
 start;
 clear inputs::FunctionArg;
 clear inputs::ImplicitGlobal;
-clear inputs::Expression;
+clear inputs::File;
 clear inputs::ForIn;
 clear inputs::LetDecl;
+clear inputs::Array;
 clear inputs::New;
-clear inputs::Arrow;
+clear inputs::ArrowParam;
 clear inputs::InlineFunc;
 clear inputs::InputScope;
 clear inputs::Template;
-clear inputs::Break;
+clear inputs::Call;
 clear inputs::Throw;
-clear inputs::Class;
+clear inputs::ClassExpr;
 clear inputs::Return;
-clear inputs::Assign;
+clear inputs::Await;
 clear inputs::Switch;
-clear inputs::BinOp;
+clear inputs::BracketAccess;
 clear inputs::Yield;
-clear inputs::EveryScope;
-clear inputs::ExprBool;
+clear inputs::ExprBigInt;
+clear inputs::ExprNumber;
 clear inputs::UnaryOp;
-clear inputs::ConstDecl;
+clear inputs::Continue;
 clear inputs::While;
-clear inputs::DoWhile;
+clear inputs::DotAccess;
 clear inputs::Function;
 clear inputs::If;
-clear inputs::ExprString;
+clear inputs::Expression;
 clear inputs::For;
-clear inputs::Array;
+clear inputs::Arrow;
 clear inputs::Label;
-clear inputs::ArrowParam;
+clear inputs::Assign;
 clear inputs::NameRef;
 clear inputs::ImportDecl;
 clear inputs::InlineFuncParam;
-clear inputs::Call;
+clear inputs::Class;
 clear inputs::SwitchCase;
-clear inputs::ClassExpr;
+clear inputs::ConstDecl;
 clear inputs::Ternary;
-clear inputs::Await;
+clear inputs::BinOp;
 clear inputs::Property;
-clear inputs::BracketAccess;
+clear inputs::Break;
 clear inputs::Statement;
-clear inputs::ExprBigInt;
+clear inputs::ExprBool;
 clear inputs::With;
-clear inputs::ExprNumber;
-clear inputs::Continue;
+clear inputs::ExprString;
+clear inputs::DoWhile;
 clear inputs::Try;
-clear inputs::DotAccess;
+clear inputs::EveryScope;
 clear inputs::VarDecl;
 commit dump_changes;

@@ -1,21 +1,22 @@
 import vec
 import utils
 
-typedef Scope = Scope { id: u32 }
-
-function to_string(scope: Scope): string {
-    "Scope_${scope.id}"
-}
-
 typedef Name = istring
 
 // Ids
-typedef GlobalId = GlobalId { id: u32 }
-typedef ImportId = ImportId { id: u32 }
-typedef ClassId = ClassId { id: u32 }
-typedef FuncId = FuncId { id: u32 }
-typedef StmtId = StmtId { id: u32 }
-typedef ExprId = ExprId { id: u32 }
+typedef FileId = FileId { id: u32 }
+typedef GlobalId = GlobalId { id: u32, file: FileId }
+typedef ImportId = ImportId { id: u32, file: FileId }
+typedef ClassId = ClassId { id: u32, file: FileId }
+typedef FuncId = FuncId { id: u32, file: FileId }
+typedef StmtId = StmtId { id: u32, file: FileId }
+typedef ExprId = ExprId { id: u32, file: FileId }
+typedef ScopeId = ScopeId { id: u32, file: FileId }
+
+function to_string(scope: ScopeId): string {
+    "Scope_${scope.id}"
+}
+
 typedef AnyId =
     AnyIdGlobal { global: GlobalId }
     | AnyIdImport { import_: ImportId }
@@ -26,12 +27,23 @@ typedef AnyId =
 
 function to_string(id: AnyId): string {
     match (id) {
-        AnyIdGlobal { GlobalId { id }} -> "Global_${id}",
-        AnyIdImport { ImportId { id }} -> "Import_${id}",
-        AnyIdClass { ClassId { id }} -> "Class_${id}",
-        AnyIdFunc { FuncId { id }} -> "Func_${id}",
-        AnyIdStmt { StmtId { id }} -> "Stmt_${id}",
-        AnyIdExpr { ExprId { id }} -> "Expr_${id}",
+        AnyIdGlobal { GlobalId { id, _ }} -> "Global_${id}",
+        AnyIdImport { ImportId { id, _ }} -> "Import_${id}",
+        AnyIdClass { ClassId { id, _ }} -> "Class_${id}",
+        AnyIdFunc { FuncId { id, _ }} -> "Func_${id}",
+        AnyIdStmt { StmtId { id, _ }} -> "Stmt_${id}",
+        AnyIdExpr { ExprId { id, _ }} -> "Expr_${id}",
+    }
+}
+
+function file_id(id: AnyId): FileId {
+    match (id) {
+        AnyIdGlobal { GlobalId { _, file }} -> file,
+        AnyIdImport { ImportId { _, file }} -> file,
+        AnyIdClass { ClassId { _, file }} -> file,
+        AnyIdFunc { FuncId { _, file }} -> file,
+        AnyIdStmt { StmtId { _, file }} -> file,
+        AnyIdExpr { ExprId { _, file }} -> file,
     }
 }
 
@@ -268,3 +280,10 @@ typedef NamedImport = NamedImport {
 function free_variable(clause: NamedImport): Option<Spanned<Name>> {
     clause.alias.or_else(clause.name)
 }
+
+typedef FileKind = JavaScript { flavor: JSFlavor } | Todo
+
+typedef JSFlavor =
+    Vanilla
+    | Module
+    | TypeScript
