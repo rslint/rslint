@@ -11,3 +11,4 @@ package-lock.json
 **/dist
 rslint.svg
 **/output.log/
+yarn.lock
