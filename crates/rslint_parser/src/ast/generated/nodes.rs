@@ -713,6 +713,7 @@ pub struct Declarator {
 }
 impl Declarator {
     pub fn pattern(&self) -> Option<Pattern> { support::child(&self.syntax) }
+    pub fn excl_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![!]) }
     pub fn eq_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [=]) }
     pub fn value(&self) -> Option<Expr> { support::child(&self.syntax) }
 }
@@ -1277,6 +1278,7 @@ impl ArrayPattern {
     pub fn l_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['[']) }
     pub fn elements(&self) -> AstChildren<Pattern> { support::children(&self.syntax) }
     pub fn r_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![']']) }
+    pub fn excl_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![!]) }
     pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
     pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
 }
@@ -1289,6 +1291,7 @@ impl ObjectPattern {
     pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
     pub fn elements(&self) -> AstChildren<ObjectPatternProp> { support::children(&self.syntax) }
     pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
+    pub fn excl_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![!]) }
     pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
     pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
 }
@@ -1344,6 +1347,7 @@ impl SinglePattern {
     pub fn question_mark_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T ! [?])
     }
+    pub fn excl_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![!]) }
     pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
     pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
 }

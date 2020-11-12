@@ -139,6 +139,22 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                 }
             }
 
+            if p.typescript()
+                && matches!(p.cur_src(), "public" | "private" | "protected")
+                && p.nth_src(1) == "interface"
+            {
+                let err = p
+                    .err_builder("interface declarations cannot have accessibility modifiers")
+                    .primary(p.cur_tok().range, "")
+                    .secondary(p.nth_tok(1).range, "");
+
+                p.error(err);
+                let m = p.start();
+                p.bump_any();
+                ts_interface(p);
+                m.complete(p, ERROR);
+            }
+
             let mut expr = expr(p)?;
             // Labelled stmt
             if expr.kind() == NAME_REF && p.at(T![:]) {
@@ -414,7 +430,7 @@ pub(crate) fn block_items(
             // make sure we dont try parsing import.meta or import() as declarations
             T![import] if !token_set![T![.], T!['(']].contains(p.nth(1)) => {
                 let mut m = import_decl(p);
-                if !p.state.is_module {
+                if !p.state.is_module && !p.typescript() {
                     let err = p
                         .err_builder("Illegal use of an import declaration outside of a module")
                         .primary(m.range(p), "not allowed inside scripts");
@@ -438,7 +454,7 @@ pub(crate) fn block_items(
             // }
             T![export] => {
                 let mut m = export_decl(p);
-                if !p.state.is_module {
+                if !p.state.is_module && !p.typescript() {
                     let err = p
                         .err_builder("Illegal use of an export declaration outside of a module")
                         .primary(m.range(p), "not allowed inside scripts");
@@ -640,13 +656,57 @@ fn declarator(
 ) -> CompletedMarker {
     let m = p.start();
     p.state.should_record_names = is_const.is_some() || is_let;
+    let pat_m = p.start();
     let pat = pattern(p);
     p.state.should_record_names = false;
+    let kind = pat.map(|x| x.kind()).unwrap_or(ERROR);
+
+    let cur = p.cur_tok().range;
+    let mut should_abandon = !p.eat(T![!]);
+    if should_abandon && !p.typescript() {
+        let err = p
+            .err_builder("definite assignment assertions can only be used in TypeScript files")
+            .primary(cur, "");
+
+        p.error(err);
+    }
+
+    if p.eat(T![:]) {
+        should_abandon = false;
+        let start = p.cur_tok().range.start;
+        let ty = ts_type(p);
+        let end = ty
+            .map(|x| usize::from(x.range(p).end()))
+            .unwrap_or(p.cur_tok().range.start);
+        if !p.typescript() {
+            let err = p
+                .err_builder("type annotations can only be used in TypeScript files")
+                .primary(start..end, "");
+
+            p.error(err);
+        }
+        if p.typescript() && for_stmt {
+            let err = p
+                .err_builder("`for` statement declarators cannot have a type annotation")
+                .primary(start..end, "");
+
+            p.error(err);
+        }
+    }
+
+    if !should_abandon {
+        if let Some(pat) = pat {
+            pat.undo_completion(p).abandon(p);
+        }
+        pat_m.complete(p, kind);
+    } else {
+        pat_m.abandon(p);
+    }
 
     if p.eat(T![=]) {
         assign_expr(p);
     } else if let Some(ref marker) = pat {
-        if marker.kind() != SINGLE_PATTERN && !for_stmt {
+        if marker.kind() != SINGLE_PATTERN && !for_stmt && !p.state.in_declare {
             let err = p
                 .err_builder("Object and Array patterns require initializers")
                 .primary(
@@ -655,6 +715,7 @@ fn declarator(
                 );
 
             p.error(err);
+        // FIXME: does ts allow const var declarations without initializers in .d.ts files?
         } else if is_const.is_some() && !for_stmt {
             let err = p
                 .err_builder("Const var declarations must have an initialized value")
@@ -732,6 +793,12 @@ fn for_head(p: &mut Parser) -> SyntaxKind {
 
             if let Some(ref expr) = complete {
                 check_lhs(p, p.parse_marker(expr), &complete.unwrap());
+                if p.typescript() && matches!(expr.kind(), ARRAY_EXPR | OBJECT_EXPR) {
+                    let err = p.err_builder("the left hand side of a `for..in` or `for..of` statement cannot be a destructuring pattern")
+                        .primary(expr.range(p), "");
+
+                    p.error(err);
+                }
             }
 
             return for_each_head(p, is_in);
@@ -894,7 +961,36 @@ fn catch_clause(p: &mut Parser) {
     p.expect(T![catch]);
 
     if p.eat(T!['(']) {
-        pattern(p);
+        let m = p.start();
+        let kind = pattern(p).map(|x| x.kind());
+        if p.at(T![:]) {
+            let start = p.cur_tok().range.start;
+            let ty = ts_type(p);
+            if !matches!(
+                ty.as_ref().map(|x| p.span_text(x.range(p))),
+                Some("unknown") | Some("any")
+            ) && p.typescript()
+            {
+                let err = p.err_builder("type annotations for catch parameters can only be `unknown` or `any` if specified")
+                    .primary(ty.as_ref().unwrap().range(p), "");
+
+                p.error(err);
+            }
+
+            let end = ty
+                .map(|x| usize::from(x.range(p).end()))
+                .unwrap_or(p.cur_tok().range.start);
+            m.complete(p, kind.filter(|_| p.typescript()).unwrap_or(ERROR));
+            if !p.typescript() {
+                let err = p
+                    .err_builder("type annotations can only be used in TypeScript files")
+                    .primary(start..end, "");
+
+                p.error(err);
+            }
+        } else {
+            m.abandon(p);
+        }
         p.expect(T![')']);
     }
 

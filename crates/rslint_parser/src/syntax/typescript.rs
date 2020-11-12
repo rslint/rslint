@@ -22,7 +22,13 @@ pub const BASE_TS_RECOVERY_SET: TokenSet = token_set![
 pub(crate) fn ts_expr_stmt(p: &mut Parser) -> Option<CompletedMarker> {
     match p.cur_src() {
         "declare" => ts_declare(p),
-        "global" => todo!(),
+        "global" => {
+            if p.nth_at(1, T!['{']) {
+                ts_ambient_external_module_decl(p, false)
+            } else {
+                None
+            }
+        }
         _ => ts_decl(p),
     }
 }
@@ -98,12 +104,11 @@ pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     if p.cur_src() == "module" {
-        let m = p.start();
-        p.bump_any();
-        ts_module_or_namespace_decl(p, false, false)
-            .undo_completion(p)
-            .abandon(p);
-        return Some(m.complete(p, TS_MODULE_DECL));
+        if p.nth_at(1, STRING) {
+            return ts_ambient_external_module_decl(p, true);
+        } else if token_set![T![ident], T![yield], T![await]].contains(p.nth(1)) {
+            return Some(ts_module_or_namespace_decl(p, false, false));
+        }
     }
 
     if p.cur_src() == "namespace" {
@@ -151,7 +156,44 @@ pub(crate) fn ts_module_or_namespace_decl(
         ts_module_block(p);
     }
 
-    m.complete(p, TS_NAMESPACE_DECL)
+    m.complete(
+        p,
+        if namespace {
+            TS_NAMESPACE_DECL
+        } else {
+            TS_MODULE_DECL
+        },
+    )
+}
+
+pub fn ts_ambient_external_module_decl(
+    p: &mut Parser,
+    check_for_module: bool,
+) -> Option<CompletedMarker> {
+    let m = p.start();
+    let start = p.cur_tok().range.start;
+    if check_for_module && p.cur_src() != "module" {
+        let err = p
+            .err_builder(&format!(
+                "expected keyword `module`, but instead found `{}`",
+                p.cur_src()
+            ))
+            .primary(p.cur_tok().range, "");
+
+        p.error(err);
+    }
+    let end = p.cur_tok().range.end;
+    if p.cur_src() == "global" {
+        p.bump_any();
+    } else {
+        p.expect(STRING);
+    }
+    if p.at(T!['{']) {
+        ts_module_block(p);
+    } else {
+        semi(p, start..end);
+    }
+    Some(m.complete(p, TS_MODULE_DECL))
 }
 
 pub fn ts_module_block(p: &mut Parser) -> CompletedMarker {

@@ -837,6 +837,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct Declarator {
             pattern: Pattern,
+            T![!], // ts (definite)
             T![=],
             value: Expr,
         }
@@ -1194,6 +1195,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T!['['],
             elements: [Pattern],
             T![']'],
+            T![!],
             T![:],
             ty: TsType
         }
@@ -1202,6 +1204,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T!['{'],
             elements: [ObjectPatternProp],
             T!['}'],
+            T![!],
             T![:],
             ty: TsType
         }
@@ -1236,6 +1239,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct SinglePattern {
             name: Name,
             T![?],
+            T![!],
             T![:],
             ty: TsType
         }
