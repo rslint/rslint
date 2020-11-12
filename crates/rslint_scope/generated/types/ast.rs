@@ -710,6 +710,45 @@ impl ::std::fmt::Debug for ClassId {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub enum ExportKind {
+    WildcardExport,
+    NamedExport {
+        name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>,
+        alias: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
+    }
+}
+impl abomonation::Abomonation for ExportKind{}
+::differential_datalog::decl_enum_from_record!(ExportKind["ast::ExportKind"]<>, WildcardExport["ast::WildcardExport"][0]{}, NamedExport["ast::NamedExport"][2]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, [1]alias["alias"]: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>});
+::differential_datalog::decl_enum_into_record!(ExportKind<>, WildcardExport["ast::WildcardExport"]{}, NamedExport["ast::NamedExport"]{name, alias});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(ExportKind<>, WildcardExport{}, NamedExport{name: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>, alias: crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>});
+impl ::std::fmt::Display for ExportKind {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::ast::ExportKind::WildcardExport{} => {
+                __formatter.write_str("ast::WildcardExport{")?;
+                __formatter.write_str("}")
+            },
+            crate::ast::ExportKind::NamedExport{name,alias} => {
+                __formatter.write_str("ast::NamedExport{")?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(alias, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ExportKind {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+impl ::std::default::Default for ExportKind {
+    fn default() -> Self {
+        crate::ast::ExportKind::WildcardExport{}
+    }
+}
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct ExprId {
     pub id: u32,

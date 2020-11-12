@@ -673,6 +673,36 @@ impl ::std::fmt::Debug for File {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct FileExport {
+    pub file: crate::ast::FileId,
+    pub export: crate::ast::ExportKind,
+    pub scope: crate::ast::ScopeId
+}
+impl abomonation::Abomonation for FileExport{}
+::differential_datalog::decl_struct_from_record!(FileExport["inputs::FileExport"]<>, ["inputs::FileExport"][3]{[0]file["file"]: crate::ast::FileId, [1]export["export"]: crate::ast::ExportKind, [2]scope["scope"]: crate::ast::ScopeId});
+::differential_datalog::decl_struct_into_record!(FileExport, ["inputs::FileExport"]<>, file, export, scope);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(FileExport, <>, file: crate::ast::FileId, export: crate::ast::ExportKind, scope: crate::ast::ScopeId);
+impl ::std::fmt::Display for FileExport {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::inputs::FileExport{file,export,scope} => {
+                __formatter.write_str("inputs::FileExport{")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(export, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(scope, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for FileExport {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct For {
     pub stmt_id: crate::ast::StmtId,
     pub init: crate::ddlog_std::Option<crate::ast::ForInit>,

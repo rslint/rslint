@@ -6,6 +6,11 @@ input relation File(
     kind: FileKind,
     top_level_scope: ScopeId,
 )
+input relation FileExport(
+    file: FileId,
+    export: ExportKind,
+    scope: ScopeId,
+)
 
 // The input scope relationships, just map parent<-child for one generation
 // TODO: Scope spans, make clear if a span is implicit or explicit

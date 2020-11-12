@@ -287,3 +287,10 @@ typedef JSFlavor =
     Vanilla
     | Module
     | TypeScript
+
+typedef ExportKind =
+    WildcardExport
+    | NamedExport {
+        name: Option<Spanned<Name>>,
+        alias: Option<Spanned<Name>>,
+    }

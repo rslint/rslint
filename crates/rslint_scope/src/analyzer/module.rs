@@ -3,7 +3,7 @@ use crate::{
     AnalyzerInner, Visit,
 };
 use rslint_parser::ast::{
-    AstChildren, ExportDecl, ImportClause, ImportDecl, ModuleItem, NamedImports,
+    AstChildren, ExportDecl, ExportNamed, ImportClause, ImportDecl, ModuleItem, NamedImports,
 };
 use types::ast::{ImportClause as DatalogImportClause, NamedImport as DatalogNamedImport, StmtId};
 
@@ -16,8 +16,8 @@ impl<'ddlog> Visit<'ddlog, ModuleItem> for AnalyzerInner {
                 self.visit(scope, import);
                 None
             }
-            ModuleItem::ExportNamed(_export) => {
-                // self.visit(scope, export);
+            ModuleItem::ExportNamed(export) => {
+                self.visit(scope, export);
                 None
             }
             ModuleItem::ExportDefaultDecl(_export) => {
@@ -117,5 +117,18 @@ impl<'ddlog> Visit<'ddlog, ExportDecl> for AnalyzerInner {
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, export: ExportDecl) -> Self::Output {
         self.visit(scope, export.decl().map(|decl| (decl, true)))
+    }
+}
+
+impl<'ddlog> Visit<'ddlog, ExportNamed> for AnalyzerInner {
+    type Output = ();
+
+    fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, export: ExportNamed) -> Self::Output {
+        for specifier in export.specifiers() {
+            let name = specifier.name().map(|name| self.visit(scope, name));
+            let alias = specifier.alias().map(|alias| self.visit(scope, alias));
+
+            scope.export_named(name, alias);
+        }
     }
 }

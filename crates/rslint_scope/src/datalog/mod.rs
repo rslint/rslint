@@ -21,17 +21,17 @@ use std::{
 };
 use types::{
     ast::{
-        ArrayElement, AssignOperand, BinOperand, ClassId, ExprId, ExprKind, FileId, FileKind,
-        ForInit, FuncId, GlobalId, IClassElement, IPattern, ImportClause, ImportId, Increment,
-        LitKind, Name, Pattern, PropertyKey, PropertyVal, ScopeId, Span, Spanned, StmtId, StmtKind,
-        SwitchClause, TryHandler, UnaryOperand,
+        ArrayElement, AssignOperand, BinOperand, ClassId, ExportKind, ExprId, ExprKind, FileId,
+        FileKind, ForInit, FuncId, GlobalId, IClassElement, IPattern, ImportClause, ImportId,
+        Increment, LitKind, Name, Pattern, PropertyKey, PropertyVal, ScopeId, Span, Spanned,
+        StmtId, StmtKind, SwitchClause, TryHandler, UnaryOperand,
     },
     ddlog_std::Either,
     inputs::{
         Array, Arrow, ArrowParam, Assign, Await, BinOp, BracketAccess, Break, Call, Class,
         ClassExpr, ConstDecl, Continue, DoWhile, DotAccess, ExprBigInt, ExprBool, ExprNumber,
-        ExprString, Expression, File as InputFile, For, ForIn, Function, FunctionArg, If,
-        ImplicitGlobal, ImportDecl, InlineFunc, InlineFuncParam, InputScope, Label, LetDecl,
+        ExprString, Expression, File as InputFile, FileExport, For, ForIn, Function, FunctionArg,
+        If, ImplicitGlobal, ImportDecl, InlineFunc, InlineFuncParam, InputScope, Label, LetDecl,
         NameRef, New, Property, Return, Statement, Switch, SwitchCase, Template, Ternary, Throw,
         Try, UnaryOp, VarDecl, While, With, Yield,
     },
@@ -254,6 +254,10 @@ impl DatalogInner {
 
     fn inc_expression(&self) -> ExprId {
         self.expression_id.inc()
+    }
+
+    fn file_id(&self) -> FileId {
+        self.scope_id.get().file
     }
 
     fn insert<V>(&self, relation: Relations, val: V) -> &Self
@@ -1759,6 +1763,22 @@ pub trait DatalogBuilder<'ddlog> {
         for clause in clauses {
             datalog.insert(Relations::inputs_ImportDecl, ImportDecl { id, clause });
         }
+    }
+
+    fn export_named(&self, name: Option<Spanned<Name>>, alias: Option<Spanned<Name>>) {
+        let datalog = self.datalog();
+
+        datalog.insert(
+            Relations::inputs_FileExport,
+            FileExport {
+                file: datalog.file_id(),
+                export: ExportKind::NamedExport {
+                    name: name.into(),
+                    alias: alias.into(),
+                },
+                scope: self.scope_id(),
+            },
+        );
     }
 }
 

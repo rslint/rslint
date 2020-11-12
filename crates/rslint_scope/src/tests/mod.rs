@@ -22,6 +22,7 @@ macro_rules! rule_test {
             use crate::{tests::DatalogTestHarness, datalog::DatalogLint::{self, *}};
             #[allow(unused_imports)]
             use types::ast::Span;
+            #[allow(unused_imports)]
             use std::borrow::Cow;
 
             let mut analyzer = DatalogTestHarness::new()

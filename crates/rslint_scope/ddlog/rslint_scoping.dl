@@ -342,8 +342,8 @@ VarUseBeforeDeclaration(name, used_in, declared_in) :-
     Statement(stmt, StmtVarDecl, declared_scope, declared_in),
     ChildScope(used_scope, declared_scope).
 
-relation IsExported(file: FileId, id: AnyId)
 
+relation IsExported(file: FileId, id: AnyId)
 IsExported(file, AnyIdFunc { id }) :-
     Function(id, _, _, _, true),
     var file = id.file.
@@ -363,3 +363,8 @@ IsExported(file, AnyIdStmt { id }) :-
 IsExported(file, AnyIdStmt { id }) :-
     ConstDecl(id, _, _, true),
     var file = id.file.
+
+IsExported(file, id) :-
+    FileExport(file, NamedExport { export_name, export_alias }, export_scope),
+    Some { Spanned { var name, _ }} = export_alias.or_else(export_name),
+    NameInScope(file, name, export_scope, _, id, false).

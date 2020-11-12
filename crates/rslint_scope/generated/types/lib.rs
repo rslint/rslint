@@ -551,6 +551,7 @@ impl ::std::fmt::Debug for WithinTypeofExpr {
 ::differential_datalog::decl_ddval_convert!{crate::inputs::ExprString}
 ::differential_datalog::decl_ddval_convert!{crate::inputs::Expression}
 ::differential_datalog::decl_ddval_convert!{crate::inputs::File}
+::differential_datalog::decl_ddval_convert!{crate::inputs::FileExport}
 ::differential_datalog::decl_ddval_convert!{crate::inputs::For}
 ::differential_datalog::decl_ddval_convert!{crate::inputs::ForIn}
 ::differential_datalog::decl_ddval_convert!{crate::inputs::Function}
