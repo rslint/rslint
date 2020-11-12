@@ -142,12 +142,13 @@ NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt },
     ClosestFunction(decl_scope, func), // FIXME: This or the Function clause is wrong
     Function(func, _, _, scope, _).
 
-NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
+// For `var` declarations not within a function, use the file's top-level scope
+NameInScope(stmt.file, name.data, file_scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
     VarDecl(stmt, Some { pat }, _, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _),
-    // For `var` declarations not within a function, use the declaration scope
-    not ClosestFunction(scope, _).
+    not ClosestFunction(scope, _),
+    File(stmt.file, _, file_scope).
 
 // Function declarations
 //

@@ -68,7 +68,7 @@ insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 6
 insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 64, .file = ast::FileId{.id = 26}}, .name = "valueOf"}];
 commit dump_changes;
 start;
-insert inputs::File[inputs::File{.id = ast::FileId{.id = 26}, .kind = ast::JavaScript{.flavor = ast::Module{}}}],
+insert inputs::File[inputs::File{.id = ast::FileId{.id = 26}, .kind = ast::JavaScript{.flavor = ast::Module{}}, .top_level_scope = ast::ScopeId{.id = 0, .file = ast::FileId{.id = 26}}}],
 insert inputs::InputScope[inputs::InputScope{.parent = ast::ScopeId{.id = 0, .file = ast::FileId{.id = 26}}, .child = ast::ScopeId{.id = 0, .file = ast::FileId{.id = 26}}}],
 insert inputs::EveryScope[ast::ScopeId{.id = 0, .file = ast::FileId{.id = 26}}],
 insert inputs::NameRef[inputs::NameRef{.expr_id = ast::ExprId{.id = 0, .file = ast::FileId{.id = 26}}, .value = "partial"}],

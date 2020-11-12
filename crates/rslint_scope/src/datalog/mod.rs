@@ -291,7 +291,14 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
 
         let scope_id = self.datalog.inc_scope();
         self.datalog
-            .insert(Relations::inputs_File, InputFile { id, kind })
+            .insert(
+                Relations::inputs_File,
+                InputFile {
+                    id,
+                    kind,
+                    top_level_scope: scope_id,
+                },
+            )
             .insert(
                 Relations::inputs_InputScope,
                 InputScope {

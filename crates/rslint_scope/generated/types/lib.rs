@@ -491,6 +491,7 @@ impl ::std::fmt::Debug for WithinTypeofExpr {
 ::differential_datalog::decl_ddval_convert!{crate::VariableUsages}
 ::differential_datalog::decl_ddval_convert!{crate::WithinTypeofExpr}
 ::differential_datalog::decl_ddval_convert!{crate::ast::ExprId}
+::differential_datalog::decl_ddval_convert!{crate::ast::FileId}
 ::differential_datalog::decl_ddval_convert!{crate::ast::FuncId}
 ::differential_datalog::decl_ddval_convert!{crate::ast::GlobalId}
 ::differential_datalog::decl_ddval_convert!{crate::ast::ScopeId}
