@@ -30,8 +30,8 @@ ChildScope(parent, child) :- InputScope(parent, child), parent != child.
 ChildScope(parent, child) :- InputScope(parent, interum), ChildScope(interum, child), parent != child.
 
 relation ClosestFunction(scope: Scope, func: FuncId)
-ClosestFunction(body, func) :- Function(func, _, _, body).
-ClosestFunction(scope, func) :- Function(func, _, _, body), ChildScope(body, scope).
+ClosestFunction(body, func) :- Function(func, _, _, body, _).
+ClosestFunction(scope, func) :- Function(func, _, _, body, _), ChildScope(body, scope).
 
 // The `NameInScope` relation gives every name/symbol/ident that's defined for any given scope.
 // Names are walked down children scopes, meaning all children have access to the variables of
@@ -83,7 +83,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdImport { id }, false) :-
 // ```
 //
 NameInScope(name.data, scope, Some { name.span }, AnyIdClass { class }, false) :-
-    Class(class, Some { name }, _, _, scope).
+    Class(class, Some { name }, _, _, scope, _).
 
 // `let` declarations
 //
@@ -97,7 +97,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdClass { class }, false) :
 // ```
 //
 NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
-    LetDecl(stmt, Some { pat }, _),
+    LetDecl(stmt, Some { pat }, _, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _).
 
@@ -113,7 +113,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
 // ```
 //
 NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
-    ConstDecl(stmt, Some { pat }, _),
+    ConstDecl(stmt, Some { pat }, _, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _).
 
@@ -132,15 +132,15 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
 // ```
 //
 NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
-    VarDecl(stmt, Some { pat }, _),
+    VarDecl(stmt, Some { pat }, _, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, decl_scope, _),
     // Bubble `var` up to the nearest function's scope
     ClosestFunction(decl_scope, func), // FIXME: This or the Function clause is wrong
-    Function(func, _, _, scope).
+    Function(func, _, _, scope, _).
 
 NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
-    VarDecl(stmt, Some { pat }, _),
+    VarDecl(stmt, Some { pat }, _, _),
     var name = FlatMap(pat.bound_vars()),
     Statement(stmt, _, scope, _),
     // For `var` declarations not within a function, use the declaration scope
@@ -160,7 +160,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
 // ```
 //
 NameInScope(name.data, scope, Some { name.span }, AnyIdFunc { func }, false) :-
-    Function(func, Some { name }, scope, _).
+    Function(func, Some { name }, scope, _, _).
 
 // Introduce function arguments within the body of their enclosing function
 //
@@ -175,7 +175,7 @@ NameInScope(name.data, scope, Some { name.span }, AnyIdFunc { func }, false) :-
 NameInScope(name.data, body, Some { name.span }, AnyIdFunc { func }, implicit) :-
     FunctionArg(func, pat, implicit),
     var name = FlatMap(pat.bound_vars()),
-    Function(func, _, _, body).
+    Function(func, _, _, body, _).
 
 // Introduce closure arguments within the body of their enclosing closure
 //
@@ -249,11 +249,13 @@ NameInScope(name, scope, span, declared_in, implicit) :-
     NameInScope(name, interum, span, declared_in, implicit),
     ChildScope(interum, scope).
 
+
 relation VariableUsages(name: Name, scope: Scope, declared_in: AnyId)
 VariableUsages(name, scope, declared) :-
     NameInScope(name, scope, _, declared, _),
     NameRef(expr, name),
     Expression(expr, _, scope, _).
+
 
 output relation UnusedVariables(name: Name, declared: AnyId, span: Span)
 // TODO: Are these to rules all that's needed? Is the grouping bs even
@@ -261,32 +263,22 @@ output relation UnusedVariables(name: Name, declared: AnyId, span: Span)
 UnusedVariables(name, declared, span) :-
     NameInScope(name, _, Some { span }, declared, false),
     not declared.is_global(),
+    not IsExported(declared),
     not VariableUsages(name, _, declared).
 
 UnusedVariables(name, declared, span) :-
     NameInScope(name, _, Some { span }, declared @ AnyIdGlobal { global }, false),
     not ImplicitGlobal(global, _),
+    not IsExported(declared),
     not VariableUsages(name, _, declared).
 
-UnusedVariables(name, declared, span) :-
-    NameInScope(name, name_scope, Some { span }, declared, false),
-    not declared.is_global(),
-    VariableUsages(name, use_scope, declared),
-    var grouped = (name_scope, use_scope).group_by((name, declared, span)),
-    not grouped.any(|scopes| scopes.0 == scopes.1).
-
-UnusedVariables(name, declared, span) :-
-    NameInScope(name, name_scope, Some { span }, declared @ AnyIdGlobal { global }, false),
-    not ImplicitGlobal(global, _),
-    VariableUsages(name, use_scope, declared),
-    var grouped = (name_scope, use_scope).group_by((name, declared, span)),
-    not grouped.any(|scopes| scopes.0 == scopes.1).
 
 // The successors of an expression, property accesses or method calls
 relation ChainedWith(object: ExprId, property: ExprId)
 ChainedWith(object, property) :- BracketAccess(_, Some { object }, Some { property }).
 ChainedWith(object, property) :- DotAccess(property, Some { object }, _).
 ChainedWith(object, property) :- ChainedWith(object, interum), ChainedWith(interum, property).
+
 
 relation WithinTypeofExpr(type_of: ExprId, expr: ExprId)
 // `typeof not_defined`
@@ -303,6 +295,7 @@ WithinTypeofExpr(type_of, last) :-
     Expression(expr, ExprSequence { sequence }, _, _),
     Some { var last } = sequence.last().
 
+
 output relation TypeofUndefinedAlwaysUndefined(whole_expr: ExprId, undefined_expr: ExprId)
 TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
     NameRef(undefined_expr, name),
@@ -311,6 +304,7 @@ TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
     // Expressions like `typeof not_undefined` are allowed under InvalidNameUse
     // and are instead output through TypeofUndefinedAlwaysUndefined
     WithinTypeofExpr(whole_expr, undefined_expr).
+
 
 // Variable usages (`let` and `const` predecls or undefined symbols) that don't
 // have an accompanying variable in scope are reported
@@ -333,6 +327,7 @@ InvalidNameUse(name.data, scope, name.span) :-
     var name = FlatMap(pat.bound_vars()),
     not NameInScope(name.data, scope, _, _, _).
 
+
 // `var` usages that happen before the declaration
 output relation VarUseBeforeDeclaration(name: Name, used_in: Span, declared_in: Span)
 VarUseBeforeDeclaration(name, used_in, declared_in) :-
@@ -341,3 +336,10 @@ VarUseBeforeDeclaration(name, used_in, declared_in) :-
     NameInScope(name, used_scope, _, AnyIdStmt { .stmt = stmt }, _),
     Statement(stmt, StmtVarDecl, declared_scope, declared_in),
     ChildScope(used_scope, declared_scope).
+
+relation IsExported(id: AnyId)
+IsExported(AnyIdFunc { id }) :- Function(id, _, _, _, true).
+IsExported(AnyIdClass { id }) :- Class(id, _, _, _, _, true).
+IsExported(AnyIdStmt { id }) :- VarDecl(id, _, _, true).
+IsExported(AnyIdStmt { id }) :- LetDecl(id, _, _, true).
+IsExported(AnyIdStmt { id }) :- ConstDecl(id, _, _, true).

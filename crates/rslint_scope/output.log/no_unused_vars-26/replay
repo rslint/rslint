@@ -68,68 +68,68 @@ insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 3
 insert inputs::ImplicitGlobal[inputs::ImplicitGlobal{.id = ast::GlobalId{.id = 3934}, .name = "valueOf"}];
 commit dump_changes;
 start;
-insert inputs::InputScope[inputs::InputScope{.parent = ast::Scope{.id = 68}, .child = ast::Scope{.id = 68}}],
-insert inputs::EveryScope[ast::Scope{.id = 68}],
-insert inputs::NameRef[inputs::NameRef{.expr_id = ast::ExprId{.id = 147}, .value = "partial"}],
-insert inputs::Expression[inputs::Expression{.id = ast::ExprId{.id = 147}, .kind = ast::ExprNameRef{}, .scope = ast::Scope{.id = 68}, .span = ast::Span{.start = 27, .end = 34}}],
-insert inputs::DotAccess[inputs::DotAccess{.expr_id = ast::ExprId{.id = 148}, .object = ddlog_std::Some{.x = ast::ExprId{.id = 147}}, .prop = ddlog_std::Some{.x = ast::Spanned{.data = "toUpperCase", .span = ast::Span{.start = 35, .end = 46}}}}],
-insert inputs::Expression[inputs::Expression{.id = ast::ExprId{.id = 148}, .kind = ast::ExprDot{}, .scope = ast::Scope{.id = 68}, .span = ast::Span{.start = 27, .end = 46}}],
-insert inputs::Arrow[inputs::Arrow{.expr_id = ast::ExprId{.id = 149}, .body = ddlog_std::Some{.x = ddlog_std::Left{.l = ast::ExprId{.id = 148}}}}],
-insert inputs::Expression[inputs::Expression{.id = ast::ExprId{.id = 149}, .kind = ast::ExprArrow{}, .scope = ast::Scope{.id = 68}, .span = ast::Span{.start = 14, .end = 46}}],
-insert inputs::ArrowParam[inputs::ArrowParam{.expr_id = ast::ExprId{.id = 149}, .param = ast::SinglePattern{.name = ddlog_std::Some{.x = ast::Spanned{.data = "partial", .span = ast::Span{.start = 15, .end = 22}}}}}],
-insert inputs::InputScope[inputs::InputScope{.parent = ast::Scope{.id = 68}, .child = ast::Scope{.id = 69}}],
-insert inputs::EveryScope[ast::Scope{.id = 69}],
-insert inputs::LetDecl[inputs::LetDecl{.stmt_id = ast::StmtId{.id = 69}, .pattern = ddlog_std::Some{.x = ast::SinglePattern{.name = ddlog_std::Some{.x = ast::Spanned{.data = "toUpper", .span = ast::Span{.start = 4, .end = 11}}}}}, .value = ddlog_std::Some{.x = ast::ExprId{.id = 149}}}],
-insert inputs::Statement[inputs::Statement{.id = ast::StmtId{.id = 69}, .kind = ast::StmtLetDecl{}, .scope = ast::Scope{.id = 69}, .span = ast::Span{.start = 0, .end = 47}}];
+insert inputs::InputScope[inputs::InputScope{.parent = ast::Scope{.id = 70}, .child = ast::Scope{.id = 70}}],
+insert inputs::EveryScope[ast::Scope{.id = 70}],
+insert inputs::NameRef[inputs::NameRef{.expr_id = ast::ExprId{.id = 148}, .value = "partial"}],
+insert inputs::Expression[inputs::Expression{.id = ast::ExprId{.id = 148}, .kind = ast::ExprNameRef{}, .scope = ast::Scope{.id = 70}, .span = ast::Span{.start = 27, .end = 34}}],
+insert inputs::DotAccess[inputs::DotAccess{.expr_id = ast::ExprId{.id = 149}, .object = ddlog_std::Some{.x = ast::ExprId{.id = 148}}, .prop = ddlog_std::Some{.x = ast::Spanned{.data = "toUpperCase", .span = ast::Span{.start = 35, .end = 46}}}}],
+insert inputs::Expression[inputs::Expression{.id = ast::ExprId{.id = 149}, .kind = ast::ExprDot{}, .scope = ast::Scope{.id = 70}, .span = ast::Span{.start = 27, .end = 46}}],
+insert inputs::Arrow[inputs::Arrow{.expr_id = ast::ExprId{.id = 150}, .body = ddlog_std::Some{.x = ddlog_std::Left{.l = ast::ExprId{.id = 149}}}}],
+insert inputs::Expression[inputs::Expression{.id = ast::ExprId{.id = 150}, .kind = ast::ExprArrow{}, .scope = ast::Scope{.id = 70}, .span = ast::Span{.start = 14, .end = 46}}],
+insert inputs::ArrowParam[inputs::ArrowParam{.expr_id = ast::ExprId{.id = 150}, .param = ast::SinglePattern{.name = ddlog_std::Some{.x = ast::Spanned{.data = "partial", .span = ast::Span{.start = 15, .end = 22}}}}}],
+insert inputs::InputScope[inputs::InputScope{.parent = ast::Scope{.id = 70}, .child = ast::Scope{.id = 71}}],
+insert inputs::EveryScope[ast::Scope{.id = 71}],
+insert inputs::LetDecl[inputs::LetDecl{.stmt_id = ast::StmtId{.id = 70}, .pattern = ddlog_std::Some{.x = ast::SinglePattern{.name = ddlog_std::Some{.x = ast::Spanned{.data = "toUpper", .span = ast::Span{.start = 4, .end = 11}}}}}, .value = ddlog_std::Some{.x = ast::ExprId{.id = 150}}, .exported = false}],
+insert inputs::Statement[inputs::Statement{.id = ast::StmtId{.id = 70}, .kind = ast::StmtLetDecl{}, .scope = ast::Scope{.id = 71}, .span = ast::Span{.start = 0, .end = 47}}];
 commit dump_changes;
 start;
-clear inputs::If;
-clear inputs::ImportDecl;
-clear inputs::For;
-clear inputs::Function;
-clear inputs::NameRef;
-clear inputs::Array;
-clear inputs::Property;
-clear inputs::ArrowParam;
-clear inputs::InlineFuncParam;
-clear inputs::Label;
-clear inputs::Ternary;
-clear inputs::Call;
-clear inputs::Try;
-clear inputs::ClassExpr;
-clear inputs::Statement;
-clear inputs::Await;
-clear inputs::SwitchCase;
-clear inputs::BracketAccess;
-clear inputs::ExprBigInt;
-clear inputs::ExprNumber;
-clear inputs::VarDecl;
-clear inputs::Continue;
-clear inputs::With;
-clear inputs::DotAccess;
 clear inputs::FunctionArg;
 clear inputs::ImplicitGlobal;
 clear inputs::Expression;
 clear inputs::ForIn;
-clear inputs::Arrow;
 clear inputs::LetDecl;
-clear inputs::Assign;
 clear inputs::New;
+clear inputs::Arrow;
 clear inputs::InlineFunc;
 clear inputs::InputScope;
-clear inputs::Class;
 clear inputs::Template;
-clear inputs::ConstDecl;
-clear inputs::Throw;
-clear inputs::BinOp;
-clear inputs::Return;
 clear inputs::Break;
+clear inputs::Throw;
+clear inputs::Class;
+clear inputs::Return;
+clear inputs::Assign;
 clear inputs::Switch;
-clear inputs::ExprBool;
+clear inputs::BinOp;
 clear inputs::Yield;
-clear inputs::ExprString;
-clear inputs::DoWhile;
-clear inputs::UnaryOp;
 clear inputs::EveryScope;
+clear inputs::ExprBool;
+clear inputs::UnaryOp;
+clear inputs::ConstDecl;
 clear inputs::While;
+clear inputs::DoWhile;
+clear inputs::Function;
+clear inputs::If;
+clear inputs::ExprString;
+clear inputs::For;
+clear inputs::Array;
+clear inputs::Label;
+clear inputs::ArrowParam;
+clear inputs::NameRef;
+clear inputs::ImportDecl;
+clear inputs::InlineFuncParam;
+clear inputs::Call;
+clear inputs::SwitchCase;
+clear inputs::ClassExpr;
+clear inputs::Ternary;
+clear inputs::Await;
+clear inputs::Property;
+clear inputs::BracketAccess;
+clear inputs::Statement;
+clear inputs::ExprBigInt;
+clear inputs::With;
+clear inputs::ExprNumber;
+clear inputs::Continue;
+clear inputs::Try;
+clear inputs::DotAccess;
+clear inputs::VarDecl;
 commit dump_changes;

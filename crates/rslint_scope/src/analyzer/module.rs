@@ -2,8 +2,10 @@ use crate::{
     datalog::{DatalogBuilder, DatalogScope},
     AnalyzerInner, Visit,
 };
-use rslint_parser::ast::{AstChildren, ImportClause, ImportDecl, ModuleItem, NamedImports};
-use types::ast::{ImportClause as DatalogImportClause, NamedImport as DatalogNamedImport};
+use rslint_parser::ast::{
+    AstChildren, ExportDecl, ImportClause, ImportDecl, ModuleItem, NamedImports,
+};
+use types::ast::{ImportClause as DatalogImportClause, NamedImport as DatalogNamedImport, StmtId};
 
 impl<'ddlog> Visit<'ddlog, ModuleItem> for AnalyzerInner {
     type Output = Option<DatalogScope<'ddlog>>;
@@ -30,9 +32,8 @@ impl<'ddlog> Visit<'ddlog, ModuleItem> for AnalyzerInner {
                 // self.visit(scope, export);
                 None
             }
-            ModuleItem::ExportDecl(_export) => {
-                // self.visit(scope, export);
-                None
+            ModuleItem::ExportDecl(export) => {
+                self.visit(scope, export).and_then(|(_id, scope)| scope)
             }
             ModuleItem::Stmt(stmt) => self.visit(scope, stmt).1,
         }
@@ -108,5 +109,13 @@ impl<'ddlog> Visit<'ddlog, NamedImports> for AnalyzerInner {
                 alias: self.visit(scope, spec.alias()).into(),
             })
             .collect()
+    }
+}
+
+impl<'ddlog> Visit<'ddlog, ExportDecl> for AnalyzerInner {
+    type Output = Option<(Option<StmtId>, Option<DatalogScope<'ddlog>>)>;
+
+    fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, export: ExportDecl) -> Self::Output {
+        self.visit(scope, export.decl().map(|decl| (decl, true)))
     }
 }

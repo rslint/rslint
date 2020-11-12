@@ -193,6 +193,7 @@ mod tests {
                     })),
                     None,
                     TextRange::new(0.into(), 8.into()),
+                    false,
                 );
 
                 Ok((empty.scope_id(), filled.scope_id()))

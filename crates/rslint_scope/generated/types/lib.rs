@@ -270,6 +270,30 @@ impl ::std::fmt::Debug for InvalidNameUse {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct IsExported {
+    pub id: crate::ast::AnyId
+}
+impl abomonation::Abomonation for IsExported{}
+::differential_datalog::decl_struct_from_record!(IsExported["IsExported"]<>, ["IsExported"][1]{[0]id["id"]: crate::ast::AnyId});
+::differential_datalog::decl_struct_into_record!(IsExported, ["IsExported"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(IsExported, <>, id: crate::ast::AnyId);
+impl ::std::fmt::Display for IsExported {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::IsExported{id} => {
+                __formatter.write_str("IsExported{")?;
+                ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for IsExported {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct NameInScope {
     pub name: crate::ast::Name,
     pub scope: crate::ast::Scope,
@@ -453,12 +477,14 @@ impl ::std::fmt::Debug for WithinTypeofExpr {
 ::differential_datalog::decl_ddval_convert!{crate::ChildScope}
 ::differential_datalog::decl_ddval_convert!{crate::ClosestFunction}
 ::differential_datalog::decl_ddval_convert!{crate::InvalidNameUse}
+::differential_datalog::decl_ddval_convert!{crate::IsExported}
 ::differential_datalog::decl_ddval_convert!{crate::NameInScope}
 ::differential_datalog::decl_ddval_convert!{crate::TypeofUndefinedAlwaysUndefined}
 ::differential_datalog::decl_ddval_convert!{crate::UnusedVariables}
 ::differential_datalog::decl_ddval_convert!{crate::VarUseBeforeDeclaration}
 ::differential_datalog::decl_ddval_convert!{crate::VariableUsages}
 ::differential_datalog::decl_ddval_convert!{crate::WithinTypeofExpr}
+::differential_datalog::decl_ddval_convert!{crate::ast::AnyId}
 ::differential_datalog::decl_ddval_convert!{crate::ast::ExprId}
 ::differential_datalog::decl_ddval_convert!{crate::ast::FuncId}
 ::differential_datalog::decl_ddval_convert!{crate::ast::GlobalId}
@@ -487,7 +513,6 @@ impl ::std::fmt::Debug for WithinTypeofExpr {
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::ast::Spanned<crate::internment::Intern<String>>, crate::ast::StmtId, crate::ast::FuncId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::ast::Spanned<crate::internment::Intern<String>>, crate::ast::StmtId, crate::ast::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::ast::Spanned<crate::internment::Intern<String>>, crate::ast::StmtId, crate::internment::Intern<crate::ast::Pattern>>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ast::AnyId, crate::ast::Span>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::AnyId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple3<crate::internment::Intern<String>, crate::ast::Span, crate::ast::AnyId>}
@@ -496,10 +521,7 @@ impl ::std::fmt::Debug for WithinTypeofExpr {
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::ast::ExprId, crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::AnyId, crate::ast::ExprId>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple4<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span, crate::ast::StmtId>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple5<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span, crate::ast::AnyId, crate::ast::GlobalId>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple5<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span, crate::ast::AnyId, crate::ast::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple5<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span, crate::ast::Scope, crate::ast::Span>}
-::differential_datalog::decl_ddval_convert!{crate::ddlog_std::tuple6<crate::internment::Intern<String>, crate::ast::Scope, crate::ast::Span, crate::ast::AnyId, crate::ast::GlobalId, crate::ast::Scope>}
 ::differential_datalog::decl_ddval_convert!{crate::inputs::Array}
 ::differential_datalog::decl_ddval_convert!{crate::inputs::Arrow}
 ::differential_datalog::decl_ddval_convert!{crate::inputs::ArrowParam}

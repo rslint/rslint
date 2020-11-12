@@ -378,6 +378,7 @@ pub trait DatalogBuilder<'ddlog> {
         &self,
         id: FuncId,
         name: Option<Spanned<Name>>,
+        exported: bool,
     ) -> (DatalogFunction<'ddlog>, DatalogScope<'ddlog>) {
         let body = self.scope();
         self.datalog().insert(
@@ -387,6 +388,7 @@ pub trait DatalogBuilder<'ddlog> {
                 name: name.into(),
                 scope: self.scope_id(),
                 body: body.scope_id(),
+                exported,
             },
         );
 
@@ -405,6 +407,7 @@ pub trait DatalogBuilder<'ddlog> {
         pattern: Option<Intern<Pattern>>,
         value: Option<ExprId>,
         span: TextRange,
+        exported: bool,
     ) -> (StmtId, DatalogScope<'ddlog>) {
         let scope = self.scope();
         let stmt_id = {
@@ -418,6 +421,7 @@ pub trait DatalogBuilder<'ddlog> {
                         stmt_id,
                         pattern: pattern.into(),
                         value: value.into(),
+                        exported,
                     },
                 )
                 .insert(
@@ -441,6 +445,7 @@ pub trait DatalogBuilder<'ddlog> {
         pattern: Option<Intern<Pattern>>,
         value: Option<ExprId>,
         span: TextRange,
+        exported: bool,
     ) -> (StmtId, DatalogScope<'ddlog>) {
         let scope = self.scope();
         let stmt_id = {
@@ -454,6 +459,7 @@ pub trait DatalogBuilder<'ddlog> {
                         stmt_id,
                         pattern: pattern.into(),
                         value: value.into(),
+                        exported,
                     },
                 )
                 .insert(
@@ -477,6 +483,7 @@ pub trait DatalogBuilder<'ddlog> {
         pattern: Option<Intern<Pattern>>,
         value: Option<ExprId>,
         span: TextRange,
+        exported: bool,
     ) -> (StmtId, DatalogScope<'ddlog>) {
         let scope = self.scope();
         let stmt_id = {
@@ -490,6 +497,7 @@ pub trait DatalogBuilder<'ddlog> {
                         stmt_id,
                         pattern: pattern.into(),
                         value: value.into(),
+                        exported,
                     },
                 )
                 .insert(
@@ -1697,6 +1705,7 @@ pub trait DatalogBuilder<'ddlog> {
         name: Option<Spanned<Name>>,
         parent: Option<ExprId>,
         elements: Option<Vec<IClassElement>>,
+        exported: bool,
     ) -> (ClassId, DatalogScope<'ddlog>) {
         let scope = self.scope();
         let id = {
@@ -1711,6 +1720,7 @@ pub trait DatalogBuilder<'ddlog> {
                     parent: parent.into(),
                     elements: elements.map(Into::into).into(),
                     scope: self.scope_id(),
+                    exported,
                 },
             );
 

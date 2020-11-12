@@ -43,37 +43,45 @@ impl<'ddlog> Visit<'ddlog, Stmt> for AnalyzerInner {
             Stmt::ThrowStmt(throw) => (Some(self.visit(scope, throw)), None),
             Stmt::TryStmt(try_stmt) => (Some(self.visit(scope, try_stmt)), None),
             Stmt::DebuggerStmt(debugger) => (Some(self.visit(scope, debugger)), None),
-            Stmt::Decl(decl) => self.visit(scope, decl),
+            Stmt::Decl(decl) => self.visit(scope, (decl, false)),
         }
     }
 }
 
-impl<'ddlog> Visit<'ddlog, Decl> for AnalyzerInner {
+impl<'ddlog> Visit<'ddlog, (Decl, bool)> for AnalyzerInner {
     type Output = (Option<StmtId>, Option<DatalogScope<'ddlog>>);
 
-    fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, decl: Decl) -> Self::Output {
+    fn visit(
+        &self,
+        scope: &dyn DatalogBuilder<'ddlog>,
+        (decl, exported): (Decl, bool),
+    ) -> Self::Output {
         match decl {
             Decl::FnDecl(func) => {
-                let _function_id = self.visit(scope, func);
+                let _function_id = self.visit(scope, (func, exported));
                 (None, None)
             }
             Decl::ClassDecl(class) => {
-                let (_class_id, scope) = self.visit(scope, class);
+                let (_class_id, scope) = self.visit(scope, (class, exported));
                 (None, Some(scope))
             }
-            Decl::VarDecl(var) => self.visit(scope, var),
+            Decl::VarDecl(var) => self.visit(scope, (var, exported)),
         }
     }
 }
 
-impl<'ddlog> Visit<'ddlog, FnDecl> for AnalyzerInner {
+impl<'ddlog> Visit<'ddlog, (FnDecl, bool)> for AnalyzerInner {
     type Output = FuncId;
 
-    fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, func: FnDecl) -> Self::Output {
+    fn visit(
+        &self,
+        scope: &dyn DatalogBuilder<'ddlog>,
+        (func, exported): (FnDecl, bool),
+    ) -> Self::Output {
         let function_id = scope.next_function_id();
         let name = self.visit(scope, func.name());
 
-        let (function, mut body_scope) = scope.decl_function(function_id, name);
+        let (function, mut body_scope) = scope.decl_function(function_id, name, exported);
 
         // Implicitly introduce `arguments` into the function scope
         function.argument(IMPLICIT_ARGUMENTS.clone(), true);
@@ -97,22 +105,30 @@ impl<'ddlog> Visit<'ddlog, FnDecl> for AnalyzerInner {
     }
 }
 
-impl<'ddlog> Visit<'ddlog, ClassDecl> for AnalyzerInner {
+impl<'ddlog> Visit<'ddlog, (ClassDecl, bool)> for AnalyzerInner {
     type Output = (ClassId, DatalogScope<'ddlog>);
 
-    fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, class: ClassDecl) -> Self::Output {
+    fn visit(
+        &self,
+        scope: &dyn DatalogBuilder<'ddlog>,
+        (class, exported): (ClassDecl, bool),
+    ) -> Self::Output {
         let name = self.visit(scope, class.name());
         let parent = self.visit(scope, class.parent());
         let elements = self.visit(scope, class.body().map(|body| body.elements()));
 
-        scope.class_decl(name, parent, elements)
+        scope.class_decl(name, parent, elements, exported)
     }
 }
 
-impl<'ddlog> Visit<'ddlog, VarDecl> for AnalyzerInner {
+impl<'ddlog> Visit<'ddlog, (VarDecl, bool)> for AnalyzerInner {
     type Output = (Option<StmtId>, Option<DatalogScope<'ddlog>>);
 
-    fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, var: VarDecl) -> Self::Output {
+    fn visit(
+        &self,
+        scope: &dyn DatalogBuilder<'ddlog>,
+        (var, exported): (VarDecl, bool),
+    ) -> Self::Output {
         let (mut stmt_id, mut last_scope, span): (_, Option<DatalogScope<'ddlog>>, _) =
             (None, None, var.syntax().trimmed_range());
 
@@ -148,7 +164,7 @@ impl<'ddlog> Visit<'ddlog, VarDecl> for AnalyzerInner {
                         s
                     })
                     .unwrap_or(scope)
-                    .decl_let(pattern, value, span)
+                    .decl_let(pattern, value, span, exported)
             } else if var.is_const() {
                 last_scope
                     .as_ref()
@@ -157,7 +173,7 @@ impl<'ddlog> Visit<'ddlog, VarDecl> for AnalyzerInner {
                         s
                     })
                     .unwrap_or(scope)
-                    .decl_const(pattern, value, span)
+                    .decl_const(pattern, value, span, exported)
             } else if var.is_var() {
                 last_scope
                     .as_ref()
@@ -166,7 +182,7 @@ impl<'ddlog> Visit<'ddlog, VarDecl> for AnalyzerInner {
                         s
                     })
                     .unwrap_or(scope)
-                    .decl_var(pattern, value, span)
+                    .decl_var(pattern, value, span, exported)
             } else {
                 unreachable!("a variable declaration was neither `let`, `const` or `var`");
             };
@@ -469,7 +485,7 @@ impl<'ddlog> Visit<'ddlog, ForHead> for AnalyzerInner {
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, head: ForHead) -> Self::Output {
         match head {
             ForHead::Decl(decl) => {
-                let (stmt_id, decl_scope) = self.visit(scope, decl);
+                let (stmt_id, decl_scope) = self.visit(scope, (decl, false));
 
                 (
                     ForInit::ForDecl {
