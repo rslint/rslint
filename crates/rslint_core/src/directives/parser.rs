@@ -1,8 +1,9 @@
 use super::{
+    commands::Command,
     lexer::{format_kind, Lexer, Token},
     Component, ComponentKind, Directive, Instruction,
 };
-use rslint_errors::Diagnostic;
+use rslint_errors::{file::line_starts, Diagnostic};
 use rslint_lexer::{SyntaxKind, T};
 use rslint_parser::{util::Comment, JsNum, SyntaxNode, SyntaxTokenExt, TextRange};
 
@@ -14,8 +15,9 @@ pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
 pub struct DirectiveParser {
     /// The root node of a file, `SCRIPT` or `MODULE`.
     root: SyntaxNode,
+    line_starts: Box<[usize]>,
     file_id: usize,
-    commands: Vec<Vec<Instruction>>,
+    commands: Box<[Box<[Instruction]>]>,
 }
 
 impl DirectiveParser {
@@ -31,9 +33,10 @@ impl DirectiveParser {
         ));
 
         Self {
+            line_starts: line_starts(&root.to_string()).collect(),
             root,
             file_id,
-            commands: vec![],
+            commands: Command::instructions(),
         }
     }
 
@@ -41,7 +44,18 @@ impl DirectiveParser {
         Diagnostic::error(self.file_id, "directives", msg)
     }
 
-    pub fn get_file_directives(&mut self) -> Result<Vec<Directive>> {
+    fn line_of(&self, idx: usize) -> usize {
+        self.line_starts
+            .binary_search(&idx)
+            .unwrap_or_else(|next_line| next_line - 1)
+    }
+
+    pub fn get_file_directives(&mut self) -> Result<Vec<Command>> {
+        let directives = self.get_raw_file_directives()?;
+        Ok(directives.into_iter().flat_map(Command::parse).collect())
+    }
+
+    pub fn get_raw_file_directives(&mut self) -> Result<Vec<Directive>> {
         let mut directives = self.top_level_directives()?;
 
         for descendant in self.root.descendants().skip(1) {
@@ -124,6 +138,7 @@ impl DirectiveParser {
             &cmd,
         )?;
         Ok(Directive {
+            line: self.line_of(comment.token.text_range().start().into()),
             comment,
             components,
             node,

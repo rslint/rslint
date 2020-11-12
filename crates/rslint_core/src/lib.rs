@@ -137,17 +137,7 @@ pub(crate) fn lint_file_inner(
     store: &CstRuleStore,
     _verbose: bool,
 ) -> Result<LintResult, Diagnostic> {
-    use Instruction::*;
-
-    let cmd = vec![
-        CommandName("ignore"),
-        Repetition(Box::new(RuleName), SyntaxKind::COMMA),
-        Optional(vec![
-            Literal("until"),
-            Either(Box::new(Literal("eof")), Box::new(Number)),
-        ]),
-    ];
-    let results = DirectiveParser::new(node, file_id, vec![cmd]).get_file_directives()?;
+    let results = DirectiveParser::new(node, file_id).get_file_directives()?;
 
     println!("directives: {:#?}", results);
     todo!()

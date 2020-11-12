@@ -61,6 +61,13 @@ impl ComponentKind {
         }
     }
 
+    pub fn literal(&self) -> Option<&str> {
+        match self {
+            ComponentKind::Literal(val) => Some(*val),
+            _ => None,
+        }
+    }
+
     pub fn number(&self) -> Option<u64> {
         match self {
             ComponentKind::Number(val) => Some(*val),
@@ -119,6 +126,8 @@ pub enum Instruction {
 /// Any command that is given to the linter using an inline comment.
 #[derive(Debug, Clone)]
 pub struct Directive {
+    /// The line number in which the directive comment was parsed.
+    pub line: usize,
     pub comment: Comment,
     pub components: Vec<Component>,
     pub node: Option<SyntaxNode>,

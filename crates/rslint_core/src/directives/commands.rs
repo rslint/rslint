@@ -1,7 +1,8 @@
 //! All directive command implementations.
 
-use super::{Component, ComponentKind, Directive};
-use crate::CstRule;
+use super::{Component, ComponentKind, Directive, Instruction};
+use crate::{get_rule_by_name, CstRule, CstRuleStore};
+use rslint_lexer::SyntaxKind;
 use rslint_parser::SyntaxNode;
 use std::ops::Range;
 
@@ -23,23 +24,94 @@ pub enum Command {
 }
 
 impl Command {
+    pub fn instructions() -> Box<[Box<[Instruction]>]> {
+        use Instruction::*;
+
+        vec![vec![
+            CommandName("ignore"),
+            Repetition(Box::new(RuleName), SyntaxKind::COMMA),
+            Optional(vec![
+                Literal("until"),
+                Either(Box::new(Literal("eof")), Box::new(Number)),
+            ]),
+        ]
+        .into_boxed_slice()]
+        .into_boxed_slice()
+    }
+
     /// Takes a parsed `Directive`, and tries to convert it into a `Command`.
-    pub fn parse(
-        Directive {
-            node, components, ..
-        }: Directive,
-    ) -> Option<Self> {
-        let Component { kind, range } = components.first()?;
+    pub fn parse(directive: Directive) -> Option<Self> {
+        let Component { kind, .. } = directive.components.first()?;
         let name = match kind {
             ComponentKind::CommandName(name) => name.as_str(),
             _ => return None,
         };
 
-        let new_components = &components[1..];
-        let cmd = match name {
-            "ignore" => todo!(),
-            _ => return None,
-        };
-        Some(cmd)
+        match name {
+            "ignore" => parse_ignore_command(directive),
+            _ => None,
+        }
+    }
+}
+
+fn parse_ignore_command(
+    Directive {
+        components,
+        line,
+        node,
+        ..
+    }: Directive,
+) -> Option<Command> {
+    if let Some(rules) = components.get(1) {
+        let rules = rules
+            .kind
+            .repetition()
+            .into_iter()
+            .flatten()
+            .filter_map(|c| {
+                // TODO: Emit diagnostic for invalid rule names.
+                get_rule_by_name(c.kind.rule_name()?)
+            })
+            .collect::<Vec<_>>();
+
+        if let Some(node) = node {
+            Some(Command::IgnoreNodeRules(node, rules))
+        } else if components
+            .get(2)
+            .and_then(|c| c.kind.literal())
+            .map_or(false, |l| l == "until")
+        {
+            match components.get(3).map(|c| &c.kind)? {
+                ComponentKind::Literal("eof") => {
+                    Some(Command::IgnoreUntilRules(line..usize::max_value(), rules))
+                }
+                ComponentKind::Number(val) => {
+                    Some(Command::IgnoreUntilRules(line..line + *val as usize, rules))
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
+    } else {
+        if let Some(node) = node {
+            Some(Command::IgnoreNode(node))
+        } else if components
+            .get(1)
+            .and_then(|c| c.kind.literal())
+            .map_or(false, |l| l == "until")
+        {
+            match components.get(2).map(|c| &c.kind)? {
+                ComponentKind::Literal("eof") => {
+                    Some(Command::IgnoreUntil(line..usize::max_value()))
+                }
+                ComponentKind::Number(val) => {
+                    Some(Command::IgnoreUntil(line..line + *val as usize))
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
     }
 }
