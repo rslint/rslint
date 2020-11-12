@@ -5,7 +5,9 @@ use super::{
 };
 use rslint_errors::{file::line_starts, Diagnostic};
 use rslint_lexer::{SyntaxKind, T};
-use rslint_parser::{util::Comment, JsNum, SyntaxNode, SyntaxTokenExt, TextRange};
+use rslint_parser::{
+    ast::ModuleItem, util::Comment, JsNum, SyntaxNode, SyntaxNodeExt, SyntaxTokenExt, TextRange,
+};
 
 /// A string that denotes that start of a directive (`rslint-`).
 pub const DECLARATOR: &str = "rslint-";
@@ -59,14 +61,18 @@ impl DirectiveParser {
         let mut directives = self.top_level_directives()?;
 
         for descendant in self.root.descendants().skip(1) {
-            if let Some(comment) = descendant
+            let comment = descendant
                 .first_token()
                 .and_then(|tok| tok.comment())
-                .filter(|c| c.content.trim_start().starts_with(DECLARATOR))
-            {
-                let directive = self.parse_directive(comment, Some(descendant))?;
-                directives.push(directive);
-            }
+                .filter(|c| c.content.trim_start().starts_with(DECLARATOR));
+
+            let comment = match comment {
+                Some(comment) if comment.token.parent().is::<ModuleItem>() => comment,
+                _ => continue,
+            };
+
+            let directive = self.parse_directive(comment, Some(descendant))?;
+            directives.push(directive);
         }
 
         Ok(directives)

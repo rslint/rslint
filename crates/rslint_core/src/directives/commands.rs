@@ -1,7 +1,7 @@
 //! All directive command implementations.
 
 use super::{Component, ComponentKind, Directive, Instruction};
-use crate::{get_rule_by_name, CstRule, CstRuleStore};
+use crate::{get_rule_by_name, CstRule};
 use rslint_lexer::SyntaxKind;
 use rslint_parser::SyntaxNode;
 use std::ops::Range;
@@ -62,6 +62,14 @@ fn parse_ignore_command(
         ..
     }: Directive,
 ) -> Option<Command> {
+    // TODO: We can probably warn the user about directives like this:
+    // ```
+    // // rslint-ignore no-empty until eof
+    // if (true) {}
+    // ```
+    // because this will be parsed as a `IgnoreNodeRules` and thus
+    // ignores the `until eof` part, which may not be obivous when looking at it.
+
     if let Some(rules) = components.get(1) {
         let rules = rules
             .kind
@@ -91,7 +99,7 @@ fn parse_ignore_command(
                 _ => None,
             }
         } else {
-            None
+            Some(Command::IgnoreFileRules(rules))
         }
     } else {
         if let Some(node) = node {
@@ -111,7 +119,7 @@ fn parse_ignore_command(
                 _ => None,
             }
         } else {
-            None
+            Some(Command::IgnoreFile)
         }
     }
 }
