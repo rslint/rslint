@@ -17,6 +17,7 @@ pub(self) mod lexer;
 mod commands;
 mod parser;
 
+pub use self::commands::*;
 pub use self::parser::*;
 
 use crate::{rule_tests, CstRule, CstRuleStore, Diagnostic, SyntaxNode};
@@ -130,6 +131,9 @@ pub struct Directive {
     pub line: usize,
     pub comment: Comment,
     pub components: Vec<Component>,
+    /// Contains the parsed `Command`, but is `None` if the `components`
+    /// failed to be parsed as a valid `Command`.
+    pub command: Option<Command>,
     pub node: Option<SyntaxNode>,
 }
 
@@ -156,19 +160,82 @@ pub fn apply_top_level_directives(
     diagnostics: &mut Vec<Diagnostic>,
     file_id: usize,
 ) {
-    todo!()
+    // TODO: More complex warnings, things like ignoring node directives because of file level directives
+
+    let mut ignored = vec![];
+    let mut cleared = None;
+
+    for directive in directives {
+        match &directive.command {
+            Some(Command::IgnoreFile) => {
+                store.rules.clear();
+                cleared = Some(directive.comment.token.text_range());
+            }
+            Some(Command::IgnoreFileRules(rules)) => {
+                ignored.push(directive.comment.token.text_range());
+                store
+                    .rules
+                    .retain(|rule| !rules.iter().any(|allowed| allowed.name() == rule.name()));
+            }
+            _ => {}
+        }
+    }
+
+    if let Some(range) = cleared {
+        for ignored_range in ignored {
+            let warn = Diagnostic::warning(
+                file_id,
+                "linter",
+                "ignoring redundant rule ignore directive",
+            )
+            .secondary(range, "this directive ignores all rules")
+            .primary(ignored_range, "this directive is ignored");
+
+            diagnostics.push(warn);
+        }
+    }
 }
 
 pub fn apply_node_directives(
-    _directives: &[Directive],
-    _node: &SyntaxNode,
-    _store: &CstRuleStore,
+    directives: &[Directive],
+    node: &SyntaxNode,
+    store: &CstRuleStore,
 ) -> Option<CstRuleStore> {
-    todo!()
+    let comment = node.first_token().and_then(|t| t.comment())?;
+    let directive = directives.iter().find(|dir| dir.comment == comment)?;
+    let mut store = store.clone();
+
+    match &directive.command {
+        Some(Command::IgnoreNode(_)) => {
+            store.rules.clear();
+        }
+        Some(Command::IgnoreNodeRules(_, rules)) => {
+            store
+                .rules
+                .retain(|rule| !rules.iter().any(|allowed| allowed.name() == rule.name()));
+        }
+        _ => {}
+    }
+    Some(store)
 }
 
-pub fn skip_node(_directives: &[Directive], _node: &SyntaxNode, _rule: &dyn CstRule) -> bool {
-    todo!()
+pub fn skip_node(directives: &[Directive], node: &SyntaxNode, rule: &dyn CstRule) -> bool {
+    if let Some(comment) = node.first_token().and_then(|t| t.comment()) {
+        if let Some(directive) = directives.iter().find(|dir| dir.comment == comment) {
+            match &directive.command {
+                Some(Command::IgnoreNode(_)) => {
+                    return true;
+                }
+                Some(Command::IgnoreNodeRules(_, rules)) => {
+                    if rules.iter().any(|allowed| allowed.name() == rule.name()) {
+                        return true;
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    false
 }
 
 rule_tests! {

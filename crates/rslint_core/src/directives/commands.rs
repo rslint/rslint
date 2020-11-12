@@ -1,6 +1,6 @@
 //! All directive command implementations.
 
-use super::{Component, ComponentKind, Directive, Instruction};
+use super::{Component, ComponentKind, Instruction};
 use crate::{get_rule_by_name, CstRule};
 use rslint_lexer::SyntaxKind;
 use rslint_parser::SyntaxNode;
@@ -40,27 +40,24 @@ impl Command {
     }
 
     /// Takes a parsed `Directive`, and tries to convert it into a `Command`.
-    pub fn parse(directive: Directive) -> Option<Self> {
-        let Component { kind, .. } = directive.components.first()?;
+    pub fn parse(components: &[Component], line: usize, node: Option<SyntaxNode>) -> Option<Self> {
+        let Component { kind, .. } = components.first()?;
         let name = match kind {
             ComponentKind::CommandName(name) => name.as_str(),
             _ => return None,
         };
 
         match name {
-            "ignore" => parse_ignore_command(directive),
+            "ignore" => parse_ignore_command(components, line, node),
             _ => None,
         }
     }
 }
 
 fn parse_ignore_command(
-    Directive {
-        components,
-        line,
-        node,
-        ..
-    }: Directive,
+    components: &[Component],
+    line: usize,
+    node: Option<SyntaxNode>,
 ) -> Option<Command> {
     // TODO: We can probably warn the user about directives like this:
     // ```

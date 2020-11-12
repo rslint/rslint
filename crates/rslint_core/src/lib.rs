@@ -42,10 +42,10 @@ pub use self::{
 };
 pub use rslint_errors::{Diagnostic, Severity, Span};
 
-use crate::directives::skip_node;
-use crate::directives::{Directive, DirectiveParser, Instruction};
+pub use crate::directives::{apply_top_level_directives, skip_node, Directive, DirectiveParser};
+
 use dyn_clone::clone_box;
-//use rayon::prelude::*;
+use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -132,64 +132,51 @@ pub fn lint_file(
 /// used by lint_file and incrementally_relint to not duplicate code
 pub(crate) fn lint_file_inner(
     node: SyntaxNode,
-    _parser_diagnostics: Vec<Diagnostic>,
+    parser_diagnostics: Vec<Diagnostic>,
     file_id: usize,
     store: &CstRuleStore,
-    _verbose: bool,
+    verbose: bool,
 ) -> Result<LintResult, Diagnostic> {
-    let results = DirectiveParser::new(node, file_id).get_file_directives()?;
+    let mut new_store = store.clone();
+    let directives = DirectiveParser::new(node.clone(), file_id).get_file_directives()?;
+    let mut directive_diagnostics = vec![];
 
-    println!("directives: {:#?}", results);
-    todo!()
+    apply_top_level_directives(
+        directives.as_slice(),
+        &mut new_store,
+        &mut directive_diagnostics,
+        file_id,
+    );
 
-    //let mut new_store = store.clone();
-    //let results = DirectiveParser::new(node.clone(), file_id, store).get_file_directives()?;
-    //let mut directive_diagnostics = vec![];
+    let src = Arc::new(node.to_string());
+    let results = new_store
+        .rules
+        .par_iter()
+        .map(|rule| {
+            (
+                rule.name(),
+                run_rule(
+                    &**rule,
+                    file_id,
+                    node.clone(),
+                    verbose,
+                    &directives,
+                    src.clone(),
+                ),
+            )
+        })
+        .collect();
 
-    //let directives = results
-    //.into_iter()
-    //.map(|res| {
-    //directive_diagnostics.extend(res.diagnostics);
-    //res.directive
-    //})
-    //.collect::<Vec<_>>();
-
-    //apply_top_level_directives(
-    //directives.as_slice(),
-    //&mut new_store,
-    //&mut directive_diagnostics,
-    //file_id,
-    //);
-
-    //let src = Arc::new(node.to_string());
-    //let results = new_store
-    //.rules
-    //.par_iter()
-    //.map(|rule| {
-    //(
-    //rule.name(),
-    //run_rule(
-    //&**rule,
-    //file_id,
-    //node.clone(),
-    //verbose,
-    //&directives,
-    //src.clone(),
-    //),
-    //)
-    //})
-    //.collect();
-
-    //Ok(LintResult {
-    //parser_diagnostics,
-    //store,
-    //rule_results: results,
-    //directive_diagnostics,
-    //parsed: node,
-    //file_id,
-    //verbose,
-    //fixed_code: None,
-    //})
+    Ok(LintResult {
+        parser_diagnostics,
+        store,
+        rule_results: results,
+        directive_diagnostics,
+        parsed: node,
+        file_id,
+        verbose,
+        fixed_code: None,
+    })
 }
 
 /// Run a single run on an entire parsed file.

@@ -52,12 +52,7 @@ impl DirectiveParser {
             .unwrap_or_else(|next_line| next_line - 1)
     }
 
-    pub fn get_file_directives(&mut self) -> Result<Vec<Command>> {
-        let directives = self.get_raw_file_directives()?;
-        Ok(directives.into_iter().flat_map(Command::parse).collect())
-    }
-
-    pub fn get_raw_file_directives(&mut self) -> Result<Vec<Directive>> {
+    pub fn get_file_directives(&mut self) -> Result<Vec<Directive>> {
         let mut directives = self.top_level_directives()?;
 
         for descendant in self.root.descendants().skip(1) {
@@ -143,8 +138,12 @@ impl DirectiveParser {
             },
             &cmd,
         )?;
+
+        let line = self.line_of(comment.token.text_range().start().into());
         Ok(Directive {
-            line: self.line_of(comment.token.text_range().start().into()),
+            // TODO: Report error for invalid command.
+            command: Command::parse(&components, line, node.clone()),
+            line,
             comment,
             components,
             node,
@@ -277,12 +276,20 @@ impl DirectiveParser {
 
                 let start = lexer.abs_cur() as u32;
                 while lexer.peek().map_or(false, |tok| tok.kind == *separator) || first {
-                    if first {
-                        first = false;
-                    } else {
+                    if !first {
                         lexer.expect(*separator)?;
                     }
-                    components.extend(self.parse_instruction(lexer, insn)?);
+                    let res = match self.parse_instruction(lexer, insn) {
+                        Ok(res) => res,
+                        // The first element isn't valid, so we continute with next instruction.
+                        Err(_) if first => return Ok(vec![]),
+                        err @ Err(_) => return err,
+                    };
+                    components.extend(res);
+
+                    if first {
+                        first = false;
+                    }
                 }
                 let end = lexer.abs_cur() as u32;
 
