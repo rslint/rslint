@@ -24,11 +24,13 @@ macro_rules! rule_test {
             use types::ast::Span;
             #[allow(unused_imports)]
             use std::borrow::Cow;
+            #[allow(unused_imports)]
+            use rayon::iter::{ParallelIterator, IntoParallelIterator};
 
-            let mut analyzer = DatalogTestHarness::new()
+            let analyzer = DatalogTestHarness::new()
                 $(.with_filter($filter as fn(&DatalogLint) -> bool))?;
 
-            $(
+            vec![$(
                 analyzer
                     .test(vec![$($code,)+].join("\n"), stringify!($rule_name))
                     $(.with_globals(vec![$(Cow::Borrowed($global)),*]))?
@@ -37,9 +39,10 @@ macro_rules! rule_test {
                     $(.with_ecma($ecma))?
                     $(.is_module($module))?
                     $(.with_es2021($es2021))?
-                    $(.with_errors(vec![$($error),*]))?
-                    .run();
-            )?
+                    $(.with_errors(vec![$($error),*]))?,
+            )?]
+            .into_par_iter()
+            .for_each(|test| test.run());
 
             analyzer.report_outcome();
         }
@@ -60,14 +63,15 @@ use std::{
     fs::{self, OpenOptions},
     io::Write as _,
     path::Path,
+    sync::atomic::{AtomicUsize, Ordering},
 };
 use types::ast::FileId;
 
 struct DatalogTestHarness {
     datalog: ScopeAnalyzer,
-    passing: usize,
-    failing: usize,
-    counter: usize,
+    passing: AtomicUsize,
+    failing: AtomicUsize,
+    counter: AtomicUsize,
     filter: Option<fn(&DatalogLint) -> bool>,
 }
 
@@ -75,9 +79,9 @@ impl DatalogTestHarness {
     pub fn new() -> Self {
         Self {
             datalog: ScopeAnalyzer::new().expect("failed to create ddlog instance"),
-            passing: 0,
-            failing: 0,
-            counter: 0,
+            passing: AtomicUsize::new(0),
+            failing: AtomicUsize::new(0),
+            counter: AtomicUsize::new(0),
             filter: None,
         }
     }
@@ -87,20 +91,25 @@ impl DatalogTestHarness {
         self
     }
 
-    pub fn test<C, R>(&mut self, code: C, rule_name: R) -> TestCase<'_>
+    pub fn test<C, R>(&self, code: C, rule_name: R) -> TestCase<'_>
     where
         C: Into<Cow<'static, str>>,
         R: Into<Cow<'static, str>>,
     {
-        TestCase::new(self, code.into(), rule_name.into())
+        TestCase::new(
+            self,
+            code.into(),
+            rule_name.into(),
+            self.counter.fetch_add(1, Ordering::SeqCst),
+        )
     }
 
     pub fn report_outcome(self) {
-        if self.failing != 0 {
+        if self.failing.load(Ordering::SeqCst) != 0 {
             panic!(
                 "Test failed with {} passing, {} failing, logs stored in `{}/output.log/`",
-                self.passing,
-                self.failing,
+                self.passing.load(Ordering::SeqCst),
+                self.failing.load(Ordering::SeqCst),
                 env!("CARGO_MANIFEST_DIR"),
             );
         }
@@ -117,14 +126,16 @@ struct TestCase<'a> {
     is_module: bool,
     es2021: bool,
     errors: Vec<DatalogLint>,
-    harness: &'a mut DatalogTestHarness,
+    harness: &'a DatalogTestHarness,
+    id: usize,
 }
 
 impl<'a> TestCase<'a> {
     pub fn new(
-        harness: &'a mut DatalogTestHarness,
+        harness: &'a DatalogTestHarness,
         code: Cow<'static, str>,
         rule_name: Cow<'static, str>,
+        id: usize,
     ) -> Self {
         Self {
             rule_name,
@@ -137,6 +148,7 @@ impl<'a> TestCase<'a> {
             es2021: false,
             errors: Vec::new(),
             harness,
+            id,
         }
     }
 
@@ -178,23 +190,14 @@ impl<'a> TestCase<'a> {
 
     // TODO: This is so ugly
     pub fn run(mut self) {
-        let file_id = FileId::new(self.harness.counter as u32);
+        let file_id = FileId::new(self.id as u32);
 
         let path = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/output.log"))
-            .join(format!("{}-{}", self.rule_name, self.harness.counter));
+            .join(format!("{}-{}", self.rule_name, self.id));
         if !path.exists() {
             fs::create_dir_all(&path).unwrap();
         }
 
-        self.harness.datalog.with_replay_file(
-            OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(path.join("replay"))
-                .unwrap(),
-        );
         self.harness.datalog.outputs().with_output_file(
             OpenOptions::new()
                 .read(true)
@@ -260,7 +263,15 @@ impl<'a> TestCase<'a> {
             .analyze(file_id, &ast)
             .expect("failed datalog transaction");
 
+        for err in self.errors.iter_mut() {
+            *err.file_id_mut() = file_id;
+        }
+
         let mut errors = self.harness.datalog.get_lints().unwrap();
+        errors = errors
+            .into_iter()
+            .filter(|err| err.file_id() == file_id)
+            .collect();
         if let Some(filter) = self.harness.filter {
             errors = errors.into_iter().filter(filter).collect();
         }
@@ -274,7 +285,7 @@ impl<'a> TestCase<'a> {
         }
 
         if failed || !errors.is_empty() {
-            self.harness.failing += 1;
+            self.harness.failing.fetch_add(1, Ordering::SeqCst);
 
             let mut file = OpenOptions::new()
                 .truncate(true)
@@ -294,17 +305,20 @@ impl<'a> TestCase<'a> {
                 ============ END FAILURE ============\n\n",
                 ast.text(),
                 self.errors,
-                self.harness.datalog.get_lints().unwrap(),
+                self.harness
+                    .datalog
+                    .get_lints()
+                    .unwrap()
+                    .into_iter()
+                    .filter(|err| err.file_id() == file_id)
+                    .collect::<Vec<_>>(),
                 self.harness.datalog.dump_inputs().unwrap(),
                 self.harness.datalog.outputs(),
             )
             .unwrap();
         } else {
             fs::remove_dir_all(&path).unwrap();
-            self.harness.passing += 1;
+            self.harness.passing.fetch_add(1, Ordering::SeqCst);
         }
-
-        self.harness.datalog.datalog.reset().unwrap();
-        self.harness.counter += 1;
     }
 }

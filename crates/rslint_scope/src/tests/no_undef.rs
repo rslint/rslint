@@ -60,18 +60,18 @@ rule_test! {
     { "let x; x.y" },
 
     // Should fail
-    { "a = 1;", errors: [NoUndef { var: "a".into(), span: Span::new(0, 1) }] },
-    { "var a = b;", errors: [NoUndef { var: "b".into(), span: Span::new(8, 9) }] },
-    { "function f() { b; }", errors: [NoUndef { var: "b".into(), span: Span::new(15, 16) }] },
-    { "window", errors: [NoUndef { var: "window".into(), span: Span::new(0, 6) }] },
-    { "require(\"a\");", errors: [NoUndef { var: "require".into(), span: Span::new(0, 7) }] },
+    { "a = 1;", errors: [DatalogLint::no_undef("a", 0..1)] },
+    { "var a = b;", errors: [DatalogLint::no_undef("b", 8..9)] },
+    { "function f() { b; }", errors: [DatalogLint::no_undef("b", 15..16)] },
+    { "window", errors: [DatalogLint::no_undef("window", 0..6)] },
+    { "require(\"a\");", errors: [DatalogLint::no_undef("require", 0..7)] },
     // FIXME: Requires JSX
     // { "var React; React.render(<img attr={a} />);", errors: ["a"] },
     // { "var React, App; React.render(<App attr={a} />);", errors: ["a"] },
-    { "[a] = [0];", errors: [NoUndef { var: "a".into(), span: Span::new(1, 2) }] },
-    { "({a} = {});", errors: [NoUndef { var: "a".into(), span: Span::new(2, 3) }] },
-    { "({b: a} = {});", errors: [NoUndef { var: "a".into(), span: Span::new(5, 6) }] },
+    { "[a] = [0];", errors: [DatalogLint::no_undef("a", 1..2)] },
+    { "({a} = {});", errors: [DatalogLint::no_undef("a", 2..3)] },
+    { "({b: a} = {});", errors: [DatalogLint::no_undef("a", 5..6)] },
     // FIXME: Assignment pattern parsing is broken
-    // { "[obj.a, obj.b] = [0, 1];", errors: [NoUndef { var: "obj".into(), Span::new(1, 4) }, NoUndef { var: "obj".into(), span: Span::new(8, 11) }] },
-    { "const c = 0; const a = {...b, c};", errors: [NoUndef { var: "b".into(), span: Span::new(27, 28) }] },
+    // { "[obj.a, obj.b] = [0, 1];", errors: [DatalogLint::no_undef("obj", 1..4), DatalogLint::no_undef("obj", 8..11)] },
+    { "const c = 0; const a = {...b, c};", errors: [DatalogLint::no_undef("b", 27..28)] },
 }

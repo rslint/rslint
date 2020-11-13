@@ -14,19 +14,19 @@ use rslint_parser::{
     SyntaxNode, SyntaxNodeExt,
 };
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
+use std::{ops::Deref, sync::Arc};
 use types::ast::{FileId, FileKind, JSFlavor};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct ScopeAnalyzer {
     #[serde(skip)]
-    datalog: Datalog,
+    datalog: Arc<Datalog>,
 }
 
 impl ScopeAnalyzer {
     pub fn new() -> DatalogResult<Self> {
         Ok(Self {
-            datalog: Datalog::new()?,
+            datalog: Arc::new(Datalog::new()?),
         })
     }
 

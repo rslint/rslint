@@ -23,14 +23,12 @@ macro_rules! derived_facts {
         impl Datalog {
             $(
                 pub fn $function_name(&self, $arg_name: Option<$arg_ty>,) -> DatalogResult<Vec<$relation_type>> {
-                    let ddlog = self.datalog.lock().expect("failed to lock ddlog instance");
-
                     let query = if let Some(arg) = $arg_name {
-                        ddlog
+                        self
                             .hddlog
                             .query_index(Indexes::$index_name as IdxId, arg.into_ddvalue())?
                     } else {
-                        ddlog
+                        self
                             .hddlog
                             .dump_index(Indexes::$index_name as IdxId)?
                     };

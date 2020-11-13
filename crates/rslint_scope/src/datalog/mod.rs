@@ -15,9 +15,7 @@ use rslint_scoping_ddlog::{api::HDDlog, Indexes, Relations, INPUT_RELIDMAP};
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeSet,
-    fs::File,
-    mem,
-    sync::{Arc, Mutex},
+    sync::Mutex,
 };
 use types::{
     ast::{
@@ -45,8 +43,52 @@ pub type DatalogResult<T> = Result<T, String>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DatalogLint {
-    NoUndef { var: Name, span: Span },
-    NoUnusedVars { var: Name, declared: Span },
+    NoUndef {
+        var: Name,
+        span: Span,
+        file: FileId,
+    },
+    NoUnusedVars {
+        var: Name,
+        declared: Span,
+        file: FileId,
+    },
+}
+
+impl DatalogLint {
+    #[cfg(test)]
+    pub(crate) fn no_undef(var: impl Into<Name>, span: std::ops::Range<u32>) -> Self {
+        Self::NoUndef {
+            var: var.into(),
+            span: span.into(),
+            file: FileId::new(0),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn no_unused_vars(var: impl Into<Name>, declared: std::ops::Range<u32>) -> Self {
+        Self::NoUnusedVars {
+            var: var.into(),
+            declared: declared.into(),
+            file: FileId::new(0),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn file_id(&self) -> FileId {
+        match *self {
+            Self::NoUndef { file, .. } => file,
+            Self::NoUnusedVars { file, .. } => file,
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn file_id_mut(&mut self) -> &mut FileId {
+        match self {
+            Self::NoUndef { file, .. } => file,
+            Self::NoUnusedVars { file, .. } => file,
+        }
+    }
 }
 
 impl DatalogLint {
@@ -59,9 +101,10 @@ impl DatalogLint {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Datalog {
-    datalog: Arc<Mutex<DatalogInner>>,
+    hddlog: HDDlog,
+    transaction_lock: Mutex<()>,
     outputs: Outputs,
 }
 
@@ -69,7 +112,8 @@ impl Datalog {
     pub fn new() -> DatalogResult<Self> {
         let (hddlog, _init_state) = HDDlog::run(2, false, |_: usize, _: &Record, _: isize| {})?;
         let this = Self {
-            datalog: Arc::new(Mutex::new(DatalogInner::new(hddlog, FileId::new(0)))),
+            hddlog,
+            transaction_lock: Mutex::new(()),
             outputs: Outputs::new(),
         };
 
@@ -80,18 +124,10 @@ impl Datalog {
         &self.outputs
     }
 
-    pub fn with_replay_file(&self, file: File) {
-        self.datalog
-            .lock()
-            .unwrap()
-            .hddlog
-            .record_commands(&mut Some(Mutex::new(file)));
-    }
-
     pub fn reset(&self) -> DatalogResult<()> {
-        self.transaction(|trans| {
+        self.transaction(|_trans| {
             for relation in INPUT_RELIDMAP.keys().copied() {
-                trans.datalog.hddlog.clear_relation(relation as RelId)?;
+                self.hddlog.clear_relation(relation as RelId)?;
             }
 
             Ok(())
@@ -113,25 +149,20 @@ impl Datalog {
         })
     }
 
+    // FIXME: Make this only apply to a single file or remove it
     pub fn clear_globals(&self) -> DatalogResult<()> {
-        self.transaction(|trans| {
-            trans
-                .datalog
-                .hddlog
-                .clear_relation(Relations::inputs_ImplicitGlobal as RelId)?;
+        let _transaction_guard = self.transaction_lock.lock().unwrap();
 
-            Ok(())
-        })
+        self.hddlog.transaction_start()?;
+        self.hddlog
+            .clear_relation(Relations::inputs_ImplicitGlobal as RelId)?;
+
+        self.hddlog.transaction_commit()
     }
 
     pub fn dump_inputs(&self) -> DatalogResult<String> {
         let mut inputs = Vec::new();
-        self.datalog
-            .lock()
-            .unwrap()
-            .hddlog
-            .dump_input_snapshot(&mut inputs)
-            .unwrap();
+        self.hddlog.dump_input_snapshot(&mut inputs).unwrap();
 
         Ok(String::from_utf8(inputs).unwrap())
     }
@@ -144,29 +175,33 @@ impl Datalog {
     where
         F: for<'trans> FnOnce(&mut DatalogTransaction<'trans>) -> DatalogResult<T>,
     {
-        let datalog = self
-            .datalog
-            .lock()
-            .expect("failed to lock datalog for transaction");
-
-        let mut trans = DatalogTransaction::new(&*datalog)?;
+        let inner = DatalogInner::new(FileId::new(0));
+        let mut trans = DatalogTransaction::new(&inner)?;
         let result = transaction(&mut trans)?;
-        self.outputs.batch_update(trans.commit()?);
+
+        let delta = {
+            let _transaction_guard = self.transaction_lock.lock().unwrap();
+
+            self.hddlog.transaction_start()?;
+            self.hddlog
+                .apply_valupdates(inner.updates.borrow_mut().drain(..))?;
+
+            self.hddlog.transaction_commit_dump_changes()?
+        };
+        self.outputs.batch_update(delta);
 
         Ok(result)
     }
 
-    // TODO: Batched queries
     pub(crate) fn query(
         &self,
         index: Indexes,
         key: Option<DDValue>,
     ) -> DatalogResult<BTreeSet<DDValue>> {
-        let ddlog = self.datalog.lock().unwrap();
         if let Some(key) = key {
-            ddlog.hddlog.query_index(index as IdxId, key)
+            self.hddlog.query_index(index as IdxId, key)
         } else {
-            ddlog.hddlog.dump_index(index as IdxId)
+            self.hddlog.dump_index(index as IdxId)
         }
     }
 
@@ -180,12 +215,15 @@ impl Datalog {
                 .map(|usage| DatalogLint::NoUndef {
                     var: usage.key().name.clone(),
                     span: usage.key().span,
+                    file: usage.key().file,
                 }),
         );
+
         lints.extend(self.outputs().unused_variables.iter().map(|unused| {
             DatalogLint::NoUnusedVars {
                 var: unused.key().name.clone(),
                 declared: unused.key().span,
+                file: unused.key().file,
             }
         }));
 
@@ -202,7 +240,6 @@ impl Default for Datalog {
 #[doc(hidden)]
 #[derive(Debug)]
 pub struct DatalogInner {
-    hddlog: HDDlog,
     updates: RefCell<Vec<Update<DDValue>>>,
     scope_id: Cell<ScopeId>,
     global_id: Cell<GlobalId>,
@@ -214,9 +251,8 @@ pub struct DatalogInner {
 }
 
 impl DatalogInner {
-    fn new(hddlog: HDDlog, file: FileId) -> Self {
+    fn new(file: FileId) -> Self {
         Self {
-            hddlog,
             updates: RefCell::new(Vec::with_capacity(100)),
             scope_id: Cell::new(ScopeId::new(0, file)),
             global_id: Cell::new(GlobalId::new(0, file)),
@@ -278,9 +314,7 @@ pub struct DatalogTransaction<'ddlog> {
 }
 
 impl<'ddlog> DatalogTransaction<'ddlog> {
-    fn new(datalog: &'ddlog DatalogInner) -> DatalogResult<Self> {
-        datalog.hddlog.transaction_start()?;
-
+    const fn new(datalog: &'ddlog DatalogInner) -> DatalogResult<Self> {
         Ok(Self { datalog })
     }
 
@@ -348,22 +382,6 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         );
 
         id
-    }
-
-    pub fn commit(self) -> DatalogResult<DeltaMap<DDValue>> {
-        let updates = mem::take(&mut *self.datalog.updates.borrow_mut());
-        self.datalog.hddlog.apply_valupdates(updates.into_iter())?;
-
-        let delta = self.datalog.hddlog.transaction_commit_dump_changes()?;
-
-        // #[cfg(debug_assertions)]
-        // {
-        //     println!("== start transaction ==");
-        //     dump_delta(&delta);
-        //     println!("==  end transaction  ==\n\n");
-        // }
-
-        Ok(delta)
     }
 }
 

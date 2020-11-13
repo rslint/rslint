@@ -20,3 +20,6 @@ differential_datalog = { path = "./generated/differential_datalog" }
 [dependencies.rslint_scoping]
 path = "./generated"
 default-features = false
+
+[dev-dependencies]
+rayon = "1.5.0"

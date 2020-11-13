@@ -162,17 +162,17 @@ rule_test! {
 
 
     // Should fail
-    { "function a(x, y){ return y; }; a();", errors: [NoUnusedVars { var: "x".into(), declared: Span::new(11, 12) }] },
-    { "var a = 10;", errors: [NoUnusedVars { var: "a".into(), declared: Span::new(4, 5) }] },
-    { "function g(bar, baz) { return baz; }; g();", errors: [NoUnusedVars { var: "bar".into(), declared: Span::new(11, 14) }] },
+    { "function a(x, y){ return y; }; a();", errors: [DatalogLint::no_unused_vars("x", 11..12)] },
+    { "var a = 10;", errors: [DatalogLint::no_unused_vars("a", 4..5)] },
+    { "function g(bar, baz) { return baz; }; g();", errors: [DatalogLint::no_unused_vars("bar", 11..14)] },
     {
         "function g(bar, baz) { return 2; }; g();",
         errors: [
-            NoUnusedVars { var: "bar".into(), declared: Span::new(11, 14) },
-            NoUnusedVars { var: "baz".into(), declared: Span::new(16, 19) },
+            DatalogLint::no_unused_vars("bar", 11..14),
+            DatalogLint::no_unused_vars("baz", 16..19),
         ],
     },
-    { "try {} catch(e) {}", errors: [NoUnusedVars { var: "e".into(), declared: Span::new(13, 14) }] },
+    { "try {} catch(e) {}", errors: [DatalogLint::no_unused_vars("e", 13..14)] },
     {
         "function f(a) {",
         "    f({",
@@ -181,7 +181,7 @@ rule_test! {
         "        }",
         "    });",
         "}",
-        errors: [NoUnusedVars { var: "a".into(), declared: Span::new(11, 12) }],
+        errors: [DatalogLint::no_unused_vars("a", 11..12)],
     },
     {
         "function doStuff(f) {",
@@ -194,33 +194,33 @@ rule_test! {
         "};",
         "foo()",
         node: true,
-        errors: [NoUnusedVars { var: "first".into(), declared: Span::new(45, 50) }],
+        errors: [DatalogLint::no_unused_vars("first", 45..50)],
     },
     {
         "(function(obj) { for ( let name in obj ) { return true } })({})",
-        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(27, 31) }],
+        errors: [DatalogLint::no_unused_vars("name", 27..31)],
     },
     {
         "(function(obj) { for ( let name in obj ) return true })({})",
-        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(27, 31) }],
+        errors: [DatalogLint::no_unused_vars("name", 27..31)],
     },
     {
         "(function(obj) { for ( const name in obj ) { return true } })({})",
-        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(29, 33) }],
+        errors: [DatalogLint::no_unused_vars("name", 29..33)],
     },
     {
         "(function(obj) { for ( const name in obj ) return true })({})",
-        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(29, 33) }],
+        errors: [DatalogLint::no_unused_vars("name", 29..33)],
     },
     {
         "(function(obj) { for ( var name in obj ) { return true } })({})",
-        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(27, 31) }],
+        errors: [DatalogLint::no_unused_vars("name", 27..31)],
     },
     {
         "(function(obj) { for ( var name in obj ) return true })({})",
-        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(27, 31) }],
+        errors: [DatalogLint::no_unused_vars("name", 27..31)],
     },
-    { "var a = 10", errors: [NoUnusedVars { var: "a".into(), declared: Span::new(4, 5) }] },
+    { "var a = 10", errors: [DatalogLint::no_unused_vars("a", 4..5)] },
     {
         "function foo(first, second) {",
         "    doStuff(function() {",
@@ -228,28 +228,28 @@ rule_test! {
         "    });",
         "}",
         errors: [
-            NoUnusedVars { var: "foo".into(), declared: Span::new(9, 12) },
-            NoUnusedVars { var: "first".into(), declared: Span::new(13, 18) },
+            DatalogLint::no_unused_vars("foo", 9..12),
+            DatalogLint::no_unused_vars("first", 13..18),
         ],
     },
     {
         "var a = 10, b = 0, c = null;",
         "alert(a + b)",
-        errors: [NoUnusedVars { var: "c".into(), declared: Span::new(19, 20) }],
+        errors: [DatalogLint::no_unused_vars("c", 19..20)],
     },
     {
         "function f() {",
         "    var a = [];",
         "    return a.map(function() {});",
         "}",
-        errors: [NoUnusedVars { var: "f".into(), declared: Span::new(9, 10) }],
+        errors: [DatalogLint::no_unused_vars("f", 9..10)],
     },
     {
         "function f() {",
         "    var a = [];",
         "    return a.map(function g() {});",
         "}",
-        errors: [NoUnusedVars { var: "f".into(), declared: Span::new(9, 10) }],
+        errors: [DatalogLint::no_unused_vars("f", 9..10)],
     },
 }
 

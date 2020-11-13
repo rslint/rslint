@@ -262,14 +262,14 @@ VariableUsages(name, scope, declared) :-
     Expression(expr, _, scope, _).
 
 
-output relation UnusedVariables(name: Name, declared: AnyId, span: Span)
-UnusedVariables(name, declared, span) :-
+output relation UnusedVariables(name: Name, declared: AnyId, span: Span, file: FileId)
+UnusedVariables(name, declared, span, file) :-
     NameInScope(file, name, _, Some { span }, declared, false),
     not declared.is_global(),
     not IsExported(file, declared),
     not VariableUsages(name, _, declared).
 
-UnusedVariables(name, declared, span) :-
+UnusedVariables(name, declared, span, file) :-
     NameInScope(file, name, _, Some { span }, declared @ AnyIdGlobal { global }, false),
     not ImplicitGlobal(global, _),
     not IsExported(file, declared),
@@ -313,8 +313,8 @@ TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
 // have an accompanying variable in scope are reported
 // TODO: Use a levenshtein aggregate to try and correct and/or look in children
 //       scopes for a declaration
-output relation InvalidNameUse(name: Name, scope: ScopeId, span: Span)
-InvalidNameUse(name, scope, span) :-
+output relation InvalidNameUse(name: Name, scope: ScopeId, span: Span, file: FileId)
+InvalidNameUse(name, scope, span, expr.file) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, scope, span),
     not NameInScope(expr.file, name, scope, _, _, _),
@@ -324,7 +324,7 @@ InvalidNameUse(name, scope, span) :-
     not ChainedWith(_, expr).
 
 // Assignments
-InvalidNameUse(name.data, scope, name.span) :-
+InvalidNameUse(name.data, scope, name.span, expr.file) :-
     Assign(expr, Some { Left { pat }}, _, _),
     Expression(expr, _, scope, _),
     var name = FlatMap(pat.bound_vars()),
@@ -332,8 +332,8 @@ InvalidNameUse(name.data, scope, name.span) :-
 
 
 // `var` usages that happen before the declaration
-output relation VarUseBeforeDeclaration(name: Name, used_in: Span, declared_in: Span)
-VarUseBeforeDeclaration(name, used_in, declared_in) :-
+output relation VarUseBeforeDeclaration(name: Name, used_in: Span, declared_in: Span, file: FileId)
+VarUseBeforeDeclaration(name, used_in, declared_in, expr.file) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, used_scope, used_in),
     NameInScope(expr.file, name, used_scope, _, AnyIdStmt { .stmt = stmt }, _),

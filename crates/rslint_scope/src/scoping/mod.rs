@@ -2,6 +2,7 @@ use crate::datalog::Datalog;
 use differential_datalog::ddval::DDValConvert;
 use rslint_parser::ast::{AstNode, Expr};
 use rslint_scoping_ddlog::Indexes;
+use std::sync::Arc;
 use types::{
     ast::{ExprKind, Span},
     ddlog_std::tuple3,
@@ -14,11 +15,11 @@ pub use types::ast::{ExprId, ScopeId};
 
 #[derive(Debug, Clone)]
 pub struct ProgramInfo {
-    datalog: Datalog,
+    datalog: Arc<Datalog>,
 }
 
 impl ProgramInfo {
-    pub fn new(datalog: Datalog) -> Self {
+    pub fn new(datalog: Arc<Datalog>) -> Self {
         Self { datalog }
     }
 
@@ -145,7 +146,7 @@ mod tests {
 
     #[test]
     fn scope_relations() {
-        let datalog = Datalog::new().unwrap();
+        let datalog = Arc::new(Datalog::new().unwrap());
 
         let mut ids = Vec::new();
         let top_id = datalog
@@ -180,7 +181,7 @@ mod tests {
 
     #[test]
     fn var_in_scope() {
-        let datalog = Datalog::new().unwrap();
+        let datalog = Arc::new(Datalog::new().unwrap());
 
         let (empty, filled) = datalog
             .transaction(|trans| {
