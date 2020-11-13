@@ -1,4 +1,4 @@
-use std::iter::Peekable;
+use std::{collections::VecDeque, iter::Peekable};
 
 use rslint_errors::Diagnostic;
 use rslint_lexer::{Lexer as RawLexer, SyntaxKind};
@@ -6,6 +6,7 @@ use rslint_parser::{TextRange, TextSize};
 
 /// Any token that is parsed by the `Lexer`, but with
 /// a `range` instead of a `len`.
+#[derive(Debug, Clone)]
 pub struct Token {
     pub kind: SyntaxKind,
     pub range: TextRange,
@@ -17,6 +18,9 @@ pub struct Lexer<'source> {
     src: &'source str,
     file_id: usize,
     tokens: Peekable<RawLexer<'source>>,
+    marker: bool,
+    rewind: bool,
+    rewind_stack: VecDeque<Token>,
 }
 
 impl<'source> Lexer<'source> {
@@ -27,6 +31,9 @@ impl<'source> Lexer<'source> {
             src,
             file_id,
             tokens: RawLexer::from_str(src, file_id).peekable(),
+            marker: false,
+            rewind: false,
+            rewind_stack: VecDeque::new(),
         }
     }
 
@@ -52,6 +59,19 @@ impl<'source> Lexer<'source> {
 
     pub fn source_of(&self, tok: &Token) -> &'source str {
         self.source_range(tok.range)
+    }
+
+    pub fn mark(&mut self, marker: bool) {
+        self.marker = marker;
+    }
+
+    pub fn rewind(&mut self) {
+        self.rewind = true;
+    }
+
+    pub fn stop_rewind(&mut self) {
+        self.rewind = false;
+        self.rewind_stack.clear();
     }
 
     pub fn expect(&mut self, kind: SyntaxKind) -> Result<Token, Diagnostic> {
@@ -81,6 +101,12 @@ impl<'source> Lexer<'source> {
     }
 
     pub fn next(&mut self) -> Option<Token> {
+        if self.rewind && !self.rewind_stack.is_empty() {
+            return self.rewind_stack.pop_front();
+        } else if self.rewind {
+            self.rewind = false;
+        }
+
         let (tok, _) = self.tokens.next()?;
         let range = self.abs_range(tok.len);
         self.cur += tok.len;
@@ -88,10 +114,15 @@ impl<'source> Lexer<'source> {
             return self.next();
         }
 
-        Some(Token {
+        let tok = Token {
             kind: tok.kind,
             range,
-        })
+        };
+
+        if self.marker {
+            self.rewind_stack.push_back(tok.clone());
+        }
+        Some(tok)
     }
 
     pub fn peek_with_spaces(&mut self) -> Option<Token> {
@@ -105,6 +136,12 @@ impl<'source> Lexer<'source> {
     }
 
     pub fn peek(&mut self) -> Option<Token> {
+        if self.rewind && !self.rewind_stack.is_empty() {
+            return self.rewind_stack.front().cloned();
+        } else if self.rewind {
+            self.rewind = false;
+        }
+
         let (tok, _) = self.tokens.peek()?.clone();
         let range = self.abs_range(tok.len);
         if tok.kind == SyntaxKind::WHITESPACE {

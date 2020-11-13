@@ -1,3 +1,5 @@
+use crate::{get_rule_suggestion, CstRuleStore};
+
 use super::{
     commands::Command,
     lexer::{format_kind, Lexer, Token},
@@ -14,21 +16,22 @@ pub const DECLARATOR: &str = "rslint-";
 
 pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
 
-pub struct DirectiveParser {
+pub struct DirectiveParser<'store> {
     /// The root node of a file, `SCRIPT` or `MODULE`.
     root: SyntaxNode,
     line_starts: Box<[usize]>,
     file_id: usize,
+    store: &'store CstRuleStore,
     commands: Box<[Box<[Instruction]>]>,
 }
 
-impl DirectiveParser {
+impl<'store> DirectiveParser<'store> {
     /// Create a new `DirectivesParser` with a root of a file.
     ///
     /// # Panics
     ///
     /// If the given `root` is not `SCRIPT` or `MODULE`.
-    pub fn new(root: SyntaxNode, file_id: usize) -> Self {
+    pub fn new(root: SyntaxNode, file_id: usize, store: &'store CstRuleStore) -> Self {
         assert!(matches!(
             root.kind(),
             SyntaxKind::SCRIPT | SyntaxKind::MODULE
@@ -36,6 +39,7 @@ impl DirectiveParser {
 
         Self {
             line_starts: line_starts(&root.to_string()).collect(),
+            store,
             root,
             file_id,
             commands: Command::instructions(),
@@ -146,7 +150,6 @@ impl DirectiveParser {
             line,
             comment,
             components,
-            node,
         })
     }
 
@@ -183,6 +186,7 @@ impl DirectiveParser {
                         let d = self
                             .err("bigints are not supported in directives")
                             .primary(tok.range, "");
+                        lexer.stop_rewind();
                         return Err(d);
                     }
                     _ => {
@@ -201,7 +205,7 @@ impl DirectiveParser {
                 }
 
                 let first = lexer
-                    .peek()
+                    .next()
                     .filter(|tok| tok.kind != SyntaxKind::EOF)
                     .ok_or_else(|| {
                         self.err("expected rule name, but comment ends here")
@@ -216,7 +220,6 @@ impl DirectiveParser {
                         .primary(first.range, "");
                     return Err(d);
                 }
-                let first = lexer.next().unwrap();
                 let start = first.range.start();
 
                 while lexer
@@ -229,10 +232,23 @@ impl DirectiveParser {
                 let end = lexer.abs_cur() as u32;
                 let name_range = TextRange::new(start, end.into());
                 let name = lexer.source_range(name_range);
-                Ok(vec![Component {
-                    kind: ComponentKind::RuleName(name.into()),
-                    range: name_range,
-                }])
+                if let Some(rule) = self.store.get(name) {
+                    Ok(vec![Component {
+                        kind: ComponentKind::Rule(rule),
+                        range: name_range,
+                    }])
+                } else {
+                    let mut d = self
+                        .err(&format!("invalid rule: `{}`", name))
+                        .primary(name_range, "");
+
+                    if let Some(suggestion) = get_rule_suggestion(name) {
+                        d = d.footer_help(format!("did you mean `{}`?", suggestion))
+                    }
+
+                    lexer.stop_rewind();
+                    Err(d)
+                }
             }
             Instruction::Literal(lit) => {
                 let tok = lexer.expect(SyntaxKind::IDENT)?;
@@ -245,6 +261,7 @@ impl DirectiveParser {
                             lit, src
                         ))
                         .primary(tok.range, "");
+                    lexer.stop_rewind();
                     Err(d)
                 } else {
                     Ok(vec![Component {
@@ -274,6 +291,7 @@ impl DirectiveParser {
                 let mut first = true;
                 let mut components = vec![];
 
+                lexer.mark(true);
                 let start = lexer.abs_cur() as u32;
                 while lexer.peek().map_or(false, |tok| tok.kind == *separator) || first {
                     if !first {
@@ -282,7 +300,11 @@ impl DirectiveParser {
                     let res = match self.parse_instruction(lexer, insn) {
                         Ok(res) => res,
                         // The first element isn't valid, so we continute with next instruction.
-                        Err(_) if first => return Ok(vec![]),
+                        Err(_) if first => {
+                            lexer.mark(false);
+                            lexer.rewind();
+                            return Ok(vec![]);
+                        }
                         err @ Err(_) => return err,
                     };
                     components.extend(res);
@@ -291,6 +313,7 @@ impl DirectiveParser {
                         first = false;
                     }
                 }
+                lexer.mark(false);
                 let end = lexer.abs_cur() as u32;
 
                 Ok(vec![Component {

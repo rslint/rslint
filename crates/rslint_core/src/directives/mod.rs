@@ -32,7 +32,7 @@ pub enum ComponentKind {
     ///
     /// The directive parser will not verify if the rule name is valid. This has to be done
     /// separately.
-    RuleName(SmolStr),
+    Rule(Box<dyn CstRule>),
     /// This component is the name of a directive command (e.g. `ignore`)
     CommandName(SmolStr),
     /// A number that is parsed by the [`Number`] instruction.
@@ -48,9 +48,9 @@ pub enum ComponentKind {
 }
 
 impl ComponentKind {
-    pub fn rule_name(&self) -> Option<&str> {
+    pub fn rule(&self) -> Option<Box<dyn CstRule>> {
         match self {
-            ComponentKind::RuleName(name) => Some(name.as_str()),
+            ComponentKind::Rule(rule) => Some(rule.clone()),
             _ => None,
         }
     }
@@ -134,18 +134,12 @@ pub struct Directive {
     /// Contains the parsed `Command`, but is `None` if the `components`
     /// failed to be parsed as a valid `Command`.
     pub command: Option<Command>,
-    pub node: Option<SyntaxNode>,
 }
 
 impl Directive {
     /// Finds the component which contains the given index in his span.
     pub fn component_at(&self, idx: TextSize) -> Option<&Component> {
         self.components.iter().find(|c| c.range.contains(idx))
-    }
-
-    /// Whether this command applies to the entire file.
-    pub fn top_level(&self) -> bool {
-        self.node.is_none()
     }
 }
 

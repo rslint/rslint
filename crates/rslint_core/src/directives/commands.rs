@@ -1,7 +1,7 @@
 //! All directive command implementations.
 
 use super::{Component, ComponentKind, Instruction};
-use crate::{get_rule_by_name, CstRule};
+use crate::CstRule;
 use rslint_lexer::SyntaxKind;
 use rslint_parser::SyntaxNode;
 use std::ops::Range;
@@ -67,16 +67,10 @@ fn parse_ignore_command(
     // because this will be parsed as a `IgnoreNodeRules` and thus
     // ignores the `until eof` part, which may not be obivous when looking at it.
 
-    if let Some(rules) = components.get(1) {
+    if let Some(rules) = components.get(1).and_then(|c| c.kind.repetition()) {
         let rules = rules
-            .kind
-            .repetition()
             .into_iter()
-            .flatten()
-            .filter_map(|c| {
-                // TODO: Emit diagnostic for invalid rule names.
-                get_rule_by_name(c.kind.rule_name()?)
-            })
+            .flat_map(|c| c.kind.rule())
             .collect::<Vec<_>>();
 
         if let Some(node) = node {
