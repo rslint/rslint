@@ -304,7 +304,7 @@ TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
     NameRef(undefined_expr, name),
     Expression(undefined_expr, ExprNameRef, scope, span),
     not NameInScope(scope.file, name, scope, _, _, _),
-    // Expressions like `typeof not_undefined` are allowed under InvalidNameUse
+    // Expressions like `typeof not_undefined` are allowed under NoUndef
     // and are instead output through TypeofUndefinedAlwaysUndefined
     WithinTypeofExpr(whole_expr, undefined_expr).
 
@@ -313,18 +313,18 @@ TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
 // have an accompanying variable in scope are reported
 // TODO: Use a levenshtein aggregate to try and correct and/or look in children
 //       scopes for a declaration
-output relation InvalidNameUse(name: Name, scope: ScopeId, span: Span, file: FileId)
-InvalidNameUse(name, scope, span, expr.file) :-
+output relation NoUndef(name: Name, scope: ScopeId, span: Span, file: FileId)
+NoUndef(name, scope, span, expr.file) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, scope, span),
     not NameInScope(expr.file, name, scope, _, _, _),
-    // Expressions like `typeof not_undefined` are allowed under InvalidNameUse
+    // Expressions like `typeof not_undefined` are allowed under NoUndef
     // and are instead output through TypeofUndefinedAlwaysUndefined
     not WithinTypeofExpr(_, expr),
     not ChainedWith(_, expr).
 
 // Assignments
-InvalidNameUse(name.data, scope, name.span, expr.file) :-
+NoUndef(name.data, scope, name.span, expr.file) :-
     Assign(expr, Some { Left { pat }}, _, _),
     Expression(expr, _, scope, _),
     var name = FlatMap(pat.bound_vars()),

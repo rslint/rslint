@@ -240,39 +240,6 @@ impl ::std::fmt::Debug for ClosestFunction {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
-pub struct InvalidNameUse {
-    pub name: crate::ast::Name,
-    pub scope: crate::ast::ScopeId,
-    pub span: crate::ast::Span,
-    pub file: crate::ast::FileId
-}
-impl abomonation::Abomonation for InvalidNameUse{}
-::differential_datalog::decl_struct_from_record!(InvalidNameUse["InvalidNameUse"]<>, ["InvalidNameUse"][4]{[0]name["name"]: crate::ast::Name, [1]scope["scope"]: crate::ast::ScopeId, [2]span["span"]: crate::ast::Span, [3]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(InvalidNameUse, ["InvalidNameUse"]<>, name, scope, span, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(InvalidNameUse, <>, name: crate::ast::Name, scope: crate::ast::ScopeId, span: crate::ast::Span, file: crate::ast::FileId);
-impl ::std::fmt::Display for InvalidNameUse {
-    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        match self {
-            crate::InvalidNameUse{name,scope,span,file} => {
-                __formatter.write_str("InvalidNameUse{")?;
-                ::std::fmt::Debug::fmt(name, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(scope, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(span, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
-                __formatter.write_str("}")
-            }
-        }
-    }
-}
-impl ::std::fmt::Debug for InvalidNameUse {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        ::std::fmt::Display::fmt(&self, f)
-    }
-}
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct IsExported {
     pub file: crate::ast::FileId,
     pub id: crate::ast::AnyId
@@ -334,6 +301,39 @@ impl ::std::fmt::Display for NameInScope {
     }
 }
 impl ::std::fmt::Debug for NameInScope {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct NoUndef {
+    pub name: crate::ast::Name,
+    pub scope: crate::ast::ScopeId,
+    pub span: crate::ast::Span,
+    pub file: crate::ast::FileId
+}
+impl abomonation::Abomonation for NoUndef{}
+::differential_datalog::decl_struct_from_record!(NoUndef["NoUndef"]<>, ["NoUndef"][4]{[0]name["name"]: crate::ast::Name, [1]scope["scope"]: crate::ast::ScopeId, [2]span["span"]: crate::ast::Span, [3]file["file"]: crate::ast::FileId});
+::differential_datalog::decl_struct_into_record!(NoUndef, ["NoUndef"]<>, name, scope, span, file);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NoUndef, <>, name: crate::ast::Name, scope: crate::ast::ScopeId, span: crate::ast::Span, file: crate::ast::FileId);
+impl ::std::fmt::Display for NoUndef {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::NoUndef{name,scope,span,file} => {
+                __formatter.write_str("NoUndef{")?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(scope, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(span, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for NoUndef {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
@@ -491,9 +491,9 @@ impl ::std::fmt::Debug for WithinTypeofExpr {
 ::differential_datalog::decl_ddval_convert!{crate::ChainedWith}
 ::differential_datalog::decl_ddval_convert!{crate::ChildScope}
 ::differential_datalog::decl_ddval_convert!{crate::ClosestFunction}
-::differential_datalog::decl_ddval_convert!{crate::InvalidNameUse}
 ::differential_datalog::decl_ddval_convert!{crate::IsExported}
 ::differential_datalog::decl_ddval_convert!{crate::NameInScope}
+::differential_datalog::decl_ddval_convert!{crate::NoUndef}
 ::differential_datalog::decl_ddval_convert!{crate::TypeofUndefinedAlwaysUndefined}
 ::differential_datalog::decl_ddval_convert!{crate::UnusedVariables}
 ::differential_datalog::decl_ddval_convert!{crate::VarUseBeforeDeclaration}

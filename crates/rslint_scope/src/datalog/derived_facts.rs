@@ -14,7 +14,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use types::{
-    ast::ScopeId, InvalidNameUse, NameInScope, TypeofUndefinedAlwaysUndefined, UnusedVariables,
+    ast::ScopeId, NameInScope, NoUndef, TypeofUndefinedAlwaysUndefined, UnusedVariables,
     VarUseBeforeDeclaration,
 };
 
@@ -177,8 +177,8 @@ impl InnerOutputs {
 }
 
 outputs! {
-    typeof_undef_always_undef: TypeofUndefinedAlwaysUndefined,
-    invalid_name_use: InvalidNameUse,
+    typeof_undef: TypeofUndefinedAlwaysUndefined,
+    no_undef: NoUndef,
     var_usage_before_decl: VarUseBeforeDeclaration,
     unused_variables: UnusedVariables,
 }

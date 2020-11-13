@@ -17,14 +17,11 @@ macro_rules! rule_test {
         }),* $(,)?
     ) => {
         #[test]
+        #[allow(unused_imports)]
         fn $rule_name() {
-            #[allow(unused_imports)]
             use crate::{tests::DatalogTestHarness, datalog::DatalogLint::{self, *}};
-            #[allow(unused_imports)]
             use types::ast::Span;
-            #[allow(unused_imports)]
             use std::borrow::Cow;
-            #[allow(unused_imports)]
             use rayon::iter::{ParallelIterator, IntoParallelIterator};
 
             let analyzer = DatalogTestHarness::new()
@@ -51,6 +48,7 @@ macro_rules! rule_test {
 
 mod no_undef;
 mod no_unused_vars;
+mod typeof_undef;
 
 use crate::{
     datalog::DatalogLint,

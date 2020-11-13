@@ -204,7 +204,7 @@ impl TryFrom<&RelIdentifier> for Relations {
 }
 
 
-decl_update_deserializer!(UpdateSerializer,(0, ::types::ChainedWith), (1, ::types::ChildScope), (2, ::types::ClosestFunction), (3, ::types::InvalidNameUse), (4, ::types::IsExported), (5, ::types::NameInScope), (6, ::types::TypeofUndefinedAlwaysUndefined), (7, ::types::UnusedVariables), (8, ::types::VarUseBeforeDeclaration), (9, ::types::VariableUsages), (10, ::types::WithinTypeofExpr), (12, ::types::inputs::Array), (13, ::types::inputs::Arrow), (14, ::types::inputs::ArrowParam), (15, ::types::inputs::Assign), (16, ::types::inputs::Await), (17, ::types::inputs::BinOp), (18, ::types::inputs::BracketAccess), (19, ::types::inputs::Break), (20, ::types::inputs::Call), (21, ::types::inputs::Class), (22, ::types::inputs::ClassExpr), (23, ::types::inputs::ConstDecl), (24, ::types::inputs::Continue), (25, ::types::inputs::DoWhile), (26, ::types::inputs::DotAccess), (27, ::types::inputs::EveryScope), (28, ::types::inputs::ExprBigInt), (29, ::types::inputs::ExprBool), (30, ::types::inputs::ExprNumber), (31, ::types::inputs::ExprString), (32, ::types::inputs::Expression), (33, ::types::inputs::File), (34, ::types::inputs::FileExport), (35, ::types::inputs::For), (36, ::types::inputs::ForIn), (37, ::types::inputs::Function), (38, ::types::inputs::FunctionArg), (39, ::types::inputs::If), (40, ::types::inputs::ImplicitGlobal), (41, ::types::inputs::ImportDecl), (42, ::types::inputs::InlineFunc), (43, ::types::inputs::InlineFuncParam), (44, ::types::inputs::InputScope), (45, ::types::inputs::Label), (46, ::types::inputs::LetDecl), (47, ::types::inputs::NameRef), (48, ::types::inputs::New), (49, ::types::inputs::Property), (50, ::types::inputs::Return), (51, ::types::inputs::Statement), (52, ::types::inputs::Switch), (53, ::types::inputs::SwitchCase), (54, ::types::inputs::Template), (55, ::types::inputs::Ternary), (56, ::types::inputs::Throw), (57, ::types::inputs::Try), (58, ::types::inputs::UnaryOp), (59, ::types::inputs::VarDecl), (60, ::types::inputs::While), (61, ::types::inputs::With), (62, ::types::inputs::Yield));
+decl_update_deserializer!(UpdateSerializer,(0, ::types::ChainedWith), (1, ::types::ChildScope), (2, ::types::ClosestFunction), (3, ::types::IsExported), (4, ::types::NameInScope), (5, ::types::NoUndef), (6, ::types::TypeofUndefinedAlwaysUndefined), (7, ::types::UnusedVariables), (8, ::types::VarUseBeforeDeclaration), (9, ::types::VariableUsages), (10, ::types::WithinTypeofExpr), (12, ::types::inputs::Array), (13, ::types::inputs::Arrow), (14, ::types::inputs::ArrowParam), (15, ::types::inputs::Assign), (16, ::types::inputs::Await), (17, ::types::inputs::BinOp), (18, ::types::inputs::BracketAccess), (19, ::types::inputs::Break), (20, ::types::inputs::Call), (21, ::types::inputs::Class), (22, ::types::inputs::ClassExpr), (23, ::types::inputs::ConstDecl), (24, ::types::inputs::Continue), (25, ::types::inputs::DoWhile), (26, ::types::inputs::DotAccess), (27, ::types::inputs::EveryScope), (28, ::types::inputs::ExprBigInt), (29, ::types::inputs::ExprBool), (30, ::types::inputs::ExprNumber), (31, ::types::inputs::ExprString), (32, ::types::inputs::Expression), (33, ::types::inputs::File), (34, ::types::inputs::FileExport), (35, ::types::inputs::For), (36, ::types::inputs::ForIn), (37, ::types::inputs::Function), (38, ::types::inputs::FunctionArg), (39, ::types::inputs::If), (40, ::types::inputs::ImplicitGlobal), (41, ::types::inputs::ImportDecl), (42, ::types::inputs::InlineFunc), (43, ::types::inputs::InlineFuncParam), (44, ::types::inputs::InputScope), (45, ::types::inputs::Label), (46, ::types::inputs::LetDecl), (47, ::types::inputs::NameRef), (48, ::types::inputs::New), (49, ::types::inputs::Property), (50, ::types::inputs::Return), (51, ::types::inputs::Statement), (52, ::types::inputs::Switch), (53, ::types::inputs::SwitchCase), (54, ::types::inputs::Template), (55, ::types::inputs::Ternary), (56, ::types::inputs::Throw), (57, ::types::inputs::Try), (58, ::types::inputs::UnaryOp), (59, ::types::inputs::VarDecl), (60, ::types::inputs::While), (61, ::types::inputs::With), (62, ::types::inputs::Yield));
 impl TryFrom<&str> for Relations {
     type Error = ();
     fn try_from(rname: &str) -> ::std::result::Result<Self, ()> {
@@ -212,9 +212,9 @@ impl TryFrom<&str> for Relations {
         "ChainedWith" => Ok(Relations::ChainedWith),
         "ChildScope" => Ok(Relations::ChildScope),
         "ClosestFunction" => Ok(Relations::ClosestFunction),
-        "InvalidNameUse" => Ok(Relations::InvalidNameUse),
         "IsExported" => Ok(Relations::IsExported),
         "NameInScope" => Ok(Relations::NameInScope),
+        "NoUndef" => Ok(Relations::NoUndef),
         "TypeofUndefinedAlwaysUndefined" => Ok(Relations::TypeofUndefinedAlwaysUndefined),
         "UnusedVariables" => Ok(Relations::UnusedVariables),
         "VarUseBeforeDeclaration" => Ok(Relations::VarUseBeforeDeclaration),
@@ -282,9 +282,9 @@ impl Relations {
         Relations::ChainedWith => true,
         Relations::ChildScope => true,
         Relations::ClosestFunction => true,
-        Relations::InvalidNameUse => true,
         Relations::IsExported => true,
         Relations::NameInScope => true,
+        Relations::NoUndef => true,
         Relations::TypeofUndefinedAlwaysUndefined => true,
         Relations::UnusedVariables => true,
         Relations::VarUseBeforeDeclaration => true,
@@ -359,9 +359,9 @@ impl TryFrom<RelId> for Relations {
         0 => Ok(Relations::ChainedWith),
         1 => Ok(Relations::ChildScope),
         2 => Ok(Relations::ClosestFunction),
-        3 => Ok(Relations::InvalidNameUse),
-        4 => Ok(Relations::IsExported),
-        5 => Ok(Relations::NameInScope),
+        3 => Ok(Relations::IsExported),
+        4 => Ok(Relations::NameInScope),
+        5 => Ok(Relations::NoUndef),
         6 => Ok(Relations::TypeofUndefinedAlwaysUndefined),
         7 => Ok(Relations::UnusedVariables),
         8 => Ok(Relations::VarUseBeforeDeclaration),
@@ -428,9 +428,9 @@ pub fn relid2name(rid: RelId) -> Option<&'static str> {
         0 => Some(&"ChainedWith"),
         1 => Some(&"ChildScope"),
         2 => Some(&"ClosestFunction"),
-        3 => Some(&"InvalidNameUse"),
-        4 => Some(&"IsExported"),
-        5 => Some(&"NameInScope"),
+        3 => Some(&"IsExported"),
+        4 => Some(&"NameInScope"),
+        5 => Some(&"NoUndef"),
         6 => Some(&"TypeofUndefinedAlwaysUndefined"),
         7 => Some(&"UnusedVariables"),
         8 => Some(&"VarUseBeforeDeclaration"),
@@ -502,9 +502,9 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
         map.insert(Relations::ChainedWith, "ChainedWith");
         map.insert(Relations::ChildScope, "ChildScope");
         map.insert(Relations::ClosestFunction, "ClosestFunction");
-        map.insert(Relations::InvalidNameUse, "InvalidNameUse");
         map.insert(Relations::IsExported, "IsExported");
         map.insert(Relations::NameInScope, "NameInScope");
+        map.insert(Relations::NoUndef, "NoUndef");
         map.insert(Relations::TypeofUndefinedAlwaysUndefined, "TypeofUndefinedAlwaysUndefined");
         map.insert(Relations::UnusedVariables, "UnusedVariables");
         map.insert(Relations::VarUseBeforeDeclaration, "VarUseBeforeDeclaration");
@@ -572,9 +572,9 @@ pub static RELIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<RelId, &'static 
         map.insert(0, ::std::ffi::CStr::from_bytes_with_nul(b"ChainedWith\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(1, ::std::ffi::CStr::from_bytes_with_nul(b"ChildScope\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(2, ::std::ffi::CStr::from_bytes_with_nul(b"ClosestFunction\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(3, ::std::ffi::CStr::from_bytes_with_nul(b"InvalidNameUse\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(4, ::std::ffi::CStr::from_bytes_with_nul(b"IsExported\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(5, ::std::ffi::CStr::from_bytes_with_nul(b"NameInScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(3, ::std::ffi::CStr::from_bytes_with_nul(b"IsExported\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(4, ::std::ffi::CStr::from_bytes_with_nul(b"NameInScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(5, ::std::ffi::CStr::from_bytes_with_nul(b"NoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(6, ::std::ffi::CStr::from_bytes_with_nul(b"TypeofUndefinedAlwaysUndefined\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(7, ::std::ffi::CStr::from_bytes_with_nul(b"UnusedVariables\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(8, ::std::ffi::CStr::from_bytes_with_nul(b"VarUseBeforeDeclaration\0").expect("Unreachable: A null byte was specifically inserted"));
@@ -699,9 +699,9 @@ pub static OUTPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations,
         map.insert(Relations::ChainedWith, "ChainedWith");
         map.insert(Relations::ChildScope, "ChildScope");
         map.insert(Relations::ClosestFunction, "ClosestFunction");
-        map.insert(Relations::InvalidNameUse, "InvalidNameUse");
         map.insert(Relations::IsExported, "IsExported");
         map.insert(Relations::NameInScope, "NameInScope");
+        map.insert(Relations::NoUndef, "NoUndef");
         map.insert(Relations::TypeofUndefinedAlwaysUndefined, "TypeofUndefinedAlwaysUndefined");
         map.insert(Relations::UnusedVariables, "UnusedVariables");
         map.insert(Relations::VarUseBeforeDeclaration, "VarUseBeforeDeclaration");
@@ -793,14 +793,14 @@ pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::R
         Relations::ClosestFunction => {
             Ok(<::types::ClosestFunction>::from_record(_rec)?.into_ddvalue())
         },
-        Relations::InvalidNameUse => {
-            Ok(<::types::InvalidNameUse>::from_record(_rec)?.into_ddvalue())
-        },
         Relations::IsExported => {
             Ok(<::types::IsExported>::from_record(_rec)?.into_ddvalue())
         },
         Relations::NameInScope => {
             Ok(<::types::NameInScope>::from_record(_rec)?.into_ddvalue())
+        },
+        Relations::NoUndef => {
+            Ok(<::types::NoUndef>::from_record(_rec)?.into_ddvalue())
         },
         Relations::TypeofUndefinedAlwaysUndefined => {
             Ok(<::types::TypeofUndefinedAlwaysUndefined>::from_record(_rec)?.into_ddvalue())
@@ -1008,8 +1008,8 @@ pub fn idxkey_from_record(idx: Indexes, _rec: &differential_datalog::record::Rec
 pub fn indexes2arrid(idx: Indexes) -> ArrId {
     match idx {
         Indexes::ChildScopeByParent => ( 1, 2),
-        Indexes::Index_VariableInScope => ( 5, 8),
-        Indexes::Index_VariablesForScope => ( 5, 9),
+        Indexes::Index_VariableInScope => ( 4, 8),
+        Indexes::Index_VariablesForScope => ( 4, 9),
         Indexes::inputs_ExpressionById => ( 32, 5),
         Indexes::inputs_ExpressionBySpan => ( 32, 6),
         Indexes::inputs_InputScopeByChild => ( 44, 1),
@@ -1021,9 +1021,9 @@ pub enum Relations {
     ChainedWith = 0,
     ChildScope = 1,
     ClosestFunction = 2,
-    InvalidNameUse = 3,
-    IsExported = 4,
-    NameInScope = 5,
+    IsExported = 3,
+    NameInScope = 4,
+    NoUndef = 5,
     TypeofUndefinedAlwaysUndefined = 6,
     UnusedVariables = 7,
     VarUseBeforeDeclaration = 8,
@@ -1534,12 +1534,12 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                     ],
                                 arrangements: vec![
                                     Arrangement::Map{
-                                       name: r###"(inputs::Expression{.id=(_0: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(_: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression) /*join*/"###.to_string(),
+                                       name: r###"(inputs::Expression{.id=(_0: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(_: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression) /*join*/"###.to_string(),
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
                                             match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
-                                                ::types::inputs::Expression{id: ref _0, kind: ::types::ast::ExprKind::ExprNameRef{}, scope: _, span: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                ::types::inputs::Expression{id: ref _0, kind: _, scope: _, span: _} => Some(((*_0).clone()).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
                                         }
@@ -1547,12 +1547,12 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         queryable: false
                                     },
                                     Arrangement::Map{
-                                       name: r###"(inputs::Expression{.id=(_0: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(_: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression) /*join*/"###.to_string(),
+                                       name: r###"(inputs::Expression{.id=(_0: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(_: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression) /*join*/"###.to_string(),
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
                                             match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
-                                                ::types::inputs::Expression{id: ref _0, kind: _, scope: _, span: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                ::types::inputs::Expression{id: ref _0, kind: ::types::ast::ExprKind::ExprNameRef{}, scope: _, span: _} => Some(((*_0).clone()).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
                                         }
@@ -2931,7 +2931,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      next: Box::new(XFormArrangement::Join{
                                                                                         description: "inputs::ArrowParam[(inputs::ArrowParam{.expr_id=(expr: ast::ExprId), .param=(pat: internment::Intern<ast::Pattern>)}: inputs::ArrowParam)], inputs::Arrow[(inputs::Arrow{.expr_id=(expr: ast::ExprId), .body=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(expr_body: ast::ExprId)}: ddlog_std::Either<ast::ExprId,ast::StmtId>)}: ddlog_std::Option<ddlog_std::Either<ast::ExprId,ast::StmtId>>)}: inputs::Arrow)], inputs::Expression[(inputs::Expression{.id=(expr_body: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]".to_string(),
                                                                                         ffun: None,
-                                                                                        arrangement: (Relations::inputs_Expression as RelId,1),
+                                                                                        arrangement: (Relations::inputs_Expression as RelId,0),
                                                                                         jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                         {
                                                                                             let ::types::ddlog_std::tuple2(ref expr, ref pat) = *unsafe {<::types::ddlog_std::tuple2<::types::ast::ExprId, ::types::internment::Intern<::types::ast::Pattern>>>::from_ddvalue_ref( __v1 ) };
@@ -3178,7 +3178,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                               /* NameInScope[(NameInScope{.file=file, .name=name, .scope=scope, .span=span, .declared_in=declared_in, .implicit=implicit}: NameInScope)] :- NameInScope[(NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(interum: ast::ScopeId), .span=(span: ddlog_std::Option<ast::Span>), .declared_in=(declared_in: ast::AnyId), .implicit=(implicit: bool)}: NameInScope)], ChildScope[(ChildScope{.parent=(interum: ast::ScopeId), .child=(scope: ast::ScopeId)}: ChildScope)]. */
                               Rule::ArrangementRule {
                                   description: "NameInScope[(NameInScope{.file=file, .name=name, .scope=scope, .span=span, .declared_in=declared_in, .implicit=implicit}: NameInScope)] :- NameInScope[(NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(interum: ast::ScopeId), .span=(span: ddlog_std::Option<ast::Span>), .declared_in=(declared_in: ast::AnyId), .implicit=(implicit: bool)}: NameInScope)], ChildScope[(ChildScope{.parent=(interum: ast::ScopeId), .child=(scope: ast::ScopeId)}: ChildScope)].".to_string(),
-                                  arr: ( Relations::NameInScope as RelId, 3),
+                                  arr: ( Relations::NameInScope as RelId, 1),
                                   xform: XFormArrangement::Join{
                                              description: "NameInScope[(NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(interum: ast::ScopeId), .span=(span: ddlog_std::Option<ast::Span>), .declared_in=(declared_in: ast::AnyId), .implicit=(implicit: bool)}: NameInScope)], ChildScope[(ChildScope{.parent=(interum: ast::ScopeId), .child=(scope: ast::ScopeId)}: ChildScope)]".to_string(),
                                              ffun: None,
@@ -3200,30 +3200,6 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                          }
                               }],
                           arrangements: vec![
-                              Arrangement::Set{
-                                  name: r###"(NameInScope{.file=_0, .name=(_1: internment::Intern<string>), .scope=(_2: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope) /*antijoin*/"###.to_string(),
-                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
-                                  {
-                                      match unsafe {< ::types::NameInScope>::from_ddvalue(__v) } {
-                                          ::types::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: _, declared_in: _, implicit: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
-                                          _ => None
-                                      }
-                                  }
-                                  __f},
-                                  distinct: true
-                              },
-                              Arrangement::Set{
-                                  name: r###"(NameInScope{.file=_0, .name=_1, .scope=(_2: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope) /*antijoin*/"###.to_string(),
-                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
-                                  {
-                                      match unsafe {< ::types::NameInScope>::from_ddvalue(__v) } {
-                                          ::types::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: _, declared_in: _, implicit: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
-                                          _ => None
-                                      }
-                                  }
-                                  __f},
-                                  distinct: true
-                              },
                               Arrangement::Map{
                                  name: r###"(NameInScope{.file=(_0: ast::FileId), .name=(_1: internment::Intern<string>), .scope=(_2: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=false}: NameInScope) /*join*/"###.to_string(),
                                   afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
@@ -3249,6 +3225,30 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                   }
                                   __f},
                                   queryable: false
+                              },
+                              Arrangement::Set{
+                                  name: r###"(NameInScope{.file=_0, .name=(_1: internment::Intern<string>), .scope=(_2: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope) /*antijoin*/"###.to_string(),
+                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
+                                  {
+                                      match unsafe {< ::types::NameInScope>::from_ddvalue(__v) } {
+                                          ::types::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: _, declared_in: _, implicit: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
+                                          _ => None
+                                      }
+                                  }
+                                  __f},
+                                  distinct: true
+                              },
+                              Arrangement::Set{
+                                  name: r###"(NameInScope{.file=_0, .name=_1, .scope=(_2: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope) /*antijoin*/"###.to_string(),
+                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
+                                  {
+                                      match unsafe {< ::types::NameInScope>::from_ddvalue(__v) } {
+                                          ::types::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: _, declared_in: _, implicit: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
+                                          _ => None
+                                      }
+                                  }
+                                  __f},
+                                  distinct: true
                               },
                               Arrangement::Map{
                                  name: r###"(NameInScope{.file=(_0: ast::FileId), .name=(_: internment::Intern<string>), .scope=(_: ast::ScopeId), .span=(ddlog_std::Some{.x=(_: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(_1: ast::AnyId), .implicit=false}: NameInScope) /*join*/"###.to_string(),
@@ -3330,152 +3330,152 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                               }],
                           change_cb:    Some(sync::Arc::new(sync::Mutex::new(__update_cb.clone())))
                       };
-    let InvalidNameUse = Relation {
-                             name:         "InvalidNameUse".to_string(),
-                             input:        false,
-                             distinct:     true,
-                             caching_mode: CachingMode::Set,
-                             key_func:     None,
-                             id:           Relations::InvalidNameUse as RelId,
-                             rules:        vec![
-                                 /* InvalidNameUse[(InvalidNameUse{.name=name, .scope=scope, .span=span, .file=(expr.file)}: InvalidNameUse)] :- inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)], not ChainedWith[(ChainedWith{.object=(_: ast::ExprId), .property=(expr: ast::ExprId)}: ChainedWith)]. */
-                                 Rule::ArrangementRule {
-                                     description: "InvalidNameUse[(InvalidNameUse{.name=name, .scope=scope, .span=span, .file=(expr.file)}: InvalidNameUse)] :- inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)], not ChainedWith[(ChainedWith{.object=(_: ast::ExprId), .property=(expr: ast::ExprId)}: ChainedWith)].".to_string(),
-                                     arr: ( Relations::inputs_NameRef as RelId, 0),
-                                     xform: XFormArrangement::Join{
-                                                description: "inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)]".to_string(),
-                                                ffun: None,
-                                                arrangement: (Relations::inputs_Expression as RelId,0),
-                                                jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
-                                                {
-                                                    let (ref expr, ref name) = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v1) } {
-                                                        ::types::inputs::NameRef{expr_id: ref expr, value: ref name} => ((*expr).clone(), (*name).clone()),
-                                                        _ => return None
-                                                    };
-                                                    let (ref scope, ref span) = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
-                                                        ::types::inputs::Expression{id: _, kind: ::types::ast::ExprKind::ExprNameRef{}, scope: ref scope, span: ref span} => ((*scope).clone(), (*span).clone()),
-                                                        _ => return None
-                                                    };
-                                                    Some((::types::ddlog_std::tuple4((*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue())
-                                                }
-                                                __f},
-                                                next: Box::new(Some(XFormCollection::Arrange {
-                                                                        description: "arrange inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)] by ((expr.file), name, scope)" .to_string(),
-                                                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                        {
-                                                                            let ::types::ddlog_std::tuple4(ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
-                                                                            Some(((::types::ddlog_std::tuple3(expr.file.clone(), (*name).clone(), (*scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue()))
-                                                                        }
-                                                                        __f},
-                                                                        next: Box::new(XFormArrangement::Antijoin {
-                                                                                           description: "inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)]".to_string(),
-                                                                                           ffun: None,
-                                                                                           arrangement: (Relations::NameInScope as RelId,0),
-                                                                                           next: Box::new(Some(XFormCollection::Arrange {
-                                                                                                                   description: "arrange inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)] by (expr)" .to_string(),
-                                                                                                                   afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                   {
-                                                                                                                       let ::types::ddlog_std::tuple4(ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
-                                                                                                                       Some((((*expr).clone()).into_ddvalue(), (::types::ddlog_std::tuple4((*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue()))
-                                                                                                                   }
-                                                                                                                   __f},
-                                                                                                                   next: Box::new(XFormArrangement::Antijoin {
-                                                                                                                                      description: "inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)]".to_string(),
-                                                                                                                                      ffun: None,
-                                                                                                                                      arrangement: (Relations::WithinTypeofExpr as RelId,0),
-                                                                                                                                      next: Box::new(Some(XFormCollection::Arrange {
-                                                                                                                                                              description: "arrange inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)] by (expr)" .to_string(),
-                                                                                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                                              {
-                                                                                                                                                                  let ::types::ddlog_std::tuple4(ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
-                                                                                                                                                                  Some((((*expr).clone()).into_ddvalue(), (::types::ddlog_std::tuple4((*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue()))
-                                                                                                                                                              }
-                                                                                                                                                              __f},
-                                                                                                                                                              next: Box::new(XFormArrangement::Antijoin {
-                                                                                                                                                                                 description: "inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)], not ChainedWith[(ChainedWith{.object=(_: ast::ExprId), .property=(expr: ast::ExprId)}: ChainedWith)]".to_string(),
-                                                                                                                                                                                 ffun: None,
-                                                                                                                                                                                 arrangement: (Relations::ChainedWith as RelId,2),
-                                                                                                                                                                                 next: Box::new(Some(XFormCollection::FilterMap{
-                                                                                                                                                                                                         description: "head of InvalidNameUse[(InvalidNameUse{.name=name, .scope=scope, .span=span, .file=(expr.file)}: InvalidNameUse)] :- inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)], not ChainedWith[(ChainedWith{.object=(_: ast::ExprId), .property=(expr: ast::ExprId)}: ChainedWith)]." .to_string(),
-                                                                                                                                                                                                         fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                                                                                                         {
-                                                                                                                                                                                                             let ::types::ddlog_std::tuple4(ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
-                                                                                                                                                                                                             Some(((::types::InvalidNameUse{name: (*name).clone(), scope: (*scope).clone(), span: (*span).clone(), file: expr.file.clone()})).into_ddvalue())
-                                                                                                                                                                                                         }
-                                                                                                                                                                                                         __f},
-                                                                                                                                                                                                         next: Box::new(None)
-                                                                                                                                                                                                     }))
-                                                                                                                                                                             })
-                                                                                                                                                          }))
-                                                                                                                                  })
-                                                                                                               }))
-                                                                                       })
-                                                                    }))
-                                            }
-                                 },
-                                 /* InvalidNameUse[(InvalidNameUse{.name=(name.data), .scope=scope, .span=(name.span), .file=(expr.file)}: InvalidNameUse)] :- inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), not NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)]. */
-                                 Rule::ArrangementRule {
-                                     description: "InvalidNameUse[(InvalidNameUse{.name=(name.data), .scope=scope, .span=(name.span), .file=(expr.file)}: InvalidNameUse)] :- inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), not NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)].".to_string(),
-                                     arr: ( Relations::inputs_Assign as RelId, 0),
-                                     xform: XFormArrangement::Join{
-                                                description: "inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]".to_string(),
-                                                ffun: None,
-                                                arrangement: (Relations::inputs_Expression as RelId,1),
-                                                jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
-                                                {
-                                                    let (ref expr, ref pat) = match *unsafe {<::types::inputs::Assign>::from_ddvalue_ref(__v1) } {
-                                                        ::types::inputs::Assign{expr_id: ref expr, lhs: ::types::ddlog_std::Option::Some{x: ::types::ddlog_std::Either::Left{l: ref pat}}, rhs: _, op: _} => ((*expr).clone(), (*pat).clone()),
-                                                        _ => return None
-                                                    };
-                                                    let ref scope = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
-                                                        ::types::inputs::Expression{id: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
-                                                        _ => return None
-                                                    };
-                                                    Some((::types::ddlog_std::tuple3((*expr).clone(), (*pat).clone(), (*scope).clone())).into_ddvalue())
-                                                }
-                                                __f},
-                                                next: Box::new(Some(XFormCollection::FlatMap{
-                                                                        description: "inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat)))" .to_string(),
-                                                                        fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
-                                                                        {
-                                                                            let ::types::ddlog_std::tuple3(ref expr, ref pat, ref scope) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::ExprId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
-                                                                            let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat);
-                                                                            let expr = (*expr).clone();
-                                                                            let scope = (*scope).clone();
-                                                                            Some(Box::new(__flattened.into_iter().map(move |name|(::types::ddlog_std::tuple3(name.clone(), expr.clone(), scope.clone())).into_ddvalue())))
-                                                                        }
-                                                                        __f},
-                                                                        next: Box::new(Some(XFormCollection::Arrange {
-                                                                                                description: "arrange inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))) by ((expr.file), (name.data), scope)" .to_string(),
-                                                                                                afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                {
-                                                                                                    let ::types::ddlog_std::tuple3(ref name, ref expr, ref scope) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ExprId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
-                                                                                                    Some(((::types::ddlog_std::tuple3(expr.file.clone(), name.data.clone(), (*scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*name).clone(), (*expr).clone(), (*scope).clone())).into_ddvalue()))
-                                                                                                }
-                                                                                                __f},
-                                                                                                next: Box::new(XFormArrangement::Antijoin {
-                                                                                                                   description: "inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), not NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)]".to_string(),
-                                                                                                                   ffun: None,
-                                                                                                                   arrangement: (Relations::NameInScope as RelId,1),
-                                                                                                                   next: Box::new(Some(XFormCollection::FilterMap{
-                                                                                                                                           description: "head of InvalidNameUse[(InvalidNameUse{.name=(name.data), .scope=scope, .span=(name.span), .file=(expr.file)}: InvalidNameUse)] :- inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), not NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)]." .to_string(),
-                                                                                                                                           fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                                           {
-                                                                                                                                               let ::types::ddlog_std::tuple3(ref name, ref expr, ref scope) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ExprId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
-                                                                                                                                               Some(((::types::InvalidNameUse{name: name.data.clone(), scope: (*scope).clone(), span: name.span.clone(), file: expr.file.clone()})).into_ddvalue())
-                                                                                                                                           }
-                                                                                                                                           __f},
-                                                                                                                                           next: Box::new(None)
-                                                                                                                                       }))
-                                                                                                               })
-                                                                                            }))
-                                                                    }))
-                                            }
-                                 }],
-                             arrangements: vec![
-                                 ],
-                             change_cb:    Some(sync::Arc::new(sync::Mutex::new(__update_cb.clone())))
-                         };
+    let NoUndef = Relation {
+                      name:         "NoUndef".to_string(),
+                      input:        false,
+                      distinct:     true,
+                      caching_mode: CachingMode::Set,
+                      key_func:     None,
+                      id:           Relations::NoUndef as RelId,
+                      rules:        vec![
+                          /* NoUndef[(NoUndef{.name=name, .scope=scope, .span=span, .file=(expr.file)}: NoUndef)] :- inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)], not ChainedWith[(ChainedWith{.object=(_: ast::ExprId), .property=(expr: ast::ExprId)}: ChainedWith)]. */
+                          Rule::ArrangementRule {
+                              description: "NoUndef[(NoUndef{.name=name, .scope=scope, .span=span, .file=(expr.file)}: NoUndef)] :- inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)], not ChainedWith[(ChainedWith{.object=(_: ast::ExprId), .property=(expr: ast::ExprId)}: ChainedWith)].".to_string(),
+                              arr: ( Relations::inputs_NameRef as RelId, 0),
+                              xform: XFormArrangement::Join{
+                                         description: "inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)]".to_string(),
+                                         ffun: None,
+                                         arrangement: (Relations::inputs_Expression as RelId,1),
+                                         jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                         {
+                                             let (ref expr, ref name) = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v1) } {
+                                                 ::types::inputs::NameRef{expr_id: ref expr, value: ref name} => ((*expr).clone(), (*name).clone()),
+                                                 _ => return None
+                                             };
+                                             let (ref scope, ref span) = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                 ::types::inputs::Expression{id: _, kind: ::types::ast::ExprKind::ExprNameRef{}, scope: ref scope, span: ref span} => ((*scope).clone(), (*span).clone()),
+                                                 _ => return None
+                                             };
+                                             Some((::types::ddlog_std::tuple4((*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue())
+                                         }
+                                         __f},
+                                         next: Box::new(Some(XFormCollection::Arrange {
+                                                                 description: "arrange inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)] by ((expr.file), name, scope)" .to_string(),
+                                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                 {
+                                                                     let ::types::ddlog_std::tuple4(ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                     Some(((::types::ddlog_std::tuple3(expr.file.clone(), (*name).clone(), (*scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue()))
+                                                                 }
+                                                                 __f},
+                                                                 next: Box::new(XFormArrangement::Antijoin {
+                                                                                    description: "inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)]".to_string(),
+                                                                                    ffun: None,
+                                                                                    arrangement: (Relations::NameInScope as RelId,2),
+                                                                                    next: Box::new(Some(XFormCollection::Arrange {
+                                                                                                            description: "arrange inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)] by (expr)" .to_string(),
+                                                                                                            afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                            {
+                                                                                                                let ::types::ddlog_std::tuple4(ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                Some((((*expr).clone()).into_ddvalue(), (::types::ddlog_std::tuple4((*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue()))
+                                                                                                            }
+                                                                                                            __f},
+                                                                                                            next: Box::new(XFormArrangement::Antijoin {
+                                                                                                                               description: "inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)]".to_string(),
+                                                                                                                               ffun: None,
+                                                                                                                               arrangement: (Relations::WithinTypeofExpr as RelId,0),
+                                                                                                                               next: Box::new(Some(XFormCollection::Arrange {
+                                                                                                                                                       description: "arrange inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)] by (expr)" .to_string(),
+                                                                                                                                                       afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                                       {
+                                                                                                                                                           let ::types::ddlog_std::tuple4(ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                           Some((((*expr).clone()).into_ddvalue(), (::types::ddlog_std::tuple4((*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue()))
+                                                                                                                                                       }
+                                                                                                                                                       __f},
+                                                                                                                                                       next: Box::new(XFormArrangement::Antijoin {
+                                                                                                                                                                          description: "inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)], not ChainedWith[(ChainedWith{.object=(_: ast::ExprId), .property=(expr: ast::ExprId)}: ChainedWith)]".to_string(),
+                                                                                                                                                                          ffun: None,
+                                                                                                                                                                          arrangement: (Relations::ChainedWith as RelId,2),
+                                                                                                                                                                          next: Box::new(Some(XFormCollection::FilterMap{
+                                                                                                                                                                                                  description: "head of NoUndef[(NoUndef{.name=name, .scope=scope, .span=span, .file=(expr.file)}: NoUndef)] :- inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(expr.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)], not WithinTypeofExpr[(WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId)}: WithinTypeofExpr)], not ChainedWith[(ChainedWith{.object=(_: ast::ExprId), .property=(expr: ast::ExprId)}: ChainedWith)]." .to_string(),
+                                                                                                                                                                                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
+                                                                                                                                                                                                  {
+                                                                                                                                                                                                      let ::types::ddlog_std::tuple4(ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                      Some(((::types::NoUndef{name: (*name).clone(), scope: (*scope).clone(), span: (*span).clone(), file: expr.file.clone()})).into_ddvalue())
+                                                                                                                                                                                                  }
+                                                                                                                                                                                                  __f},
+                                                                                                                                                                                                  next: Box::new(None)
+                                                                                                                                                                                              }))
+                                                                                                                                                                      })
+                                                                                                                                                   }))
+                                                                                                                           })
+                                                                                                        }))
+                                                                                })
+                                                             }))
+                                     }
+                          },
+                          /* NoUndef[(NoUndef{.name=(name.data), .scope=scope, .span=(name.span), .file=(expr.file)}: NoUndef)] :- inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), not NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)]. */
+                          Rule::ArrangementRule {
+                              description: "NoUndef[(NoUndef{.name=(name.data), .scope=scope, .span=(name.span), .file=(expr.file)}: NoUndef)] :- inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), not NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)].".to_string(),
+                              arr: ( Relations::inputs_Assign as RelId, 0),
+                              xform: XFormArrangement::Join{
+                                         description: "inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]".to_string(),
+                                         ffun: None,
+                                         arrangement: (Relations::inputs_Expression as RelId,0),
+                                         jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                         {
+                                             let (ref expr, ref pat) = match *unsafe {<::types::inputs::Assign>::from_ddvalue_ref(__v1) } {
+                                                 ::types::inputs::Assign{expr_id: ref expr, lhs: ::types::ddlog_std::Option::Some{x: ::types::ddlog_std::Either::Left{l: ref pat}}, rhs: _, op: _} => ((*expr).clone(), (*pat).clone()),
+                                                 _ => return None
+                                             };
+                                             let ref scope = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                 ::types::inputs::Expression{id: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
+                                                 _ => return None
+                                             };
+                                             Some((::types::ddlog_std::tuple3((*expr).clone(), (*pat).clone(), (*scope).clone())).into_ddvalue())
+                                         }
+                                         __f},
+                                         next: Box::new(Some(XFormCollection::FlatMap{
+                                                                 description: "inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat)))" .to_string(),
+                                                                 fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
+                                                                 {
+                                                                     let ::types::ddlog_std::tuple3(ref expr, ref pat, ref scope) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::ExprId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                     let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat);
+                                                                     let expr = (*expr).clone();
+                                                                     let scope = (*scope).clone();
+                                                                     Some(Box::new(__flattened.into_iter().map(move |name|(::types::ddlog_std::tuple3(name.clone(), expr.clone(), scope.clone())).into_ddvalue())))
+                                                                 }
+                                                                 __f},
+                                                                 next: Box::new(Some(XFormCollection::Arrange {
+                                                                                         description: "arrange inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))) by ((expr.file), (name.data), scope)" .to_string(),
+                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                         {
+                                                                                             let ::types::ddlog_std::tuple3(ref name, ref expr, ref scope) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ExprId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                             Some(((::types::ddlog_std::tuple3(expr.file.clone(), name.data.clone(), (*scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*name).clone(), (*expr).clone(), (*scope).clone())).into_ddvalue()))
+                                                                                         }
+                                                                                         __f},
+                                                                                         next: Box::new(XFormArrangement::Antijoin {
+                                                                                                            description: "inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), not NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)]".to_string(),
+                                                                                                            ffun: None,
+                                                                                                            arrangement: (Relations::NameInScope as RelId,3),
+                                                                                                            next: Box::new(Some(XFormCollection::FilterMap{
+                                                                                                                                    description: "head of NoUndef[(NoUndef{.name=(name.data), .scope=scope, .span=(name.span), .file=(expr.file)}: NoUndef)] :- inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), not NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)]." .to_string(),
+                                                                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
+                                                                                                                                    {
+                                                                                                                                        let ::types::ddlog_std::tuple3(ref name, ref expr, ref scope) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ExprId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                        Some(((::types::NoUndef{name: name.data.clone(), scope: (*scope).clone(), span: name.span.clone(), file: expr.file.clone()})).into_ddvalue())
+                                                                                                                                    }
+                                                                                                                                    __f},
+                                                                                                                                    next: Box::new(None)
+                                                                                                                                }))
+                                                                                                        })
+                                                                                     }))
+                                                             }))
+                                     }
+                          }],
+                      arrangements: vec![
+                          ],
+                      change_cb:    Some(sync::Arc::new(sync::Mutex::new(__update_cb.clone())))
+                  };
     let IsExported = Relation {
                          name:         "IsExported".to_string(),
                          input:        false,
@@ -3616,7 +3616,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                  next: Box::new(XFormArrangement::Join{
                                                                     description: "inputs::FileExport[(inputs::FileExport{.file=(file: ast::FileId), .export=(ast::NamedExport{.name=(export_name: ddlog_std::Option<ast::Spanned<ast::Name>>), .alias=(export_alias: ddlog_std::Option<ast::Spanned<ast::Name>>)}: ast::ExportKind), .scope=(export_scope: ast::ScopeId)}: inputs::FileExport)], ((ddlog_std::Some{.x=(ast::Spanned{.data=(var name: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<internment::Intern<string>>>) = ((utils::or_else: function(ddlog_std::Option<ast::Spanned<ast::Name>>, ddlog_std::Option<ast::Spanned<ast::Name>>):ddlog_std::Option<ast::Spanned<internment::Intern<string>>>)(export_alias, export_name))), NameInScope[(NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(export_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(id: ast::AnyId), .implicit=false}: NameInScope)]".to_string(),
                                                                     ffun: None,
-                                                                    arrangement: (Relations::NameInScope as RelId,2),
+                                                                    arrangement: (Relations::NameInScope as RelId,0),
                                                                     jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                     {
                                                                         let ref file = *unsafe {<::types::ast::FileId>::from_ddvalue_ref( __v1 ) };
@@ -3661,7 +3661,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                      xform: XFormArrangement::Join{
                                                                 description: "inputs::NameRef[(inputs::NameRef{.expr_id=(undefined_expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(undefined_expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)]".to_string(),
                                                                 ffun: None,
-                                                                arrangement: (Relations::inputs_Expression as RelId,0),
+                                                                arrangement: (Relations::inputs_Expression as RelId,1),
                                                                 jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                 {
                                                                     let (ref undefined_expr, ref name) = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v1) } {
@@ -3686,7 +3686,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                         next: Box::new(XFormArrangement::Antijoin {
                                                                                                            description: "inputs::NameRef[(inputs::NameRef{.expr_id=(undefined_expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(undefined_expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(scope.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)]".to_string(),
                                                                                                            ffun: None,
-                                                                                                           arrangement: (Relations::NameInScope as RelId,0),
+                                                                                                           arrangement: (Relations::NameInScope as RelId,2),
                                                                                                            next: Box::new(Some(XFormCollection::Arrange {
                                                                                                                                    description: "arrange inputs::NameRef[(inputs::NameRef{.expr_id=(undefined_expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(undefined_expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not NameInScope[(NameInScope{.file=(scope.file), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool)}: NameInScope)] by (undefined_expr)" .to_string(),
                                                                                                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
@@ -3735,7 +3735,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                               xform: XFormArrangement::Join{
                                                          description: "inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)]".to_string(),
                                                          ffun: None,
-                                                         arrangement: (Relations::inputs_Expression as RelId,0),
+                                                         arrangement: (Relations::inputs_Expression as RelId,1),
                                                          jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                          {
                                                              let (ref expr, ref name) = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v1) } {
@@ -4099,7 +4099,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
             ProgNode::Rel{rel: inputs_VarDecl},
             ProgNode::Rel{rel: __Prefix_0},
             ProgNode::SCC{rels: vec![RecursiveRelation{rel: NameInScope, distinct: true}]},
-            ProgNode::Rel{rel: InvalidNameUse},
+            ProgNode::Rel{rel: NoUndef},
             ProgNode::Rel{rel: IsExported},
             ProgNode::Rel{rel: TypeofUndefinedAlwaysUndefined},
             ProgNode::Rel{rel: VarUseBeforeDeclaration},

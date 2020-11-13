@@ -53,9 +53,26 @@ pub enum DatalogLint {
         declared: Span,
         file: FileId,
     },
+    TypeofUndef {
+        whole_expr: Span,
+        undefined_portion: Span,
+        file: FileId,
+    },
 }
 
 impl DatalogLint {
+    pub fn is_no_undef(&self) -> bool {
+        matches!(self, Self::NoUndef { .. })
+    }
+
+    pub fn is_no_unused_vars(&self) -> bool {
+        matches!(self, Self::NoUnusedVars { .. })
+    }
+
+    pub fn is_typeof_undef(&self) -> bool {
+        matches!(self, Self::TypeofUndef { .. })
+    }
+
     #[cfg(test)]
     pub(crate) fn no_undef(var: impl Into<Name>, span: std::ops::Range<u32>) -> Self {
         Self::NoUndef {
@@ -75,10 +92,23 @@ impl DatalogLint {
     }
 
     #[cfg(test)]
+    pub(crate) fn typeof_undef(
+        whole_expr: std::ops::Range<u32>,
+        undefined_portion: std::ops::Range<u32>,
+    ) -> Self {
+        Self::TypeofUndef {
+            whole_expr: whole_expr.into(),
+            undefined_portion: undefined_portion.into(),
+            file: FileId::new(0),
+        }
+    }
+
+    #[cfg(test)]
     pub(crate) fn file_id(&self) -> FileId {
         match *self {
             Self::NoUndef { file, .. } => file,
             Self::NoUnusedVars { file, .. } => file,
+            Self::TypeofUndef { file, .. } => file,
         }
     }
 
@@ -87,17 +117,8 @@ impl DatalogLint {
         match self {
             Self::NoUndef { file, .. } => file,
             Self::NoUnusedVars { file, .. } => file,
+            Self::TypeofUndef { file, .. } => file,
         }
-    }
-}
-
-impl DatalogLint {
-    pub fn is_no_undef(&self) -> bool {
-        matches!(self, Self::NoUndef { .. })
-    }
-
-    pub fn is_no_unused_vars(&self) -> bool {
-        matches!(self, Self::NoUnusedVars { .. })
     }
 }
 
@@ -210,7 +231,7 @@ impl Datalog {
 
         lints.extend(
             self.outputs()
-                .invalid_name_use
+                .no_undef
                 .iter()
                 .map(|usage| DatalogLint::NoUndef {
                     var: usage.key().name.clone(),
@@ -224,6 +245,37 @@ impl Datalog {
                 var: unused.key().name.clone(),
                 declared: unused.key().span,
                 file: unused.key().file,
+            }
+        }));
+
+        lints.extend(self.outputs().typeof_undef.iter().map(|undef| {
+            let whole_expr = self
+                .query(
+                    Indexes::inputs_ExpressionById,
+                    Some(undef.key().whole_expr.into_ddvalue()),
+                )
+                .unwrap()
+                .into_iter()
+                .next()
+                .map(|expr| unsafe { Expression::from_ddvalue(expr) })
+                .unwrap();
+
+            let undefined_portion = self
+                .query(
+                    Indexes::inputs_ExpressionById,
+                    Some(undef.key().undefined_expr.into_ddvalue()),
+                )
+                .unwrap()
+                .into_iter()
+                .next()
+                .map(|expr| unsafe { Expression::from_ddvalue(expr) })
+                .unwrap()
+                .span;
+
+            DatalogLint::TypeofUndef {
+                whole_expr: whole_expr.span,
+                undefined_portion,
+                file: whole_expr.scope.file,
             }
         }));
 

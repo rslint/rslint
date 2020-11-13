@@ -54,7 +54,7 @@ rule_test! {
     { "var b = 1;", globals: ["b"] },
     { "Array = 1;" },
     { "class A { constructor() { new.target; } }" },
-    { "var {bacon, ...others} = stuff; foo(others)", globals: ["stuff", "foo"] },
+    { "var { bacon, ...others } = stuff; foo(others)", globals: ["stuff", "foo"] },
     { "export * as ns from \"source\"", module: true },
     { "import.meta", module: true },
     { "let x; x.y" },
