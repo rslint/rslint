@@ -73,9 +73,7 @@ fn parse_ignore_command(
             .flat_map(|c| c.kind.rule())
             .collect::<Vec<_>>();
 
-        if let Some(node) = node {
-            Some(Command::IgnoreNodeRules(node, rules))
-        } else if components
+        if components
             .get(2)
             .and_then(|c| c.kind.literal())
             .map_or(false, |l| l == "until")
@@ -89,13 +87,13 @@ fn parse_ignore_command(
                 }
                 _ => None,
             }
+        } else if let Some(node) = node {
+            Some(Command::IgnoreNodeRules(node, rules))
         } else {
             Some(Command::IgnoreFileRules(rules))
         }
     } else {
-        if let Some(node) = node {
-            Some(Command::IgnoreNode(node))
-        } else if components
+        if components
             .get(1)
             .and_then(|c| c.kind.literal())
             .map_or(false, |l| l == "until")
@@ -109,6 +107,8 @@ fn parse_ignore_command(
                 }
                 _ => None,
             }
+        } else if let Some(node) = node {
+            Some(Command::IgnoreNode(node))
         } else {
             Some(Command::IgnoreFile)
         }

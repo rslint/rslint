@@ -69,11 +69,6 @@ impl<'source> Lexer<'source> {
         self.rewind = true;
     }
 
-    pub fn stop_rewind(&mut self) {
-        self.rewind = false;
-        self.rewind_stack.clear();
-    }
-
     pub fn expect(&mut self, kind: SyntaxKind) -> Result<Token, Diagnostic> {
         match self.peek() {
             Some(tok) if tok.kind == kind => Ok(self.next().unwrap()),

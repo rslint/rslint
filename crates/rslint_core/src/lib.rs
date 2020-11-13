@@ -192,12 +192,13 @@ pub fn run_rule(
     src: Arc<String>,
 ) -> RuleResult {
     assert!(root.kind() == SyntaxKind::SCRIPT || root.kind() == SyntaxKind::MODULE);
+    let line_starts = rslint_errors::file::line_starts(&src).collect::<Vec<_>>();
     let mut ctx = RuleCtx {
         file_id,
         verbose,
         diagnostics: vec![],
         fixer: None,
-        src,
+        src: src.clone(),
     };
 
     rule.check_root(&root, &mut ctx);
@@ -205,7 +206,11 @@ pub fn run_rule(
     root.descendants_with_tokens_with(&mut |elem| {
         match elem {
             rslint_parser::NodeOrToken::Node(node) => {
-                if skip_node(directives, &node, rule) || node.kind() == SyntaxKind::ERROR {
+                let line = line_starts
+                    .binary_search(&elem.as_range().start)
+                    .unwrap_or_else(|next_line| next_line - 1);
+
+                if skip_node(directives, &node, rule, line) || node.kind() == SyntaxKind::ERROR {
                     return false;
                 }
                 rule.check_node(&node, &mut ctx);

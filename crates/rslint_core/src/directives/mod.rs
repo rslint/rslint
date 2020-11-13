@@ -213,7 +213,12 @@ pub fn apply_node_directives(
     Some(store)
 }
 
-pub fn skip_node(directives: &[Directive], node: &SyntaxNode, rule: &dyn CstRule) -> bool {
+pub fn skip_node(
+    directives: &[Directive],
+    node: &SyntaxNode,
+    rule: &dyn CstRule,
+    line: usize,
+) -> bool {
     if let Some(comment) = node.first_token().and_then(|t| t.comment()) {
         if let Some(directive) = directives.iter().find(|dir| dir.comment == comment) {
             match &directive.command {
@@ -221,6 +226,12 @@ pub fn skip_node(directives: &[Directive], node: &SyntaxNode, rule: &dyn CstRule
                     return true;
                 }
                 Some(Command::IgnoreNodeRules(_, rules)) => {
+                    if rules.iter().any(|allowed| allowed.name() == rule.name()) {
+                        return true;
+                    }
+                }
+                Some(Command::IgnoreUntil(range)) if range.contains(&line) => return true,
+                Some(Command::IgnoreUntilRules(range, rules)) if range.contains(&line) => {
                     if rules.iter().any(|allowed| allowed.name() == rule.name()) {
                         return true;
                     }

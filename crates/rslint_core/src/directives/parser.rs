@@ -23,6 +23,7 @@ pub struct DirectiveParser<'store> {
     file_id: usize,
     store: &'store CstRuleStore,
     commands: Box<[Box<[Instruction]>]>,
+    no_rewind: bool,
 }
 
 impl<'store> DirectiveParser<'store> {
@@ -42,6 +43,7 @@ impl<'store> DirectiveParser<'store> {
             store,
             root,
             file_id,
+            no_rewind: false,
             commands: Command::instructions(),
         }
     }
@@ -159,6 +161,7 @@ impl<'store> DirectiveParser<'store> {
         first_component: Component,
         cmd: &[Instruction],
     ) -> Result<Vec<Component>> {
+        self.no_rewind = false;
         let mut components = vec![first_component];
 
         for insn in &cmd[1..] {
@@ -186,7 +189,7 @@ impl<'store> DirectiveParser<'store> {
                         let d = self
                             .err("bigints are not supported in directives")
                             .primary(tok.range, "");
-                        lexer.stop_rewind();
+                        self.no_rewind = true;
                         return Err(d);
                     }
                     _ => {
@@ -218,6 +221,7 @@ impl<'store> DirectiveParser<'store> {
                             format_kind(first.kind),
                         ))
                         .primary(first.range, "");
+                    self.no_rewind = true;
                     return Err(d);
                 }
                 let start = first.range.start();
@@ -245,8 +249,8 @@ impl<'store> DirectiveParser<'store> {
                     if let Some(suggestion) = get_rule_suggestion(name) {
                         d = d.footer_help(format!("did you mean `{}`?", suggestion))
                     }
+                    self.no_rewind = true;
 
-                    lexer.stop_rewind();
                     Err(d)
                 }
             }
@@ -261,7 +265,7 @@ impl<'store> DirectiveParser<'store> {
                             lit, src
                         ))
                         .primary(tok.range, "");
-                    lexer.stop_rewind();
+                    self.no_rewind = true;
                     Err(d)
                 } else {
                     Ok(vec![Component {
@@ -300,7 +304,7 @@ impl<'store> DirectiveParser<'store> {
                     let res = match self.parse_instruction(lexer, insn) {
                         Ok(res) => res,
                         // The first element isn't valid, so we continute with next instruction.
-                        Err(_) if first => {
+                        Err(_) if first && !self.no_rewind => {
                             lexer.mark(false);
                             lexer.rewind();
                             return Ok(vec![]);
