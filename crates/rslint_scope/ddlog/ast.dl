@@ -54,6 +54,13 @@ function is_global(id: AnyId): bool {
     }
 }
 
+function is_expr(id: AnyId): bool {
+    match (id) {
+        AnyIdExpr {} -> true,
+        _ -> false,
+    }
+}
+
 typedef Span = Span { start: u32, end: u32 }
 
 function to_string(span: Span): string {

@@ -223,8 +223,8 @@ NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr },
 // ```
 //
 NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
-    InlineFunc(expr, Some { name }, _),
-    Expression(expr, _, scope, _).
+    InlineFunc(expr, Some { name }, Some { body }),
+    Statement(body, _, scope, _).
 
 // Introduce inline function arguments within the body of their enclosing closure
 //
@@ -263,8 +263,6 @@ VariableUsages(name, scope, declared) :-
 
 
 output relation UnusedVariables(name: Name, declared: AnyId, span: Span)
-// TODO: Are these to rules all that's needed? Is the grouping bs even
-//       useful?
 UnusedVariables(name, declared, span) :-
     NameInScope(file, name, _, Some { span }, declared, false),
     not declared.is_global(),

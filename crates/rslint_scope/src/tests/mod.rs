@@ -5,7 +5,7 @@ macro_rules! rule_test {
         $rule_name:ident,
         $(filter: $filter:expr,)?
         $({
-            $code:literal
+            $($code:literal),+
             $(, globals: [$($global:literal),* $(,)?])?
             $(, browser: $browser:literal)?
             $(, node: $node:literal)?
@@ -30,7 +30,7 @@ macro_rules! rule_test {
 
             $(
                 analyzer
-                    .test($code, stringify!($rule_name))
+                    .test(vec![$($code,)+].join("\n"), stringify!($rule_name))
                     $(.with_globals(vec![$(Cow::Borrowed($global)),*]))?
                     $(.with_browser($browser))?
                     $(.with_node($node))?

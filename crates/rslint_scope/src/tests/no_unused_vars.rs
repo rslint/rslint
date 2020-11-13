@@ -8,18 +8,27 @@ rule_test! {
     { "var box = { a: 2 };\nfor (var prop in box) {\n  box[prop] = parseInt(box[prop]);\n}" },
     // FIXME: Var hoisting
     { "a;\nvar a;" },
-    { "var a=10;\nalert(a);" },
-    { "var a=10;\n(function() { alert(a); })();" },
-    { "var a=10;\n(function() { setTimeout(function() { alert(a); }, 0); })();", browser: true },
-    { "var a=10;\nd[a] = 0;" },
+    { "var a = 10;\nalert(a);" },
+    { "var a = 10;\n(function() { alert(a); })();" },
+    { "var a = 10;\n(function() { setTimeout(function() { alert(a); }, 0); })();", browser: true },
+    { "var a = 10;\nd[a] = 0;" },
     { "(function() { var a = 10; return a; })();" },
-    { "function f(a) { alert(a); }; f();", browser: true },
-    { "var c = 0; function f(a) { var b = a; return b; }; f(c);" },
-    { "var arr1 = [1, 2]; var arr2 = [3, 4]; for (var i in arr1) { arr1[i] = 5; } for (var i in arr2) { arr2[i] = 10; }" },
-    { "var min = \"min\"; Math[min];" },
+    { "function f(a) { alert(a); };\nf();", browser: true },
+    { "var c = 0;\nfunction f(a) { var b = a; return b; };\nf(c);" },
+    {
+        "var arr1 = [1, 2];",
+        "var arr2 = [3, 4];",
+        "for (var i in arr1) {",
+        "    arr1[i] = 5;",
+        "}",
+        "for (var i in arr2) {",
+        "    arr2[i] = 10;",
+        "}",
+    },
+    { "var min = \"min\";\nMath[min];" },
     { "Foo.bar = function(baz) { return baz; };" },
     { "myFunc(function foo() {}.bind(this))" },
-    { "myFunc(function foo(){}.toString())" },
+    { "myFunc(function foo() {}.toString())" },
     { "(function() { var doSomething = function doSomething() {}; doSomething() }())" },
     { "a;", globals: ["a"] },
     { "var a=10; (function() { alert(a); })();", browser: true },
@@ -29,14 +38,19 @@ rule_test! {
     { "var who = \"Paul\";\nmodule.exports = `Hello ${who}!`;", node: true },
     { "export var foo = 123;", module: true },
     { "export function foo () {}", module: true },
-    // FIXME: Exports
-    { "let toUpper = (partial) => partial.toUpperCase; export {toUpper}", module: true },
+    { "let toUpper = (partial) => partial.toUpperCase;\nexport { toUpper }", module: true },
     { "export class foo {}", module: true },
-    { "class Foo {}; var x = new Foo(); x.foo()" },
-    { "const foo = \"hello!\";function bar(foobar = foo) {  foobar.replace(/!$/, \" world!\");}\nbar();" },
-    { "function Foo(){}; var x = new Foo(); x.foo()" },
+    { "class Foo {};\nvar x = new Foo();\nx.foo();" },
+    {
+        "const foo = \"hello!\";",
+        "function bar(foobar = foo) {",
+        "    foobar.replace(/!$/, \" world!\");",
+        "}",
+        "bar();",
+    },
+    { "function Foo() {};\nvar x = new Foo();\nx.foo();" },
     { "function foo() {\n  var foo = 1;\n  return foo\n};\nfoo();" },
-    { "function foo(foo) {return foo}; foo(1);" },
+    { "function foo(foo) { return foo };\nfoo(1);" },
     { "f({ set foo(a) { return; } });" },
     { "function foo() {function foo() {return 1;}; return foo()}; foo();" },
     { "function foo() {var foo = 1; return foo}; foo();" },
@@ -64,10 +78,92 @@ rule_test! {
     { "var x = 1; function foo({y = x} = {}) { bar(y); } foo();" },
     { "var x = 1; function foo(y = function(z = x) { bar(z); }) { y(); } foo();" },
     { "var x = 1; function foo(y = function() { bar(x); }) { y(); } foo();" },
+    { "export { x };\nvar { x } = y;", module: true },
+    { "var { x } = y;\nexport { x };", module: true },
+    { "export { x, y };\nvar { x, y } = z;", module: true },
+    { "var { x, y } = z;\nexport { x, y };", module: true },
+    { "try {} catch(err) { console.error(err); }" },
+    { "var a = 0, b;\nb = a = a + 1;\nfoo(b);" },
+    { "var a = 0, b;\nb = a += a + 1;\nfoo(b);" },
+    { "var a = 0, b;\nb = a++;\nfoo(b);" },
+    { "function foo(a) {\n  var b = a = a + 1;\n  bar(b)\n}\nfoo();" },
+    { "function foo(a) {\n  var b = a += a + 1;\n  bar(b)\n}\nfoo();" },
+    { "function foo(a) {\n  var b = a++;\n  bar(b)\n}\nfoo();" },
+    { "(function(obj) { var name; for ( name in obj ) return; })({});" },
+    { "(function(obj) { var name; for ( name in obj ) { return; } })({});" },
+    { "(function(obj) { let name; for ( name in obj ) return; })({});" },
+    { "(function(obj) { let name; for ( name in obj ) { return; } })({});" },
+    {
+        "var unregisterFooWatcher;",
+        "unregisterFooWatcher = $scope.$watch( \"foo\", function() {",
+        "    unregisterFooWatcher();",
+        "});"
+    },
+    {
+        "var ref;",
+        "ref = setInterval(",
+        "    function() {",
+        "        clearInterval(ref);",
+        "    },",
+        "    10,",
+        ");",
+    },
+    {
+        "var _timer;",
+        "function f() {",
+        "    _timer = setTimeout(function () {}, _timer ? 100 : 0);",
+        "}",
+        "f();",
+    },
+    {
+        "function foo(cb) {",
+        "    cb = function() {",
+        "        function something(a) {",
+        "            cb(1 + a);",
+        "        }",
+        "        register(something);",
+        "    }();",
+        "}",
+        "foo();",
+    },
+    {
+        "function* foo(cb) {",
+        "    cb = yield function(a) { cb(1 + a); };",
+        "}",
+        "foo();",
+    },
+    {
+        "function foo(cb) {",
+        "    cb = tag`hello${function(a) { cb(1 + a); }}`;",
+        "}",
+        "foo();",
+    },
+    {
+        "function foo(cb) {",
+        "    var b;",
+        "    cb = b = function(a) {cb(1 + a); };",
+        "    b();",
+        "}",
+        "foo();",
+    },
+    {
+        "function someFunction() {",
+        "    var a = 0, i;",
+        "    for (i = 0; i < 2; i++) {",
+        "        a = myFunction(a);",
+        "    }",
+        "}",
+        "someFunction();",
+    },
+    { "var a = function () { a(); }; a();" },
+    { "var a = function(){ return function () { a(); } }; a();" },
+    { "const a = () => { a(); }; a();" },
+    { "const a = () => () => { a(); }; a();" },
+
 
     // Should fail
     { "function a(x, y){ return y; }; a();", errors: [NoUnusedVars { var: "x".into(), declared: Span::new(11, 12) }] },
-    { "var a=10;", errors: [NoUnusedVars { var: "a".into(), declared: Span::new(4, 5) }] },
+    { "var a = 10;", errors: [NoUnusedVars { var: "a".into(), declared: Span::new(4, 5) }] },
     { "function g(bar, baz) { return baz; }; g();", errors: [NoUnusedVars { var: "bar".into(), declared: Span::new(11, 14) }] },
     {
         "function g(bar, baz) { return 2; }; g();",
@@ -78,124 +174,94 @@ rule_test! {
     },
     { "try {} catch(e) {}", errors: [NoUnusedVars { var: "e".into(), declared: Span::new(13, 14) }] },
     {
-        "function f(a) {\n  f({\n    set foo(a) { return; }\n  });\n}",
+        "function f(a) {",
+        "    f({",
+        "        set foo(a) {",
+        "            return;",
+        "        }",
+        "    });",
+        "}",
         errors: [NoUnusedVars { var: "a".into(), declared: Span::new(11, 12) }],
     },
     {
-        "function doStuff(f) { f() } function foo(first, second) {\ndoStuff(function() {\nconsole.log(second);});}; foo()",
+        "function doStuff(f) {",
+        "    f()",
+        "}",
+        "function foo(first, second) {",
+        "    doStuff(function() {",
+        "        console.log(second);",
+        "    });",
+        "};",
+        "foo()",
         node: true,
-        errors: [NoUnusedVars { var: "first".into(), declared: Span::new(41, 46) }],
+        errors: [NoUnusedVars { var: "first".into(), declared: Span::new(45, 50) }],
+    },
+    {
+        "(function(obj) { for ( let name in obj ) { return true } })({})",
+        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(27, 31) }],
+    },
+    {
+        "(function(obj) { for ( let name in obj ) return true })({})",
+        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(27, 31) }],
+    },
+    {
+        "(function(obj) { for ( const name in obj ) { return true } })({})",
+        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(29, 33) }],
+    },
+    {
+        "(function(obj) { for ( const name in obj ) return true })({})",
+        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(29, 33) }],
+    },
+    {
+        "(function(obj) { for ( var name in obj ) { return true } })({})",
+        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(27, 31) }],
+    },
+    {
+        "(function(obj) { for ( var name in obj ) return true })({})",
+        errors: [NoUnusedVars { var: "name".into(), declared: Span::new(27, 31) }],
+    },
+    { "var a = 10", errors: [NoUnusedVars { var: "a".into(), declared: Span::new(4, 5) }] },
+    {
+        "function foo(first, second) {",
+        "    doStuff(function() {",
+        "        console.log(second);",
+        "    });",
+        "}",
+        errors: [
+            NoUnusedVars { var: "foo".into(), declared: Span::new(9, 12) },
+            NoUnusedVars { var: "first".into(), declared: Span::new(13, 18) },
+        ],
+    },
+    {
+        "var a = 10, b = 0, c = null;",
+        "alert(a + b)",
+        errors: [NoUnusedVars { var: "c".into(), declared: Span::new(19, 20) }],
+    },
+    {
+        "function f() {",
+        "    var a = [];",
+        "    return a.map(function() {});",
+        "}",
+        errors: [NoUnusedVars { var: "f".into(), declared: Span::new(9, 10) }],
+    },
+    {
+        "function f() {",
+        "    var a = [];",
+        "    return a.map(function g() {});",
+        "}",
+        errors: [NoUnusedVars { var: "f".into(), declared: Span::new(9, 10) }],
     },
 }
 
 /*
 ruleTester.run("no-unused-vars", rule, {
     valid: [
-        // exported variables should work
-        "/*exported toaster*/ var toaster = 'great'",
-        "/*exported toaster, poster*/ var toaster = 1; poster = 0;",
-        { "/*exported x*/ var { x } = y" },
-        { "/*exported x, y*/  var { x, y } = z" },
-
-        // Can mark variables as used via context.markVariableAsUsed()
-        "/*eslint use-every-a:1*/ var a;",
-        "/*eslint use-every-a:1*/ !function(a) { return 1; }",
-        "/*eslint use-every-a:1*/ !function() { var a; return 1 }",
-
-        // ignore pattern
-        { "var _a;", options: [{ vars: "all", varsIgnorePattern: "^_" }] },
-        { "var a; function foo() { var _b; } foo();", options: [{ vars: "local", varsIgnorePattern: "^_" }] },
-        { "function foo(_a) { } foo();", options: [{ args: "all", argsIgnorePattern: "^_" }] },
-        { "function foo(a, _b) { return a; } foo();", options: [{ args: "after-used", argsIgnorePattern: "^_" }] },
-        { "var [ firstItemIgnored, secondItem ] = items;\nconsole.log(secondItem);", options: [{ vars: "all", varsIgnorePattern: "[iI]gnored" }] },
-
-        // for-in loops (see #2342)
-        "(function(obj) { var name; for ( name in obj ) return; })({});",
-        "(function(obj) { var name; for ( name in obj ) { return; } })({});",
-        "(function(obj) { for ( var name in obj ) { return true } })({})",
-        "(function(obj) { for ( var name in obj ) return true })({})",
-
-        { "(function(obj) { let name; for ( name in obj ) return; })({});" },
-        { "(function(obj) { let name; for ( name in obj ) { return; } })({});" },
-        { "(function(obj) { for ( let name in obj ) { return true } })({})" },
-        { "(function(obj) { for ( let name in obj ) return true })({})" },
-
-        { "(function(obj) { for ( const name in obj ) { return true } })({})" },
-        { "(function(obj) { for ( const name in obj ) return true })({})" },
-
-        // caughtErrors
-        {
-            "try{}catch(err){console.error(err);}",
-            options: [{ caughtErrors: "all" }]
-        },
-        {
-            "try{}catch(err){}",
-            options: [{ caughtErrors: "none" }]
-        },
-        {
-            "try{}catch(ignoreErr){}",
-            options: [{ caughtErrors: "all", caughtErrorsIgnorePattern: "^ignore" }]
-        },
-
-        // caughtErrors with other combinations
-        {
-            "try{}catch(err){}",
-            options: [{ vars: "all", args: "all" }]
-        },
-
         // Using object rest for variable omission
         {
             "const data = { type: 'coords', x: 1, y: 2 };\nconst { type, ...coords } = data;\n console.log(coords);",
             options: [{ ignoreRestSiblings: true }],
             parserOptions: { ecmaVersion: 2018 }
         },
-
-        // https://github.com/eslint/eslint/issues/6348
-        "var a = 0, b; b = a = a + 1; foo(b);",
-        "var a = 0, b; b = a += a + 1; foo(b);",
-        "var a = 0, b; b = a++; foo(b);",
-        "function foo(a) { var b = a = a + 1; bar(b) } foo();",
-        "function foo(a) { var b = a += a + 1; bar(b) } foo();",
-        "function foo(a) { var b = a++; bar(b) } foo();",
-
-        // https://github.com/eslint/eslint/issues/6576
-        [
-            "var unregisterFooWatcher;",
-            "// ...",
-            "unregisterFooWatcher = $scope.$watch( \"foo\", function() {",
-            "    // ...some code..",
-            "    unregisterFooWatcher();",
-            "});"
-        ].join("\n"),
-        [
-            "var ref;",
-            "ref = setInterval(",
-            "    function(){",
-            "        clearInterval(ref);",
-            "    }, 10);"
-        ].join("\n"),
-        [
-            "var _timer;",
-            "function f() {",
-            "    _timer = setTimeout(function () {}, _timer ? 100 : 0);",
-            "}",
-            "f();"
-        ].join("\n"),
-        "function foo(cb) { cb = function() { function something(a) { cb(1 + a); } register(something); }(); } foo();",
-        { "function* foo(cb) { cb = yield function(a) { cb(1 + a); }; } foo();" },
-        { "function foo(cb) { cb = tag`hello${function(a) { cb(1 + a); }}`; } foo();" },
-        "function foo(cb) { var b; cb = b = function(a) { cb(1 + a); }; b(); } foo();",
-
-        // https://github.com/eslint/eslint/issues/6646
-        [
-            "function someFunction() {",
-            "    var a = 0, i;",
-            "    for (i = 0; i < 2; i++) {",
-            "        a = myFunction(a);",
-            "    }",
-            "}",
-            "someFunction();"
-        ].join("\n"),
 
         // https://github.com/eslint/eslint/issues/7124
         {
@@ -240,18 +306,6 @@ ruleTester.run("no-unused-vars", rule, {
         // https://github.com/eslint/eslint/issues/10952
         "/*eslint use-every-a:1*/ !function(b, a) { return 1 }",
 
-        // https://github.com/eslint/eslint/issues/10982
-        "var a = function () { a(); }; a();",
-        "var a = function(){ return function () { a(); } }; a();",
-        {
-            "const a = () => { a(); }; a();",
-            parserOptions: { ecmaVersion: 2015 }
-        },
-        {
-            "const a = () => () => { a(); }; a();",
-            parserOptions: { ecmaVersion: 2015 }
-        },
-
         // export * as ns from "source"
         {
             'export * as ns from "source"',
@@ -265,30 +319,6 @@ ruleTester.run("no-unused-vars", rule, {
         }
     ],
     invalid: [
-        { "function foox() { return foox(); }", errors: [definedError("foox")] },
-        { "(function() { function foox() { if (true) { return foox(); } } }())", errors: [definedError("foox")] },
-        { "var a=10", errors: [assignedError("a")] },
-        { "function f() { var a = 1; return function(){ f(a *= 2); }; }", errors: [definedError("f")] },
-        { "function f() { var a = 1; return function(){ f(++a); }; }", errors: [definedError("f")] },
-        { "/*global a */", errors: [definedError("a", "", "Program")] },
-        { "function foo(first, second) {\ndoStuff(function() {\nconsole.log(second);});};", errors: [definedError("foo")] },
-        { "var a=10;", errors: [assignedError("a")] },
-        { "var a=10; a=20;", errors: [assignedError("a")] },
-        { "var a=10; (function() { var a = 1; alert(a); })();", errors: [assignedError("a")] },
-        { "var a=10, b=0, c=null; alert(a+b)", errors: [assignedError("c")] },
-        { "var a=10, b=0, c=null; setTimeout(function() { var b=2; alert(a+b+c); }, 0);", errors: [assignedError("b")] },
-        { "var a=10, b=0, c=null; setTimeout(function() { var b=2; var c=2; alert(a+b+c); }, 0);", errors: [assignedError("b"), assignedError("c")] },
-        { "function f(){var a=[];return a.map(function(){});}", errors: [definedError("f")] },
-        { "function f(){var a=[];return a.map(function g(){});}", errors: [definedError("f")] },
-        {
-            "function foo() {function foo(x) {\nreturn x; }; return function() {return foo; }; }",
-            errors: [{
-                messageId: "unusedVar",
-                data: { varName: "foo", action: "defined", additional: "" },
-                line: 1,
-                type: "Identifier"
-            }]
-        },
         { "function f(){var x;function a(){x=42;}function b(){alert(x);}}", errors: 3 },
         { "function f(a) {}; f();", errors: [definedError("a")] },
         { "function a(x, y, z){ return y; }; a();", errors: [definedError("z")] },

@@ -1814,12 +1814,12 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                     ],
                                 arrangements: vec![
                                     Arrangement::Map{
-                                       name: r###"(inputs::InlineFunc{.expr_id=(_0: ast::ExprId), .name=(ddlog_std::Some{.x=(_: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(_: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc) /*join*/"###.to_string(),
+                                       name: r###"(inputs::InlineFunc{.expr_id=(_: ast::ExprId), .name=(ddlog_std::Some{.x=(_: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(_0: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc) /*join*/"###.to_string(),
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
                                             match unsafe {< ::types::inputs::InlineFunc>::from_ddvalue(__v) } {
-                                                ::types::inputs::InlineFunc{expr_id: ref _0, name: ::types::ddlog_std::Option::Some{x: _}, body: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                ::types::inputs::InlineFunc{expr_id: _, name: ::types::ddlog_std::Option::Some{x: _}, body: ::types::ddlog_std::Option::Some{x: ref _0}} => Some(((*_0).clone()).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
                                         }
@@ -3036,22 +3036,22 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                       }))
                                               })
                               },
-                              /* NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=scope, .span=(ddlog_std::Some{.x=(name.span)}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdExpr{.expr=expr}: ast::AnyId), .implicit=false}: NameInScope)] :- inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .name=(ddlog_std::Some{.x=(name: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(_: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]. */
+                              /* NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=scope, .span=(ddlog_std::Some{.x=(name.span)}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdExpr{.expr=expr}: ast::AnyId), .implicit=false}: NameInScope)] :- inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .name=(ddlog_std::Some{.x=(name: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
                               Rule::ArrangementRule {
-                                  description: "NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=scope, .span=(ddlog_std::Some{.x=(name.span)}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdExpr{.expr=expr}: ast::AnyId), .implicit=false}: NameInScope)] :- inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .name=(ddlog_std::Some{.x=(name: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(_: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)].".to_string(),
+                                  description: "NameInScope[(NameInScope{.file=(expr.file), .name=(name.data), .scope=scope, .span=(ddlog_std::Some{.x=(name.span)}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdExpr{.expr=expr}: ast::AnyId), .implicit=false}: NameInScope)] :- inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .name=(ddlog_std::Some{.x=(name: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)].".to_string(),
                                   arr: ( Relations::inputs_InlineFunc as RelId, 0),
                                   xform: XFormArrangement::Join{
-                                             description: "inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .name=(ddlog_std::Some{.x=(name: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(_: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]".to_string(),
+                                             description: "inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .name=(ddlog_std::Some{.x=(name: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]".to_string(),
                                              ffun: None,
-                                             arrangement: (Relations::inputs_Expression as RelId,1),
+                                             arrangement: (Relations::inputs_Statement as RelId,0),
                                              jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                              {
-                                                 let (ref expr, ref name) = match *unsafe {<::types::inputs::InlineFunc>::from_ddvalue_ref(__v1) } {
-                                                     ::types::inputs::InlineFunc{expr_id: ref expr, name: ::types::ddlog_std::Option::Some{x: ref name}, body: _} => ((*expr).clone(), (*name).clone()),
+                                                 let (ref expr, ref name, ref body) = match *unsafe {<::types::inputs::InlineFunc>::from_ddvalue_ref(__v1) } {
+                                                     ::types::inputs::InlineFunc{expr_id: ref expr, name: ::types::ddlog_std::Option::Some{x: ref name}, body: ::types::ddlog_std::Option::Some{x: ref body}} => ((*expr).clone(), (*name).clone(), (*body).clone()),
                                                      _ => return None
                                                  };
-                                                 let ref scope = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
-                                                     ::types::inputs::Expression{id: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
+                                                 let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                     ::types::inputs::Statement{id: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                      _ => return None
                                                  };
                                                  Some(((::types::NameInScope{file: expr.file.clone(), name: name.data.clone(), scope: (*scope).clone(), span: (::types::ddlog_std::Option::Some{x: name.span.clone()}), declared_in: (::types::ast::AnyId::AnyIdExpr{expr: (*expr).clone()}), implicit: false})).into_ddvalue())
