@@ -52,7 +52,19 @@ fn args_body(p: &mut Parser) {
             ty.err_if_not_ts(p, "return types can only be used in TypeScript files");
         }
     }
-    block_stmt(p, true, None);
+    let mut complete = block_stmt(p, true, None);
+    if let Some(ref mut block) = complete {
+        if p.state.in_declare {
+            let err = p
+                .err_builder(
+                    "function implementations cannot be given in ambient (declare) contexts",
+                )
+                .primary(block.range(p), "");
+
+            p.error(err);
+            block.change_kind(p, ERROR);
+        }
+    }
 }
 
 /// A function declaration, this could be async and or a generator. This takes a marker
