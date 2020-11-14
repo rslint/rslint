@@ -853,7 +853,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             // let b = async function foo() {};
             if p.nth_at(1, T![function]) {
                 let m = p.start();
-                p.bump_any();
+                p.bump_remap(T![async]);
                 let mut complete = function_decl(
                     &mut *p.with_state(ParserState {
                         in_async: true,

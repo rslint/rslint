@@ -387,6 +387,39 @@ impl AstNode for ModuleItem {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ConstructorParamOrPat {
+    TsConstructorParam(TsConstructorParam),
+    Pattern(Pattern),
+}
+
+impl AstNode for ConstructorParamOrPat {
+    fn can_cast(kind: SyntaxKind) -> bool {
+        if kind == TS_CONSTRUCTOR_PARAM {
+            true
+        } else {
+            Pattern::can_cast(kind)
+        }
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if syntax.kind() == TS_CONSTRUCTOR_PARAM {
+            Some(ConstructorParamOrPat::TsConstructorParam(
+                TsConstructorParam::cast(syntax).unwrap(),
+            ))
+        } else {
+            Some(ConstructorParamOrPat::Pattern(Pattern::cast(syntax)?))
+        }
+    }
+
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            ConstructorParamOrPat::TsConstructorParam(it) => it.syntax(),
+            ConstructorParamOrPat::Pattern(it) => it.syntax(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::*;

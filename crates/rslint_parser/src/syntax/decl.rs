@@ -29,6 +29,21 @@ pub fn maybe_private_name(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
+fn args_body(p: &mut Parser) {
+    if p.at(T![<]) {
+        if let Some(ref mut ty) = ts_type_params(p) {
+            ty.err_if_not_ts(p, "type parameters can only be used in TypeScript files");
+        }
+    }
+    formal_parameters(p);
+    if p.at(T![:]) {
+        if let Some(ref mut ty) = ts_type_or_type_predicate_ann(p, T![:]) {
+            ty.err_if_not_ts(p, "return types can only be used in TypeScript files");
+        }
+    }
+    block_stmt(p, true, None);
+}
+
 /// A function declaration, this could be async and or a generator. This takes a marker
 /// because you need to first advance over async or start a marker and feed it in.
 // test function_decl
@@ -51,30 +66,25 @@ pub fn function_decl(p: &mut Parser, m: Marker, fn_expr: bool) -> CompletedMarke
     // yield foo;
     p.expect(T![function]);
     let in_generator = p.eat(T![*]);
+    let guard = &mut *p.with_state(ParserState {
+        labels: HashMap::new(),
+        in_function: true,
+        in_generator,
+        ..p.state.clone()
+    });
 
-    let complete = opt_binding_identifier(p);
+    let complete = opt_binding_identifier(guard);
     if complete.is_none() && !fn_expr {
-        let err = p
+        let err = guard
             .err_builder(
                 "expected a name for the function in a function declaration, but found none",
             )
-            .primary(p.cur_tok().range, "");
+            .primary(guard.cur_tok().range, "");
 
-        p.error(err);
+        guard.error(err);
     }
-    formal_parameters(p);
-
-    block_stmt(
-        &mut *p.with_state(ParserState {
-            labels: HashMap::new(),
-            in_function: true,
-            in_generator,
-            ..p.state.clone()
-        }),
-        true,
-        None,
-    );
-    m.complete(p, FN_DECL)
+    args_body(guard);
+    m.complete(guard, FN_DECL)
 }
 
 #[allow(clippy::unnecessary_unwrap)]
@@ -130,27 +140,7 @@ fn formal_param_pat(p: &mut Parser) -> Option<CompletedMarker> {
             p.error(err);
         }
     }
-    if p.at(T![:]) {
-        let maybe_err = p.start();
-        let start = p.cur_tok().range.start;
-        p.bump_any();
-        let compl = ts_type(p);
-        let end = compl
-            .map(|x| usize::from(x.range(p).end()))
-            .unwrap_or_else(|| p.cur_tok().range.start);
-
-        if !p.typescript() {
-            let err = p
-                .err_builder("patterns can only have type parameters in TypeScript files")
-                .primary(start..end, "");
-
-            p.error(err);
-            maybe_err.complete(p, ERROR);
-        } else {
-            m.abandon(p);
-        }
-    }
-
+    maybe_ts_type_annotation(p);
     if p.at(T![=]) {
         let start = p.cur_tok().range.start;
         p.bump_any();
@@ -174,7 +164,7 @@ fn formal_param_pat(p: &mut Parser) -> Option<CompletedMarker> {
     Some(m.complete(p, kind))
 }
 
-fn access_modifier<'a>(p: &'a mut Parser) -> Option<&'a str> {
+fn access_modifier<'a>(p: &'a Parser) -> Option<&'a str> {
     if matches!(p.cur_src(), "public" | "private" | "protected") {
         Some(p.cur_src())
     } else {
@@ -183,15 +173,53 @@ fn access_modifier<'a>(p: &'a mut Parser) -> Option<&'a str> {
 }
 
 fn constructor_param_pat(p: &mut Parser) -> Option<CompletedMarker> {
-    todo!();
-    // let m = p.start();
-    // let readonly = if  {
-    //     let readonly = p.cur_src() == "readonly";
-    //     p.bump_any();
-    //     readonly
-    // } else {
-    //     false
-    // };
+    let m = p.start();
+    let has_accessibility = if access_modifier(p).is_some() {
+        let range = p.cur_tok().range;
+        let maybe_err = p.start();
+        consume_leading_tokens(p, false, true, false, false);
+        if !p.typescript() {
+            let err = p
+                .err_builder("accessibility modifiers can only be used in TypeScript files")
+                .primary(range, "");
+
+            p.error(err);
+            maybe_err.complete(p, ERROR);
+        } else {
+            maybe_err.abandon(p);
+        }
+        true
+    } else {
+        false
+    };
+    let has_readonly = if p.cur_src() == "readonly" {
+        let range = p.cur_tok().range;
+        let maybe_err = p.start();
+        p.bump_remap(T![readonly]);
+        if !p.typescript() {
+            let err = p
+                .err_builder("readonly modifiers can only be used in TypeScript files")
+                .primary(range, "");
+
+            p.error(err);
+            maybe_err.complete(p, ERROR);
+        } else {
+            maybe_err.abandon(p);
+        }
+        true
+    } else {
+        false
+    };
+
+    if !has_accessibility && !has_readonly {
+        m.abandon(p);
+        formal_param_pat(p)
+    } else {
+        if let Some(ref mut pat) = formal_param_pat(p) {
+            pat.undo_completion(p).abandon(p);
+        }
+        Some(m.complete(p, TS_CONSTRUCTOR_PARAM))
+    }
 }
 
 pub fn formal_parameters(p: &mut Parser) -> CompletedMarker {
@@ -346,7 +374,22 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
     });
 
     if !guard.at(T!['{']) && !guard.at(T![extends]) {
-        binding_identifier(&mut *guard);
+        // needed to please the borrow checker
+        let name = guard.cur_src().to_owned();
+        let range = guard.cur_tok().range;
+        if binding_identifier(&mut *guard).is_some()
+            && guard.typescript()
+            && DISALLOWED_TYPE_NAMES.contains(&name.as_str())
+        {
+            let err = guard
+                .err_builder(&format!(
+                    "`{}` cannot be used as a class name because it is already reserved as a type",
+                    name
+                ))
+                .primary(range, "");
+
+            guard.error(err);
+        }
     } else if !expr {
         let err = guard
             .err_builder("class declarations must have a name")
@@ -355,8 +398,51 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
         guard.error(err);
     }
 
-    if guard.eat(T![extends]) {
-        lhs_expr(&mut *guard);
+    if guard.at(T![<]) {
+        ts_type_params(&mut *guard);
+    }
+
+    let heritage_clause = if guard.cur_src() == "extends" {
+        guard.bump_any();
+        lhs_expr(&mut *guard)
+    } else {
+        None
+    };
+
+    while guard.at(T![extends]) {
+        let clause = heritage_clause.as_ref().unwrap();
+        let mut complete = lhs_expr(&mut *guard);
+        if let Some(ref mut compl) = complete {
+            compl.change_kind(&mut *guard, ERROR);
+        }
+
+        let mut err = guard
+            .err_builder("classes cannot extend multiple classes")
+            .secondary(clause.range(&*guard), "");
+
+        if let Some(ref compl) = complete {
+            err = err.primary(compl.range(&*guard), "");
+        }
+
+        guard.error(err);
+    }
+
+    let implements = if guard.cur_src() == "implements" {
+        Some(ts_heritage_clause(&mut *guard))
+    } else {
+        None
+    };
+
+    while guard.cur_src() == "implements" {
+        let clause = implements.as_ref().unwrap();
+        let complete = ts_heritage_clause(&mut *guard);
+
+        let err = guard
+            .err_builder("classes cannot implement multiple interfaces")
+            .secondary(clause.range(&*guard), "")
+            .primary(complete.range(&*guard), "");
+
+        guard.error(err);
     }
 
     class_body(&mut *guard);
@@ -384,19 +470,468 @@ pub(crate) fn class_body(p: &mut Parser) -> CompletedMarker {
             //  static async foo() {}
             //  static async *foo() {}
             // }
-            _ if p.cur_src() == "static" => {
-                let inner = p.start();
-                p.bump_any();
-                method(p, None, BASE_METHOD_RECOVERY_SET.union(token_set![T![;]]));
-                inner.complete(p, STATIC_METHOD);
-            }
             _ => {
-                method(p, None, BASE_METHOD_RECOVERY_SET.union(token_set![T![;]]));
+                class_member_no_semi(p);
             }
         }
     }
     p.expect(T!['}']);
     m.complete(p, CLASS_BODY)
+}
+
+fn maybe_opt(p: &mut Parser) -> Option<Range<usize>> {
+    if p.at(T![?]) {
+        let range = p.cur_tok().range;
+        if !p.typescript() {
+            let err = p
+                .err_builder("`?` modifiers can only be used in TypeScript files")
+                .primary(p.cur_tok().range, "");
+
+            p.error(err);
+            p.bump_remap(ERROR);
+        } else {
+            p.bump_any();
+        }
+        Some(range)
+    } else {
+        None
+    }
+}
+
+fn is_method(p: &Parser, offset: usize) -> bool {
+    (p.at(T![?]) && is_method(p, offset + 1))
+        || (p.nth_at(offset, T!['(']) || p.nth_at(offset, T![<]))
+}
+
+fn is_semi(p: &Parser, offset: usize) -> bool {
+    p.nth_at(offset, T![;])
+        || p.nth_at(offset, EOF)
+        || p.nth_at(offset, T!['}'])
+        || p.has_linebreak_before_n(offset)
+}
+
+fn is_prop(p: &Parser, offset: usize) -> bool {
+    (p.at(T![?]) && is_prop(p, offset + 1))
+        || token_set![T![!], T![:], T![=], T!['}']].contains(p.nth(offset))
+        || is_semi(p, offset)
+}
+
+fn make_prop(
+    p: &mut Parser,
+    m: Marker,
+    kind: SyntaxKind,
+    declare: bool,
+    constructor: bool,
+    opt: Option<Range<usize>>,
+) -> CompletedMarker {
+    if p.at(T![!]) {
+        let range = p.cur_tok().range;
+        let mut is_err = false;
+        if let Some(opt) = opt {
+            let err = p
+                .err_builder("class properties cannot be both optional and definite")
+                .primary(range.clone(), "")
+                .secondary(opt, "");
+
+            p.error(err);
+            is_err = true;
+        }
+        if !p.typescript() {
+            let err = p
+                .err_builder("definite assignment assertions can only be used in TypeScript files")
+                .primary(range, "");
+
+            p.error(err);
+            is_err = true;
+        }
+        if is_err {
+            p.bump_remap(ERROR);
+        } else {
+            p.bump_any();
+        }
+    }
+
+    maybe_ts_type_annotation(p);
+    if p.eat(T![=]) {
+        assign_expr(p);
+    }
+    let start = match p.events[m.old_start as usize] {
+        Event::Start { start, .. } => start,
+        _ => unreachable!(),
+    };
+
+    // inlined stmt::semi
+    if !p.eat(T![;]) && !p.at(EOF) && !p.at(T!['}']) && !p.has_linebreak_before_n(0) {
+        let err = p
+            .err_builder("expected a semicolon for a class property, but found none")
+            .primary(start..p.cur_tok().range.start, "");
+
+        p.error(err);
+    }
+    let complete = m.complete(p, kind);
+    if !p.syntax.class_fields {
+        let err = p
+            .err_builder("class fields are unsupported")
+            .primary(complete.range(p), "");
+
+        p.error(err);
+    }
+    if constructor {
+        let err = p
+            .err_builder("class properties may not be called `constructor`")
+            .primary(complete.range(p), "");
+
+        p.error(err);
+    }
+    if declare && kind == PRIVATE_PROP {
+        let err = p
+            .err_builder("private class properties with `declare` are invalid")
+            .primary(complete.range(p), "");
+
+        p.error(err);
+    }
+    complete
+}
+
+fn consume_leading_tokens(
+    p: &mut Parser,
+    declare: bool,
+    accessibility: bool,
+    static_: bool,
+    dont_remap_static: bool,
+) {
+    if declare {
+        p.bump_remap(T![declare]);
+    }
+    if accessibility {
+        let kind = match p.cur_src() {
+            "public" => PUBLIC_KW,
+            "private" => PRIVATE_KW,
+            "protected" => PROTECTED_KW,
+            _ => unreachable!(),
+        };
+        if !p.typescript() {
+            let m = p.start();
+            let range = p.cur_tok().range;
+            let err = p
+                .err_builder("accessibility modifiers can only be used in TypeScript files")
+                .primary(range, "");
+
+            p.error(err);
+            p.bump_any();
+            m.complete(p, ERROR);
+        } else {
+            p.bump_remap(kind);
+        }
+    }
+    if static_ && !dont_remap_static {
+        p.bump_remap(STATIC_KW);
+    } else if static_ && dont_remap_static {
+        p.bump_any();
+    }
+}
+
+fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
+    let m = p.start();
+    let declare = p.cur_src() == "declare";
+    let mut offset = declare as usize;
+    let has_accessibility = matches!(p.nth_src(offset), "public" | "private" | "protected");
+    if has_accessibility {
+        offset += 1;
+    }
+
+    if declare && !has_accessibility {
+        if p.nth_at(offset, T![?]) {
+            offset += 1;
+        }
+        // declare() and declare: foo
+        if is_method(p, offset) {
+            p.bump_any();
+            maybe_opt(p);
+            args_body(p);
+            return Some(m.complete(p, METHOD));
+        } else if is_prop(p, offset) {
+            p.bump_any();
+            let opt = maybe_opt(p);
+            return Some(make_prop(p, m, CLASS_PROP, false, false, opt));
+        } else {
+            let msg = if p.typescript() {
+                "a `declare` modifier cannot be applied to a class method"
+            } else {
+                "`declare` modifiers can only be used in TypeScript files"
+            };
+
+            let err = p.err_builder(msg).primary(p.cur_tok().range, "");
+
+            p.error(err);
+            let m = p.start();
+            p.bump_any();
+            m.complete(p, ERROR);
+        }
+    }
+
+    if has_accessibility {
+        if p.nth_at(offset, T![?]) {
+            offset += 1;
+        }
+        if is_method(p, offset) {
+            if declare {
+                let msg = if p.typescript() {
+                    "a `declare` modifier cannot be applied to a class method"
+                } else {
+                    "`declare` modifiers can only be used in TypeScript files"
+                };
+
+                let err = p.err_builder(msg).primary(p.cur_tok().range, "");
+
+                p.error(err);
+                let m = p.start();
+                p.bump_any();
+                m.complete(p, ERROR);
+            }
+            p.bump_any();
+            maybe_opt(p);
+            args_body(p);
+            return Some(m.complete(p, METHOD));
+        } else if is_prop(p, offset) {
+            if declare {
+                p.bump_remap(T![declare]);
+            }
+            p.bump_any();
+            let opt = maybe_opt(p);
+            return Some(make_prop(p, m, CLASS_PROP, false, false, opt));
+        }
+    }
+
+    let is_static = p.nth_src(offset) == "static";
+    if is_static {
+        offset += 1;
+    }
+
+    if is_static {
+        if p.nth_at(offset, T![?]) {
+            offset += 1;
+        }
+        if p.nth_at(offset, T![<]) || p.nth_at(offset, T!['(']) {
+            consume_leading_tokens(p, declare, has_accessibility, is_static, true);
+            maybe_opt(p);
+            args_body(p);
+            return Some(m.complete(p, METHOD));
+        } else if is_prop(p, offset) {
+            consume_leading_tokens(p, declare, has_accessibility, is_static, true);
+            let opt = maybe_opt(p);
+            return Some(make_prop(p, m, CLASS_PROP, declare, false, opt));
+        }
+    }
+    consume_leading_tokens(p, declare, has_accessibility, is_static, false);
+    let has_modifier = matches!(p.cur_src(), "abstract" | "readonly")
+        && !{
+            let mut local_offset = 1;
+            if p.nth_at(local_offset, T![?]) {
+                local_offset += 1;
+            }
+            is_method(p, local_offset)
+        };
+    let is_abstract = has_modifier && p.cur_src() == "abstract";
+    let maybe_err = p.start();
+    let readonly_range =
+        Some(p.cur_tok().range).filter(|_| has_modifier && p.cur_src() == "readonly");
+    if has_modifier {
+        let kind = match p.cur_src() {
+            "abstract" => T![abstract],
+            "readonly" => T![readonly],
+            _ => unreachable!(),
+        };
+        let range = p.cur_tok().range;
+        if !p.typescript() {
+            let err = p
+                .err_builder(&format!(
+                    "`{}` can only be used in TypeScript files",
+                    p.cur_src()
+                ))
+                .primary(range, "");
+
+            p.error(err);
+            p.bump_remap(kind);
+            maybe_err.complete(p, ERROR);
+        } else {
+            maybe_err.abandon(p);
+        }
+    } else {
+        maybe_err.abandon(p);
+    }
+
+    if !is_abstract && !is_static && !has_accessibility {
+        if let Some(mut sig) = try_parse_index_signature(p, m) {
+            sig.err_if_not_ts(
+                p,
+                "class index signatures can only be used in TypeScript files",
+            );
+            return Some(sig);
+        }
+    }
+
+    let generator_range = p.cur_tok().range;
+    if p.eat(T![*]) {
+        let is_constructor = p.cur_src() == "constructor";
+        maybe_private_name(p);
+        if let Some(range) = readonly_range {
+            let err = p
+                .err_builder("class methods cannot be readonly")
+                .primary(range, "");
+
+            p.error(err);
+        }
+        if is_constructor {
+            let err = p
+                .err_builder("constructors can't be generators")
+                .primary(generator_range, "");
+
+            p.error(err);
+        }
+        args_body(p);
+        return Some(m.complete(p, METHOD));
+    }
+
+    // async foo()`
+    if p.cur_src() == "async"
+        && !p.nth_at(1, T![?])
+        && !is_method(p, 1)
+        && !p.has_linebreak_before_n(1)
+    {
+        let async_range = p.cur_tok().range;
+        p.bump_remap(T![async]);
+        p.eat(T![*]);
+        let is_constructor = p.cur_src() == "constructor";
+        maybe_private_name(p);
+
+        if is_constructor {
+            let err = p
+                .err_builder("constructors cannot be async")
+                .primary(async_range, "");
+
+            p.error(err);
+        }
+
+        if let Some(range) = readonly_range {
+            let err = p
+                .err_builder("constructors cannot be readonly")
+                .primary(range, "");
+
+            p.error(err);
+        }
+
+        args_body(p);
+        return Some(m.complete(p, METHOD));
+    }
+
+    let is_constructor = p.cur_src() == "constructor";
+    let key = maybe_private_name(p);
+    let opt = maybe_opt(p);
+
+    if is_method(p, 0) {
+        if let Some(range) = readonly_range {
+            let err = p
+                .err_builder("class methods cannot be readonly")
+                .primary(range, "");
+
+            p.error(err);
+        }
+
+        if is_constructor {
+            if let Some(range) = opt {
+                let err = p
+                    .err_builder("constructors cannot be optional")
+                    .primary(range, "");
+
+                p.error(err);
+            }
+
+            if p.at(T![<]) {
+                if let Some(ref mut ty) = ts_type_params(p) {
+                    ty.err_if_not_ts(p, "type parameters can only be used in TypeScript files");
+                    let err = p
+                        .err_builder("constructors cannot have type parameters")
+                        .primary(ty.range(p), "");
+
+                    p.error(err);
+                    ty.change_kind(p, ERROR);
+                }
+            }
+            constructor_params(p);
+            if let Some(range) = maybe_ts_type_annotation(p) {
+                let err = p
+                    .err_builder("constructors cannot have type annotations")
+                    .primary(range, "");
+
+                p.error(err);
+            }
+            block_stmt(p, true, None);
+            // FIXME(RDambrosio016): if there is no body we need to issue errors for any assign patterns
+
+            // TODO(RDambrosio016): ideally the following errors should just point to the modifiers
+            let complete = m.complete(p, CONSTRUCTOR);
+            if is_static {
+                let err = p
+                    .err_builder("constructors cannot be static")
+                    .primary(complete.range(p), "");
+
+                p.error(err);
+            }
+
+            if has_modifier {
+                let err = p
+                    .err_builder("constructors cannot have modifiers")
+                    .primary(complete.range(p), "");
+
+                p.error(err);
+            }
+            return Some(complete);
+        } else {
+            args_body(p);
+            return Some(m.complete(p, METHOD));
+        }
+    }
+    let kind = if key.map(|x| x.kind()) == Some(PRIVATE_NAME) {
+        PRIVATE_PROP
+    } else {
+        CLASS_PROP
+    };
+    let is_constructor =
+        kind != CLASS_PROP && key.map(|x| p.span_text(x.range(p))) == Some("constructor");
+
+    if is_prop(p, 0) {
+        return Some(make_prop(p, m, kind, declare, is_constructor, opt));
+    }
+
+    let next_line_generator = p.has_linebreak_before_n(0) && p.at(T![*]);
+
+    if let Some(key) = key.filter(|x| x.kind() != PRIVATE_NAME) {
+        if matches!(p.span_text(key.range(p)), "get" | "set") && !next_line_generator {
+            maybe_private_name(p);
+
+            if let Some(range) = readonly_range {
+                let err = p
+                    .err_builder("getters and setters cannot be readonly")
+                    .primary(range, "");
+
+                p.error(err);
+            }
+
+            return method(p, m, None);
+        }
+    }
+
+    let err = p
+        .err_builder("expected `;`, a property, or a method for a class body, but found none")
+        .primary(p.cur_tok().range, "");
+
+    p.err_recover(
+        err,
+        token_set![T![;], T![ident], T![async], T![yield], T!['}'], T![#]],
+        false,
+    );
+    None
 }
 
 /// A method definition, this takes an optional markers for object props
@@ -451,7 +986,7 @@ pub fn method(
         //  async *foo() {}
         // }
         T![ident] if p.cur_src() == "async" && !p.has_linebreak_before_n(1) => {
-            p.bump_any();
+            p.bump_remap(T![async]);
             let in_generator = p.eat(T![*]);
             let mut guard = p.with_state(ParserState {
                 in_async: true,

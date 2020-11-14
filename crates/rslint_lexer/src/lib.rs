@@ -736,9 +736,9 @@ impl<'src> Lexer<'src> {
     fn read_shebang(&mut self) -> LexerReturn {
         let start = self.cur;
         self.next();
-        // if start != 0 {
-        //     return tok!(HASH, self.cur);
-        // }
+        if start != 0 {
+            return (Token::new(T![#], 1), None);
+        }
 
         if let Some(b'!') = self.bytes.get(1) {
             while self.next().is_some() {

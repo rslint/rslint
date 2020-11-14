@@ -116,6 +116,14 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "while",
         "with",
         "yield",
+        // contextual keywords
+        "readonly",
+        "keyof",
+        "unique",
+        "declare",
+        "abstract",
+        "static",
+        "async",
     ],
     literals: &["NUMBER", "STRING", "REGEX"],
     tokens: &[
@@ -200,7 +208,6 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "SINGLE_PATTERN",
         "ARROW_EXPR",
         "YIELD_EXPR",
-        "STATIC_METHOD",
         "CLASS_DECL",
         "CLASS_EXPR",
         "CLASS_BODY",
@@ -222,6 +229,10 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "FOR_STMT_UPDATE",
         "FOR_STMT_INIT",
         "PRIVATE_NAME",
+        "CLASS_PROP",
+        "PRIVATE_PROP",
+        "CONSTRUCTOR",
+        "CONSTRUCTOR_PARAMETERS",
         // TypeScript
         "TS_ANY",
         "TS_UNKNOWN",
@@ -283,6 +294,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_PROPERTY_SIGNATURE",
         "TS_HERITAGE_CLAUSE",
         "TS_INTERFACE_DECL",
+        "TS_ACCESSIBILITY",
     ],
 };
 
@@ -522,7 +534,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct TsMappedTypeReadonly {
             T![+],
             T![-],
-            /* readonly */
+            T![readonly]
         }
 
         struct TsTypeQuery {
@@ -591,10 +603,14 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             return_type: TsType
         }
 
-        struct TsExtends { /* manual impl */ }
+        struct TsExtends {
+            T![extends],
+            ty: TsType
+        }
 
         struct TsConditionalType {
-            condition: TsExtends,
+            ty: TsType,
+            extends: TsExtends,
             T![?],
             /* cons */
             T![:],
@@ -664,7 +680,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsNamespaceDecl {
-            /* declare */
+            T![declare],
             /* namespace */
             T![.],
             T![ident],
@@ -678,7 +694,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsModuleDecl {
-            /* declare */
+            T![declare],
             /* module */
             T![.],
             T![ident],
@@ -687,7 +703,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct TsConstructorParam {
             /* accessibility */
-            /* readonly */
+            T![readonly],
             pat: Pattern
         }
 
@@ -715,7 +731,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsMethodSignature {
-            /* readonly */
+            T![readonly],
             key: Expr,
             T![?],
             type_params: TsTypeParams,
@@ -725,7 +741,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsPropertySignature {
-            /* readonly */
+            T![readonly],
             prop: Expr,
             T![?],
             T![:],
@@ -733,13 +749,14 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsHeritageClause {
-            /* extends */
+            T![extends],
+            T![implements],
             item: TsEntityName,
             type_params: TsTypeParams
         }
 
         struct TsInterfaceDecl {
-            /* declare */
+            T![declare],
             /* interface */
             T![ident],
             type_params: TsTypeParams,
@@ -1007,11 +1024,14 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct FnDecl {
             T![ident],
-            /* async */
+            T![async],
             T![function],
             T![*],
             name: Name,
+            type_parameters: TsTypeParams,
             parameters: ParameterList,
+            T![:],
+            return_type: TsType,
             body: BlockStmt,
         }
 
@@ -1245,7 +1265,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct ArrowExpr {
-            /* async */
+            T![async],
             type_params: TsTypeParams,
             params: ArrowExprParams,
             T![:],
@@ -1261,41 +1281,89 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct FnExpr {
-            /* async */
+            T![async],
             T![function],
             T![*],
             name: Name,
+            type_params: TsTypeParams,
             parameters: ParameterList,
+            T![:],
+            return_type: TsType,
             body: BlockStmt,
         }
 
         struct Method {
-            /* async */
+            T![static],
+            T![async],
             T![*],
             name: PropName,
+            type_params: TsTypeParams,
             parameters: ParameterList,
+            T![:],
+            return_type: TsType,
             body: BlockStmt
         }
 
-        struct StaticMethod {
-            T![ident],
-            method: Method
+        struct TsAccessibility { /* modifier */ }
+
+        struct PrivateProp {
+            T![declare],
+            T![abstract],
+            T![static],
+            accessibility: TsAccessibility,
+            key: PrivateName,
+            T![?],
+            T![!],
+            T![:],
+            ty: TsType,
+            T![;]
+        }
+
+        struct ClassProp {
+            T![declare],
+            T![abstract],
+            T![static],
+            accessibility: TsAccessibility,
+            key: PropName,
+            T![?],
+            T![!],
+            T![:],
+            ty: TsType,
+            T![;]
+        }
+
+        struct Constructor {
+            accessibility: TsAccessibility,
+            name: PropName,
+            type_params: TsTypeParams,
+            parameters: ConstructorParameters,
+            body: BlockStmt
+        }
+
+        struct ConstructorParameters {
+            T!['('],
+            parameters: ConstructorParamOrPat,
+            T![')']
         }
 
         struct ClassDecl {
             T![ident],
             T![class],
             name: Name,
+            type_params: TsTypeParams,
             T![extends],
             parent: Expr,
+            implements: TsHeritageClause,
             body: ClassBody
         }
 
         struct ClassExpr {
             T![class],
-            /* name */
+            name: Name,
+            type_params: TsTypeParams,
             T![extends],
-            /* parent */
+            parent: Expr,
+            implements: TsHeritageClause,
             body: ClassBody
         }
 
@@ -1360,7 +1428,10 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         enum ClassElement {
             EmptyStmt,
             Method,
-            StaticMethod
+            PrivateProp,
+            ClassProp,
+            Constructor,
+            TsIndexSignature
         }
 
         enum ImportClause {

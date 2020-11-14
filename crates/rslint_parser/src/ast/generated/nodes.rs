@@ -234,6 +234,9 @@ pub struct TsMappedTypeReadonly {
 impl TsMappedTypeReadonly {
     pub fn plus_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [+]) }
     pub fn minus_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [-]) }
+    pub fn readonly_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![readonly])
+    }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -347,14 +350,18 @@ impl TsConstructorType {
 pub struct TsExtends {
     pub(crate) syntax: SyntaxNode,
 }
-impl TsExtends {}
+impl TsExtends {
+    pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+}
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TsConditionalType {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsConditionalType {
-    pub fn condition(&self) -> Option<TsExtends> { support::child(&self.syntax) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+    pub fn extends(&self) -> Option<TsExtends> { support::child(&self.syntax) }
     pub fn question_mark_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T ! [?])
     }
@@ -461,6 +468,7 @@ pub struct TsNamespaceDecl {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsNamespaceDecl {
+    pub fn declare_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![declare]) }
     pub fn dot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [.]) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn body(&self) -> Option<TsNamespaceBody> { support::child(&self.syntax) }
@@ -481,6 +489,7 @@ pub struct TsModuleDecl {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsModuleDecl {
+    pub fn declare_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![declare]) }
     pub fn dot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [.]) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn body(&self) -> Option<TsNamespaceBody> { support::child(&self.syntax) }
@@ -491,6 +500,9 @@ pub struct TsConstructorParam {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsConstructorParam {
+    pub fn readonly_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![readonly])
+    }
     pub fn pat(&self) -> Option<Pattern> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -534,6 +546,9 @@ pub struct TsMethodSignature {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsMethodSignature {
+    pub fn readonly_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![readonly])
+    }
     pub fn key(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn question_mark_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T ! [?])
@@ -549,6 +564,9 @@ pub struct TsPropertySignature {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsPropertySignature {
+    pub fn readonly_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![readonly])
+    }
     pub fn prop(&self) -> Option<Expr> { support::child(&self.syntax) }
     pub fn question_mark_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T ! [?])
@@ -562,6 +580,10 @@ pub struct TsHeritageClause {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsHeritageClause {
+    pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
+    pub fn implements_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![implements])
+    }
     pub fn item(&self) -> Option<TsEntityName> { support::child(&self.syntax) }
     pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
 }
@@ -571,6 +593,7 @@ pub struct TsInterfaceDecl {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsInterfaceDecl {
+    pub fn declare_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![declare]) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn extends(&self) -> Option<TsHeritageClause> { support::child(&self.syntax) }
@@ -986,12 +1009,16 @@ pub struct FnDecl {
 }
 impl FnDecl {
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn async_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![async]) }
     pub fn function_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![function])
     }
     pub fn star_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [*]) }
     pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
+    pub fn type_parameters(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn return_type(&self) -> Option<TsType> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -1357,6 +1384,7 @@ pub struct ArrowExpr {
     pub(crate) syntax: SyntaxNode,
 }
 impl ArrowExpr {
+    pub fn async_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![async]) }
     pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn params(&self) -> Option<ArrowExprParams> { support::child(&self.syntax) }
     pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
@@ -1379,12 +1407,16 @@ pub struct FnExpr {
     pub(crate) syntax: SyntaxNode,
 }
 impl FnExpr {
+    pub fn async_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![async]) }
     pub fn function_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![function])
     }
     pub fn star_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [*]) }
     pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn return_type(&self) -> Option<TsType> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -1393,10 +1425,84 @@ pub struct Method {
     pub(crate) syntax: SyntaxNode,
 }
 impl Method {
+    pub fn async_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![async]) }
     pub fn star_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [*]) }
     pub fn name(&self) -> Option<PropName> { support::child(&self.syntax) }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn return_type(&self) -> Option<TsType> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsAccessibility {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsAccessibility {}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PrivateProp {
+    pub(crate) syntax: SyntaxNode,
+}
+impl PrivateProp {
+    pub fn declare_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![declare]) }
+    pub fn abstract_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![abstract])
+    }
+    pub fn static_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![static]) }
+    pub fn accessibility(&self) -> Option<TsAccessibility> { support::child(&self.syntax) }
+    pub fn key(&self) -> Option<PrivateName> { support::child(&self.syntax) }
+    pub fn question_mark_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T ! [?])
+    }
+    pub fn excl_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![!]) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+    pub fn semicolon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [;]) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ClassProp {
+    pub(crate) syntax: SyntaxNode,
+}
+impl ClassProp {
+    pub fn declare_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![declare]) }
+    pub fn abstract_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![abstract])
+    }
+    pub fn static_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![static]) }
+    pub fn accessibility(&self) -> Option<TsAccessibility> { support::child(&self.syntax) }
+    pub fn key(&self) -> Option<PropName> { support::child(&self.syntax) }
+    pub fn question_mark_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T ! [?])
+    }
+    pub fn excl_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![!]) }
+    pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+    pub fn semicolon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [;]) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Constructor {
+    pub(crate) syntax: SyntaxNode,
+}
+impl Constructor {
+    pub fn accessibility(&self) -> Option<TsAccessibility> { support::child(&self.syntax) }
+    pub fn name(&self) -> Option<PropName> { support::child(&self.syntax) }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
+    pub fn parameters(&self) -> Option<ConstructorParameters> { support::child(&self.syntax) }
+    pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ConstructorParameters {
+    pub(crate) syntax: SyntaxNode,
+}
+impl ConstructorParameters {
+    pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
+    pub fn parameters(&self) -> Option<ConstructorParamOrPat> { support::child(&self.syntax) }
+    pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1416,8 +1522,10 @@ impl ClassDecl {
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn class_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![class]) }
     pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
     pub fn parent(&self) -> Option<Expr> { support::child(&self.syntax) }
+    pub fn implements(&self) -> Option<TsHeritageClause> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<ClassBody> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -1427,7 +1535,11 @@ pub struct ClassExpr {
 }
 impl ClassExpr {
     pub fn class_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![class]) }
+    pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
+    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
+    pub fn parent(&self) -> Option<Expr> { support::child(&self.syntax) }
+    pub fn implements(&self) -> Option<TsHeritageClause> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<ClassBody> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -1511,6 +1623,10 @@ pub enum ClassElement {
     EmptyStmt(EmptyStmt),
     Method(Method),
     StaticMethod(StaticMethod),
+    PrivateProp(PrivateProp),
+    ClassProp(ClassProp),
+    Constructor(Constructor),
+    TsIndexSignature(TsIndexSignature),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -3169,6 +3285,61 @@ impl AstNode for Method {
     }
     fn syntax(&self) -> &SyntaxNode { &self.syntax }
 }
+impl AstNode for TsAccessibility {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_ACCESSIBILITY }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for PrivateProp {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == PRIVATE_PROP }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for ClassProp {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == CLASS_PROP }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for Constructor {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == CONSTRUCTOR }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for ConstructorParameters {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == CONSTRUCTOR_PARAMETERS }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
 impl AstNode for StaticMethod {
     fn can_cast(kind: SyntaxKind) -> bool { kind == STATIC_METHOD }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3452,13 +3623,40 @@ impl From<Method> for ClassElement {
 impl From<StaticMethod> for ClassElement {
     fn from(node: StaticMethod) -> ClassElement { ClassElement::StaticMethod(node) }
 }
+impl From<PrivateProp> for ClassElement {
+    fn from(node: PrivateProp) -> ClassElement { ClassElement::PrivateProp(node) }
+}
+impl From<ClassProp> for ClassElement {
+    fn from(node: ClassProp) -> ClassElement { ClassElement::ClassProp(node) }
+}
+impl From<Constructor> for ClassElement {
+    fn from(node: Constructor) -> ClassElement { ClassElement::Constructor(node) }
+}
+impl From<TsIndexSignature> for ClassElement {
+    fn from(node: TsIndexSignature) -> ClassElement { ClassElement::TsIndexSignature(node) }
+}
 impl AstNode for ClassElement {
-    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, EMPTY_STMT | METHOD | STATIC_METHOD) }
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            EMPTY_STMT
+                | METHOD
+                | STATIC_METHOD
+                | PRIVATE_PROP
+                | CLASS_PROP
+                | CONSTRUCTOR
+                | TS_INDEX_SIGNATURE
+        )
+    }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             EMPTY_STMT => ClassElement::EmptyStmt(EmptyStmt { syntax }),
             METHOD => ClassElement::Method(Method { syntax }),
             STATIC_METHOD => ClassElement::StaticMethod(StaticMethod { syntax }),
+            PRIVATE_PROP => ClassElement::PrivateProp(PrivateProp { syntax }),
+            CLASS_PROP => ClassElement::ClassProp(ClassProp { syntax }),
+            CONSTRUCTOR => ClassElement::Constructor(Constructor { syntax }),
+            TS_INDEX_SIGNATURE => ClassElement::TsIndexSignature(TsIndexSignature { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3468,6 +3666,10 @@ impl AstNode for ClassElement {
             ClassElement::EmptyStmt(it) => &it.syntax,
             ClassElement::Method(it) => &it.syntax,
             ClassElement::StaticMethod(it) => &it.syntax,
+            ClassElement::PrivateProp(it) => &it.syntax,
+            ClassElement::ClassProp(it) => &it.syntax,
+            ClassElement::Constructor(it) => &it.syntax,
+            ClassElement::TsIndexSignature(it) => &it.syntax,
         }
     }
 }
@@ -4863,6 +5065,31 @@ impl std::fmt::Display for FnExpr {
     }
 }
 impl std::fmt::Display for Method {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsAccessibility {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for PrivateProp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for ClassProp {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for Constructor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for ConstructorParameters {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

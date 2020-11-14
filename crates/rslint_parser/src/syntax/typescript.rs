@@ -19,6 +19,47 @@ pub const BASE_TS_RECOVERY_SET: TokenSet = token_set![
     T!['['],
 ];
 
+#[rustfmt::skip]
+pub const DISALLOWED_TYPE_NAMES: &[&str] = &[
+    "string",
+    "null",
+    "number",
+    "object",
+    "any",
+    "unknown",
+    "boolean",
+    "bigint",
+    "symbol",
+    "void",
+    "never",
+];
+
+pub(crate) fn maybe_ts_type_annotation(p: &mut Parser) -> Option<Range<usize>> {
+    if p.at(T![:]) {
+        let maybe_err = p.start();
+        let start = p.cur_tok().range.start;
+        p.bump_any();
+        let compl = ts_type(p);
+        let end = compl
+            .map(|x| usize::from(x.range(p).end()))
+            .unwrap_or_else(|| p.cur_tok().range.start);
+
+        if !p.typescript() {
+            let err = p
+                .err_builder("type annotations can only be used in TypeScript files")
+                .primary(start..end, "");
+
+            p.error(err);
+            maybe_err.complete(p, ERROR);
+        } else {
+            maybe_err.abandon(p);
+        }
+        Some(start..end)
+    } else {
+        None
+    }
+}
+
 pub(crate) fn ts_expr_stmt(p: &mut Parser) -> Option<CompletedMarker> {
     match p.cur_src() {
         "declare" => ts_declare(p),
@@ -38,38 +79,38 @@ pub(crate) fn ts_declare(p: &mut Parser) -> Option<CompletedMarker> {
     Some(match p.nth(1) {
         T![function] => {
             let m = p.start();
-            p.bump_any();
+            p.bump_remap(T![declare]);
             function_decl(p, m, false)
         }
         T![class] => {
             let m = p.start();
-            p.bump_any();
+            p.bump_remap(T![declare]);
             class_decl(p, false).undo_completion(p).abandon(p);
             m.complete(p, CLASS_DECL)
         }
         t if (t == T![const] && p.nth_at(2, T![enum])) || t == T![enum] => {
             let m = p.start();
-            p.bump_any();
+            p.bump_remap(T![declare]);
             ts_enum(p).undo_completion(p).abandon(p);
             m.complete(p, TS_ENUM)
         }
         T![const] | T![var] => {
             let m = p.start();
-            p.bump_any();
+            p.bump_remap(T![declare]);
             // unwrap the marker so its children go to `m`
             var_decl(p, false).undo_completion(p).abandon(p);
             m.complete(p, VAR_DECL)
         }
         _ if p.nth_src(1) == "let" => {
             let m = p.start();
-            p.bump_any();
+            p.bump_remap(T![declare]);
             var_decl(p, false).undo_completion(p).abandon(p);
             m.complete(p, VAR_DECL)
         }
         _ => {
             let checkpoint = p.checkpoint();
             let m = p.start();
-            p.bump_any();
+            p.bump_remap(T![declare]);
             let res = ts_decl(p);
             if let Some(res) = res {
                 let kind = res.kind();
@@ -215,21 +256,6 @@ macro_rules! no_recover {
 }
 
 pub fn ts_interface(p: &mut Parser) -> Option<CompletedMarker> {
-    const DISALLOWED: [&str; 12] = [
-        "string",
-        "null",
-        "number",
-        "object",
-        "any",
-        "unknown",
-        "boolean",
-        "bigint",
-        "symbol",
-        "void",
-        "never",
-        "intrinsic",
-    ];
-
     let m = p.start();
     if p.cur_src() != "interface" {
         let err = p
@@ -244,7 +270,7 @@ pub fn ts_interface(p: &mut Parser) -> Option<CompletedMarker> {
         p.bump_any();
     }
 
-    if DISALLOWED.contains(&p.cur_src()) {
+    if DISALLOWED_TYPE_NAMES.contains(&p.cur_src()) || p.cur_src() == "intrinsic" {
         let err = p
             .err_builder(&format!(
                 "`{}` cannot be used as the name of an interface",
@@ -285,9 +311,13 @@ pub fn ts_interface(p: &mut Parser) -> Option<CompletedMarker> {
     Some(m.complete(p, TS_INTERFACE_DECL))
 }
 
-fn ts_heritage_clause(p: &mut Parser) -> CompletedMarker {
+pub(crate) fn ts_heritage_clause(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
-    p.bump_any();
+    if p.cur_src() == "implements" {
+        p.bump_remap(T![implements]);
+    } else {
+        p.bump_any();
+    }
     ts_entity_name(p, None, false);
     if p.at(T![<]) {
         ts_type_params(p);
@@ -306,7 +336,7 @@ pub fn ts_type_member(p: &mut Parser) -> Option<CompletedMarker> {
 
     let (m, readonly) = if p.cur_src() == "readonly" {
         let m = p.start();
-        p.bump_any();
+        p.bump_remap(T![readonly]);
         (m, true)
     } else {
         (p.start(), false)
@@ -363,11 +393,11 @@ fn ts_property_or_method_sig(p: &mut Parser, m: Marker, readonly: bool) -> Optio
     })
 }
 
-fn try_parse_index_signature(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
+pub(crate) fn try_parse_index_signature(p: &mut Parser, m: Marker) -> Option<CompletedMarker> {
     if !p.at(T!['['])
-        || token_set![T![ident], T![await], T![yield]].contains(p.nth(1))
-        || p.nth(1).is_keyword()
-        || token_set![T![:], T![,]].contains(p.nth(2))
+        || !(token_set![T![ident], T![await], T![yield]].contains(p.nth(1))
+            || p.nth(1).is_keyword())
+        || !token_set![T![:], T![,]].contains(p.nth(2))
     {
         return None;
     }
@@ -493,9 +523,12 @@ pub fn ts_type(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     let m = ty.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
-    ts_non_conditional_type(p);
-    let compl = m.complete(p, TS_EXTENDS);
-    let m = compl.precede(p);
+    if p.at(T![extends]) {
+        let m = p.start();
+        p.bump_any();
+        no_recover!(p, ts_non_conditional_type(p));
+        m.complete(p, TS_EXTENDS);
+    }
     p.expect_no_recover(T![?])?;
     no_recover!(p, ts_type(p));
     p.expect_no_recover(T![:])?;
@@ -524,7 +557,7 @@ pub fn ts_fn_or_constructor_type(p: &mut Parser, fn_type: bool) -> Option<Comple
     ))
 }
 
-fn ts_type_or_type_predicate_ann(
+pub(crate) fn ts_type_or_type_predicate_ann(
     p: &mut Parser,
     return_token: SyntaxKind,
 ) -> Option<CompletedMarker> {
@@ -654,7 +687,13 @@ fn intersection_or_union(
 pub fn ts_type_operator_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
     if matches!(p.cur_src(), "keyof" | "unique" | "readonly") {
         let m = p.start();
-        p.bump_any();
+        let kind = match p.cur_src() {
+            "keyof" => KEYOF_KW,
+            "unique" => UNIQUE_KW,
+            "readonly" => READONLY_KW,
+            _ => unreachable!(),
+        };
+        p.bump_remap(kind);
         no_recover!(p, ts_type_operator_or_higher(p));
         Some(m.complete(p, TS_TYPE_OPERATOR))
     } else if p.cur_src() == "infer" {
@@ -913,11 +952,11 @@ pub fn ts_mapped_type(p: &mut Parser) -> Option<CompletedMarker> {
 
             p.error(err);
         } else {
-            p.bump_any();
+            p.bump_remap(T![readonly]);
         }
         _m.complete(p, TS_MAPPED_TYPE_READONLY);
     } else if p.cur_src() == "readonly" {
-        p.bump_any();
+        p.bump_remap(T![readonly]);
         _m.complete(p, TS_MAPPED_TYPE_READONLY);
     } else {
         _m.abandon(p);
