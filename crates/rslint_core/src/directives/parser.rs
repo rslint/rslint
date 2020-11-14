@@ -21,18 +21,32 @@ pub struct DirectiveParser<'store> {
     root: SyntaxNode,
     line_starts: Box<[usize]>,
     file_id: usize,
-    store: &'store CstRuleStore,
+    store: Option<&'store CstRuleStore>,
     commands: Box<[Box<[Instruction]>]>,
     no_rewind: bool,
 }
 
 impl<'store> DirectiveParser<'store> {
-    /// Create a new `DirectivesParser` with a root of a file.
+    /// Create a new `DirectivesParser` with a root of a file which will
+    /// use all default rules to check the rule names of a directive.
     ///
     /// # Panics
     ///
     /// If the given `root` is not `SCRIPT` or `MODULE`.
-    pub fn new(root: SyntaxNode, file_id: usize, store: &'store CstRuleStore) -> Self {
+    pub fn new(root: SyntaxNode, file_id: usize) -> Self {
+        Self::new_with_store(root, file_id, None)
+    }
+
+    /// Create a new `DirectivesParser` with a root of a file and a store of rules.
+    ///
+    /// # Panics
+    ///
+    /// If the given `root` is not `SCRIPT` or `MODULE`.
+    pub fn new_with_store(
+        root: SyntaxNode,
+        file_id: usize,
+        store: impl Into<Option<&'store CstRuleStore>>,
+    ) -> Self {
         assert!(matches!(
             root.kind(),
             SyntaxKind::SCRIPT | SyntaxKind::MODULE
@@ -40,7 +54,7 @@ impl<'store> DirectiveParser<'store> {
 
         Self {
             line_starts: line_starts(&root.to_string()).collect(),
-            store,
+            store: store.into(),
             root,
             file_id,
             no_rewind: false,
@@ -236,7 +250,12 @@ impl<'store> DirectiveParser<'store> {
                 let end = lexer.abs_cur() as u32;
                 let name_range = TextRange::new(start, end.into());
                 let name = lexer.source_range(name_range);
-                if let Some(rule) = self.store.get(name) {
+
+                let rule = self
+                    .store
+                    .map(|store| store.get(name))
+                    .unwrap_or_else(|| crate::get_rule_by_name(name));
+                if let Some(rule) = rule {
                     Ok(vec![Component {
                         kind: ComponentKind::Rule(rule),
                         range: name_range,

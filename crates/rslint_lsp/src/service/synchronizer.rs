@@ -10,8 +10,9 @@ pub(crate) mod document {
         },
         provider,
     };
+    use rslint_core::DirectiveParser;
     use rslint_errors::file::SimpleFiles;
-    use rslint_parser::{parse_module, parse_text};
+    use rslint_parser::{parse_module, parse_text, SyntaxNode};
     use std::sync::Arc;
     use tower_lsp::lsp_types::*;
 
@@ -43,6 +44,11 @@ pub(crate) mod document {
             } else {
                 Box::new(parse_text(&text, file_id)) as Box<dyn DocumentParse>
             };
+
+            document.directives =
+                DirectiveParser::new(SyntaxNode::new_root(document.parse.green()), file_id)
+                    .get_file_directives()
+                    .unwrap_or_default();
         }
 
         provider::diagnostics::publish_diagnostics(session.clone(), uri).await?;

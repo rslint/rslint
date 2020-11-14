@@ -31,6 +31,7 @@ pub fn capabilities() -> ServerCapabilities {
     ));
 
     ServerCapabilities {
+        hover_provider: Some(HoverProviderCapability::Simple(true)),
         text_document_sync,
         ..Default::default()
     }

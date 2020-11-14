@@ -1,8 +1,9 @@
 //! Core definitions related to documents.
 
 use crate::core::language::{Language, LanguageId};
+use rslint_core::{Directive, DirectiveParser};
 use rslint_errors::file::SimpleFiles;
-use rslint_parser::{ast, parse_module, parse_text, GreenNode, Parse, ParserError};
+use rslint_parser::{ast, parse_module, parse_text, GreenNode, Parse, ParserError, SyntaxNode};
 use std::convert::TryFrom;
 use tower_lsp::lsp_types::*;
 
@@ -46,6 +47,8 @@ pub struct Document {
     pub language_id: LanguageId,
     /// The result of parsing a document.
     pub parse: Box<dyn DocumentParse>,
+    /// All directives in this document.
+    pub directives: Vec<Directive>,
     /// The textual content of the document.
     pub text: String,
 }
@@ -70,11 +73,16 @@ impl Document {
             Box::new(parse_text(&text, file_id)) as Box<dyn DocumentParse>
         };
 
+        let directives = DirectiveParser::new(SyntaxNode::new_root(parse.green()), file_id)
+            .get_file_directives()
+            .unwrap_or_default();
+
         let document = Document {
             files,
             file_id,
             language,
             language_id: LanguageId(language_id),
+            directives,
             parse,
             text,
         };

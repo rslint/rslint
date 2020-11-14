@@ -48,6 +48,21 @@ pub enum ComponentKind {
 }
 
 impl ComponentKind {
+    /// Returns the documentation that should be shown for this document.
+    pub fn documentation(&self) -> Option<&'static str> {
+        match self {
+            ComponentKind::CommandName(name) => match name.as_ref() {
+                "ignore" => Some(
+                    "`ignore` will ignore all rules, or any given rules in some range or node.",
+                ),
+                _ => None,
+            },
+            _ => None,
+        }
+    }
+}
+
+impl ComponentKind {
     pub fn rule(&self) -> Option<Box<dyn CstRule>> {
         match self {
             ComponentKind::Rule(rule) => Some(rule.clone()),
@@ -139,7 +154,16 @@ pub struct Directive {
 impl Directive {
     /// Finds the component which contains the given index in his span.
     pub fn component_at(&self, idx: TextSize) -> Option<&Component> {
-        self.components.iter().find(|c| c.range.contains(idx))
+        self.components
+            .iter()
+            .find(|c| c.range.contains(idx))
+            .and_then(|component| {
+                if let ComponentKind::Repetition(components) = &component.kind {
+                    components.iter().find(|c| c.range.contains(idx))
+                } else {
+                    Some(component)
+                }
+            })
     }
 }
 

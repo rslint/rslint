@@ -35,7 +35,7 @@ pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Res
     let file_id = document.file_id;
 
     let mut new_store = session.store.clone();
-    let results = DirectiveParser::new(
+    let results = DirectiveParser::new_with_store(
         SyntaxNode::new_root(document.parse.green()),
         file_id,
         &session.store,
@@ -45,16 +45,9 @@ pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Res
     match results {
         Ok(results) => {
             let mut directive_diagnostics = vec![];
-            let directives = results
-                .into_iter()
-                .map(|res| {
-                    directive_diagnostics.extend(res.diagnostics);
-                    res.directive
-                })
-                .collect::<Vec<_>>();
 
             apply_top_level_directives(
-                directives.as_slice(),
+                results.as_slice(),
                 &mut new_store,
                 &mut directive_diagnostics,
                 file_id,
@@ -69,7 +62,7 @@ pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Res
                     let root = SyntaxNode::new_root(document.parse.green());
                     (
                         rule.name(),
-                        run_rule(&**rule, file_id, root, verbose, &directives, src.clone())
+                        run_rule(&**rule, file_id, root, verbose, &results, src.clone())
                             .diagnostics,
                     )
                 })
@@ -98,31 +91,13 @@ pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Res
         }
 
         Err(diagnostic) => {
-            let diagnostics = vec![{
-                let range = Default::default();
-                let severity = Default::default();
-                let code = Default::default();
-                let source = Some("rslint".into());
-                let message = diagnostic.title;
-                let related_information = Default::default();
-                let tags = Default::default();
-                Diagnostic::new(
-                    range,
-                    severity,
-                    code,
-                    source,
-                    message,
-                    related_information,
-                    tags,
-                )
-            }];
-            let version = Default::default();
+            let mut diagnostics = vec![];
+            process_diagnostics(&document, uri.clone(), vec![diagnostic], &mut diagnostics);
 
             session
                 .client()?
-                .publish_diagnostics(uri, diagnostics, version)
+                .publish_diagnostics(uri, diagnostics, Default::default())
                 .await;
-
             Ok(())
         }
     }
