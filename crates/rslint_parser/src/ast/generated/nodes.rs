@@ -125,7 +125,7 @@ pub struct TsTemplate {
 impl TsTemplate {
     pub fn template(&self) -> Option<Template> { support::child(&self.syntax) }
 }
-#[doc = " A type guard which performs a runtime check to guarantee the type of something in a scope\n\n ```ts\n function isFish(pet: Fish | Bird): pet is Fish {\n    return (pet as Fish).swim !== undefined;\n }\n ```\n\n It could also be an assertion function:\n\n ```ts\n function check(cond: any): asserts condition { /* */ }\n ```\n\n https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#assertion-functions\n https://www.typescriptlang.org/docs/handbook/advanced-types.html#user-defined-type-guards\n"]
+#[doc = " A type guard which performs a runtime check to guarantee the type of something in a scope\n\n ```ts\n function isFish(pet: Fish | Bird): pet is Fish {\n    return (pet as Fish).swim !== undefined;\n }\n ```\n\n It could also be an assertion function:\n\n ```ts\n function check(cond: any): asserts condition { /* */ }\n ```\n\n <https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#assertion-functions>\n <https://www.typescriptlang.org/docs/handbook/advanced-types.html#user-defined-type-guards>\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TsPredicate {
     pub(crate) syntax: SyntaxNode,
@@ -134,7 +134,7 @@ impl TsPredicate {
     pub fn lhs(&self) -> Option<TsThisOrName> { support::child(&self.syntax) }
     pub fn rhs(&self) -> Option<TsType> { support::child(&self.syntax) }
 }
-#[doc = " A type with a fixed number of elements with known types\n\n ```ts\n let x: [number, ...string[]];\n let y: [foo: number, ...bar: string[]];\n ```\n\n https://www.typescriptlang.org/docs/handbook/basic-types.html#tuple\n"]
+#[doc = " A type with a fixed number of elements with known types\n\n ```ts\n let x: [number, ...string[]];\n let y: [foo: number, ...bar: string[]];\n ```\n\n <https://www.typescriptlang.org/docs/handbook/basic-types.html#tuple>\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TsTuple {
     pub(crate) syntax: SyntaxNode,
@@ -195,7 +195,7 @@ pub struct TsTypeName {
 impl TsTypeName {
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
 }
-#[doc = " A type which allows the creation of new types from existing ones\n by mapping over property types.\n\n ```ts\n type Readonly<T> = {\n   readonly [P in keyof T]: T[P];\n }\n ```\n\n https://www.typescriptlang.org/docs/handbook/advanced-types.html#mapped-types\n"]
+#[doc = " A type which allows the creation of new types from existing ones\n by mapping over property types.\n\n ```ts\n type Readonly<T> = {\n   readonly [P in keyof T]: T[P];\n }\n ```\n\n <https://www.typescriptlang.org/docs/handbook/advanced-types.html#mapped-types>\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TsMappedType {
     pub(crate) syntax: SyntaxNode,

@@ -435,8 +435,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         /// function check(cond: any): asserts condition { /* */ }
         /// ```
         ///
-        /// https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#assertion-functions
-        /// https://www.typescriptlang.org/docs/handbook/advanced-types.html#user-defined-type-guards
+        /// <https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#assertion-functions>
+        /// <https://www.typescriptlang.org/docs/handbook/advanced-types.html#user-defined-type-guards>
         struct TsPredicate {
             /* asserts */
             lhs: TsThisOrName,
@@ -451,7 +451,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         /// let y: [foo: number, ...bar: string[]];
         /// ```
         ///
-        /// https://www.typescriptlang.org/docs/handbook/basic-types.html#tuple
+        /// <https://www.typescriptlang.org/docs/handbook/basic-types.html#tuple>
         struct TsTuple {
             T!['['],
             elements: TsTupleElement,
@@ -505,7 +505,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         /// }
         /// ```
         ///
-        /// https://www.typescriptlang.org/docs/handbook/advanced-types.html#mapped-types
+        /// <https://www.typescriptlang.org/docs/handbook/advanced-types.html#mapped-types>
         // TODO: this is kind of ugly, especially the : then + then - then ?
         struct TsMappedType {
             T!['{'],
