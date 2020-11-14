@@ -51,6 +51,7 @@ impl ComponentKind {
     /// Returns the documentation that should be shown for this document.
     pub fn documentation(&self) -> Option<&'static str> {
         match self {
+            ComponentKind::Rule(rule) => Some(rule.docs()),
             ComponentKind::CommandName(name) => match name.as_ref() {
                 "ignore" => Some(
                     "`ignore` will ignore all rules, or any given rules in some range or node.",
