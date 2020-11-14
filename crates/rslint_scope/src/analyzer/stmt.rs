@@ -130,71 +130,32 @@ impl<'ddlog> Visit<'ddlog, (VarDecl, bool)> for AnalyzerInner {
         scope: &dyn DatalogBuilder<'ddlog>,
         (var, exported): (VarDecl, bool),
     ) -> Self::Output {
-        let (mut stmt_id, mut last_scope, span): (_, Option<DatalogScope<'ddlog>>, _) =
-            (None, None, var.syntax().trimmed_range());
+        let (mut stmt_id, mut last_scope, span) =
+            (None, scope.scope(), var.syntax().trimmed_range());
 
         for decl in var.declared() {
-            let pattern = decl.pattern().map(|pat| {
-                self.visit(
-                    last_scope
-                        .as_ref()
-                        .map(|s| {
-                            let s: &dyn DatalogBuilder<'_> = s;
-                            s
-                        })
-                        .unwrap_or(scope),
-                    pat,
-                )
-            });
-            let value = self.visit(
-                last_scope
-                    .as_ref()
-                    .map(|s| {
-                        let s: &dyn DatalogBuilder<'_> = s;
-                        s
-                    })
-                    .unwrap_or(scope),
-                decl.value(),
-            );
+            let new_scope = last_scope.scope();
+
+            let pattern = decl.pattern().map(|pat| self.visit(&new_scope, pat));
+            let value = self.visit(&new_scope, decl.value());
 
             let (new_id, new_scope) = if var.is_let() {
-                last_scope
-                    .as_ref()
-                    .map(|s| {
-                        let s: &dyn DatalogBuilder<'_> = s;
-                        s
-                    })
-                    .unwrap_or(scope)
-                    .decl_let(pattern, value, span, exported)
+                new_scope.decl_let(pattern, value, span, exported)
             } else if var.is_const() {
-                last_scope
-                    .as_ref()
-                    .map(|s| {
-                        let s: &dyn DatalogBuilder<'_> = s;
-                        s
-                    })
-                    .unwrap_or(scope)
-                    .decl_const(pattern, value, span, exported)
+                new_scope.decl_const(pattern, value, span, exported)
             } else if var.is_var() {
-                last_scope
-                    .as_ref()
-                    .map(|s| {
-                        let s: &dyn DatalogBuilder<'_> = s;
-                        s
-                    })
-                    .unwrap_or(scope)
-                    .decl_var(pattern, value, span, exported)
+                new_scope.decl_var(pattern, value, span, exported)
             } else {
                 unreachable!("a variable declaration was neither `let`, `const` or `var`");
             };
 
-            last_scope = Some(new_scope);
+            last_scope = new_scope;
             if stmt_id.is_none() {
                 stmt_id = Some(new_id);
             }
         }
 
-        (stmt_id, last_scope.unwrap_or_else(|| scope.scope()))
+        (stmt_id, last_scope)
     }
 }
 

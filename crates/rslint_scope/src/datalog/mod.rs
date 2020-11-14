@@ -302,7 +302,7 @@ impl Datalog {
             })
         }));
 
-        lints.extend(self.outputs().use_before_decl.iter().filter_map(|used| {
+        lints.extend(self.outputs().use_before_def.iter().filter_map(|used| {
             if used.key().file == file {
                 Some(DatalogLint::UseBeforeDef {
                     name: used.key().name.clone(),
@@ -597,37 +597,32 @@ pub trait DatalogBuilder<'ddlog> {
         span: TextRange,
         exported: bool,
     ) -> (StmtId, DatalogScope<'ddlog>) {
-        let scope = self.scope();
-        let stmt_id = {
-            let datalog = scope.datalog();
-            let stmt_id = datalog.inc_statement();
+        let datalog = self.datalog();
+        let stmt_id = datalog.inc_statement();
 
-            datalog
-                .insert(
-                    Relations::inputs_LetDecl,
-                    LetDecl {
-                        stmt_id,
-                        file: self.file_id(),
-                        pattern: pattern.into(),
-                        value: value.into(),
-                        exported,
-                    },
-                )
-                .insert(
-                    Relations::inputs_Statement,
-                    Statement {
-                        id: stmt_id,
-                        file: self.file_id(),
-                        kind: StmtKind::StmtLetDecl,
-                        scope: scope.scope_id(),
-                        span: span.into(),
-                    },
-                );
+        datalog
+            .insert(
+                Relations::inputs_LetDecl,
+                LetDecl {
+                    stmt_id,
+                    file: self.file_id(),
+                    pattern: pattern.into(),
+                    value: value.into(),
+                    exported,
+                },
+            )
+            .insert(
+                Relations::inputs_Statement,
+                Statement {
+                    id: stmt_id,
+                    file: self.file_id(),
+                    kind: StmtKind::StmtLetDecl,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
 
-            stmt_id
-        };
-
-        (stmt_id, scope)
+        (stmt_id, self.scope())
     }
 
     fn decl_const(
@@ -637,9 +632,8 @@ pub trait DatalogBuilder<'ddlog> {
         span: TextRange,
         exported: bool,
     ) -> (StmtId, DatalogScope<'ddlog>) {
-        let scope = self.scope();
         let stmt_id = {
-            let datalog = scope.datalog();
+            let datalog = self.datalog();
             let stmt_id = datalog.inc_statement();
 
             datalog
@@ -659,7 +653,7 @@ pub trait DatalogBuilder<'ddlog> {
                         id: stmt_id,
                         file: self.file_id(),
                         kind: StmtKind::StmtConstDecl,
-                        scope: scope.scope_id(),
+                        scope: self.scope_id(),
                         span: span.into(),
                     },
                 );
@@ -667,7 +661,7 @@ pub trait DatalogBuilder<'ddlog> {
             stmt_id
         };
 
-        (stmt_id, scope)
+        (stmt_id, self.scope())
     }
 
     fn decl_var(
@@ -677,37 +671,32 @@ pub trait DatalogBuilder<'ddlog> {
         span: TextRange,
         exported: bool,
     ) -> (StmtId, DatalogScope<'ddlog>) {
-        let scope = self.scope();
-        let stmt_id = {
-            let datalog = scope.datalog();
-            let stmt_id = datalog.inc_statement();
+        let datalog = self.datalog();
+        let stmt_id = datalog.inc_statement();
 
-            datalog
-                .insert(
-                    Relations::inputs_VarDecl,
-                    VarDecl {
-                        stmt_id,
-                        file: self.file_id(),
-                        pattern: pattern.into(),
-                        value: value.into(),
-                        exported,
-                    },
-                )
-                .insert(
-                    Relations::inputs_Statement,
-                    Statement {
-                        id: stmt_id,
-                        file: self.file_id(),
-                        kind: StmtKind::StmtVarDecl,
-                        scope: scope.scope_id(),
-                        span: span.into(),
-                    },
-                );
+        datalog
+            .insert(
+                Relations::inputs_VarDecl,
+                VarDecl {
+                    stmt_id,
+                    file: self.file_id(),
+                    pattern: pattern.into(),
+                    value: value.into(),
+                    exported,
+                },
+            )
+            .insert(
+                Relations::inputs_Statement,
+                Statement {
+                    id: stmt_id,
+                    file: self.file_id(),
+                    kind: StmtKind::StmtVarDecl,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
 
-            stmt_id
-        };
-
-        (stmt_id, scope)
+        (stmt_id, self.scope())
     }
 
     fn ret(&self, value: Option<ExprId>, span: TextRange) -> StmtId {

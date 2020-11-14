@@ -90,7 +90,7 @@ impl<'a> ScopeInfo<'a> {
             Some(tuple3(self.file, self.scope, Intern::new(name.to_owned())).into_ddvalue()),
         );
 
-        query.map_or(false, |query| !query.is_empty())
+        query.map_or(false, |query| !dbg!(query).is_empty())
     }
 }
 
@@ -114,8 +114,8 @@ impl From<Expression> for ExprInfo {
 mod tests {
     use super::*;
     use crate::{datalog::DatalogBuilder, AnalyzerInner, ScopeAnalyzer, Visit};
-    use rslint_parser::{parse_expr, TextRange};
-    use types::ast::{LitKind, Pattern, Spanned};
+    use rslint_parser::{ast::Stmt, parse_expr, parse_text, SyntaxNodeExt};
+    use types::ast::{FileKind, JSFlavor, LitKind};
 
     #[test]
     fn get_expr() {
@@ -187,19 +187,24 @@ mod tests {
 
         let (empty, filled) = datalog
             .transaction(|trans| {
-                let empty = trans.scope();
-
-                // let foo;
-                let (_stmt, filled) = empty.decl_let(
-                    Some(Intern::new(Pattern::SinglePattern {
-                        name: Some(Spanned::new(Intern::new("foo".to_owned()), 4..7u32)).into(),
-                    })),
-                    None,
-                    TextRange::new(0.into(), 8.into()),
-                    false,
+                let file = trans.file(
+                    FileId::new(0),
+                    FileKind::JavaScript {
+                        flavor: JSFlavor::Vanilla,
+                    },
                 );
 
-                Ok((empty.scope_id(), filled.scope_id()))
+                // let foo;
+                let (_stmt, filled) = AnalyzerInner.visit(
+                    &file,
+                    parse_text("let foo;", 0)
+                        .syntax()
+                        .first_child()
+                        .unwrap()
+                        .to::<Stmt>(),
+                );
+
+                Ok((file.scope_id(), filled.scope_id()))
             })
             .unwrap();
 

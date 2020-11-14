@@ -16,7 +16,7 @@ use std::{
 use types::{
     ast::{FileId, ScopeId},
     ddlog_std::tuple2,
-    NameInScope, NoUndef, TypeofUndef, UnusedVariables, UseBeforeDecl,
+    NameInScope, NoUndef, TypeofUndef, UnusedVariables, UseBeforeDef,
 };
 
 macro_rules! derived_facts {
@@ -180,6 +180,6 @@ impl InnerOutputs {
 outputs! {
     typeof_undef: TypeofUndef,
     no_undef: NoUndef,
-    use_before_decl: UseBeforeDecl,
+    use_before_def: UseBeforeDef,
     unused_variables: UnusedVariables,
 }

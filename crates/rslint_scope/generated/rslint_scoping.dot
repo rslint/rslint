@@ -7,7 +7,7 @@ digraph {
     5 [label=NoUndef];
     6 [label=TypeofUndef];
     7 [label=UnusedVariables];
-    8 [label=UseBeforeDecl];
+    8 [label=UseBeforeDef];
     9 [label=VariableUsages];
     10 [label=WithinTypeofExpr];
     11 [label="inputs::Array"];
@@ -73,6 +73,7 @@ digraph {
     1 -> 8;
     1 -> 8;
     1 -> 8;
+    1 -> 8;
     2 -> 2;
     2 -> 4;
     2 -> 4;
@@ -108,6 +109,7 @@ digraph {
     20 -> 3;
     20 -> 4;
     20 -> 8;
+    20 -> 8;
     21 -> 8;
     21 -> 8;
     21 -> 8;
@@ -121,6 +123,7 @@ digraph {
     31 -> 5;
     31 -> 5;
     31 -> 6;
+    31 -> 8;
     31 -> 8;
     31 -> 8;
     31 -> 8;
@@ -159,7 +162,10 @@ digraph {
     46 -> 8;
     46 -> 8;
     46 -> 8;
+    46 -> 8;
     46 -> 9;
+    47 -> 8;
+    47 -> 8;
     47 -> 8;
     47 -> 8;
     47 -> 8;
