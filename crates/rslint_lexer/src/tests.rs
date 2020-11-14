@@ -827,7 +827,7 @@ fn shebang() {
     assert_lex! {
         "0#!/bin/deno",
         NUMBER:1,
-        ERROR_TOKEN:1,
+        HASH:1,
         BANG:1,
         REGEX:9
     }
