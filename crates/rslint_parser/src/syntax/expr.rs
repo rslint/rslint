@@ -875,7 +875,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                     // async (foo, bar, ...baz) => foo
                     // async (yield) => {}
                     let m = p.start();
-                    p.bump_any();
+                    p.bump_remap(T![async]);
                     if p.at(T![<]) {
                         ts_type_params(p)
                             .expect("ts_type_param returned None despite no_recovery=false")
