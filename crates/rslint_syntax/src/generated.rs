@@ -200,7 +200,6 @@ pub enum SyntaxKind {
     SINGLE_PATTERN,
     ARROW_EXPR,
     YIELD_EXPR,
-    STATIC_METHOD,
     CLASS_DECL,
     CLASS_EXPR,
     CLASS_BODY,

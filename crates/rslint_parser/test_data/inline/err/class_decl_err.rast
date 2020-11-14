@@ -28,25 +28,24 @@ MODULE@0..74
       R_CURLY@45..46 "}"
     WHITESPACE@46..47 "\n"
     CLASS_BODY@47..74
-      METHOD@47..74
-        NAME@47..52
-          IDENT@47..52 "class"
-        WHITESPACE@52..53 "\n"
-        PARAMETER_LIST@53..74
-          ERROR@53..58
-            CLASS_KW@53..58 "class"
-          WHITESPACE@58..59 " "
-          SINGLE_PATTERN@59..62
-            NAME@59..62
-              IDENT@59..62 "foo"
-          WHITESPACE@62..63 " "
-          ERROR@63..64
-            L_CURLY@63..64 "{"
-          WHITESPACE@64..65 " "
-          SINGLE_PATTERN@65..68
-            NAME@65..68
-              IDENT@65..68 "set"
-          WHITESPACE@68..69 " "
+      CLASS_PROP@47..52
+        ERROR@47..52
+          CLASS_KW@47..52 "class"
+      WHITESPACE@52..53 "\n"
+      ERROR@53..58
+        CLASS_KW@53..58 "class"
+      WHITESPACE@58..59 " "
+      NAME@59..62
+        IDENT@59..62 "foo"
+      WHITESPACE@62..63 " "
+      ERROR@63..64
+        L_CURLY@63..64 "{"
+      WHITESPACE@64..65 " "
+      SETTER@65..74
+        NAME@65..68
+          IDENT@65..68 "set"
+        WHITESPACE@68..69 " "
+        PARAMETER_LIST@69..74
           ERROR@69..70
             L_CURLY@69..70 "{"
           ERROR@70..71
@@ -85,49 +84,49 @@ error[SyntaxError]: expected `'{'` but instead found `class`
   │ ^^^^^ unexpected
 
 --
-error[SyntaxError]: expected `'('` but instead found `class`
-  ┌─ class_decl_err.js:5:1
+error[SyntaxError]: Expected an identifier, but found none
+  ┌─ class_decl_err.js:4:1
   │
-5 │ class foo { set {} }
-  │ ^^^^^ unexpected
+4 │ class
+  │ ^^^^^
 
 --
-error[SyntaxError]: Expected an identifier or pattern, but found none
+error[SyntaxError]: class fields are unsupported
+  ┌─ class_decl_err.js:4:1
+  │
+4 │ class
+  │ ^^^^^
+
+--
+error[SyntaxError]: Expected an identifier, but found none
   ┌─ class_decl_err.js:5:1
   │
 5 │ class foo { set {} }
   │ ^^^^^
 
 --
-error[SyntaxError]: expected `,` but instead found `foo`
+error[SyntaxError]: expected `;`, a property, or a method for a class body, but found none
   ┌─ class_decl_err.js:5:7
   │
 5 │ class foo { set {} }
-  │       ^^^ unexpected
+  │       ^^^
 
 --
-error[SyntaxError]: expected `,` but instead found `{`
-  ┌─ class_decl_err.js:5:11
-  │
-5 │ class foo { set {} }
-  │           ^ unexpected
-
---
-error[SyntaxError]: Expected an identifier or pattern, but found none
+error[SyntaxError]: expected `;`, a property, or a method for a class body, but found none
   ┌─ class_decl_err.js:5:11
   │
 5 │ class foo { set {} }
   │           ^
 
 --
-error[SyntaxError]: expected `,` but instead found `set`
-  ┌─ class_decl_err.js:5:13
+error[SyntaxError]: Expected an identifier, but found none
+  ┌─ class_decl_err.js:5:17
   │
 5 │ class foo { set {} }
-  │             ^^^ unexpected
+  │                 ^
 
 --
-error[SyntaxError]: expected `,` but instead found `{`
+error[SyntaxError]: expected `'('` but instead found `{`
   ┌─ class_decl_err.js:5:17
   │
 5 │ class foo { set {} }

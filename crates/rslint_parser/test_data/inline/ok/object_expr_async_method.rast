@@ -13,7 +13,7 @@ MODULE@0..48
         L_CURLY@8..9 "{"
         WHITESPACE@9..12 "\n  "
         METHOD@12..26
-          IDENT@12..17 "async"
+          ASYNC_KW@12..17 "async"
           WHITESPACE@17..18 " "
           NAME@18..21
             IDENT@18..21 "foo"
@@ -27,7 +27,7 @@ MODULE@0..48
         COMMA@26..27 ","
         WHITESPACE@27..30 "\n  "
         METHOD@30..45
-          IDENT@30..35 "async"
+          ASYNC_KW@30..35 "async"
           WHITESPACE@35..36 " "
           STAR@36..37 "*"
           NAME@37..40

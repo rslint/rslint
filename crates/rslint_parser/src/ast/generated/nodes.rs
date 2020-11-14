@@ -1425,6 +1425,7 @@ pub struct Method {
     pub(crate) syntax: SyntaxNode,
 }
 impl Method {
+    pub fn static_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![static]) }
     pub fn async_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![async]) }
     pub fn star_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [*]) }
     pub fn name(&self) -> Option<PropName> { support::child(&self.syntax) }
@@ -1503,15 +1504,6 @@ impl ConstructorParameters {
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
     pub fn parameters(&self) -> Option<ConstructorParamOrPat> { support::child(&self.syntax) }
     pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
-}
-#[doc = ""]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct StaticMethod {
-    pub(crate) syntax: SyntaxNode,
-}
-impl StaticMethod {
-    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
-    pub fn method(&self) -> Option<Method> { support::child(&self.syntax) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1622,7 +1614,6 @@ pub enum MethodDefinition {
 pub enum ClassElement {
     EmptyStmt(EmptyStmt),
     Method(Method),
-    StaticMethod(StaticMethod),
     PrivateProp(PrivateProp),
     ClassProp(ClassProp),
     Constructor(Constructor),
@@ -3340,17 +3331,6 @@ impl AstNode for ConstructorParameters {
     }
     fn syntax(&self) -> &SyntaxNode { &self.syntax }
 }
-impl AstNode for StaticMethod {
-    fn can_cast(kind: SyntaxKind) -> bool { kind == STATIC_METHOD }
-    fn cast(syntax: SyntaxNode) -> Option<Self> {
-        if Self::can_cast(syntax.kind()) {
-            Some(Self { syntax })
-        } else {
-            None
-        }
-    }
-    fn syntax(&self) -> &SyntaxNode { &self.syntax }
-}
 impl AstNode for ClassDecl {
     fn can_cast(kind: SyntaxKind) -> bool { kind == CLASS_DECL }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3620,9 +3600,6 @@ impl From<EmptyStmt> for ClassElement {
 impl From<Method> for ClassElement {
     fn from(node: Method) -> ClassElement { ClassElement::Method(node) }
 }
-impl From<StaticMethod> for ClassElement {
-    fn from(node: StaticMethod) -> ClassElement { ClassElement::StaticMethod(node) }
-}
 impl From<PrivateProp> for ClassElement {
     fn from(node: PrivateProp) -> ClassElement { ClassElement::PrivateProp(node) }
 }
@@ -3639,20 +3616,13 @@ impl AstNode for ClassElement {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
             kind,
-            EMPTY_STMT
-                | METHOD
-                | STATIC_METHOD
-                | PRIVATE_PROP
-                | CLASS_PROP
-                | CONSTRUCTOR
-                | TS_INDEX_SIGNATURE
+            EMPTY_STMT | METHOD | PRIVATE_PROP | CLASS_PROP | CONSTRUCTOR | TS_INDEX_SIGNATURE
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             EMPTY_STMT => ClassElement::EmptyStmt(EmptyStmt { syntax }),
             METHOD => ClassElement::Method(Method { syntax }),
-            STATIC_METHOD => ClassElement::StaticMethod(StaticMethod { syntax }),
             PRIVATE_PROP => ClassElement::PrivateProp(PrivateProp { syntax }),
             CLASS_PROP => ClassElement::ClassProp(ClassProp { syntax }),
             CONSTRUCTOR => ClassElement::Constructor(Constructor { syntax }),
@@ -3665,7 +3635,6 @@ impl AstNode for ClassElement {
         match self {
             ClassElement::EmptyStmt(it) => &it.syntax,
             ClassElement::Method(it) => &it.syntax,
-            ClassElement::StaticMethod(it) => &it.syntax,
             ClassElement::PrivateProp(it) => &it.syntax,
             ClassElement::ClassProp(it) => &it.syntax,
             ClassElement::Constructor(it) => &it.syntax,
@@ -5090,11 +5059,6 @@ impl std::fmt::Display for Constructor {
     }
 }
 impl std::fmt::Display for ConstructorParameters {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self.syntax(), f)
-    }
-}
-impl std::fmt::Display for StaticMethod {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

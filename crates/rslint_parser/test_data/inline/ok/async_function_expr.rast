@@ -10,7 +10,7 @@ MODULE@0..62
       EQ@6..7 "="
       WHITESPACE@7..8 " "
       FN_EXPR@8..27
-        IDENT@8..13 "async"
+        ASYNC_KW@8..13 "async"
         WHITESPACE@13..14 " "
         FUNCTION_KW@14..22 "function"
         PARAMETER_LIST@22..24
@@ -33,7 +33,7 @@ MODULE@0..62
       EQ@35..36 "="
       WHITESPACE@36..37 " "
       FN_EXPR@37..60
-        IDENT@37..42 "async"
+        ASYNC_KW@37..42 "async"
         WHITESPACE@42..43 " "
         FUNCTION_KW@43..51 "function"
         WHITESPACE@51..52 " "

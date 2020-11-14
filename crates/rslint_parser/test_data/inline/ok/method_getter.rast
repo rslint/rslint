@@ -8,13 +8,15 @@ MODULE@0..28
     CLASS_BODY@10..27
       L_CURLY@10..11 "{"
       WHITESPACE@11..13 "\n "
-      GETTER@13..25
-        IDENT@13..16 "get"
+      SETTER@13..25
+        NAME@13..16
+          IDENT@13..16 "get"
         WHITESPACE@16..17 " "
         NAME@17..20
           IDENT@17..20 "bar"
-        L_PAREN@20..21 "("
-        R_PAREN@21..22 ")"
+        PARAMETER_LIST@20..22
+          L_PAREN@20..21 "("
+          R_PAREN@21..22 ")"
         WHITESPACE@22..23 " "
         BLOCK_STMT@23..25
           L_CURLY@23..24 "{"

@@ -29,6 +29,17 @@ pub fn maybe_private_name(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
+fn class_prop_name(p: &mut Parser) -> Option<CompletedMarker> {
+    if p.at(T![#]) {
+        let m = p.start();
+        p.bump_any();
+        identifier_name(p);
+        Some(m.complete(p, PRIVATE_NAME))
+    } else {
+        object_prop_name(p, true)
+    }
+}
+
 fn args_body(p: &mut Parser) {
     if p.at(T![<]) {
         if let Some(ref mut ty) = ts_type_params(p) {
@@ -774,7 +785,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     let generator_range = p.cur_tok().range;
     if p.eat(T![*]) {
         let is_constructor = p.cur_src() == "constructor";
-        maybe_private_name(p);
+        class_prop_name(p);
         if let Some(range) = readonly_range {
             let err = p
                 .err_builder("class methods cannot be readonly")
@@ -803,7 +814,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
         p.bump_remap(T![async]);
         p.eat(T![*]);
         let is_constructor = p.cur_src() == "constructor";
-        maybe_private_name(p);
+        class_prop_name(p);
 
         if is_constructor {
             let err = p
@@ -826,7 +837,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     let is_constructor = p.cur_src() == "constructor";
-    let key = maybe_private_name(p);
+    let key = class_prop_name(p);
     let opt = maybe_opt(p);
 
     if is_method(p, 0) {
@@ -908,7 +919,8 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
 
     if let Some(key) = key.filter(|x| x.kind() != PRIVATE_NAME) {
         if matches!(p.span_text(key.range(p)), "get" | "set") && !next_line_generator {
-            maybe_private_name(p);
+            let getter = p.cur_src() == "get";
+            class_prop_name(p);
 
             if let Some(range) = readonly_range {
                 let err = p
@@ -918,7 +930,8 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
                 p.error(err);
             }
 
-            return method(p, m, None);
+            args_body(p);
+            return Some(m.complete(p, if getter { GETTER } else { SETTER }));
         }
     }
 
