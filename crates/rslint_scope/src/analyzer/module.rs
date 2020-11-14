@@ -32,10 +32,8 @@ impl<'ddlog> Visit<'ddlog, ModuleItem> for AnalyzerInner {
                 // self.visit(scope, export);
                 None
             }
-            ModuleItem::ExportDecl(export) => {
-                self.visit(scope, export).and_then(|(_id, scope)| scope)
-            }
-            ModuleItem::Stmt(stmt) => self.visit(scope, stmt).1,
+            ModuleItem::ExportDecl(export) => self.visit(scope, export).map(|(_id, scope)| scope),
+            ModuleItem::Stmt(stmt) => Some(self.visit(scope, stmt).1),
         }
     }
 }
@@ -113,7 +111,7 @@ impl<'ddlog> Visit<'ddlog, NamedImports> for AnalyzerInner {
 }
 
 impl<'ddlog> Visit<'ddlog, ExportDecl> for AnalyzerInner {
-    type Output = Option<(Option<StmtId>, Option<DatalogScope<'ddlog>>)>;
+    type Output = Option<(Option<StmtId>, DatalogScope<'ddlog>)>;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, export: ExportDecl) -> Self::Output {
         self.visit(scope, export.decl().map(|decl| (decl, true)))

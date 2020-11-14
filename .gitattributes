@@ -3,3 +3,6 @@
 
 # Give ddlog files syntax highlighting
 *.dl linguist-language=prolog
+
+# Mark ddlog generated code as vendored and don't try to merge them
+crates/rslint_scope/generated/ linguist-vendored -diff

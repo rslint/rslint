@@ -13,10 +13,7 @@ use std::{
     ops::Deref,
     sync::{Arc, Mutex},
 };
-use types::{
-    ast::ScopeId, NameInScope, NoUndef, TypeofUndefinedAlwaysUndefined, UnusedVariables,
-    VarUseBeforeDeclaration,
-};
+use types::{ast::ScopeId, NameInScope, NoUndef, TypeofUndef, UnusedVariables, UseBeforeDecl};
 
 macro_rules! derived_facts {
     ($($function_name:ident($arg_name:ident : $arg_ty:ty) -> $relation_type:ident from $index_name:ident),* $(,)?) => {
@@ -177,8 +174,8 @@ impl InnerOutputs {
 }
 
 outputs! {
-    typeof_undef: TypeofUndefinedAlwaysUndefined,
+    typeof_undef: TypeofUndef,
     no_undef: NoUndef,
-    var_usage_before_decl: VarUseBeforeDeclaration,
+    use_before_decl: UseBeforeDecl,
     unused_variables: UnusedVariables,
 }

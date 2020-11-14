@@ -49,6 +49,7 @@ macro_rules! rule_test {
 mod no_undef;
 mod no_unused_vars;
 mod typeof_undef;
+mod use_before_def;
 
 use crate::{
     datalog::DatalogLint,
@@ -135,6 +136,18 @@ impl<'a> TestCase<'a> {
         rule_name: Cow<'static, str>,
         id: usize,
     ) -> Self {
+        harness.datalog.outputs().with_output_file(
+            OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .open(
+                    Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/output.log")).join(&*rule_name),
+                )
+                .unwrap(),
+        );
+
         Self {
             rule_name,
             code,
@@ -195,16 +208,6 @@ impl<'a> TestCase<'a> {
         if !path.exists() {
             fs::create_dir_all(&path).unwrap();
         }
-
-        self.harness.datalog.outputs().with_output_file(
-            OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .open(path.join("state"))
-                .unwrap(),
-        );
 
         let mut failed = false;
         let ast = if self.is_module {
@@ -310,7 +313,14 @@ impl<'a> TestCase<'a> {
                     .into_iter()
                     .filter(|err| err.file_id() == file_id)
                     .collect::<Vec<_>>(),
-                self.harness.datalog.dump_inputs().unwrap(),
+                self.harness
+                    .datalog
+                    .dump_inputs()
+                    .unwrap()
+                    .lines()
+                    .filter(|line| line.contains(&format!("ast::FileId{{.id = {}}}", file_id.id)))
+                    .collect::<Vec<_>>()
+                    .join("\n"),
                 self.harness.datalog.outputs(),
             )
             .unwrap();

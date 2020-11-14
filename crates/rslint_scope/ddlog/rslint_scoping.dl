@@ -299,13 +299,13 @@ WithinTypeofExpr(type_of, last) :-
     Some { var last } = sequence.last().
 
 
-output relation TypeofUndefinedAlwaysUndefined(whole_expr: ExprId, undefined_expr: ExprId)
-TypeofUndefinedAlwaysUndefined(whole_expr, undefined_expr) :-
+output relation TypeofUndef(whole_expr: ExprId, undefined_expr: ExprId)
+TypeofUndef(whole_expr, undefined_expr) :-
     NameRef(undefined_expr, name),
     Expression(undefined_expr, ExprNameRef, scope, span),
     not NameInScope(scope.file, name, scope, _, _, _),
     // Expressions like `typeof not_undefined` are allowed under NoUndef
-    // and are instead output through TypeofUndefinedAlwaysUndefined
+    // and are instead output through TypeofUndef
     WithinTypeofExpr(whole_expr, undefined_expr).
 
 
@@ -319,7 +319,7 @@ NoUndef(name, scope, span, expr.file) :-
     Expression(expr, ExprNameRef, scope, span),
     not NameInScope(expr.file, name, scope, _, _, _),
     // Expressions like `typeof not_undefined` are allowed under NoUndef
-    // and are instead output through TypeofUndefinedAlwaysUndefined
+    // and are instead output through TypeofUndef
     not WithinTypeofExpr(_, expr),
     not ChainedWith(_, expr).
 
@@ -332,13 +332,59 @@ NoUndef(name.data, scope, name.span, expr.file) :-
 
 
 // `var` usages that happen before the declaration
-output relation VarUseBeforeDeclaration(name: Name, used_in: Span, declared_in: Span, file: FileId)
-VarUseBeforeDeclaration(name, used_in, declared_in, expr.file) :-
+output relation UseBeforeDecl(name: Name, used_in: Span, declared_in: Span, file: FileId)
+UseBeforeDecl(name, used_in, declared_in, expr.file) :-
     NameRef(expr, name),
     Expression(expr, ExprNameRef, used_scope, used_in),
-    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { .stmt = stmt }, _),
+    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { stmt }, _),
     Statement(stmt, StmtVarDecl, declared_scope, declared_in),
     ChildScope(used_scope, declared_scope).
+
+UseBeforeDecl(name, used_in, declared_in, expr.file) :-
+    New(expr, Some { object }, _),
+    Expression(expr, _, used_scope, used_in),
+    NameRef(callee, name),
+    NameInScope(expr.file, name, used_scope, _, AnyIdClass { class }, _),
+    Class(class, Some { Spanned { _, declared_in }}, _, _, decl_scope, _),
+    ChildScope(used_scope, decl_scope).
+
+UseBeforeDecl(name, used_in, declared_in, expr.file) :-
+    Call(expr, Some { callee }, _),
+    Expression(expr, _, used_scope, used_in),
+    NameRef(callee, name),
+    NameInScope(expr.file, name, used_scope, _, AnyIdFunc { func }, _),
+    Function(func, Some { Spanned { _, declared_in }}, decl_scope, _, _),
+    ChildScope(used_scope, decl_scope).
+
+UseBeforeDecl(name, used_in, declared_in, expr.file) :-
+    New(expr, Some { object }, _),
+    Expression(expr, _, used_scope, used_in),
+    NameRef(object, name),
+    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { decl }, _),
+    VarDecl(decl, _, Some { class }, _),
+    ClassExpr(class, _),
+    Expression(class, _, decl_scope, declared_in),
+    ChildScope(used_scope, decl_scope).
+
+UseBeforeDecl(name, used_in, declared_in, expr.file) :-
+    New(expr, Some { object }, _),
+    Expression(expr, _, used_scope, used_in),
+    NameRef(object, name),
+    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { decl }, _),
+    LetDecl(decl, _, Some { class }, _),
+    ClassExpr(class, _),
+    Expression(class, _, decl_scope, declared_in),
+    ChildScope(used_scope, decl_scope).
+
+UseBeforeDecl(name, used_in, declared_in, expr.file) :-
+    New(expr, Some { object }, _),
+    Expression(expr, _, used_scope, used_in),
+    NameRef(object, name),
+    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { decl }, _),
+    ConstDecl(decl, _, Some { class }, _),
+    ClassExpr(class, _),
+    Expression(class, _, decl_scope, declared_in),
+    ChildScope(used_scope, decl_scope).
 
 
 relation IsExported(file: FileId, id: AnyId)

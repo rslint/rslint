@@ -58,6 +58,12 @@ pub enum DatalogLint {
         undefined_portion: Span,
         file: FileId,
     },
+    UseBeforeDef {
+        name: Name,
+        used: Span,
+        declared: Span,
+        file: FileId,
+    },
 }
 
 impl DatalogLint {
@@ -71,6 +77,10 @@ impl DatalogLint {
 
     pub fn is_typeof_undef(&self) -> bool {
         matches!(self, Self::TypeofUndef { .. })
+    }
+
+    pub fn is_use_before_def(&self) -> bool {
+        matches!(self, Self::UseBeforeDef { .. })
     }
 
     #[cfg(test)]
@@ -104,11 +114,26 @@ impl DatalogLint {
     }
 
     #[cfg(test)]
+    pub(crate) fn use_before_def(
+        name: impl Into<Name>,
+        used: std::ops::Range<u32>,
+        declared: std::ops::Range<u32>,
+    ) -> Self {
+        Self::UseBeforeDef {
+            name: name.into(),
+            used: used.into(),
+            declared: declared.into(),
+            file: FileId::new(0),
+        }
+    }
+
+    #[cfg(test)]
     pub(crate) fn file_id(&self) -> FileId {
         match *self {
             Self::NoUndef { file, .. } => file,
             Self::NoUnusedVars { file, .. } => file,
             Self::TypeofUndef { file, .. } => file,
+            Self::UseBeforeDef { file, .. } => file,
         }
     }
 
@@ -118,6 +143,7 @@ impl DatalogLint {
             Self::NoUndef { file, .. } => file,
             Self::NoUnusedVars { file, .. } => file,
             Self::TypeofUndef { file, .. } => file,
+            Self::UseBeforeDef { file, .. } => file,
         }
     }
 }
@@ -278,6 +304,18 @@ impl Datalog {
                 file: whole_expr.scope.file,
             }
         }));
+
+        lints.extend(
+            self.outputs()
+                .use_before_decl
+                .iter()
+                .map(|used| DatalogLint::UseBeforeDef {
+                    name: used.key().name.clone(),
+                    used: used.key().used_in,
+                    declared: used.key().declared_in,
+                    file: used.key().file,
+                }),
+        );
 
         Ok(lints)
     }

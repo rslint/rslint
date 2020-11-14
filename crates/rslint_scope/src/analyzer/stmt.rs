@@ -16,40 +16,41 @@ use types::{
     IMPLICIT_ARGUMENTS,
 };
 
+// TODO: Make this more fine-grained? What things *don't* require new scopes?
 impl<'ddlog> Visit<'ddlog, Stmt> for AnalyzerInner {
-    type Output = (Option<StmtId>, Option<DatalogScope<'ddlog>>);
+    type Output = (Option<StmtId>, DatalogScope<'ddlog>);
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, stmt: Stmt) -> Self::Output {
         let stmt_range = stmt.range();
 
         match stmt {
-            Stmt::BlockStmt(block) => (self.visit(scope, block), None),
-            Stmt::EmptyStmt(empty) => (Some(scope.empty(empty.range())), None),
+            Stmt::BlockStmt(block) => (self.visit(scope, block), scope.scope()),
+            Stmt::EmptyStmt(empty) => (Some(scope.empty(empty.range())), scope.scope()),
             Stmt::ExprStmt(expr) => {
                 let expr = expr.expr().map(|expr| self.visit(scope, expr));
-                (Some(scope.stmt_expr(expr, stmt_range)), None)
+                (Some(scope.stmt_expr(expr, stmt_range)), scope.scope())
             }
-            Stmt::IfStmt(branch) => (Some(self.visit(scope, branch)), None),
-            Stmt::DoWhileStmt(do_while) => (Some(self.visit(scope, do_while)), None),
-            Stmt::WhileStmt(while_stmt) => (Some(self.visit(scope, while_stmt)), None),
-            Stmt::ForStmt(for_stmt) => (Some(self.visit(scope, for_stmt)), None),
-            Stmt::ForInStmt(for_in) => (Some(self.visit(scope, for_in)), None),
-            Stmt::ContinueStmt(cont) => (Some(self.visit(scope, cont)), None),
-            Stmt::BreakStmt(brk) => (Some(self.visit(scope, brk)), None),
-            Stmt::ReturnStmt(ret) => (Some(self.visit(scope, ret)), None),
-            Stmt::WithStmt(with) => (Some(self.visit(scope, with)), None),
-            Stmt::LabelledStmt(label) => (Some(self.visit(scope, label)), None),
-            Stmt::SwitchStmt(switch) => (Some(self.visit(scope, switch)), None),
-            Stmt::ThrowStmt(throw) => (Some(self.visit(scope, throw)), None),
-            Stmt::TryStmt(try_stmt) => (Some(self.visit(scope, try_stmt)), None),
-            Stmt::DebuggerStmt(debugger) => (Some(self.visit(scope, debugger)), None),
+            Stmt::IfStmt(branch) => (Some(self.visit(scope, branch)), scope.scope()),
+            Stmt::DoWhileStmt(do_while) => (Some(self.visit(scope, do_while)), scope.scope()),
+            Stmt::WhileStmt(while_stmt) => (Some(self.visit(scope, while_stmt)), scope.scope()),
+            Stmt::ForStmt(for_stmt) => (Some(self.visit(scope, for_stmt)), scope.scope()),
+            Stmt::ForInStmt(for_in) => (Some(self.visit(scope, for_in)), scope.scope()),
+            Stmt::ContinueStmt(cont) => (Some(self.visit(scope, cont)), scope.scope()),
+            Stmt::BreakStmt(brk) => (Some(self.visit(scope, brk)), scope.scope()),
+            Stmt::ReturnStmt(ret) => (Some(self.visit(scope, ret)), scope.scope()),
+            Stmt::WithStmt(with) => (Some(self.visit(scope, with)), scope.scope()),
+            Stmt::LabelledStmt(label) => (Some(self.visit(scope, label)), scope.scope()),
+            Stmt::SwitchStmt(switch) => (Some(self.visit(scope, switch)), scope.scope()),
+            Stmt::ThrowStmt(throw) => (Some(self.visit(scope, throw)), scope.scope()),
+            Stmt::TryStmt(try_stmt) => (Some(self.visit(scope, try_stmt)), scope.scope()),
+            Stmt::DebuggerStmt(debugger) => (Some(self.visit(scope, debugger)), scope.scope()),
             Stmt::Decl(decl) => self.visit(scope, (decl, false)),
         }
     }
 }
 
 impl<'ddlog> Visit<'ddlog, (Decl, bool)> for AnalyzerInner {
-    type Output = (Option<StmtId>, Option<DatalogScope<'ddlog>>);
+    type Output = (Option<StmtId>, DatalogScope<'ddlog>);
 
     fn visit(
         &self,
@@ -58,12 +59,12 @@ impl<'ddlog> Visit<'ddlog, (Decl, bool)> for AnalyzerInner {
     ) -> Self::Output {
         match decl {
             Decl::FnDecl(func) => {
-                let _function_id = self.visit(scope, (func, exported));
-                (None, None)
+                let (_function_id, scope) = self.visit(scope, (func, exported));
+                (None, scope)
             }
             Decl::ClassDecl(class) => {
                 let (_class_id, scope) = self.visit(scope, (class, exported));
-                (None, Some(scope))
+                (None, scope)
             }
             Decl::VarDecl(var) => self.visit(scope, (var, exported)),
         }
@@ -71,15 +72,16 @@ impl<'ddlog> Visit<'ddlog, (Decl, bool)> for AnalyzerInner {
 }
 
 impl<'ddlog> Visit<'ddlog, (FnDecl, bool)> for AnalyzerInner {
-    type Output = FuncId;
+    type Output = (FuncId, DatalogScope<'ddlog>);
 
     fn visit(
         &self,
         scope: &dyn DatalogBuilder<'ddlog>,
         (func, exported): (FnDecl, bool),
     ) -> Self::Output {
+        let scope = scope.scope();
         let function_id = scope.next_function_id();
-        let name = self.visit(scope, func.name());
+        let name = self.visit(&scope, func.name());
 
         let (function, mut body_scope) = scope.decl_function(function_id, name, exported);
 
@@ -95,13 +97,12 @@ impl<'ddlog> Visit<'ddlog, (FnDecl, bool)> for AnalyzerInner {
         if let Some(body) = func.body() {
             for stmt in body.stmts() {
                 // Enter a new scope after each statement that requires one
-                if let (_stmt_id, Some(new_scope)) = self.visit(&body_scope, stmt) {
-                    body_scope = new_scope;
-                }
+                let (_stmt_id, new_scope) = self.visit(&body_scope, stmt);
+                body_scope = new_scope;
             }
         }
 
-        function_id
+        (function_id, scope.scope())
     }
 }
 
@@ -122,7 +123,7 @@ impl<'ddlog> Visit<'ddlog, (ClassDecl, bool)> for AnalyzerInner {
 }
 
 impl<'ddlog> Visit<'ddlog, (VarDecl, bool)> for AnalyzerInner {
-    type Output = (Option<StmtId>, Option<DatalogScope<'ddlog>>);
+    type Output = (Option<StmtId>, DatalogScope<'ddlog>);
 
     fn visit(
         &self,
@@ -193,7 +194,7 @@ impl<'ddlog> Visit<'ddlog, (VarDecl, bool)> for AnalyzerInner {
             }
         }
 
-        (stmt_id, last_scope)
+        (stmt_id, last_scope.unwrap_or_else(|| scope.scope()))
     }
 }
 
@@ -462,9 +463,7 @@ impl<'ddlog> Visit<'ddlog, AstChildren<Stmt>> for AnalyzerInner {
             let (new_id, new_scope) = self.visit(&scope, stmt);
 
             // Enter a new scope after any statements that create a new one
-            if let Some(new_scope) = new_scope {
-                scope = new_scope;
-            }
+            scope = new_scope;
 
             // Get the id of the first statement so we can return it for the entire block
             if let Some(new_id) = new_id {
@@ -491,7 +490,7 @@ impl<'ddlog> Visit<'ddlog, ForHead> for AnalyzerInner {
                     ForInit::ForDecl {
                         stmt_id: stmt_id.into(),
                     },
-                    decl_scope,
+                    Some(decl_scope),
                 )
             }
 
