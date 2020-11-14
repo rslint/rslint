@@ -5,13 +5,13 @@ typedef Name = istring
 
 // Ids
 typedef FileId = FileId { id: u32 }
-typedef GlobalId = GlobalId { id: u32, file: FileId }
-typedef ImportId = ImportId { id: u32, file: FileId }
-typedef ClassId = ClassId { id: u32, file: FileId }
-typedef FuncId = FuncId { id: u32, file: FileId }
-typedef StmtId = StmtId { id: u32, file: FileId }
-typedef ExprId = ExprId { id: u32, file: FileId }
-typedef ScopeId = ScopeId { id: u32, file: FileId }
+typedef GlobalId = GlobalId { id: u32 }
+typedef ImportId = ImportId { id: u32 }
+typedef ClassId = ClassId { id: u32 }
+typedef FuncId = FuncId { id: u32 }
+typedef StmtId = StmtId { id: u32 }
+typedef ExprId = ExprId { id: u32 }
+typedef ScopeId = ScopeId { id: u32 }
 
 function to_string(scope: ScopeId): string {
     "Scope_${scope.id}"
@@ -24,26 +24,17 @@ typedef AnyId =
     | AnyIdFunc { func: FuncId }
     | AnyIdStmt { stmt: StmtId }
     | AnyIdExpr { expr: ExprId }
+    | AnyIdFile { file: FileId }
 
 function to_string(id: AnyId): string {
     match (id) {
-        AnyIdGlobal { GlobalId { id, _ }} -> "Global_${id}",
-        AnyIdImport { ImportId { id, _ }} -> "Import_${id}",
-        AnyIdClass { ClassId { id, _ }} -> "Class_${id}",
-        AnyIdFunc { FuncId { id, _ }} -> "Func_${id}",
-        AnyIdStmt { StmtId { id, _ }} -> "Stmt_${id}",
-        AnyIdExpr { ExprId { id, _ }} -> "Expr_${id}",
-    }
-}
-
-function file_id(id: AnyId): FileId {
-    match (id) {
-        AnyIdGlobal { GlobalId { _, file }} -> file,
-        AnyIdImport { ImportId { _, file }} -> file,
-        AnyIdClass { ClassId { _, file }} -> file,
-        AnyIdFunc { FuncId { _, file }} -> file,
-        AnyIdStmt { StmtId { _, file }} -> file,
-        AnyIdExpr { ExprId { _, file }} -> file,
+        AnyIdGlobal { GlobalId { id }} -> "Global_${id}",
+        AnyIdImport { ImportId { id }} -> "Import_${id}",
+        AnyIdClass { ClassId { id }} -> "Class_${id}",
+        AnyIdFunc { FuncId { id }} -> "Func_${id}",
+        AnyIdStmt { StmtId { id }} -> "Stmt_${id}",
+        AnyIdExpr { ExprId { id }} -> "Expr_${id}",
+        AnyIdFile { FileId { id }} -> "File_${id}",
     }
 }
 
@@ -301,3 +292,5 @@ typedef ExportKind =
         name: Option<Spanned<Name>>,
         alias: Option<Spanned<Name>>,
     }
+
+typedef GlobalPriv = ReadonlyGlobal | ReadWriteGlobal

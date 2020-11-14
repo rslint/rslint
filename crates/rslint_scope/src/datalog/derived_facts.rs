@@ -13,7 +13,11 @@ use std::{
     ops::Deref,
     sync::{Arc, Mutex},
 };
-use types::{ast::ScopeId, NameInScope, NoUndef, TypeofUndef, UnusedVariables, UseBeforeDecl};
+use types::{
+    ast::{FileId, ScopeId},
+    ddlog_std::tuple2,
+    NameInScope, NoUndef, TypeofUndef, UnusedVariables, UseBeforeDecl,
+};
 
 macro_rules! derived_facts {
     ($($function_name:ident($arg_name:ident : $arg_ty:ty) -> $relation_type:ident from $index_name:ident),* $(,)?) => {
@@ -43,7 +47,7 @@ macro_rules! derived_facts {
 }
 
 derived_facts! {
-    variables_for_scope(scope: ScopeId) -> NameInScope from Index_VariablesForScope,
+    variables_for_scope(query: tuple2<FileId, ScopeId>) -> NameInScope from Index_VariablesForScope,
 }
 
 #[derive(Debug, Clone)]

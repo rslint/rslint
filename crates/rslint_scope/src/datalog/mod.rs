@@ -20,18 +20,18 @@ use std::{
 use types::{
     ast::{
         ArrayElement, AssignOperand, BinOperand, ClassId, ExportKind, ExprId, ExprKind, FileId,
-        FileKind, ForInit, FuncId, GlobalId, IClassElement, IPattern, ImportClause, ImportId,
-        Increment, LitKind, Name, Pattern, PropertyKey, PropertyVal, ScopeId, Span, Spanned,
-        StmtId, StmtKind, SwitchClause, TryHandler, UnaryOperand,
+        FileKind, ForInit, FuncId, GlobalId, GlobalPriv, IClassElement, IPattern, ImportClause,
+        ImportId, Increment, LitKind, Name, Pattern, PropertyKey, PropertyVal, ScopeId, Span,
+        Spanned, StmtId, StmtKind, SwitchClause, TryHandler, UnaryOperand,
     },
-    ddlog_std::Either,
+    ddlog_std::{tuple2, Either},
     inputs::{
         Array, Arrow, ArrowParam, Assign, Await, BinOp, BracketAccess, Break, Call, Class,
-        ClassExpr, ConstDecl, Continue, DoWhile, DotAccess, ExprBigInt, ExprBool, ExprNumber,
-        ExprString, Expression, File as InputFile, FileExport, For, ForIn, Function, FunctionArg,
-        If, ImplicitGlobal, ImportDecl, InlineFunc, InlineFuncParam, InputScope, Label, LetDecl,
-        NameRef, New, Property, Return, Statement, Switch, SwitchCase, Template, Ternary, Throw,
-        Try, UnaryOp, VarDecl, While, With, Yield,
+        ClassExpr, ConstDecl, Continue, DoWhile, DotAccess, EveryScope, ExprBigInt, ExprBool,
+        ExprNumber, ExprString, Expression, File as InputFile, FileExport, For, ForIn, Function,
+        FunctionArg, If, ImplicitGlobal, ImportDecl, InlineFunc, InlineFuncParam, InputScope,
+        Label, LetDecl, NameRef, New, Property, Return, Statement, Switch, SwitchCase, Template,
+        Ternary, Throw, Try, UnaryOp, VarDecl, While, With, Yield,
     },
     internment::Intern,
 };
@@ -124,16 +124,6 @@ impl DatalogLint {
             used: used.into(),
             declared: declared.into(),
             file: FileId::new(0),
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn file_id(&self) -> FileId {
-        match *self {
-            Self::NoUndef { file, .. } => file,
-            Self::NoUnusedVars { file, .. } => file,
-            Self::TypeofUndef { file, .. } => file,
-            Self::UseBeforeDef { file, .. } => file,
         }
     }
 
@@ -252,70 +242,78 @@ impl Datalog {
         }
     }
 
-    pub fn get_lints(&self) -> DatalogResult<Vec<DatalogLint>> {
+    pub fn get_lints(&self, file: FileId) -> DatalogResult<Vec<DatalogLint>> {
         let mut lints = Vec::new();
 
-        lints.extend(
-            self.outputs()
-                .no_undef
-                .iter()
-                .map(|usage| DatalogLint::NoUndef {
+        lints.extend(self.outputs().no_undef.iter().filter_map(|usage| {
+            if usage.key().file == file {
+                Some(DatalogLint::NoUndef {
                     var: usage.key().name.clone(),
                     span: usage.key().span,
                     file: usage.key().file,
-                }),
-        );
-
-        lints.extend(self.outputs().unused_variables.iter().map(|unused| {
-            DatalogLint::NoUnusedVars {
-                var: unused.key().name.clone(),
-                declared: unused.key().span,
-                file: unused.key().file,
+                })
+            } else {
+                None
             }
         }));
 
-        lints.extend(self.outputs().typeof_undef.iter().map(|undef| {
+        lints.extend(self.outputs().unused_variables.iter().filter_map(|unused| {
+            if unused.key().file == file {
+                Some(DatalogLint::NoUnusedVars {
+                    var: unused.key().name.clone(),
+                    declared: unused.key().span,
+                    file: unused.key().file,
+                })
+            } else {
+                None
+            }
+        }));
+
+        lints.extend(self.outputs().typeof_undef.iter().filter_map(|undef| {
+            if undef.key().file != file {
+                return None;
+            }
+
             let whole_expr = self
                 .query(
                     Indexes::inputs_ExpressionById,
-                    Some(undef.key().whole_expr.into_ddvalue()),
+                    Some(tuple2(undef.key().whole_expr, file).into_ddvalue()),
                 )
-                .unwrap()
+                .ok()?
                 .into_iter()
                 .next()
-                .map(|expr| unsafe { Expression::from_ddvalue(expr) })
-                .unwrap();
+                .map(|expr| unsafe { Expression::from_ddvalue(expr) })?;
 
             let undefined_portion = self
                 .query(
                     Indexes::inputs_ExpressionById,
-                    Some(undef.key().undefined_expr.into_ddvalue()),
+                    Some(tuple2(undef.key().undefined_expr, file).into_ddvalue()),
                 )
-                .unwrap()
+                .ok()?
                 .into_iter()
                 .next()
-                .map(|expr| unsafe { Expression::from_ddvalue(expr) })
-                .unwrap()
+                .map(|expr| unsafe { Expression::from_ddvalue(expr) })?
                 .span;
 
-            DatalogLint::TypeofUndef {
+            Some(DatalogLint::TypeofUndef {
                 whole_expr: whole_expr.span,
                 undefined_portion,
-                file: whole_expr.scope.file,
-            }
+                file: whole_expr.file,
+            })
         }));
 
-        lints.extend(
-            self.outputs()
-                .use_before_decl
-                .iter()
-                .map(|used| DatalogLint::UseBeforeDef {
+        lints.extend(self.outputs().use_before_decl.iter().filter_map(|used| {
+            if used.key().file == file {
+                Some(DatalogLint::UseBeforeDef {
                     name: used.key().name.clone(),
                     used: used.key().used_in,
                     declared: used.key().declared_in,
                     file: used.key().file,
-                }),
-        );
+                })
+            } else {
+                None
+            }
+        }));
 
         Ok(lints)
     }
@@ -331,6 +329,7 @@ impl Default for Datalog {
 #[derive(Debug)]
 pub struct DatalogInner {
     updates: RefCell<Vec<Update<DDValue>>>,
+    file_id: Cell<FileId>,
     scope_id: Cell<ScopeId>,
     global_id: Cell<GlobalId>,
     import_id: Cell<ImportId>,
@@ -341,16 +340,17 @@ pub struct DatalogInner {
 }
 
 impl DatalogInner {
-    fn new(file: FileId) -> Self {
+    fn new(file_id: FileId) -> Self {
         Self {
             updates: RefCell::new(Vec::with_capacity(100)),
-            scope_id: Cell::new(ScopeId::new(0, file)),
-            global_id: Cell::new(GlobalId::new(0, file)),
-            import_id: Cell::new(ImportId::new(0, file)),
-            class_id: Cell::new(ClassId::new(0, file)),
-            function_id: Cell::new(FuncId::new(0, file)),
-            statement_id: Cell::new(StmtId::new(0, file)),
-            expression_id: Cell::new(ExprId::new(0, file)),
+            file_id: Cell::new(file_id),
+            scope_id: Cell::new(ScopeId::new(0)),
+            global_id: Cell::new(GlobalId::new(0)),
+            import_id: Cell::new(ImportId::new(0)),
+            class_id: Cell::new(ClassId::new(0)),
+            function_id: Cell::new(FuncId::new(0)),
+            statement_id: Cell::new(StmtId::new(0)),
+            expression_id: Cell::new(ExprId::new(0)),
         }
     }
 
@@ -383,7 +383,7 @@ impl DatalogInner {
     }
 
     fn file_id(&self) -> FileId {
-        self.scope_id.get().file
+        self.file_id.get()
     }
 
     fn insert<V>(&self, relation: Relations, val: V) -> &Self
@@ -408,21 +408,22 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         Ok(Self { datalog })
     }
 
-    pub fn file(&self, id: FileId, kind: FileKind) -> DatalogScope<'ddlog> {
-        self.datalog.scope_id.set(ScopeId::new(0, id));
-        self.datalog.global_id.set(GlobalId::new(0, id));
-        self.datalog.import_id.set(ImportId::new(0, id));
-        self.datalog.class_id.set(ClassId::new(0, id));
-        self.datalog.function_id.set(FuncId::new(0, id));
-        self.datalog.statement_id.set(StmtId::new(0, id));
-        self.datalog.expression_id.set(ExprId::new(0, id));
+    pub fn file(&self, file_id: FileId, kind: FileKind) -> DatalogScope<'ddlog> {
+        self.datalog.file_id.set(file_id);
+        self.datalog.scope_id.set(ScopeId::new(0));
+        self.datalog.global_id.set(GlobalId::new(0));
+        self.datalog.import_id.set(ImportId::new(0));
+        self.datalog.class_id.set(ClassId::new(0));
+        self.datalog.function_id.set(FuncId::new(0));
+        self.datalog.statement_id.set(StmtId::new(0));
+        self.datalog.expression_id.set(ExprId::new(0));
 
         let scope_id = self.datalog.inc_scope();
         self.datalog
             .insert(
                 Relations::inputs_File,
                 InputFile {
-                    id,
+                    id: file_id,
                     kind,
                     top_level_scope: scope_id,
                 },
@@ -432,9 +433,16 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
                 InputScope {
                     parent: scope_id,
                     child: scope_id,
+                    file: file_id,
                 },
             )
-            .insert(Relations::inputs_EveryScope, scope_id);
+            .insert(
+                Relations::inputs_EveryScope,
+                EveryScope {
+                    scope: scope_id,
+                    file: file_id,
+                },
+            );
 
         DatalogScope {
             datalog: self.datalog,
@@ -450,9 +458,16 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
                 InputScope {
                     parent: scope_id,
                     child: scope_id,
+                    file: self.datalog.file_id(),
                 },
             )
-            .insert(Relations::inputs_EveryScope, scope_id);
+            .insert(
+                Relations::inputs_EveryScope,
+                EveryScope {
+                    scope: scope_id,
+                    file: self.datalog.file_id(),
+                },
+            );
 
         DatalogScope {
             datalog: self.datalog,
@@ -466,8 +481,14 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         self.datalog.insert(
             Relations::inputs_ImplicitGlobal,
             ImplicitGlobal {
-                id: GlobalId { id: id.id, file },
+                id: GlobalId { id: id.id },
                 name: Intern::new(global.name.to_string()),
+                file,
+                privileges: if global.writeable {
+                    GlobalPriv::ReadWriteGlobal
+                } else {
+                    GlobalPriv::ReadonlyGlobal
+                },
             },
         );
 
@@ -486,8 +507,21 @@ pub trait DatalogBuilder<'ddlog> {
         debug_assert_ne!(parent, child);
 
         self.datalog()
-            .insert(Relations::inputs_InputScope, InputScope { parent, child })
-            .insert(Relations::inputs_EveryScope, child);
+            .insert(
+                Relations::inputs_InputScope,
+                InputScope {
+                    parent,
+                    child,
+                    file: self.file_id(),
+                },
+            )
+            .insert(
+                Relations::inputs_EveryScope,
+                EveryScope {
+                    scope: child,
+                    file: self.file_id(),
+                },
+            );
 
         DatalogScope {
             datalog: self.datalog(),
@@ -503,14 +537,24 @@ pub trait DatalogBuilder<'ddlog> {
         self.datalog().inc_expression()
     }
 
+    fn file_id(&self) -> FileId {
+        self.datalog().file_id()
+    }
+
     // TODO: Fully integrate global info into ddlog
     fn implicit_global(&self, file: FileId, global: &JsGlobal) -> GlobalId {
         let id = self.datalog().inc_global();
         self.datalog().insert(
             Relations::inputs_ImplicitGlobal,
             ImplicitGlobal {
-                id: GlobalId { id: id.id, file },
+                id: GlobalId { id: id.id },
                 name: Intern::new(global.name.to_string()),
+                file,
+                privileges: if global.writeable {
+                    GlobalPriv::ReadWriteGlobal
+                } else {
+                    GlobalPriv::ReadonlyGlobal
+                },
             },
         );
 
@@ -528,6 +572,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Function,
             Function {
                 id,
+                file: self.file_id(),
                 name: name.into(),
                 scope: self.scope_id(),
                 body: body.scope_id(),
@@ -562,6 +607,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Relations::inputs_LetDecl,
                     LetDecl {
                         stmt_id,
+                        file: self.file_id(),
                         pattern: pattern.into(),
                         value: value.into(),
                         exported,
@@ -571,6 +617,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Relations::inputs_Statement,
                     Statement {
                         id: stmt_id,
+                        file: self.file_id(),
                         kind: StmtKind::StmtLetDecl,
                         scope: scope.scope_id(),
                         span: span.into(),
@@ -600,6 +647,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Relations::inputs_ConstDecl,
                     ConstDecl {
                         stmt_id,
+                        file: self.file_id(),
                         pattern: pattern.into(),
                         value: value.into(),
                         exported,
@@ -609,6 +657,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Relations::inputs_Statement,
                     Statement {
                         id: stmt_id,
+                        file: self.file_id(),
                         kind: StmtKind::StmtConstDecl,
                         scope: scope.scope_id(),
                         span: span.into(),
@@ -638,6 +687,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Relations::inputs_VarDecl,
                     VarDecl {
                         stmt_id,
+                        file: self.file_id(),
                         pattern: pattern.into(),
                         value: value.into(),
                         exported,
@@ -647,6 +697,7 @@ pub trait DatalogBuilder<'ddlog> {
                     Relations::inputs_Statement,
                     Statement {
                         id: stmt_id,
+                        file: self.file_id(),
                         kind: StmtKind::StmtVarDecl,
                         scope: scope.scope_id(),
                         span: span.into(),
@@ -668,6 +719,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Return,
                 Return {
                     stmt_id,
+                    file: self.file_id(),
                     value: value.into(),
                 },
             )
@@ -675,6 +727,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtReturn,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -699,6 +752,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_If,
                 If {
                     stmt_id,
+                    file: self.file_id(),
                     cond: cond.into(),
                     if_body: if_body.into(),
                     else_body: else_body.into(),
@@ -708,6 +762,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtIf,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -726,6 +781,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Break,
                 Break {
                     stmt_id,
+                    file: self.file_id(),
                     label: label.into(),
                 },
             )
@@ -733,6 +789,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtBreak,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -751,6 +808,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_DoWhile,
                 DoWhile {
                     stmt_id,
+                    file: self.file_id(),
                     body: body.into(),
                     cond: cond.into(),
                 },
@@ -759,6 +817,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtDoWhile,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -777,6 +836,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_While,
                 While {
                     stmt_id,
+                    file: self.file_id(),
                     cond: cond.into(),
                     body: body.into(),
                 },
@@ -785,6 +845,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtWhile,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -810,6 +871,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_For,
                 For {
                     stmt_id,
+                    file: self.file_id(),
                     init: init.into(),
                     test: test.into(),
                     update: update.into(),
@@ -820,6 +882,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtFor,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -844,6 +907,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_ForIn,
                 ForIn {
                     stmt_id,
+                    file: self.file_id(),
                     elem: elem.into(),
                     collection: collection.into(),
                     body: body.into(),
@@ -853,6 +917,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtForIn,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -871,6 +936,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Continue,
                 Continue {
                     stmt_id,
+                    file: self.file_id(),
                     label: label.into(),
                 },
             )
@@ -878,6 +944,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtContinue,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -896,6 +963,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_With,
                 With {
                     stmt_id,
+                    file: self.file_id(),
                     cond: cond.into(),
                     body: body.into(),
                 },
@@ -904,6 +972,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtWith,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -922,6 +991,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Label,
                 Label {
                     stmt_id,
+                    file: self.file_id(),
                     name: name.into(),
                     body: body.into(),
                 },
@@ -930,6 +1000,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtLabel,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -953,6 +1024,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Switch,
                 Switch {
                     stmt_id,
+                    file: self.file_id(),
                     test: test.into(),
                 },
             )
@@ -960,6 +1032,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtSwitch,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -971,6 +1044,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_SwitchCase,
                 SwitchCase {
                     stmt_id,
+                    file: self.file_id(),
                     case,
                     body: body.into(),
                 },
@@ -989,6 +1063,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Throw,
                 Throw {
                     stmt_id,
+                    file: self.file_id(),
                     exception: exception.into(),
                 },
             )
@@ -996,6 +1071,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtThrow,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1020,6 +1096,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Try,
                 Try {
                     stmt_id,
+                    file: self.file_id(),
                     body: body.into(),
                     handler,
                     finalizer: finalizer.into(),
@@ -1029,6 +1106,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Statement,
                 Statement {
                     id: stmt_id,
+                    file: self.file_id(),
                     kind: StmtKind::StmtTry,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1046,6 +1124,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Statement,
             Statement {
                 id: stmt_id,
+                file: self.file_id(),
                 kind: StmtKind::StmtDebugger,
                 scope: self.scope_id(),
                 span: span.into(),
@@ -1063,6 +1142,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Statement,
             Statement {
                 id: stmt_id,
+                file: self.file_id(),
                 kind: StmtKind::StmtExpr {
                     expr_id: expr.into(),
                 },
@@ -1082,6 +1162,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Statement,
             Statement {
                 id: stmt_id,
+                file: self.file_id(),
                 kind: StmtKind::StmtEmpty,
                 scope: self.scope_id(),
                 span: span.into(),
@@ -1100,6 +1181,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_ExprNumber,
                 ExprNumber {
                     expr_id,
+                    file: self.file_id(),
                     value: number.into(),
                 },
             )
@@ -1107,6 +1189,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprLit {
                         kind: LitKind::LitNumber,
                     },
@@ -1127,6 +1210,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_ExprNumber,
                 ExprBigInt {
                     expr_id,
+                    file: self.file_id(),
                     value: Int::from_bigint(bigint),
                 },
             )
@@ -1134,6 +1218,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprLit {
                         kind: LitKind::LitBigInt,
                     },
@@ -1150,11 +1235,19 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog
-            .insert(Relations::inputs_ExprString, ExprString { expr_id, value })
+            .insert(
+                Relations::inputs_ExprString,
+                ExprString {
+                    expr_id,
+                    file: self.file_id(),
+                    value,
+                },
+            )
             .insert(
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprLit {
                         kind: LitKind::LitString,
                     },
@@ -1174,6 +1267,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprLit {
                     kind: LitKind::LitNull,
                 },
@@ -1194,6 +1288,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_ExprBool,
                 ExprBool {
                     expr_id,
+                    file: self.file_id(),
                     value: boolean,
                 },
             )
@@ -1201,6 +1296,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprLit {
                         kind: LitKind::LitBool,
                     },
@@ -1221,6 +1317,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprLit {
                     kind: LitKind::LitRegex,
                 },
@@ -1237,11 +1334,19 @@ pub trait DatalogBuilder<'ddlog> {
         let expr_id = datalog.inc_expression();
 
         datalog
-            .insert(Relations::inputs_NameRef, NameRef { expr_id, value })
+            .insert(
+                Relations::inputs_NameRef,
+                NameRef {
+                    expr_id,
+                    file: self.file_id(),
+                    value,
+                },
+            )
             .insert(
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprNameRef,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1260,6 +1365,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Yield,
                 Yield {
                     expr_id,
+                    file: self.file_id(),
                     value: value.into(),
                 },
             )
@@ -1267,6 +1373,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprYield,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1285,6 +1392,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Await,
                 Await {
                     expr_id,
+                    file: self.file_id(),
                     value: value.into(),
                 },
             )
@@ -1292,6 +1400,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprAwait,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1315,6 +1424,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Arrow,
                 Arrow {
                     expr_id,
+                    file: self.file_id(),
                     body: body.into(),
                 },
             )
@@ -1322,6 +1432,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprArrow,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1329,7 +1440,14 @@ pub trait DatalogBuilder<'ddlog> {
             );
 
         for param in params {
-            datalog.insert(Relations::inputs_ArrowParam, ArrowParam { expr_id, param });
+            datalog.insert(
+                Relations::inputs_ArrowParam,
+                ArrowParam {
+                    expr_id,
+                    file: self.file_id(),
+                    param,
+                },
+            );
         }
 
         expr_id
@@ -1344,6 +1462,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_UnaryOp,
                 UnaryOp {
                     expr_id,
+                    file: self.file_id(),
                     op: op.into(),
                     expr: expr.into(),
                 },
@@ -1352,6 +1471,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprUnaryOp,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1376,6 +1496,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_BinOp,
                 BinOp {
                     expr_id,
+                    file: self.file_id(),
                     op: op.into(),
                     lhs: lhs.into(),
                     rhs: rhs.into(),
@@ -1385,6 +1506,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprBinOp,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1409,6 +1531,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Ternary,
                 Ternary {
                     expr_id,
+                    file: self.file_id(),
                     test: test.into(),
                     true_val: true_val.into(),
                     false_val: false_val.into(),
@@ -1418,6 +1541,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprTernary,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1435,6 +1559,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprThis,
                 scope: self.scope_id(),
                 span: span.into(),
@@ -1453,6 +1578,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Template,
                 Template {
                     expr_id,
+                    file: self.file_id(),
                     tag: tag.into(),
                     elements: elements.into(),
                 },
@@ -1461,6 +1587,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprTemplate,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1479,6 +1606,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Array,
                 Array {
                     expr_id,
+                    file: self.file_id(),
                     elements: elements.into(),
                 },
             )
@@ -1486,6 +1614,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprArray,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1508,6 +1637,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Property,
                 Property {
                     expr_id,
+                    file: self.file_id(),
                     key: key.into(),
                     val: Some(val).into(),
                 },
@@ -1518,6 +1648,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprObject,
                 scope: self.scope_id(),
                 span: span.into(),
@@ -1535,6 +1666,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprGrouping {
                     inner: inner.into(),
                 },
@@ -1555,6 +1687,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_BracketAccess,
                 BracketAccess {
                     expr_id,
+                    file: self.file_id(),
                     object: object.into(),
                     prop: prop.into(),
                 },
@@ -1563,6 +1696,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprBracket,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1581,6 +1715,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_DotAccess,
                 DotAccess {
                     expr_id,
+                    file: self.file_id(),
                     object: object.into(),
                     prop: prop.into(),
                 },
@@ -1589,6 +1724,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprDot,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1607,6 +1743,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_New,
                 New {
                     expr_id,
+                    file: self.file_id(),
                     object: object.into(),
                     args: args.map(Into::into).into(),
                 },
@@ -1615,6 +1752,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprNew,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1633,6 +1771,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Call,
                 Call {
                     expr_id,
+                    file: self.file_id(),
                     callee: callee.into(),
                     args: args.map(Into::into).into(),
                 },
@@ -1641,6 +1780,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprCall,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1665,6 +1805,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Assign,
                 Assign {
                     expr_id,
+                    file: self.file_id(),
                     lhs: lhs.into(),
                     rhs: rhs.into(),
                     op: op.into(),
@@ -1674,6 +1815,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprAssign,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1691,6 +1833,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprSequence {
                     exprs: exprs.into(),
                 },
@@ -1710,6 +1853,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprNewTarget,
                 scope: self.scope_id(),
                 span: span.into(),
@@ -1727,6 +1871,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprImportMeta,
                 scope: self.scope_id(),
                 span: span.into(),
@@ -1751,6 +1896,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_InlineFunc,
                 InlineFunc {
                     expr_id,
+                    file: self.file_id(),
                     name: name.into(),
                     body: body.into(),
                 },
@@ -1759,6 +1905,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprInlineFunc,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1768,7 +1915,11 @@ pub trait DatalogBuilder<'ddlog> {
         for param in params {
             datalog.insert(
                 Relations::inputs_InlineFuncParam,
-                InlineFuncParam { expr_id, param },
+                InlineFuncParam {
+                    expr_id,
+                    file: self.file_id(),
+                    param,
+                },
             );
         }
 
@@ -1783,6 +1934,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprSuperCall {
                     args: args.map(Into::into).into(),
                 },
@@ -1801,6 +1953,7 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_Expression,
             Expression {
                 id: expr_id,
+                file: self.file_id(),
                 kind: ExprKind::ExprImportCall { arg: arg.into() },
                 scope: self.scope_id(),
                 span: span.into(),
@@ -1818,6 +1971,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_ClassExpr,
                 ClassExpr {
                     expr_id,
+                    file: self.file_id(),
                     elements: elements.map(Into::into).into(),
                 },
             )
@@ -1825,6 +1979,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Expression,
                 Expression {
                     id: expr_id,
+                    file: self.file_id(),
                     kind: ExprKind::ExprClass,
                     scope: self.scope_id(),
                     span: span.into(),
@@ -1850,6 +2005,7 @@ pub trait DatalogBuilder<'ddlog> {
                 Relations::inputs_Class,
                 Class {
                     id,
+                    file: self.file_id(),
                     name: name.into(),
                     parent: parent.into(),
                     elements: elements.map(Into::into).into(),
@@ -1869,7 +2025,14 @@ pub trait DatalogBuilder<'ddlog> {
         let id = datalog.inc_import();
 
         for clause in clauses {
-            datalog.insert(Relations::inputs_ImportDecl, ImportDecl { id, clause });
+            datalog.insert(
+                Relations::inputs_ImportDecl,
+                ImportDecl {
+                    id,
+                    file: self.file_id(),
+                    clause,
+                },
+            );
         }
     }
 
@@ -1879,7 +2042,7 @@ pub trait DatalogBuilder<'ddlog> {
         datalog.insert(
             Relations::inputs_FileExport,
             FileExport {
-                file: datalog.file_id(),
+                file: self.file_id(),
                 export: ExportKind::NamedExport {
                     name: name.into(),
                     alias: alias.into(),
@@ -1907,6 +2070,7 @@ impl<'ddlog> DatalogFunction<'ddlog> {
         self.datalog.insert(
             Relations::inputs_FunctionArg,
             FunctionArg {
+                file: self.file_id(),
                 parent_func: self.func_id(),
                 pattern,
                 implicit,

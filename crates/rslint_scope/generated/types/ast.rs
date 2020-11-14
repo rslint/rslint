@@ -110,15 +110,6 @@ impl From<Range<usize>> for Span {
 impl Copy for Span {}
 impl Copy for AnyId {}
 
-impl FileId {
-    /// Creates a new file id from the given value
-    pub const fn new(id: u32) -> Self {
-        Self { id }
-    }
-}
-
-impl Copy for FileId {}
-
 macro_rules! impl_id_traits {
     ($($ty:ty),* $(,)?) => {
         /// A convenience trait to allow easily incrementing ids during ast->ddlog translation
@@ -132,8 +123,8 @@ macro_rules! impl_id_traits {
         $(
             impl $ty {
                 /// Creates a new id from the given value
-                pub const fn new(id: u32, file: FileId) -> Self {
-                    Self { id, file }
+                pub const fn new(id: u32) -> Self {
+                    Self { id }
                 }
             }
 
@@ -151,11 +142,8 @@ macro_rules! impl_id_traits {
                 type Output = Self;
 
                 fn add(self, other: Self) -> Self {
-                    debug_assert_eq!(self.file, other.file);
-
                     Self {
                         id: self.id + other.id,
-                        file: self.file,
                     }
                 }
             }
@@ -166,7 +154,6 @@ macro_rules! impl_id_traits {
                 fn add(self, other: u32) -> Self {
                     Self {
                         id: self.id + other,
-                        file: self.file,
                     }
                 }
             }
@@ -191,6 +178,7 @@ macro_rules! impl_id_traits {
 
 // Implement basic traits for id type-safe wrappers
 impl_id_traits! {
+    FileId,
     ScopeId,
     GlobalId,
     ImportId,
@@ -290,12 +278,15 @@ pub enum AnyId {
     },
     AnyIdExpr {
         expr: crate::ast::ExprId
+    },
+    AnyIdFile {
+        file: crate::ast::FileId
     }
 }
 impl abomonation::Abomonation for AnyId{}
-::differential_datalog::decl_enum_from_record!(AnyId["ast::AnyId"]<>, AnyIdGlobal["ast::AnyIdGlobal"][1]{[0]global["global"]: crate::ast::GlobalId}, AnyIdImport["ast::AnyIdImport"][1]{[0]import_["import_"]: crate::ast::ImportId}, AnyIdClass["ast::AnyIdClass"][1]{[0]class["class"]: crate::ast::ClassId}, AnyIdFunc["ast::AnyIdFunc"][1]{[0]func["func"]: crate::ast::FuncId}, AnyIdStmt["ast::AnyIdStmt"][1]{[0]stmt["stmt"]: crate::ast::StmtId}, AnyIdExpr["ast::AnyIdExpr"][1]{[0]expr["expr"]: crate::ast::ExprId});
-::differential_datalog::decl_enum_into_record!(AnyId<>, AnyIdGlobal["ast::AnyIdGlobal"]{global}, AnyIdImport["ast::AnyIdImport"]{import_}, AnyIdClass["ast::AnyIdClass"]{class}, AnyIdFunc["ast::AnyIdFunc"]{func}, AnyIdStmt["ast::AnyIdStmt"]{stmt}, AnyIdExpr["ast::AnyIdExpr"]{expr});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(AnyId<>, AnyIdGlobal{global: crate::ast::GlobalId}, AnyIdImport{import_: crate::ast::ImportId}, AnyIdClass{class: crate::ast::ClassId}, AnyIdFunc{func: crate::ast::FuncId}, AnyIdStmt{stmt: crate::ast::StmtId}, AnyIdExpr{expr: crate::ast::ExprId});
+::differential_datalog::decl_enum_from_record!(AnyId["ast::AnyId"]<>, AnyIdGlobal["ast::AnyIdGlobal"][1]{[0]global["global"]: crate::ast::GlobalId}, AnyIdImport["ast::AnyIdImport"][1]{[0]import_["import_"]: crate::ast::ImportId}, AnyIdClass["ast::AnyIdClass"][1]{[0]class["class"]: crate::ast::ClassId}, AnyIdFunc["ast::AnyIdFunc"][1]{[0]func["func"]: crate::ast::FuncId}, AnyIdStmt["ast::AnyIdStmt"][1]{[0]stmt["stmt"]: crate::ast::StmtId}, AnyIdExpr["ast::AnyIdExpr"][1]{[0]expr["expr"]: crate::ast::ExprId}, AnyIdFile["ast::AnyIdFile"][1]{[0]file["file"]: crate::ast::FileId});
+::differential_datalog::decl_enum_into_record!(AnyId<>, AnyIdGlobal["ast::AnyIdGlobal"]{global}, AnyIdImport["ast::AnyIdImport"]{import_}, AnyIdClass["ast::AnyIdClass"]{class}, AnyIdFunc["ast::AnyIdFunc"]{func}, AnyIdStmt["ast::AnyIdStmt"]{stmt}, AnyIdExpr["ast::AnyIdExpr"]{expr}, AnyIdFile["ast::AnyIdFile"]{file});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(AnyId<>, AnyIdGlobal{global: crate::ast::GlobalId}, AnyIdImport{import_: crate::ast::ImportId}, AnyIdClass{class: crate::ast::ClassId}, AnyIdFunc{func: crate::ast::FuncId}, AnyIdStmt{stmt: crate::ast::StmtId}, AnyIdExpr{expr: crate::ast::ExprId}, AnyIdFile{file: crate::ast::FileId});
 impl ::std::fmt::Display for AnyId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -327,6 +318,11 @@ impl ::std::fmt::Display for AnyId {
             crate::ast::AnyId::AnyIdExpr{expr} => {
                 __formatter.write_str("ast::AnyIdExpr{")?;
                 ::std::fmt::Debug::fmt(expr, __formatter)?;
+                __formatter.write_str("}")
+            },
+            crate::ast::AnyId::AnyIdFile{file} => {
+                __formatter.write_str("ast::AnyIdFile{")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -685,21 +681,18 @@ impl ::std::default::Default for ClassElement {
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct ClassId {
-    pub id: u32,
-    pub file: crate::ast::FileId
+    pub id: u32
 }
 impl abomonation::Abomonation for ClassId{}
-::differential_datalog::decl_struct_from_record!(ClassId["ast::ClassId"]<>, ["ast::ClassId"][2]{[0]id["id"]: u32, [1]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(ClassId, ["ast::ClassId"]<>, id, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ClassId, <>, id: u32, file: crate::ast::FileId);
+::differential_datalog::decl_struct_from_record!(ClassId["ast::ClassId"]<>, ["ast::ClassId"][1]{[0]id["id"]: u32});
+::differential_datalog::decl_struct_into_record!(ClassId, ["ast::ClassId"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ClassId, <>, id: u32);
 impl ::std::fmt::Display for ClassId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::ast::ClassId{id,file} => {
+            crate::ast::ClassId{id} => {
                 __formatter.write_str("ast::ClassId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -751,21 +744,18 @@ impl ::std::default::Default for ExportKind {
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct ExprId {
-    pub id: u32,
-    pub file: crate::ast::FileId
+    pub id: u32
 }
 impl abomonation::Abomonation for ExprId{}
-::differential_datalog::decl_struct_from_record!(ExprId["ast::ExprId"]<>, ["ast::ExprId"][2]{[0]id["id"]: u32, [1]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(ExprId, ["ast::ExprId"]<>, id, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ExprId, <>, id: u32, file: crate::ast::FileId);
+::differential_datalog::decl_struct_from_record!(ExprId["ast::ExprId"]<>, ["ast::ExprId"][1]{[0]id["id"]: u32});
+::differential_datalog::decl_struct_into_record!(ExprId, ["ast::ExprId"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ExprId, <>, id: u32);
 impl ::std::fmt::Display for ExprId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::ast::ExprId{id,file} => {
+            crate::ast::ExprId{id} => {
                 __formatter.write_str("ast::ExprId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1040,21 +1030,18 @@ impl ::std::default::Default for ForInit {
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct FuncId {
-    pub id: u32,
-    pub file: crate::ast::FileId
+    pub id: u32
 }
 impl abomonation::Abomonation for FuncId{}
-::differential_datalog::decl_struct_from_record!(FuncId["ast::FuncId"]<>, ["ast::FuncId"][2]{[0]id["id"]: u32, [1]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(FuncId, ["ast::FuncId"]<>, id, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(FuncId, <>, id: u32, file: crate::ast::FileId);
+::differential_datalog::decl_struct_from_record!(FuncId["ast::FuncId"]<>, ["ast::FuncId"][1]{[0]id["id"]: u32});
+::differential_datalog::decl_struct_into_record!(FuncId, ["ast::FuncId"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(FuncId, <>, id: u32);
 impl ::std::fmt::Display for FuncId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::ast::FuncId{id,file} => {
+            crate::ast::FuncId{id} => {
                 __formatter.write_str("ast::FuncId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1067,21 +1054,18 @@ impl ::std::fmt::Debug for FuncId {
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct GlobalId {
-    pub id: u32,
-    pub file: crate::ast::FileId
+    pub id: u32
 }
 impl abomonation::Abomonation for GlobalId{}
-::differential_datalog::decl_struct_from_record!(GlobalId["ast::GlobalId"]<>, ["ast::GlobalId"][2]{[0]id["id"]: u32, [1]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(GlobalId, ["ast::GlobalId"]<>, id, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(GlobalId, <>, id: u32, file: crate::ast::FileId);
+::differential_datalog::decl_struct_from_record!(GlobalId["ast::GlobalId"]<>, ["ast::GlobalId"][1]{[0]id["id"]: u32});
+::differential_datalog::decl_struct_into_record!(GlobalId, ["ast::GlobalId"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(GlobalId, <>, id: u32);
 impl ::std::fmt::Display for GlobalId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::ast::GlobalId{id,file} => {
+            crate::ast::GlobalId{id} => {
                 __formatter.write_str("ast::GlobalId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1090,6 +1074,39 @@ impl ::std::fmt::Display for GlobalId {
 impl ::std::fmt::Debug for GlobalId {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
+pub enum GlobalPriv {
+    ReadonlyGlobal,
+    ReadWriteGlobal
+}
+impl abomonation::Abomonation for GlobalPriv{}
+::differential_datalog::decl_enum_from_record!(GlobalPriv["ast::GlobalPriv"]<>, ReadonlyGlobal["ast::ReadonlyGlobal"][0]{}, ReadWriteGlobal["ast::ReadWriteGlobal"][0]{});
+::differential_datalog::decl_enum_into_record!(GlobalPriv<>, ReadonlyGlobal["ast::ReadonlyGlobal"]{}, ReadWriteGlobal["ast::ReadWriteGlobal"]{});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(GlobalPriv<>, ReadonlyGlobal{}, ReadWriteGlobal{});
+impl ::std::fmt::Display for GlobalPriv {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::ast::GlobalPriv::ReadonlyGlobal{} => {
+                __formatter.write_str("ast::ReadonlyGlobal{")?;
+                __formatter.write_str("}")
+            },
+            crate::ast::GlobalPriv::ReadWriteGlobal{} => {
+                __formatter.write_str("ast::ReadWriteGlobal{")?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for GlobalPriv {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+impl ::std::default::Default for GlobalPriv {
+    fn default() -> Self {
+        crate::ast::GlobalPriv::ReadonlyGlobal{}
     }
 }
 pub type IClassElement = crate::internment::Intern<crate::ast::ClassElement>;
@@ -1144,21 +1161,18 @@ impl ::std::default::Default for ImportClause {
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct ImportId {
-    pub id: u32,
-    pub file: crate::ast::FileId
+    pub id: u32
 }
 impl abomonation::Abomonation for ImportId{}
-::differential_datalog::decl_struct_from_record!(ImportId["ast::ImportId"]<>, ["ast::ImportId"][2]{[0]id["id"]: u32, [1]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(ImportId, ["ast::ImportId"]<>, id, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ImportId, <>, id: u32, file: crate::ast::FileId);
+::differential_datalog::decl_struct_from_record!(ImportId["ast::ImportId"]<>, ["ast::ImportId"][1]{[0]id["id"]: u32});
+::differential_datalog::decl_struct_into_record!(ImportId, ["ast::ImportId"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ImportId, <>, id: u32);
 impl ::std::fmt::Display for ImportId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::ast::ImportId{id,file} => {
+            crate::ast::ImportId{id} => {
                 __formatter.write_str("ast::ImportId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1590,21 +1604,18 @@ impl ::std::default::Default for PropertyVal {
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct ScopeId {
-    pub id: u32,
-    pub file: crate::ast::FileId
+    pub id: u32
 }
 impl abomonation::Abomonation for ScopeId{}
-::differential_datalog::decl_struct_from_record!(ScopeId["ast::ScopeId"]<>, ["ast::ScopeId"][2]{[0]id["id"]: u32, [1]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(ScopeId, ["ast::ScopeId"]<>, id, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ScopeId, <>, id: u32, file: crate::ast::FileId);
+::differential_datalog::decl_struct_from_record!(ScopeId["ast::ScopeId"]<>, ["ast::ScopeId"][1]{[0]id["id"]: u32});
+::differential_datalog::decl_struct_into_record!(ScopeId, ["ast::ScopeId"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ScopeId, <>, id: u32);
 impl ::std::fmt::Display for ScopeId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::ast::ScopeId{id,file} => {
+            crate::ast::ScopeId{id} => {
                 __formatter.write_str("ast::ScopeId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1671,21 +1682,18 @@ impl <T: ::std::fmt::Debug> ::std::fmt::Debug for Spanned<T> {
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct StmtId {
-    pub id: u32,
-    pub file: crate::ast::FileId
+    pub id: u32
 }
 impl abomonation::Abomonation for StmtId{}
-::differential_datalog::decl_struct_from_record!(StmtId["ast::StmtId"]<>, ["ast::StmtId"][2]{[0]id["id"]: u32, [1]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(StmtId, ["ast::StmtId"]<>, id, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(StmtId, <>, id: u32, file: crate::ast::FileId);
+::differential_datalog::decl_struct_from_record!(StmtId["ast::StmtId"]<>, ["ast::StmtId"][1]{[0]id["id"]: u32});
+::differential_datalog::decl_struct_into_record!(StmtId, ["ast::StmtId"]<>, id);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(StmtId, <>, id: u32);
 impl ::std::fmt::Display for StmtId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::ast::StmtId{id,file} => {
+            crate::ast::StmtId{id} => {
                 __formatter.write_str("ast::StmtId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -2006,16 +2014,6 @@ pub fn bound_vars_internment_Intern__ast_ObjectPatternProp_ddlog_std_Vec__ast_Sp
         _ => (*(&*crate::__STATIC_1)).clone()
     }
 }
-pub fn file_id(id: & crate::ast::AnyId) -> crate::ast::FileId
-{   match (*id) {
-        crate::ast::AnyId::AnyIdGlobal{global: crate::ast::GlobalId{id: _, file: ref file}} => (*file).clone(),
-        crate::ast::AnyId::AnyIdImport{import_: crate::ast::ImportId{id: _, file: ref file}} => (*file).clone(),
-        crate::ast::AnyId::AnyIdClass{class: crate::ast::ClassId{id: _, file: ref file}} => (*file).clone(),
-        crate::ast::AnyId::AnyIdFunc{func: crate::ast::FuncId{id: _, file: ref file}} => (*file).clone(),
-        crate::ast::AnyId::AnyIdStmt{stmt: crate::ast::StmtId{id: _, file: ref file}} => (*file).clone(),
-        crate::ast::AnyId::AnyIdExpr{expr: crate::ast::ExprId{id: _, file: ref file}} => (*file).clone()
-    }
-}
 pub fn free_variable(clause: & crate::ast::NamedImport) -> crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
 {   crate::utils::or_else::<crate::ast::Spanned<crate::ast::Name>>((&clause.alias), (&clause.name))
 }
@@ -2068,12 +2066,13 @@ pub fn to_string_ast_ScopeId___Stringval(scope: & crate::ast::ScopeId) -> String
 }
 pub fn to_string_ast_AnyId___Stringval(id: & crate::ast::AnyId) -> String
 {   match (*id) {
-        crate::ast::AnyId::AnyIdGlobal{global: crate::ast::GlobalId{id: ref id, file: _}} => string_append(String::from(r###"Global_"###), (&crate::ddlog_std::__builtin_2string(id))),
-        crate::ast::AnyId::AnyIdImport{import_: crate::ast::ImportId{id: ref id, file: _}} => string_append(String::from(r###"Import_"###), (&crate::ddlog_std::__builtin_2string(id))),
-        crate::ast::AnyId::AnyIdClass{class: crate::ast::ClassId{id: ref id, file: _}} => string_append(String::from(r###"Class_"###), (&crate::ddlog_std::__builtin_2string(id))),
-        crate::ast::AnyId::AnyIdFunc{func: crate::ast::FuncId{id: ref id, file: _}} => string_append(String::from(r###"Func_"###), (&crate::ddlog_std::__builtin_2string(id))),
-        crate::ast::AnyId::AnyIdStmt{stmt: crate::ast::StmtId{id: ref id, file: _}} => string_append(String::from(r###"Stmt_"###), (&crate::ddlog_std::__builtin_2string(id))),
-        crate::ast::AnyId::AnyIdExpr{expr: crate::ast::ExprId{id: ref id, file: _}} => string_append(String::from(r###"Expr_"###), (&crate::ddlog_std::__builtin_2string(id)))
+        crate::ast::AnyId::AnyIdGlobal{global: crate::ast::GlobalId{id: ref id}} => string_append(String::from(r###"Global_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdImport{import_: crate::ast::ImportId{id: ref id}} => string_append(String::from(r###"Import_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdClass{class: crate::ast::ClassId{id: ref id}} => string_append(String::from(r###"Class_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdFunc{func: crate::ast::FuncId{id: ref id}} => string_append(String::from(r###"Func_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdStmt{stmt: crate::ast::StmtId{id: ref id}} => string_append(String::from(r###"Stmt_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdExpr{expr: crate::ast::ExprId{id: ref id}} => string_append(String::from(r###"Expr_"###), (&crate::ddlog_std::__builtin_2string(id))),
+        crate::ast::AnyId::AnyIdFile{file: crate::ast::FileId{id: ref id}} => string_append(String::from(r###"File_"###), (&crate::ddlog_std::__builtin_2string(id)))
     }
 }
 pub fn to_string_ast_Span___Stringval(span: & crate::ast::Span) -> String

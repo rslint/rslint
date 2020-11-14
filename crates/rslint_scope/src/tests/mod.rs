@@ -136,6 +136,8 @@ impl<'a> TestCase<'a> {
         rule_name: Cow<'static, str>,
         id: usize,
     ) -> Self {
+        fs::create_dir_all(concat!(env!("CARGO_MANIFEST_DIR"), "/output.log")).unwrap();
+
         harness.datalog.outputs().with_output_file(
             OpenOptions::new()
                 .read(true)
@@ -268,11 +270,7 @@ impl<'a> TestCase<'a> {
             *err.file_id_mut() = file_id;
         }
 
-        let mut errors = self.harness.datalog.get_lints().unwrap();
-        errors = errors
-            .into_iter()
-            .filter(|err| err.file_id() == file_id)
-            .collect();
+        let mut errors = self.harness.datalog.get_lints(file_id).unwrap();
         if let Some(filter) = self.harness.filter {
             errors = errors.into_iter().filter(filter).collect();
         }
@@ -306,13 +304,7 @@ impl<'a> TestCase<'a> {
                 ============ END FAILURE ============\n\n",
                 ast.text(),
                 self.errors,
-                self.harness
-                    .datalog
-                    .get_lints()
-                    .unwrap()
-                    .into_iter()
-                    .filter(|err| err.file_id() == file_id)
-                    .collect::<Vec<_>>(),
+                self.harness.datalog.get_lints(file_id).unwrap(),
                 self.harness
                     .datalog
                     .dump_inputs()

@@ -78,15 +78,6 @@ impl From<Range<usize>> for Span {
 impl Copy for Span {}
 impl Copy for AnyId {}
 
-impl FileId {
-    /// Creates a new file id from the given value
-    pub const fn new(id: u32) -> Self {
-        Self { id }
-    }
-}
-
-impl Copy for FileId {}
-
 macro_rules! impl_id_traits {
     ($($ty:ty),* $(,)?) => {
         /// A convenience trait to allow easily incrementing ids during ast->ddlog translation
@@ -100,8 +91,8 @@ macro_rules! impl_id_traits {
         $(
             impl $ty {
                 /// Creates a new id from the given value
-                pub const fn new(id: u32, file: FileId) -> Self {
-                    Self { id, file }
+                pub const fn new(id: u32) -> Self {
+                    Self { id }
                 }
             }
 
@@ -119,11 +110,8 @@ macro_rules! impl_id_traits {
                 type Output = Self;
 
                 fn add(self, other: Self) -> Self {
-                    debug_assert_eq!(self.file, other.file);
-
                     Self {
                         id: self.id + other.id,
-                        file: self.file,
                     }
                 }
             }
@@ -134,7 +122,6 @@ macro_rules! impl_id_traits {
                 fn add(self, other: u32) -> Self {
                     Self {
                         id: self.id + other,
-                        file: self.file,
                     }
                 }
             }
@@ -159,6 +146,7 @@ macro_rules! impl_id_traits {
 
 // Implement basic traits for id type-safe wrappers
 impl_id_traits! {
+    FileId,
     ScopeId,
     GlobalId,
     ImportId,

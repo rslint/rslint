@@ -5,13 +5,13 @@ use rslint_scoping_ddlog::Indexes;
 use std::sync::Arc;
 use types::{
     ast::{ExprKind, Span},
-    ddlog_std::tuple3,
+    ddlog_std::{tuple2, tuple3},
     inputs::{Expression, InputScope},
     internment::Intern,
     ChildScope,
 };
 
-pub use types::ast::{ExprId, ScopeId};
+pub use types::ast::{ExprId, FileId, ScopeId};
 
 #[derive(Debug, Clone)]
 pub struct ProgramInfo {
@@ -23,11 +23,11 @@ impl ProgramInfo {
         Self { datalog }
     }
 
-    pub fn expr(&self, expr: &Expr) -> Option<ExprInfo> {
+    pub fn expr(&self, expr: &Expr, file: FileId) -> Option<ExprInfo> {
         // TODO: Log errors if they occur
         let query = self.datalog.query(
             Indexes::inputs_ExpressionBySpan,
-            Some(Span::from(expr.range()).into_ddvalue()),
+            Some(tuple2(Span::from(expr.range()), file).into_ddvalue()),
         );
 
         query
@@ -38,10 +38,11 @@ impl ProgramInfo {
             .map(Into::into)
     }
 
-    pub fn scope(&self, scope: ScopeId) -> ScopeInfo<'_> {
+    pub fn scope(&self, scope: ScopeId, file: FileId) -> ScopeInfo<'_> {
         ScopeInfo {
             handle: self,
             scope,
+            file,
         }
     }
 }
@@ -49,6 +50,7 @@ impl ProgramInfo {
 pub struct ScopeInfo<'a> {
     handle: &'a ProgramInfo,
     scope: ScopeId,
+    file: FileId,
 }
 
 impl<'a> ScopeInfo<'a> {
@@ -56,7 +58,7 @@ impl<'a> ScopeInfo<'a> {
         // TODO: Log errors if they occur
         let query = self.handle.datalog.query(
             Indexes::inputs_InputScopeByChild,
-            Some(self.scope.into_ddvalue()),
+            Some(tuple2(self.scope, self.file).into_ddvalue()),
         );
 
         query
@@ -68,10 +70,10 @@ impl<'a> ScopeInfo<'a> {
 
     pub fn children(&self) -> Option<Vec<ScopeId>> {
         // TODO: Log errors if they occur
-        let query = self
-            .handle
-            .datalog
-            .query(Indexes::ChildScopeByParent, Some(self.scope.into_ddvalue()));
+        let query = self.handle.datalog.query(
+            Indexes::ChildScopeByParent,
+            Some(tuple2(self.scope, self.file).into_ddvalue()),
+        );
 
         query.ok().map(|query| {
             query
@@ -85,7 +87,7 @@ impl<'a> ScopeInfo<'a> {
         // TODO: Log errors if they occur
         let query = self.handle.datalog.query(
             Indexes::Index_VariableInScope,
-            Some(tuple3(self.scope.file, self.scope, Intern::new(name.to_owned())).into_ddvalue()),
+            Some(tuple3(self.file, self.scope, Intern::new(name.to_owned())).into_ddvalue()),
         );
 
         query.map_or(false, |query| !query.is_empty())
@@ -132,7 +134,7 @@ mod tests {
             .unwrap();
 
         let info = ProgramInfo::new(analyzer.datalog);
-        let query_expr = info.expr(&expr).unwrap();
+        let query_expr = info.expr(&expr, FileId::new(0)).unwrap();
 
         assert_eq!(query_expr.id, expr_id);
         assert_eq!(query_expr.scope, parent_scope);
@@ -169,7 +171,7 @@ mod tests {
 
         let info = ProgramInfo::new(datalog);
         for (id, num_children, children) in ids {
-            let scope = info.scope(id);
+            let scope = info.scope(id, FileId::new(0));
             let query_children = scope.children().unwrap();
             let parent = scope.parent().unwrap();
 
@@ -202,10 +204,10 @@ mod tests {
             .unwrap();
 
         let info = ProgramInfo::new(datalog);
-        let empty = info.scope(empty);
+        let empty = info.scope(empty, FileId::new(0));
         assert!(!empty.contains("foo"));
 
-        let filled = info.scope(filled);
+        let filled = info.scope(filled, FileId::new(0));
         assert!(filled.contains("foo"));
     }
 }

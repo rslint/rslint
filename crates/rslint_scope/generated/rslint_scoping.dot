@@ -1,7 +1,7 @@
 digraph {
     0 [label=ChainedWith];
     1 [label=ChildScope];
-    2 [label=ClosestFunction];
+    2 [label=FunctionLevelScope];
     3 [label=IsExported];
     4 [label=NameInScope];
     5 [label=NoUndef];
@@ -73,6 +73,7 @@ digraph {
     1 -> 8;
     1 -> 8;
     1 -> 8;
+    2 -> 2;
     2 -> 4;
     2 -> 4;
     3 -> 7;
@@ -132,18 +133,15 @@ digraph {
     31 -> 9;
     31 -> 10;
     31 -> 10;
-    32 -> 4;
+    32 -> 2;
     33 -> 3;
     36 -> 2;
-    36 -> 2;
     36 -> 3;
-    36 -> 4;
     36 -> 4;
     36 -> 4;
     36 -> 8;
     37 -> 4;
     39 -> 4;
-    39 -> 7;
     40 -> 4;
     41 -> 4;
     41 -> 4;
@@ -173,12 +171,10 @@ digraph {
     50 -> 4;
     50 -> 4;
     50 -> 4;
-    50 -> 4;
     50 -> 8;
     56 -> 4;
     57 -> 10;
     58 -> 3;
-    58 -> 4;
     58 -> 4;
     58 -> 8;
 }

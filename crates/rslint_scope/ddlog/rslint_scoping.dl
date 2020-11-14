@@ -23,15 +23,35 @@ import inputs
 // └╴d
 // ```
 //
-relation ChildScope(parent: ScopeId, child: ScopeId)
-index ChildScopeByParent(parent: ScopeId) on ChildScope(parent, _)
+relation ChildScope(parent: ScopeId, child: ScopeId, file: FileId)
+index ChildScopeByParent(parent: ScopeId, file: FileId) on ChildScope(parent, _, file)
 
-ChildScope(parent, child) :- InputScope(parent, child), parent != child.
-ChildScope(parent, child) :- InputScope(parent, interum), ChildScope(interum, child), parent != child.
+ChildScope(parent, child, file) :- InputScope(parent, child, file), parent != child.
+ChildScope(parent, child, file) :-
+    InputScope(parent, interum, file),
+    ChildScope(interum, child, file),
+    parent != child.
 
-relation ClosestFunction(scope: ScopeId, func: FuncId)
-ClosestFunction(body, func) :- Function(func, _, _, body, _).
-ClosestFunction(scope, func) :- Function(func, _, _, body, _), ChildScope(body, scope).
+// Function-level scoping, the scope of the nearest getter, setter,
+// method, function, arrow function or file/module
+relation FunctionLevelScope(
+    scope: ScopeId,
+    nearest: ScopeId,
+    file: FileId,
+    id: AnyId,
+)
+
+// Functions are nearest to their bodies
+FunctionLevelScope(body, body, file, AnyIdFunc { func }) :-
+    Function(func, file, _, _, body, _).
+
+FunctionLevelScope(scope, scope, file, AnyIdFile { file }) :-
+    File(file, _, scope).
+
+// Walk the scopes down children
+FunctionLevelScope(from, to, file, id) :-
+    FunctionLevelScope(from, interum, file, id),
+    ChildScope(interum, to, file).
 
 // The `NameInScope` relation gives every name/symbol/ident that's defined for any given scope.
 // Names are walked down children scopes, meaning all children have access to the variables of
@@ -62,17 +82,23 @@ index Index_VariablesForScope(file: FileId, scope: ScopeId) on NameInScope(file,
 index Index_VariableInScope(file: FileId, scope: ScopeId, variable: Name) on NameInScope(file, variable, scope, _, _, _)
 
 // Add implicit globals to every scope
-NameInScope(global.file, name, scope, None, AnyIdGlobal { global }, true) :-
-    ImplicitGlobal(global, name),
-    EveryScope(scope),
-    scope.file == global.file.
+NameInScope(file, name, scope, None, AnyIdGlobal { global }, true) :-
+    ImplicitGlobal(global, file, name, _),
+    EveryScope(scope, file).
 
 // Import declarations
-NameInScope(id.file, name.data, scope, Some { name.span }, AnyIdImport { id }, false) :-
-    ImportDecl(id, clause),
-    var name = FlatMap(clause.free_variables()),
-    EveryScope(scope),
-    scope.file == id.file.
+//
+// ```js
+// // Scope: { Foo, Bar, .. }
+// import { Foo, Bar } from "./somewhere.js";
+// // Scope: { Foo, Bar, .. }
+// ```
+NameInScope(file, name, scope, Some { span }, AnyIdImport { id }, false) :-
+    ImportDecl(id, file, clause),
+    EveryScope(scope, file),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var free_var = FlatMap(clause.free_variables()),
+    Spanned { var name, var span } = free_var.
 
 // Class declarations
 //
@@ -85,8 +111,8 @@ NameInScope(id.file, name.data, scope, Some { name.span }, AnyIdImport { id }, f
 // // Scope: { Baz, ... }
 // ```
 //
-NameInScope(class.file, name.data, scope, Some { name.span }, AnyIdClass { class }, false) :-
-    Class(class, Some { name }, _, _, scope, _).
+NameInScope(file, name, scope, Some { span }, AnyIdClass { class }, false) :-
+    Class(class, file, Some { Spanned { name, span }}, _, _, scope, _).
 
 // `let` declarations
 //
@@ -99,10 +125,12 @@ NameInScope(class.file, name.data, scope, Some { name.span }, AnyIdClass { class
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
-    LetDecl(stmt, Some { pat }, _, _),
-    var name = FlatMap(pat.bound_vars()),
-    Statement(stmt, _, scope, _).
+NameInScope(file, name, scope, Some { span }, AnyIdStmt { stmt }, false) :-
+    LetDecl(stmt, file, Some { pat }, _, _),
+    Statement(stmt, file, _, scope, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound_var.
 
 // `const` declarations
 //
@@ -115,10 +143,12 @@ NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt },
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
-    ConstDecl(stmt, Some { pat }, _, _),
-    var name = FlatMap(pat.bound_vars()),
-    Statement(stmt, _, scope, _).
+NameInScope(file, name, scope, Some { span }, AnyIdStmt { stmt }, false) :-
+    ConstDecl(stmt, file, Some { pat }, _, _),
+    Statement(stmt, file, _, scope, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound_var.
 
 // `var` declarations
 //
@@ -134,26 +164,16 @@ NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt },
 // // Scope: { ... }
 // ```
 //
-NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
-    VarDecl(stmt, Some { pat }, _, _),
-    var name = FlatMap(pat.bound_vars()),
-    Statement(stmt, _, decl_scope, _),
-    // Bubble `var` up to the nearest function's scope
-    ClosestFunction(decl_scope, func), // FIXME: This or the Function clause is wrong
-    Function(func, _, _, scope, _).
-
-// For `var` declarations not within a function, use the file's top-level scope
-NameInScope(stmt.file, name.data, file_scope, Some { name.span }, AnyIdStmt { stmt }, false) :-
-    VarDecl(stmt, Some { pat }, _, _),
-    var name = FlatMap(pat.bound_vars()),
-    Statement(stmt, _, scope, _),
-    not ClosestFunction(scope, _),
-    File(stmt.file, _, file_scope).
+NameInScope(file, name, nearest, Some { span }, AnyIdStmt { stmt }, false) :-
+    VarDecl(stmt, file, Some { pat }, _, _),
+    Statement(stmt, file, _, scope, _),
+    // Bubble `var` up to the nearest function-level scope
+    FunctionLevelScope(nearest, scope, file, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound_var.
 
 // Function declarations
-//
-// Function declarations don't initalize a new scope, so we add the function's
-// name to the scope it was declared in
 //
 // ```js
 // // Scope: { foo, ... }
@@ -163,8 +183,10 @@ NameInScope(stmt.file, name.data, file_scope, Some { name.span }, AnyIdStmt { st
 // // Scope: { foo, ... }
 // ```
 //
-NameInScope(func.file, name.data, scope, Some { name.span }, AnyIdFunc { func }, false) :-
-    Function(func, Some { name }, scope, _, _).
+NameInScope(file, name, scope, Some { span }, AnyIdFunc { func }, false) :-
+    Function(func, file, Some { Spanned { name, span }}, scope, _, _),
+    // Bubble functions up to the nearest function-level scope
+    FunctionLevelScope(nearest, scope, file, _).
 
 // Introduce function arguments within the body of their enclosing function
 //
@@ -176,10 +198,12 @@ NameInScope(func.file, name.data, scope, Some { name.span }, AnyIdFunc { func },
 // // Scope: { ... }
 // ```
 //
-NameInScope(func.file, name.data, body, Some { name.span }, AnyIdFunc { func }, implicit) :-
-    FunctionArg(func, pat, implicit),
-    var name = FlatMap(pat.bound_vars()),
-    Function(func, _, _, body, _).
+NameInScope(file, name, body, Some { span }, AnyIdFunc { func }, implicit) :-
+    FunctionArg(func, file, pat, implicit),
+    Function(func, file, _, _, body, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound_var.
 
 // Introduce closure arguments within the body of their enclosing closure
 //
@@ -191,40 +215,38 @@ NameInScope(func.file, name.data, body, Some { name.span }, AnyIdFunc { func }, 
 // // Scope: { ... }
 // ```
 //
-NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
-    ArrowParam(expr, pat),
-    // Get the body's expression and put the parameters in-scope
-    // there, not within the arrow expression's scope
-    // TODO: Can I address Expr/Stmt at the same time instead
-    //       of seperate rules?
-    Arrow(expr, Some { Left { expr_body }}),
-    Expression(expr_body, _, scope, _),
-    var name = FlatMap(pat.bound_vars()).
+// TODO: Can we address Expr/Stmt at the same time instead of seperate rules?
+NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, false) :-
+    ArrowParam(expr, file, pat),
+    Arrow(expr, file, Some { Left { body }}),
+    Expression(body, file, _, scope, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound_var.
 
-NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
-    ArrowParam(expr, pat),
-    var name = FlatMap(pat.bound_vars()),
-    // Get the body's statement and put the parameters in-scope
-    // there, not within the arrow expression's scope
-    Arrow(expr, Some { Right { stmt_body }}),
-    Statement(stmt_body, _, scope, _).
+NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, false) :-
+    ArrowParam(expr, file, pat),
+    Arrow(expr, file, Some { Right { body }}),
+    Statement(body, file, _, scope, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound_var.
 
 // Inline function names
 //
-// Inline functions that are named are treated like normal functions
-// and added to their enclosing scope
+// Inline functions that are named only have their names added inside their bodies
 //
 // ```js
-// // Scope: { foo, ... }
+// // Scope: { ... }
 // let _ = function foo() {
 //     // Scope: { foo, ... }
 // }
-// // Scope: { foo, ... }
+// // Scope: { ... }
 // ```
 //
-NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
-    InlineFunc(expr, Some { name }, Some { body }),
-    Statement(body, _, scope, _).
+NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, false) :-
+    InlineFunc(expr, file, Some { Spanned { name, span }}, Some { body }),
+    Statement(body, file, _, scope, _).
 
 // Introduce inline function arguments within the body of their enclosing closure
 //
@@ -236,30 +258,33 @@ NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr },
 // // Scope: { ... }
 // ```
 //
-NameInScope(expr.file, name.data, scope, Some { name.span }, AnyIdExpr { expr }, false) :-
-    InlineFuncParam(expr, pat),
-    InlineFunc(expr, _, Some { body }),
-    Statement(body, _, scope, _),
-    var name = FlatMap(pat.bound_vars()).
+NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, false) :-
+    InlineFuncParam(expr, file, pat),
+    InlineFunc(expr, file, _, Some { body }),
+    Statement(body, file, _, scope, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound_var.
 
 // `catch` statement patterns
-NameInScope(stmt.file, name.data, scope, Some { name.span }, AnyIdStmt { catcher }, false) :-
-    Try(stmt, _, TryHandler { Some { error }, Some { catcher } }, _),
-    Statement(expr, _, scope, _),
-    var name = FlatMap(error.bound_vars()).
+NameInScope(file, name, scope, Some { span }, AnyIdStmt { catcher }, false) :-
+    Try(stmt, file, _, TryHandler { Some { error }, Some { catcher } }, _),
+    Statement(expr, file, _, scope, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(error.bound_vars()),
+    Spanned { var name, var span } = bound_var.
 
 // Walk variables down scopes
-NameInScope(file, name, scope, span, declared_in, implicit) :-
-    NameInScope(file, name, interum, span, declared_in, implicit),
-    ChildScope(interum, scope).
+NameInScope(file, name, to, span, declared_in, implicit) :-
+    NameInScope(file, name, from, span, declared_in, implicit),
+    ChildScope(from, to, file).
 
 
-relation VariableUsages(name: Name, scope: ScopeId, declared_in: AnyId)
-VariableUsages(name, scope, declared) :-
+relation VariableUsages(file: FileId, name: Name, scope: ScopeId, declared_in: AnyId)
+VariableUsages(file, name, scope, declared) :-
     NameInScope(file, name, scope, _, declared, _),
-    NameRef(expr, name),
-    file == expr.file,
-    Expression(expr, _, scope, _).
+    NameRef(expr, file, name),
+    Expression(expr, file, _, scope, _).
 
 
 output relation UnusedVariables(name: Name, declared: AnyId, span: Span, file: FileId)
@@ -267,46 +292,46 @@ UnusedVariables(name, declared, span, file) :-
     NameInScope(file, name, _, Some { span }, declared, false),
     not declared.is_global(),
     not IsExported(file, declared),
-    not VariableUsages(name, _, declared).
+    not VariableUsages(file, name, _, declared).
 
 UnusedVariables(name, declared, span, file) :-
     NameInScope(file, name, _, Some { span }, declared @ AnyIdGlobal { global }, false),
-    not ImplicitGlobal(global, _),
     not IsExported(file, declared),
-    not VariableUsages(name, _, declared).
+    not VariableUsages(file, name, _, declared).
 
 
 // The successors of an expression, property accesses or method calls
-relation ChainedWith(object: ExprId, property: ExprId)
-ChainedWith(object, property) :- BracketAccess(_, Some { object }, Some { property }).
-ChainedWith(object, property) :- DotAccess(property, Some { object }, _).
-ChainedWith(object, property) :- ChainedWith(object, interum), ChainedWith(interum, property).
+relation ChainedWith(object: ExprId, property: ExprId, file: FileId)
+ChainedWith(object, property, file) :- BracketAccess(_, file, Some { object }, Some { property }).
+ChainedWith(object, property, file) :- DotAccess(property, file, Some { object }, _).
+ChainedWith(object, property, file) :- ChainedWith(object, interum, file), ChainedWith(interum, property, file).
 
 
-relation WithinTypeofExpr(type_of: ExprId, expr: ExprId)
+relation WithinTypeofExpr(type_of: ExprId, expr: ExprId, file: FileId)
 // `typeof not_defined`
-WithinTypeofExpr(type_of, expr) :- UnaryOp(type_of, Some { UnaryTypeof }, Some { expr }).
+WithinTypeofExpr(type_of, expr, file) :-
+    UnaryOp(type_of, file, Some { UnaryTypeof }, Some { expr }).
 
 // `typeof (not_defined)`
-WithinTypeofExpr(type_of, grouped) :-
-    WithinTypeofExpr(type_of, expr),
-    Expression(expr, ExprGrouping { Some { grouped }}, _, _).
+WithinTypeofExpr(type_of, grouped, file) :-
+    WithinTypeofExpr(type_of, expr, file),
+    Expression(expr, file, ExprGrouping { Some { grouped }}, _, _).
 
 // `typeof (defined, not_defined)`
-WithinTypeofExpr(type_of, last) :-
-    WithinTypeofExpr(type_of, expr),
-    Expression(expr, ExprSequence { sequence }, _, _),
+WithinTypeofExpr(type_of, last, file) :-
+    WithinTypeofExpr(type_of, expr, file),
+    Expression(expr, file, ExprSequence { sequence }, _, _),
     Some { var last } = sequence.last().
 
 
-output relation TypeofUndef(whole_expr: ExprId, undefined_expr: ExprId)
-TypeofUndef(whole_expr, undefined_expr) :-
-    NameRef(undefined_expr, name),
-    Expression(undefined_expr, ExprNameRef, scope, span),
-    not NameInScope(scope.file, name, scope, _, _, _),
+output relation TypeofUndef(whole_expr: ExprId, undefined_expr: ExprId, file: FileId)
+TypeofUndef(whole_expr, undefined_expr, file) :-
+    NameRef(undefined_expr, file, name),
+    Expression(undefined_expr, file, ExprNameRef, scope, span),
+    not NameInScope(file, name, scope, _, _, _),
     // Expressions like `typeof not_undefined` are allowed under NoUndef
     // and are instead output through TypeofUndef
-    WithinTypeofExpr(whole_expr, undefined_expr).
+    WithinTypeofExpr(whole_expr, undefined_expr, file).
 
 
 // Variable usages (`let` and `const` predecls or undefined symbols) that don't
@@ -314,100 +339,99 @@ TypeofUndef(whole_expr, undefined_expr) :-
 // TODO: Use a levenshtein aggregate to try and correct and/or look in children
 //       scopes for a declaration
 output relation NoUndef(name: Name, scope: ScopeId, span: Span, file: FileId)
-NoUndef(name, scope, span, expr.file) :-
-    NameRef(expr, name),
-    Expression(expr, ExprNameRef, scope, span),
-    not NameInScope(expr.file, name, scope, _, _, _),
+NoUndef(name, scope, span, file) :-
+    NameRef(expr, file, name),
+    Expression(expr, file, ExprNameRef, scope, span),
+    not NameInScope(file, name, scope, _, _, _),
     // Expressions like `typeof not_undefined` are allowed under NoUndef
     // and are instead output through TypeofUndef
-    not WithinTypeofExpr(_, expr),
-    not ChainedWith(_, expr).
+    not WithinTypeofExpr(_, expr, file),
+    // TODO: This looks wrong
+    not ChainedWith(_, expr, file).
 
 // Assignments
-NoUndef(name.data, scope, name.span, expr.file) :-
-    Assign(expr, Some { Left { pat }}, _, _),
-    Expression(expr, _, scope, _),
-    var name = FlatMap(pat.bound_vars()),
-    not NameInScope(expr.file, name.data, scope, _, _, _).
+NoUndef(name, scope, span, file) :-
+    Assign(expr, file, Some { Left { pat }}, _, _),
+    Expression(expr, file, _, scope, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound_var,
+    not NameInScope(file, name, scope, _, _, _).
 
+
+// TODO: Strip extra info and give fields better names,
+//       lint consumers can get needed info via queries
+typedef UseBeforeDecl = UseBeforeDecl {
+    name: Name,
+    used: ExprId,
+    used_in: Span,
+    declared: AnyId,
+    declared_in: Span,
+    file: FileId,
+}
 
 // `var` usages that happen before the declaration
-output relation UseBeforeDecl(name: Name, used_in: Span, declared_in: Span, file: FileId)
-UseBeforeDecl(name, used_in, declared_in, expr.file) :-
-    NameRef(expr, name),
-    Expression(expr, ExprNameRef, used_scope, used_in),
-    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { stmt }, _),
-    Statement(stmt, StmtVarDecl, declared_scope, declared_in),
-    ChildScope(used_scope, declared_scope).
+output relation UseBeforeDecl[UseBeforeDecl]
+UseBeforeDecl(name, expr, used_in, declared, declared_in, file) :-
+    NameRef(expr, file, name),
+    Expression(expr, file, ExprNameRef, used_scope, used_in),
+    NameInScope(file, name, used_scope, _, declared @ AnyIdStmt { stmt }, _),
+    Statement(stmt, file, StmtVarDecl, declared_scope, declared_in),
+    ChildScope(used_scope, declared_scope, file).
 
-UseBeforeDecl(name, used_in, declared_in, expr.file) :-
-    New(expr, Some { object }, _),
-    Expression(expr, _, used_scope, used_in),
-    NameRef(callee, name),
-    NameInScope(expr.file, name, used_scope, _, AnyIdClass { class }, _),
-    Class(class, Some { Spanned { _, declared_in }}, _, _, decl_scope, _),
-    ChildScope(used_scope, decl_scope).
+UseBeforeDecl(name, expr, used_in, declared, declared_in, file) :-
+    New(expr, file, Some { object }, _),
+    Expression(expr, file, _, used_scope, used_in),
+    NameRef(callee, file, name),
+    NameInScope(file, name, used_scope, _, declared @ AnyIdClass { class }, _),
+    Class(class, file, Some { Spanned { _, declared_in }}, _, _, decl_scope, _),
+    ChildScope(used_scope, decl_scope, file).
 
-UseBeforeDecl(name, used_in, declared_in, expr.file) :-
-    Call(expr, Some { callee }, _),
-    Expression(expr, _, used_scope, used_in),
-    NameRef(callee, name),
-    NameInScope(expr.file, name, used_scope, _, AnyIdFunc { func }, _),
-    Function(func, Some { Spanned { _, declared_in }}, decl_scope, _, _),
-    ChildScope(used_scope, decl_scope).
+UseBeforeDecl(name, expr, used_in, declared, declared_in, file) :-
+    Call(expr, file, Some { callee }, _),
+    Expression(expr, file, _, used_scope, used_in),
+    NameRef(callee, file, name),
+    NameInScope(file, name, used_scope, _, declared @ AnyIdFunc { func }, _),
+    Function(func, file, Some { Spanned { _, declared_in }}, decl_scope, _, _),
+    ChildScope(used_scope, decl_scope, file).
 
-UseBeforeDecl(name, used_in, declared_in, expr.file) :-
-    New(expr, Some { object }, _),
-    Expression(expr, _, used_scope, used_in),
-    NameRef(object, name),
-    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { decl }, _),
-    VarDecl(decl, _, Some { class }, _),
-    ClassExpr(class, _),
-    Expression(class, _, decl_scope, declared_in),
-    ChildScope(used_scope, decl_scope).
+UseBeforeDecl(name, expr, used_in, declared, declared_in, file) :-
+    New(expr, file, Some { object }, _),
+    Expression(expr, file, _, used_scope, used_in),
+    NameRef(object, file, name),
+    NameInScope(file, name, used_scope, _, declared @ AnyIdStmt { decl }, _),
+    VarDecl(decl, file, _, Some { class }, _),
+    ClassExpr(class, file, _),
+    Expression(class, file, _, decl_scope, declared_in),
+    ChildScope(used_scope, decl_scope, file).
 
-UseBeforeDecl(name, used_in, declared_in, expr.file) :-
-    New(expr, Some { object }, _),
-    Expression(expr, _, used_scope, used_in),
-    NameRef(object, name),
-    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { decl }, _),
-    LetDecl(decl, _, Some { class }, _),
-    ClassExpr(class, _),
-    Expression(class, _, decl_scope, declared_in),
-    ChildScope(used_scope, decl_scope).
+UseBeforeDecl(name, expr, used_in, declared, declared_in, file) :-
+    New(expr, file, Some { object }, _),
+    Expression(expr, file, _, used_scope, used_in),
+    NameRef(object, file, name),
+    NameInScope(file, name, used_scope, _, declared @ AnyIdStmt { decl }, _),
+    LetDecl(decl, file, _, Some { class }, _),
+    ClassExpr(class, file, _),
+    Expression(class, file, _, decl_scope, declared_in),
+    ChildScope(used_scope, decl_scope, file).
 
-UseBeforeDecl(name, used_in, declared_in, expr.file) :-
-    New(expr, Some { object }, _),
-    Expression(expr, _, used_scope, used_in),
-    NameRef(object, name),
-    NameInScope(expr.file, name, used_scope, _, AnyIdStmt { decl }, _),
-    ConstDecl(decl, _, Some { class }, _),
-    ClassExpr(class, _),
-    Expression(class, _, decl_scope, declared_in),
-    ChildScope(used_scope, decl_scope).
+UseBeforeDecl(name, expr, used_in, declared, declared_in, file) :-
+    New(expr, file, Some { object }, _),
+    Expression(expr, file, _, used_scope, used_in),
+    NameRef(object, file, name),
+    NameInScope(file, name, used_scope, _, declared @ AnyIdStmt { decl }, _),
+    ConstDecl(decl, file, _, Some { class }, _),
+    ClassExpr(class, file, _),
+    Expression(class, file, _, decl_scope, declared_in),
+    ChildScope(used_scope, decl_scope, file).
 
 
 relation IsExported(file: FileId, id: AnyId)
-IsExported(file, AnyIdFunc { id }) :-
-    Function(id, _, _, _, true),
-    var file = id.file.
-
-IsExported(file, AnyIdClass { id }) :-
-    Class(id, _, _, _, _, true),
-    var file = id.file.
-
-IsExported(file, AnyIdStmt { id }) :-
-    VarDecl(id, _, _, true),
-    var file = id.file.
-
-IsExported(file, AnyIdStmt { id }) :-
-    LetDecl(id, _, _, true),
-    var file = id.file.
-
-IsExported(file, AnyIdStmt { id }) :-
-    ConstDecl(id, _, _, true),
-    var file = id.file.
-
+IsExported(file, AnyIdFunc { id }) :- Function(id, file, _, _, _, true).
+IsExported(file, AnyIdClass { id }) :- Class(id, file, _, _, _, _, true).
+IsExported(file, AnyIdStmt { id }) :- VarDecl(id, file, _, _, true).
+IsExported(file, AnyIdStmt { id }) :- LetDecl(id, file, _, _, true).
+IsExported(file, AnyIdStmt { id }) :- ConstDecl(id, file, _, _, true).
 IsExported(file, id) :-
     FileExport(file, NamedExport { export_name, export_alias }, export_scope),
     Some { Spanned { var name, _ }} = export_alias.or_else(export_name),

@@ -80,9 +80,9 @@ for arg in "$@"; do
         check_undeclared "$no_color" "--no-color"
         no_color="true"
 
-    elif [ "$arg" = "--no-check" ]; then
-        check_undeclared "$no_check" "--no-check"
-        no_check="true"
+    elif [ "$arg" = "--check" ]; then
+        check_undeclared "$check" "--check"
+        check="true"
 
     elif [ "$arg" = "--no-fmt" ]; then
         check_undeclared "$no_rustfmt" "--no-fmt"
@@ -91,7 +91,7 @@ for arg in "$@"; do
     elif [ "$arg" = "-o" ] || [ "$arg" = "--output-dir" ]; then
         check_undeclared "$output_dir" "--output-dir"
         output_dir="true"
-    
+
     elif [ "$arg" = "-i" ] || [ "$arg" = "--input-file" ]; then
         check_undeclared "$input_file" "--input-file"
         input_file="true"
@@ -110,7 +110,7 @@ for arg in "$@"; do
         printf "\n"
         printf "FLAGS:\n"
         printf "    -h, --help              Display this help message\n"
-        printf "        --no-check          Don't run 'cargo check' on generated code\n"
+        printf "        --check             Run 'cargo check' on generated code\n"
         printf "        --debug             Enable debug mode (causes ddlog to dump internal tables)\n"
         printf "        --no-color          Disable terminal coloring\n"
         printf "        --no-fmt            Don't run rustfmt\n"
@@ -196,7 +196,7 @@ if ( [ "$subcommand" = "compile" ] || [ -z "$subcommand" ] ) && [ "$no_xtask" !=
     fi
 fi
 
-if ( [ "$subcommand" = "compile" ] || [ -z "$subcommand" ] ) && [ "$no_check" != "true" ]; then
+if ( [ "$subcommand" = "compile" ] || [ -z "$subcommand" ] ) && [ "$check" = "true" ]; then
     cd generated
 
     printf "checking generated code... "
