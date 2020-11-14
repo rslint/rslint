@@ -48,7 +48,7 @@ pub(crate) mod document {
             document.directives =
                 DirectiveParser::new(SyntaxNode::new_root(document.parse.green()), file_id)
                     .get_file_directives()
-                    .unwrap_or_default();
+                    .directives;
         }
 
         provider::diagnostics::publish_diagnostics(session.clone(), uri).await?;

@@ -138,9 +138,10 @@ pub(crate) fn lint_file_inner(
     verbose: bool,
 ) -> Result<LintResult, Diagnostic> {
     let mut new_store = store.clone();
-    let directives =
-        DirectiveParser::new_with_store(node.clone(), file_id, store).get_file_directives()?;
-    let mut directive_diagnostics = vec![];
+    let directives::DirectiveResult {
+        directives,
+        diagnostics: mut directive_diagnostics,
+    } = DirectiveParser::new_with_store(node.clone(), file_id, store).get_file_directives();
 
     apply_top_level_directives(
         directives.as_slice(),

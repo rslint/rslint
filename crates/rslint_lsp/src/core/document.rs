@@ -75,7 +75,7 @@ impl Document {
 
         let directives = DirectiveParser::new(SyntaxNode::new_root(parse.green()), file_id)
             .get_file_directives()
-            .unwrap_or_default();
+            .directives;
 
         let document = Document {
             files,

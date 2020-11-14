@@ -16,6 +16,27 @@ pub const DECLARATOR: &str = "rslint-";
 
 pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
 
+/// The result of a parsed directive.
+#[derive(Default)]
+pub struct DirectiveResult {
+    pub directives: Vec<Directive>,
+    pub diagnostics: Vec<Diagnostic>,
+}
+
+impl DirectiveResult {
+    fn concat(&mut self, other: Self) {
+        self.diagnostics.extend(other.diagnostics);
+        self.directives.extend(other.directives);
+    }
+
+    fn extend(&mut self, res: Result<Directive>) {
+        match res {
+            Ok(d) => self.directives.push(d),
+            Err(d) => self.diagnostics.push(d),
+        }
+    }
+}
+
 pub struct DirectiveParser<'store> {
     /// The root node of a file, `SCRIPT` or `MODULE`.
     root: SyntaxNode,
@@ -72,8 +93,9 @@ impl<'store> DirectiveParser<'store> {
             .unwrap_or_else(|next_line| next_line - 1)
     }
 
-    pub fn get_file_directives(&mut self) -> Result<Vec<Directive>> {
-        let mut directives = self.top_level_directives()?;
+    pub fn get_file_directives(&mut self) -> DirectiveResult {
+        let top_level = self.top_level_directives();
+        let mut result = DirectiveResult::default();
 
         for descendant in self.root.descendants().skip(1) {
             let comment = descendant
@@ -86,20 +108,24 @@ impl<'store> DirectiveParser<'store> {
                 _ => continue,
             };
 
-            let directive = self.parse_directive(comment, Some(descendant))?;
-            directives.push(directive);
+            let directive = self.parse_directive(comment, Some(descendant));
+            result.extend(directive);
         }
-
-        Ok(directives)
+        result.concat(top_level);
+        result
     }
 
-    pub fn top_level_directives(&mut self) -> Result<Vec<Directive>> {
+    pub fn top_level_directives(&mut self) -> DirectiveResult {
+        let mut result = DirectiveResult::default();
+
         self.root
             .children_with_tokens()
             .flat_map(|item| item.into_token()?.comment())
             .filter(|comment| comment.content.trim_start().starts_with(DECLARATOR))
             .map(|comment| self.parse_directive(comment, None))
-            .collect::<Result<Vec<_>>>()
+            .for_each(|res| result.extend(res));
+
+        result
     }
 
     /// Parses a directive, based on all commands inside this `DirectivesParser`.
