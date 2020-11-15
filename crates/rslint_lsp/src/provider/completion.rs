@@ -20,14 +20,12 @@ pub async fn complete(
         .get_document(&params.text_document_position.text_document.uri)
         .await?;
 
-    log::info!("---- {:#?}", document.directive_errors);
     if !document.directive_errors.is_empty() {
         let loc = rslint_errors::lsp::position_to_byte_index(
             &document.files,
             document.file_id,
             &params.text_document_position.position,
         )?;
-        log::info!("{}", loc);
         if let Some(err) = document
             .directive_errors
             .iter()
