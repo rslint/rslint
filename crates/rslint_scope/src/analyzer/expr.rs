@@ -10,13 +10,15 @@ use rslint_parser::{
     },
     AstNode, SyntaxNodeExt,
 };
+use std::iter;
 use types::{
     ast::{
-        ArrayElement, ClassElement as DatalogClassElement, ExprId, Pattern as DatalogPattern,
-        PropertyKey, PropertyVal,
+        ArrayElement, ClassElement as DatalogClassElement, ExprId, FuncParam,
+        Pattern as DatalogPattern, PropertyKey, PropertyVal,
     },
     ddlog_std::Either,
     internment::Intern,
+    IMPLICIT_ARGUMENTS,
 };
 
 impl<'ddlog> Visit<'ddlog, Expr> for AnalyzerInner {
@@ -103,16 +105,15 @@ impl<'ddlog> Visit<'ddlog, ArrowExpr> for AnalyzerInner {
     type Output = ExprId;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, arrow: ArrowExpr) -> Self::Output {
-        let body = arrow.body().and_then(|body| {
-            Some(match body {
-                ExprOrBlock::Expr(expr) => Either::Left {
-                    l: self.visit(scope, expr),
-                },
-                ExprOrBlock::Block(block) => Either::Right {
-                    r: self.visit(scope, block)?,
-                },
-            })
+        let body = arrow.body().map(|body| match body {
+            ExprOrBlock::Expr(expr) => Either::Left {
+                l: self.visit(scope, expr),
+            },
+            ExprOrBlock::Block(block) => Either::Right {
+                r: self.visit(scope, block),
+            },
         });
+
         let params = arrow
             .params()
             .map(|params| match params {
@@ -258,7 +259,7 @@ impl<'ddlog> Visit<'ddlog, AstChildren<ObjectProp>> for AnalyzerInner {
 
                 ObjectProp::Getter(getter) => {
                     let key = self.visit(scope, getter.key());
-                    let body = self.visit(scope, getter.body()).flatten().into();
+                    let body = self.visit(scope, getter.body()).into();
 
                     (key, PropertyVal::PropGetter { body })
                 }
@@ -267,10 +268,20 @@ impl<'ddlog> Visit<'ddlog, AstChildren<ObjectProp>> for AnalyzerInner {
                     let key = self.visit(scope, setter.key());
                     let params = self
                         .visit(scope, setter.parameters())
-                        .map(Into::into)
+                        .map(|params| {
+                            params
+                                .into_iter()
+                                .map(FuncParam::explicit)
+                                .chain(iter::once(FuncParam::implicit(IMPLICIT_ARGUMENTS.clone())))
+                                .collect::<Vec<_>>()
+                                .into()
+                        })
                         .into();
 
-                    (key, PropertyVal::PropSetter { params })
+                    let body_scope = scope.scope();
+                    let body = self.visit(&body_scope, setter.body()).into();
+
+                    (key, PropertyVal::PropSetter { params, body })
                 }
 
                 ObjectProp::SpreadProp(spread) => {
@@ -300,9 +311,16 @@ impl<'ddlog> Visit<'ddlog, AstChildren<ObjectProp>> for AnalyzerInner {
                     let key = self.visit(scope, method.name());
                     let params = self
                         .visit(scope, method.parameters())
-                        .map(Into::into)
+                        .map(|params| {
+                            params
+                                .into_iter()
+                                .map(FuncParam::explicit)
+                                .chain(iter::once(FuncParam::implicit(IMPLICIT_ARGUMENTS.clone())))
+                                .collect::<Vec<_>>()
+                                .into()
+                        })
                         .into();
-                    let body = self.visit(scope, method.body()).flatten().into();
+                    let body = self.visit(scope, method.body()).into();
 
                     (key, PropertyVal::PropMethod { params, body })
                 }
@@ -467,7 +485,7 @@ impl<'ddlog> Visit<'ddlog, FnExpr> for AnalyzerInner {
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, fn_expr: FnExpr) -> Self::Output {
         let name = self.visit(scope, fn_expr.name());
         let params = self.visit(scope, fn_expr.parameters()).unwrap_or_default();
-        let body = self.visit(scope, fn_expr.body()).flatten();
+        let body = self.visit(scope, fn_expr.body());
 
         scope.fn_expr(name, params, body, fn_expr.range())
     }
@@ -506,16 +524,25 @@ impl<'ddlog> Visit<'ddlog, ClassElement> for AnalyzerInner {
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, elem: ClassElement) -> Self::Output {
         Intern::new(match elem {
             ClassElement::EmptyStmt(_empty) => DatalogClassElement::ClassEmptyElem,
+
             ClassElement::Method(method) => {
                 let name = self.visit(scope, method.name()).into();
                 let params = self
                     .visit(scope, method.parameters())
-                    .map(Into::into)
+                    .map(|params| {
+                        params
+                            .into_iter()
+                            .map(FuncParam::explicit)
+                            .chain(iter::once(FuncParam::implicit(IMPLICIT_ARGUMENTS.clone())))
+                            .collect::<Vec<_>>()
+                            .into()
+                    })
                     .into();
-                let body = self.visit(scope, method.body()).flatten().into();
+                let body = self.visit(scope, method.body()).into();
 
                 DatalogClassElement::ClassMethod { name, params, body }
             }
+
             ClassElement::StaticMethod(static_method) => {
                 let method = static_method.method();
                 let method = method.as_ref();
@@ -523,12 +550,16 @@ impl<'ddlog> Visit<'ddlog, ClassElement> for AnalyzerInner {
                 let name = self.visit(scope, method.and_then(|m| m.name())).into();
                 let params = self
                     .visit(scope, method.and_then(|m| m.parameters()))
-                    .map(Into::into)
+                    .map(|params| {
+                        params
+                            .into_iter()
+                            .map(FuncParam::explicit)
+                            .chain(iter::once(FuncParam::implicit(IMPLICIT_ARGUMENTS.clone())))
+                            .collect::<Vec<_>>()
+                            .into()
+                    })
                     .into();
-                let body = self
-                    .visit(scope, method.and_then(|m| m.body()))
-                    .flatten()
-                    .into();
+                let body = self.visit(scope, method.and_then(|m| m.body())).into();
 
                 DatalogClassElement::ClassStaticMethod { name, params, body }
             }

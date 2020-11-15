@@ -1,0 +1,102 @@
+import ast
+import vec
+import utils
+import group
+import scopes
+import inputs
+
+// Build the scope graph, unrolling the parent<-child relationships to full trees
+//
+// Given
+// ```
+// a<-b
+// b<-c
+// b<-d
+// ```
+// It will produce
+// ```
+// a
+// ├-b
+// │ └┐  
+// │  ├╴c
+// │  └╴d 
+// ├╴c
+// └╴d
+// ```
+//
+relation ChildScope(parent: ScopeId, child: ScopeId, file: FileId)
+index ChildScopeByParent(parent: ScopeId, file: FileId) on ChildScope(parent, _, file)
+
+ChildScope(parent, child, file) :- InputScope(parent, child, file), parent != child.
+ChildScope(parent, child, file) :-
+    InputScope(parent, interum, file),
+    ChildScope(interum, child, file),
+    parent != child.
+
+// TODO: Are other things hoistable?
+relation IsHoistable(id: AnyId, file: FileId, hoistable: bool)
+IsHoistable(AnyIdFunc { id }, file, true) :- Function(id, file, _, _, _, _).
+IsHoistable(AnyIdStmt { id }, file, true) :- VarDecl(id, file, _, _, _).
+
+// Function-level scoping, the scope of the nearest getter, setter,
+// method, function, arrow function or file/module
+relation FunctionLevelScope(
+    // An arbitrary scope to get the closest function-level scope
+    scope: ScopeId,
+    // The nearest function-level scope
+    nearest: ScopeId,
+    // The file this occurs in
+    file: FileId,
+    // The id of the function/file/etc the scope belongs to
+    id: AnyId,
+)
+
+FunctionLevelScope(scope, scope, file, AnyIdFile { file }) :-
+    File(file, _, scope, _).
+
+// Functions
+FunctionLevelScope(body, body, file, AnyIdFunc { func }) :-
+    Function(func, file, _, _, body, _).
+
+// Class methods
+FunctionLevelScope(scope, scope, file, AnyIdClass { class }) :-
+    Class(class, file, _, _, Some { elements }, _, _),
+    var body = FlatMap(elements.filter_map(|elem| elem.ival().body())),
+    Statement(body, file, _, scope, _).
+
+// Class expression methods
+FunctionLevelScope(scope, scope, file, AnyIdExpr { expr }) :-
+    ClassExpr(expr, file, Some { elements }),
+    var body = FlatMap(elements.filter_map(|elem| elem.ival().body())),
+    Statement(body, file, _, scope, _).
+
+// Function expressions
+FunctionLevelScope(scope, scope, file, AnyIdExpr { expr }) :-
+    InlineFunc(expr, file, _, Some { body }),
+    Statement(body, file, _, scope, _).
+
+// Getters & setters
+FunctionLevelScope(scope, scope, file, AnyIdExpr { expr }) :-
+    Property(expr, file, _, Some { val }),
+    Some { var body } = val.body(),
+    Statement(body, file, _, scope, _).
+
+// Arrow functions
+FunctionLevelScope(scope, scope, file, AnyIdExpr { expr }) :-
+    Arrow(expr, file, Some { Right { body }}),
+    Statement(body, file, _, scope, _).
+
+// FIXME: This still causes duplication because `parent` isn't included in
+//        the aggregate, but I can't be fucked right now
+FunctionLevelScope(child, scope, file, id) :-
+    FunctionLevelScope(parent, scope, file, id),
+    ChildScope(parent, child, file),
+    (var scope, var id) = (scope, id).group_by((child, file)).arg_max(|scope| scope.0).
+
+relation ScopeOfId(id: AnyId, file: FileId, scope: ScopeId)
+ScopeOfId(AnyIdFile { id }, id, scope) :- File(id, _, scope, _).
+ScopeOfId(AnyIdFunc { id }, file, scope) :- Function(id, file, _, scope, _, _).
+ScopeOfId(AnyIdClass { id }, file, scope) :- Class(id, file, _, _, _, scope, _).
+ScopeOfId(AnyIdStmt { id }, file, scope) :- Statement(id, file, _, scope, _).
+ScopeOfId(AnyIdExpr { id }, file, scope) :- Expression(id, file, _, scope, _).
+ScopeOfId(AnyIdImport { id }, file, scope) :- ImportDecl(id, file, _), File(file, _, scope, _).

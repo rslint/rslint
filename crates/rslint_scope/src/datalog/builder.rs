@@ -110,7 +110,7 @@ pub trait DatalogBuilder<'ddlog> {
             DatalogFunction {
                 datalog: self.datalog(),
                 func_id: id,
-                scope_id: body.scope_id(),
+                body_scope: body.scope_id(),
             },
             body,
         )
@@ -287,7 +287,7 @@ pub trait DatalogBuilder<'ddlog> {
         stmt_id
     }
 
-    fn brk(&self, label: Option<Name>, span: TextRange) -> StmtId {
+    fn brk(&self, label: Option<Spanned<Name>>, span: TextRange) -> StmtId {
         let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
@@ -442,7 +442,7 @@ pub trait DatalogBuilder<'ddlog> {
         stmt_id
     }
 
-    fn cont(&self, label: Option<Name>, span: TextRange) -> StmtId {
+    fn cont(&self, label: Option<Spanned<Name>>, span: TextRange) -> StmtId {
         let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
@@ -497,7 +497,13 @@ pub trait DatalogBuilder<'ddlog> {
         stmt_id
     }
 
-    fn label(&self, name: Option<Spanned<Name>>, body: Option<StmtId>, span: TextRange) -> StmtId {
+    fn label(
+        &self,
+        name: Option<Spanned<Name>>,
+        body: Option<StmtId>,
+        body_scope: ScopeId,
+        span: TextRange,
+    ) -> StmtId {
         let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
 
@@ -509,6 +515,7 @@ pub trait DatalogBuilder<'ddlog> {
                     file: self.file_id(),
                     name: name.into(),
                     body: body.into(),
+                    body_scope,
                 },
             )
             .insert(

@@ -1,6 +1,9 @@
 #[has_side_effects]
 extern function debug(message: string)
 
+#[has_side_effects]
+extern function dbg(val: 'T)
+
 // TODO: Put in ddlog std
 function or_else(option: Option<'T>, option_b: Option<'T>): Option<'T> {
     match (option) {

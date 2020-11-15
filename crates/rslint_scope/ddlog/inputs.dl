@@ -1,11 +1,14 @@
 // All datalog input relations, derived from the program's ast
 import ast
+import config
 
 input relation File(
     id: FileId,
     kind: FileKind,
     top_level_scope: ScopeId,
+    config: Config,
 )
+primary key (f) (f.id)
 
 input relation FileExport(
     file: FileId,
@@ -34,6 +37,7 @@ input relation Function(
     body: ScopeId,
     exported: bool,
 )
+primary key (f) (f.id, f.file)
 
 input relation FunctionArg(
     parent_func: FuncId,
@@ -52,6 +56,7 @@ input relation Class(
     scope: ScopeId,
     exported: bool,
 )
+primary key (c) (c.id, c.file)
 
 // Imports
 input relation ImportDecl(
@@ -76,6 +81,11 @@ input relation Statement(
     scope: ScopeId,
     span: Span,
 )
+primary key (stmt) (stmt.id, stmt.file)
+
+index StatementById(id: StmtId, file: FileId) on Statement(id, file, _, _, _)
+
+index StatementBySpan(span: Span, file: FileId) on Statement(_, file, _, _, span)
 
 input relation VarDecl(
     stmt_id: StmtId,
@@ -118,7 +128,7 @@ input relation If(
 input relation Break(
     stmt_id: StmtId,
     file: FileId,
-    label: Option<Name>,
+    label: Option<Spanned<Name>>,
 )
 
 input relation DoWhile(
@@ -155,7 +165,7 @@ input relation ForIn(
 input relation Continue(
     stmt_id: StmtId,
     file: FileId,
-    label: Option<Name>,
+    label: Option<Spanned<Name>>,
 )
 
 input relation With(
@@ -170,6 +180,7 @@ input relation Label(
     file: FileId,
     name: Option<Spanned<Name>>,
     body: Option<StmtId>,
+    body_scope: ScopeId,
 )
 
 // Switch statements & cases
@@ -210,6 +221,7 @@ typedef Expression = Expression {
     span: Span,
 }
 input relation Expression[Expression]
+primary key (e) (e.id, e.file)
 
 index ExpressionById(id: ExprId, file: FileId) on Expression[Expression { .id = id, .file = file }]
 

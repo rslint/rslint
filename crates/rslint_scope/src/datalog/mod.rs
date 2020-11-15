@@ -22,6 +22,7 @@ use types::{
         ClassId, ExprId, FileId, FileKind, FuncId, GlobalId, GlobalPriv, IPattern, ImportId,
         Increment, ScopeId, StmtId,
     },
+    config::Config,
     ddlog_std::tuple2,
     inputs::{EveryScope, Expression, File as InputFile, FunctionArg, ImplicitGlobal, InputScope},
     internment::Intern,
@@ -213,6 +214,32 @@ impl Datalog {
             }
         }));
 
+        lints.extend(self.outputs().no_shadow.iter().filter_map(|shadow| {
+            if shadow.key().file == file {
+                Some(DatalogLint::NoShadow {
+                    variable: shadow.key().variable.clone(),
+                    original: shadow.key().original.1,
+                    shadow: shadow.key().shadower.1,
+                    implicit: shadow.key().implicit,
+                    file: shadow.key().file,
+                })
+            } else {
+                None
+            }
+        }));
+
+        lints.extend(self.outputs().no_unused_labels.iter().filter_map(|label| {
+            if label.key().file == file {
+                Some(DatalogLint::NoUnusedLabels {
+                    label: label.key().label_name.data.clone(),
+                    span: label.key().label_name.span,
+                    file: label.key().file,
+                })
+            } else {
+                None
+            }
+        }));
+
         Ok(lints)
     }
 }
@@ -306,7 +333,7 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         Ok(Self { datalog })
     }
 
-    pub fn file(&self, file_id: FileId, kind: FileKind) -> DatalogScope<'ddlog> {
+    pub fn file(&self, file_id: FileId, kind: FileKind, config: Config) -> DatalogScope<'ddlog> {
         self.datalog.file_id.set(file_id);
         self.datalog.scope_id.set(ScopeId::new(0));
         self.datalog.global_id.set(GlobalId::new(0));
@@ -324,6 +351,7 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
                     id: file_id,
                     kind,
                     top_level_scope: scope_id,
+                    config,
                 },
             )
             .insert(
@@ -399,7 +427,7 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
 pub struct DatalogFunction<'ddlog> {
     datalog: &'ddlog DatalogInner,
     func_id: FuncId,
-    scope_id: ScopeId,
+    body_scope: ScopeId,
 }
 
 impl<'ddlog> DatalogFunction<'ddlog> {
@@ -426,7 +454,7 @@ impl<'ddlog> DatalogBuilder<'ddlog> for DatalogFunction<'ddlog> {
     }
 
     fn scope_id(&self) -> ScopeId {
-        self.scope_id
+        self.body_scope
     }
 }
 

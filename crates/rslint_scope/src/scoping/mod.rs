@@ -1,17 +1,18 @@
 use crate::datalog::Datalog;
 use differential_datalog::ddval::DDValConvert;
-use rslint_parser::ast::{AstNode, Expr};
+use rslint_parser::ast::{AstNode, Expr, Stmt};
 use rslint_scoping_ddlog::Indexes;
 use std::sync::Arc;
 use types::{
-    ast::{ExprKind, Span},
+    ast::Span,
     ddlog_std::{tuple2, tuple3},
-    inputs::{Expression, InputScope},
+    inputs::{Expression, InputScope, Statement},
     internment::Intern,
-    ChildScope,
+    name_in_scope::NameInScope,
+    scopes::ChildScope,
 };
 
-pub use types::ast::{ExprId, FileId, ScopeId};
+pub use types::ast::{ExprId, FileId, ScopeId, StmtId};
 
 #[derive(Debug, Clone)]
 pub struct ProgramInfo {
@@ -21,6 +22,25 @@ pub struct ProgramInfo {
 impl ProgramInfo {
     pub fn new(datalog: Arc<Datalog>) -> Self {
         Self { datalog }
+    }
+
+    pub fn stmt(&self, stmt: &Stmt, file: FileId) -> Option<StmtInfo> {
+        // TODO: Log errors if they occur
+        let query = self.datalog.query(
+            Indexes::inputs_StatementBySpan,
+            Some(tuple2(Span::from(stmt.range()), file).into_ddvalue()),
+        );
+
+        query
+            .ok()
+            // TODO: Log error if there's more than one value
+            .and_then(|query| query.into_iter().next())
+            .map(|stmt| unsafe { Statement::from_ddvalue(stmt) })
+            .map(|stmt| StmtInfo {
+                id: stmt.id,
+                file: stmt.file,
+                scope: stmt.scope,
+            })
     }
 
     pub fn expr(&self, expr: &Expr, file: FileId) -> Option<ExprInfo> {
@@ -35,7 +55,11 @@ impl ProgramInfo {
             // TODO: Log error if there's more than one value
             .and_then(|query| query.into_iter().next())
             .map(|expr| unsafe { Expression::from_ddvalue(expr) })
-            .map(Into::into)
+            .map(|expr| ExprInfo {
+                id: expr.id,
+                file: expr.file,
+                scope: expr.scope,
+            })
     }
 
     pub fn scope(&self, scope: ScopeId, file: FileId) -> ScopeInfo<'_> {
@@ -71,7 +95,7 @@ impl<'a> ScopeInfo<'a> {
     pub fn children(&self) -> Option<Vec<ScopeId>> {
         // TODO: Log errors if they occur
         let query = self.handle.datalog.query(
-            Indexes::ChildScopeByParent,
+            Indexes::scopes_ChildScopeByParent,
             Some(tuple2(self.scope, self.file).into_ddvalue()),
         );
 
@@ -86,27 +110,64 @@ impl<'a> ScopeInfo<'a> {
     pub fn contains(&self, name: &str) -> bool {
         // TODO: Log errors if they occur
         let query = self.handle.datalog.query(
-            Indexes::Index_VariableInScope,
+            Indexes::name_in_scope_Index_VariableInScope,
             Some(tuple3(self.file, self.scope, Intern::new(name.to_owned())).into_ddvalue()),
         );
 
-        query.map_or(false, |query| !dbg!(query).is_empty())
+        query.map_or(false, |query| !query.is_empty())
+    }
+
+    pub fn variable(&self, name: &str) -> Option<NameInScope> {
+        // TODO: Log errors if they occur
+        let query = self.handle.datalog.query(
+            Indexes::name_in_scope_Index_VariableInScope,
+            Some(tuple3(self.file, self.scope, Intern::new(name.to_owned())).into_ddvalue()),
+        );
+
+        query
+            .ok()
+            .and_then(|vars| vars.into_iter().next())
+            .map(|var| unsafe { NameInScope::from_ddvalue(var) })
     }
 }
 
 pub struct ExprInfo {
-    pub id: ExprId,
-    _kind: ExprKind,
-    pub scope: ScopeId,
+    id: ExprId,
+    file: FileId,
+    scope: ScopeId,
 }
 
-impl From<Expression> for ExprInfo {
-    fn from(expr: Expression) -> Self {
-        Self {
-            id: expr.id,
-            _kind: expr.kind,
-            scope: expr.scope,
-        }
+impl ExprInfo {
+    pub const fn id(&self) -> ExprId {
+        self.id
+    }
+
+    pub const fn file(&self) -> FileId {
+        self.file
+    }
+
+    pub const fn scope(&self) -> ScopeId {
+        self.scope
+    }
+}
+
+pub struct StmtInfo {
+    id: StmtId,
+    file: FileId,
+    scope: ScopeId,
+}
+
+impl StmtInfo {
+    pub const fn id(&self) -> StmtId {
+        self.id
+    }
+
+    pub const fn file(&self) -> FileId {
+        self.file
+    }
+
+    pub const fn scope(&self) -> ScopeId {
+        self.scope
     }
 }
 
@@ -115,7 +176,10 @@ mod tests {
     use super::*;
     use crate::{datalog::DatalogBuilder, AnalyzerInner, ScopeAnalyzer, Visit};
     use rslint_parser::{ast::Stmt, parse_expr, parse_text, SyntaxNodeExt};
-    use types::ast::{FileKind, JSFlavor, LitKind};
+    use types::{
+        ast::{FileKind, JSFlavor},
+        config::Config,
+    };
 
     #[test]
     fn get_expr() {
@@ -138,12 +202,6 @@ mod tests {
 
         assert_eq!(query_expr.id, expr_id);
         assert_eq!(query_expr.scope, parent_scope);
-        assert_eq!(
-            query_expr._kind,
-            ExprKind::ExprLit {
-                kind: LitKind::LitNumber,
-            },
-        );
     }
 
     #[test]
@@ -192,6 +250,7 @@ mod tests {
                     FileKind::JavaScript {
                         flavor: JSFlavor::Vanilla,
                     },
+                    Config::default(),
                 );
 
                 // let foo;

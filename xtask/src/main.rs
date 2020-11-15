@@ -40,10 +40,11 @@ fn main() -> Result<()> {
         }
         "datalog" => {
             let skip_trim = args.contains("--skip-trim");
+            let debug = args.contains("--debug");
             args.finish()?;
 
             if !skip_trim {
-                datalog::trim_datalog()?;
+                datalog::trim_datalog(skip_trim, debug)?;
             }
 
             Ok(())

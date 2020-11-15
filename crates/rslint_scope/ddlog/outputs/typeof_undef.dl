@@ -1,0 +1,38 @@
+import ast
+import vec
+import inputs
+import config
+import name_in_scope
+
+output relation TypeofUndef(whole_expr: ExprId, undefined_expr: ExprId, file: FileId)
+TypeofUndef(whole_expr, undefined_expr, file) :-
+    File(file, _, _, config),
+    config.no_undef_enabled() or config.no_typeof_undef_enabled(),
+    NameRef(undefined_expr, file, name),
+    Expression(undefined_expr, file, ExprNameRef, scope, span),
+    not NameInScope(file, name, scope, _, _, _, _, _),
+    // Expressions like `typeof not_undefined` are allowed under NoUndef
+    // and are instead output through TypeofUndef
+    WithinTypeofExpr(whole_expr, undefined_expr, file).
+
+relation WithinTypeofExpr(type_of: ExprId, expr: ExprId, file: FileId)
+// `typeof not_defined`
+WithinTypeofExpr(type_of, expr, file) :-
+    File(file, _, _, config),
+    config.no_undef_enabled() or config.no_typeof_undef_enabled(),
+    UnaryOp(type_of, file, Some { UnaryTypeof }, Some { expr }).
+
+// `typeof (not_defined)`
+WithinTypeofExpr(type_of, grouped, file) :-
+    File(file, _, _, config),
+    config.no_undef_enabled() or config.no_typeof_undef_enabled(),
+    WithinTypeofExpr(type_of, expr, file),
+    Expression(expr, file, ExprGrouping { Some { grouped }}, _, _).
+
+// `typeof (defined, not_defined)`
+WithinTypeofExpr(type_of, last, file) :-
+    File(file, _, _, config),
+    config.no_undef_enabled() or config.no_typeof_undef_enabled(),
+    WithinTypeofExpr(type_of, expr, file),
+    Expression(expr, file, ExprSequence { sequence }, _, _),
+    Some { var last } = sequence.last().

@@ -30,12 +30,19 @@ use crate::closure;
 //
 // use crate::ddlog_std;
 
+use std::fmt::Debug;
+
 /// Allow emitting debug messages from within datalog
 // TODO: Replace with tracing
 pub fn debug(message: &String) {
     println!("[datalog debug]: {}", message);
 }
 
+pub fn dbg<T: Debug>(val: T) {
+    println!("[datalog debug]: {:#?}", &val);
+}
+
+/* fn dbg<T: crate::Val>(val: & T) -> () */
 /* fn debug(message: & String) -> () */
 pub fn or_else<T: crate::Val>(option: & crate::ddlog_std::Option<T>, option_b: & crate::ddlog_std::Option<T>) -> crate::ddlog_std::Option<T>
 {   match (*option) {

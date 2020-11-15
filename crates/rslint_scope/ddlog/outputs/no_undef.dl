@@ -1,0 +1,56 @@
+import ast
+import utils
+import inputs
+import config
+import name_in_scope
+import outputs::typeof_undef
+
+// Variable usages (`let` and `const` predecls or undefined symbols) that don't
+// have an accompanying variable in scope are reported
+// TODO: Use a levenshtein aggregate to try and correct and/or look in children
+//       scopes for a declaration
+output relation NoUndef(name: Name, scope: ScopeId, span: Span, file: FileId)
+NoUndef(name, scope, span, file) :-
+    File(file, _, _, config),
+    config.no_undef_enabled(),
+    NameRef(expr, file, name),
+    //Inspect dbg(("NameRef", expr, file, name)),
+    Expression(expr, file, ExprNameRef, scope, span),
+    //Inspect dbg(("Expression", expr, ExprNameRef, scope, span)),
+    not NameInScope(file, name, scope, _, _, _, _, _),
+    //Inspect dbg(("not NameInScope", file, name, scope)),
+    // Expressions like `typeof not_undefined` are allowed under NoUndef
+    // and are instead output through TypeofUndef
+    not WithinTypeofExpr(_, expr, file),
+    //Inspect dbg(("not WithinTypeofExpr", expr, file)),
+    // TODO: This looks wrong
+    not ChainedWith(_, expr, file).
+    //Inspect dbg(("not ChainedWith", expr, file)).
+
+// Assignments
+NoUndef(name, scope, span, file) :-
+    File(file, _, _, config),
+    config.no_undef_enabled(),
+    Assign(expr, file, Some { Left { pat }}, _, _),
+    Expression(expr, file, _, scope, _),
+    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
+    var bound_var = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound_var,
+    not NameInScope(file, name, scope, _, _, _, _, _).
+
+// The successors of an expression, property accesses or method calls
+relation ChainedWith(object: ExprId, property: ExprId, file: FileId)
+ChainedWith(object, property, file) :-
+    File(file, _, _, config),
+    config.no_undef_enabled(),
+    BracketAccess(_, file, Some { object }, Some { property }).
+
+ChainedWith(object, property, file) :-
+    File(file, _, _, config),
+    config.no_undef_enabled(),
+    DotAccess(property, file, Some { object }, _).
+
+ChainedWith(object, property, file) :-
+    File(file, _, _, config),
+    config.no_undef_enabled(),
+    ChainedWith(object, interum, file), ChainedWith(interum, property, file).

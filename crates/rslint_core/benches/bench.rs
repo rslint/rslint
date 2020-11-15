@@ -2,6 +2,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughpu
 use rslint_core::{CstRuleStore, File};
 use rslint_lexer::Lexer;
 use rslint_parser::parse_text;
+use rslint_scope::ScopeAnalyzer;
 
 const ENGINE_262_URL: &str = "https://engine262.js.org/engine262/engine262.js";
 

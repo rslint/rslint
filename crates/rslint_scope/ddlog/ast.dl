@@ -45,6 +45,13 @@ function is_global(id: AnyId): bool {
     }
 }
 
+function is_function(id: AnyId): bool {
+    match (id) {
+        AnyIdFunc {} -> true,
+        _ -> false,
+    }
+}
+
 function is_expr(id: AnyId): bool {
     match (id) {
         AnyIdExpr {} -> true,
@@ -232,27 +239,73 @@ typedef PropertyKey =
 typedef PropertyVal =
     PropLit { lit: Option<ExprId> }
     | PropGetter { body: Option<StmtId> }
-    | PropSetter { params: Option<Vec<IPattern>> }
+    | PropSetter {
+        params: Option<Vec<FuncParam>>,
+        body: Option<StmtId>,
+    }
     | PropSpread { value: Option<ExprId> }
     | PropInit { value: Option<ExprId> }
     | PropIdent
     | PropMethod {
-        params: Option<Vec<IPattern>>,
+        params: Option<Vec<FuncParam>>,
         body: Option<StmtId>
     }
 
+function body(prop: PropertyVal): Option<StmtId> {
+    match (prop) {
+        PropGetter { Some { body }} -> Some { body },
+        PropSetter { _, Some { body }} -> Some { body },
+        PropMethod { _, Some { body }} -> Some { body },
+        _ -> None,
+    }
+}
+
+function method_comps(prop: PropertyVal): Option<(Vec<FuncParam>, StmtId)> {
+    match (prop) {
+        PropSetter { Some { params }, Some { body }} -> Some { (params, body) },
+        PropMethod { Some { params }, Some { body }} -> Some { (params, body) },
+        _ -> None,
+    }
+}
+
+typedef FuncParam = FuncParam {
+    pattern: IPattern,
+    implicit: bool,
+}
+
+function bound_vars(param: FuncParam): Vec<(Spanned<Name>, bool)> {
+    param.pattern.bound_vars().map(|v| (v, param.implicit))
+}
+
+// TODO: This needs to be structured better w/more metadata
 typedef ClassElement =
     ClassEmptyElem
     | ClassMethod {
         name: Option<PropertyKey>,
-        params: Option<Vec<IPattern>>,
+        params: Option<Vec<FuncParam>>,
         body: Option<StmtId>
     }
     | ClassStaticMethod {
         name: Option<PropertyKey>,
-        params: Option<Vec<IPattern>>,
+        params: Option<Vec<FuncParam>>,
         body: Option<StmtId>
     }
+
+function body(elem: ClassElement): Option<StmtId> {
+    match (elem) {
+        ClassMethod { _, _, Some { body }} -> Some { body },
+        ClassStaticMethod { _, _, Some { body }} -> Some { body },
+        _ -> None,
+    }
+}
+
+function method_comps(elem: ClassElement): Option<(Vec<FuncParam>, StmtId)> {
+    match (elem) {
+        ClassMethod { _, Some { params }, Some { body }} -> Some { (params, body) },
+        ClassStaticMethod { _, Some { params }, Some { body }} -> Some { (params, body) },
+        _ -> None,
+    }
+}
 
 typedef IClassElement = Intern<ClassElement>
 

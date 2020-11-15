@@ -16,6 +16,7 @@ rslint_lexer = { path = "../rslint_lexer", version = "0.1.0" }
 rslint_errors = { path = "../rslint_errors", version = "0.1.0" }
 rslint_text_edit = { path = "../rslint_text_edit", version = "0.1.0" }
 rslint_macros = { path = "../rslint_macros", version = "0.1.0" }
+rslint_scope = { path = "../rslint_scope", version = "0.1.0" }
 serde = { version = "1.0.115", features = ["derive"] }
 typetag = "0.1.5"
 rayon = "1.4.0"

@@ -1,5 +1,6 @@
 rule_test! {
     use_before_def,
+    rule_conf: |conf| conf.no_use_before_def(true),
     filter: DatalogLint::is_use_before_def,
     // Should pass
     { "var a = 10; alert(a);" },

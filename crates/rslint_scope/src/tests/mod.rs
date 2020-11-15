@@ -3,6 +3,7 @@
 macro_rules! rule_test {
     (
         $rule_name:ident,
+        rule_conf: $rule_conf:expr,
         $(filter: $filter:expr,)?
         $({
             $($code:literal),+
@@ -13,17 +14,25 @@ macro_rules! rule_test {
             $(, module: $module:literal)?
             $(, es2021: $es2021:literal)?
             $(, errors: [$($error:expr),* $(,)?])?
+            $(, config: $config:expr)?
             $(,)?
         }),* $(,)?
     ) => {
         #[test]
-        #[allow(unused_imports)]
+        #[allow(unused_imports, clippy::needless_update, clippy::redundant_closure_call)]
         fn $rule_name() {
-            use crate::{tests::DatalogTestHarness, datalog::DatalogLint::{self, *}};
-            use types::ast::Span;
+            use crate::{
+                tests::DatalogTestHarness,
+                datalog::DatalogLint::{self, *},
+            };
+            use types::{
+                ast::Span,
+                config::{Config, NoShadowHoisting::{self, *}},
+            };
             use std::borrow::Cow;
             use rayon::iter::{ParallelIterator, IntoParallelIterator};
 
+            let config = ($rule_conf as fn(Config) -> Config)(Config::empty());
             let analyzer = DatalogTestHarness::new()
                 $(.with_filter($filter as fn(&DatalogLint) -> bool))?;
 
@@ -36,7 +45,8 @@ macro_rules! rule_test {
                     $(.with_ecma($ecma))?
                     $(.is_module($module))?
                     $(.with_es2021($es2021))?
-                    $(.with_errors(vec![$($error),*]))?,
+                    $(.with_errors(vec![$($error),*]))?
+                    .with_config($(($config as fn(Config) -> Config))?(config.clone())),
             )?]
             .into_par_iter()
             .for_each(|test| test.run());
@@ -46,7 +56,9 @@ macro_rules! rule_test {
     };
 }
 
+mod no_shadow;
 mod no_undef;
+mod no_unused_labels;
 mod no_unused_vars;
 mod typeof_undef;
 mod use_before_def;
@@ -64,7 +76,7 @@ use std::{
     path::Path,
     sync::atomic::{AtomicUsize, Ordering},
 };
-use types::ast::FileId;
+use types::{ast::FileId, config::Config};
 
 struct DatalogTestHarness {
     datalog: ScopeAnalyzer,
@@ -127,6 +139,7 @@ struct TestCase<'a> {
     errors: Vec<DatalogLint>,
     harness: &'a DatalogTestHarness,
     id: usize,
+    config: Config,
 }
 
 impl<'a> TestCase<'a> {
@@ -162,6 +175,7 @@ impl<'a> TestCase<'a> {
             errors: Vec::new(),
             harness,
             id,
+            config: Config::default(),
         }
     }
 
@@ -198,6 +212,11 @@ impl<'a> TestCase<'a> {
 
     pub fn with_errors(mut self, errors: Vec<DatalogLint>) -> Self {
         self.errors.extend(errors);
+        self
+    }
+
+    pub fn with_config(mut self, config: Config) -> Self {
+        self.config = config;
         self
     }
 
@@ -263,7 +282,7 @@ impl<'a> TestCase<'a> {
 
         self.harness
             .datalog
-            .analyze(file_id, &ast)
+            .analyze(file_id, &ast, self.config)
             .expect("failed datalog transaction");
 
         for err in self.errors.iter_mut() {

@@ -84,9 +84,9 @@ for arg in "$@"; do
         check_undeclared "$check" "--check"
         check="true"
 
-    elif [ "$arg" = "--no-fmt" ]; then
-        check_undeclared "$no_rustfmt" "--no-fmt"
-        no_rustfmt="true"
+    elif [ "$arg" = "--fmt" ]; then
+        check_undeclared "rustfmt" "--fmt"
+        rustfmt="true"
 
     elif [ "$arg" = "-o" ] || [ "$arg" = "--output-dir" ]; then
         check_undeclared "$output_dir" "--output-dir"
@@ -113,7 +113,7 @@ for arg in "$@"; do
         printf "        --check             Run 'cargo check' on generated code\n"
         printf "        --debug             Enable debug mode (causes ddlog to dump internal tables)\n"
         printf "        --no-color          Disable terminal coloring\n"
-        printf "        --no-fmt            Don't run rustfmt\n"
+        printf "        --fmt               Run rustfmt\n"
         printf "        --no-xtask          Don't run the xtask datalog procedure\n"
         # TODO: Finish these (need arg passing)
         # printf "    -o, --output-dir        Set the output dir, defaults to $DDLOG_OUTPUT_DIR\n"
@@ -164,7 +164,7 @@ else
     printf "ddlog... "
 fi
 
-if [ "$no_rustfmt" != "true" ]; then
+if [ "$rustfmt" = "true" ]; then
     extra_args="$extra_args --run-rustfmt"
 fi
 

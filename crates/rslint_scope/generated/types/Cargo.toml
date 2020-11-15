@@ -46,6 +46,11 @@ optional = false
 path = "../../../rslint_parser"
 version = "0.2.1"
 
+[dependencies.schemars]
+features = []
+optional = false
+version = "0.8.0"
+
 [dependencies.serde]
 features = ["derive"]
 optional = false

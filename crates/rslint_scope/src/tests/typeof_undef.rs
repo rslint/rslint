@@ -1,5 +1,6 @@
 rule_test! {
     typeof_undef,
+    rule_conf: |conf| conf.no_typeof_undef(true),
     filter: DatalogLint::is_typeof_undef,
     // Should pass
     { "var a = 10; typeof a" },

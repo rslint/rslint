@@ -188,6 +188,20 @@ impl_id_traits! {
     ExprId,
 }
 
+impl FuncParam {
+    pub const fn new(pattern: IPattern, implicit: bool) -> Self {
+        Self { pattern, implicit }
+    }
+
+    pub const fn explicit(pattern: IPattern) -> Self {
+        Self::new(pattern, false)
+    }
+
+    pub const fn implicit(pattern: IPattern) -> Self {
+        Self::new(pattern, true)
+    }
+}
+
 impl From<AstUnaryOp> for UnaryOperand {
     fn from(op: AstUnaryOp) -> Self {
         match op {
@@ -628,19 +642,19 @@ pub enum ClassElement {
     ClassEmptyElem,
     ClassMethod {
         name: crate::ddlog_std::Option<crate::ast::PropertyKey>,
-        params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>,
+        params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>,
         body: crate::ddlog_std::Option<crate::ast::StmtId>
     },
     ClassStaticMethod {
         name: crate::ddlog_std::Option<crate::ast::PropertyKey>,
-        params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>,
+        params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>,
         body: crate::ddlog_std::Option<crate::ast::StmtId>
     }
 }
 impl abomonation::Abomonation for ClassElement{}
-::differential_datalog::decl_enum_from_record!(ClassElement["ast::ClassElement"]<>, ClassEmptyElem["ast::ClassEmptyElem"][0]{}, ClassMethod["ast::ClassMethod"][3]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::PropertyKey>, [1]params["params"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>, [2]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>}, ClassStaticMethod["ast::ClassStaticMethod"][3]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::PropertyKey>, [1]params["params"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>, [2]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>});
+::differential_datalog::decl_enum_from_record!(ClassElement["ast::ClassElement"]<>, ClassEmptyElem["ast::ClassEmptyElem"][0]{}, ClassMethod["ast::ClassMethod"][3]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::PropertyKey>, [1]params["params"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>, [2]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>}, ClassStaticMethod["ast::ClassStaticMethod"][3]{[0]name["name"]: crate::ddlog_std::Option<crate::ast::PropertyKey>, [1]params["params"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>, [2]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>});
 ::differential_datalog::decl_enum_into_record!(ClassElement<>, ClassEmptyElem["ast::ClassEmptyElem"]{}, ClassMethod["ast::ClassMethod"]{name, params, body}, ClassStaticMethod["ast::ClassStaticMethod"]{name, params, body});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(ClassElement<>, ClassEmptyElem{}, ClassMethod{name: crate::ddlog_std::Option<crate::ast::PropertyKey>, params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>, body: crate::ddlog_std::Option<crate::ast::StmtId>}, ClassStaticMethod{name: crate::ddlog_std::Option<crate::ast::PropertyKey>, params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>, body: crate::ddlog_std::Option<crate::ast::StmtId>});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(ClassElement<>, ClassEmptyElem{}, ClassMethod{name: crate::ddlog_std::Option<crate::ast::PropertyKey>, params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>, body: crate::ddlog_std::Option<crate::ast::StmtId>}, ClassStaticMethod{name: crate::ddlog_std::Option<crate::ast::PropertyKey>, params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>, body: crate::ddlog_std::Option<crate::ast::StmtId>});
 impl ::std::fmt::Display for ClassElement {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -1048,6 +1062,33 @@ impl ::std::fmt::Display for FuncId {
     }
 }
 impl ::std::fmt::Debug for FuncId {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct FuncParam {
+    pub pattern: crate::ast::IPattern,
+    pub implicit: bool
+}
+impl abomonation::Abomonation for FuncParam{}
+::differential_datalog::decl_struct_from_record!(FuncParam["ast::FuncParam"]<>, ["ast::FuncParam"][2]{[0]pattern["pattern"]: crate::ast::IPattern, [1]implicit["implicit"]: bool});
+::differential_datalog::decl_struct_into_record!(FuncParam, ["ast::FuncParam"]<>, pattern, implicit);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(FuncParam, <>, pattern: crate::ast::IPattern, implicit: bool);
+impl ::std::fmt::Display for FuncParam {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::ast::FuncParam{pattern,implicit} => {
+                __formatter.write_str("ast::FuncParam{")?;
+                ::std::fmt::Debug::fmt(pattern, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(implicit, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for FuncParam {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
@@ -1532,7 +1573,8 @@ pub enum PropertyVal {
         body: crate::ddlog_std::Option<crate::ast::StmtId>
     },
     PropSetter {
-        params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>
+        params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>,
+        body: crate::ddlog_std::Option<crate::ast::StmtId>
     },
     PropSpread {
         value: crate::ddlog_std::Option<crate::ast::ExprId>
@@ -1542,14 +1584,14 @@ pub enum PropertyVal {
     },
     PropIdent,
     PropMethod {
-        params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>,
+        params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>,
         body: crate::ddlog_std::Option<crate::ast::StmtId>
     }
 }
 impl abomonation::Abomonation for PropertyVal{}
-::differential_datalog::decl_enum_from_record!(PropertyVal["ast::PropertyVal"]<>, PropLit["ast::PropLit"][1]{[0]lit["lit"]: crate::ddlog_std::Option<crate::ast::ExprId>}, PropGetter["ast::PropGetter"][1]{[0]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>}, PropSetter["ast::PropSetter"][1]{[0]params["params"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>}, PropSpread["ast::PropSpread"][1]{[0]value["value"]: crate::ddlog_std::Option<crate::ast::ExprId>}, PropInit["ast::PropInit"][1]{[0]value["value"]: crate::ddlog_std::Option<crate::ast::ExprId>}, PropIdent["ast::PropIdent"][0]{}, PropMethod["ast::PropMethod"][2]{[0]params["params"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>, [1]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>});
-::differential_datalog::decl_enum_into_record!(PropertyVal<>, PropLit["ast::PropLit"]{lit}, PropGetter["ast::PropGetter"]{body}, PropSetter["ast::PropSetter"]{params}, PropSpread["ast::PropSpread"]{value}, PropInit["ast::PropInit"]{value}, PropIdent["ast::PropIdent"]{}, PropMethod["ast::PropMethod"]{params, body});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(PropertyVal<>, PropLit{lit: crate::ddlog_std::Option<crate::ast::ExprId>}, PropGetter{body: crate::ddlog_std::Option<crate::ast::StmtId>}, PropSetter{params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>}, PropSpread{value: crate::ddlog_std::Option<crate::ast::ExprId>}, PropInit{value: crate::ddlog_std::Option<crate::ast::ExprId>}, PropIdent{}, PropMethod{params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::IPattern>>, body: crate::ddlog_std::Option<crate::ast::StmtId>});
+::differential_datalog::decl_enum_from_record!(PropertyVal["ast::PropertyVal"]<>, PropLit["ast::PropLit"][1]{[0]lit["lit"]: crate::ddlog_std::Option<crate::ast::ExprId>}, PropGetter["ast::PropGetter"][1]{[0]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>}, PropSetter["ast::PropSetter"][2]{[0]params["params"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>, [1]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>}, PropSpread["ast::PropSpread"][1]{[0]value["value"]: crate::ddlog_std::Option<crate::ast::ExprId>}, PropInit["ast::PropInit"][1]{[0]value["value"]: crate::ddlog_std::Option<crate::ast::ExprId>}, PropIdent["ast::PropIdent"][0]{}, PropMethod["ast::PropMethod"][2]{[0]params["params"]: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>, [1]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>});
+::differential_datalog::decl_enum_into_record!(PropertyVal<>, PropLit["ast::PropLit"]{lit}, PropGetter["ast::PropGetter"]{body}, PropSetter["ast::PropSetter"]{params, body}, PropSpread["ast::PropSpread"]{value}, PropInit["ast::PropInit"]{value}, PropIdent["ast::PropIdent"]{}, PropMethod["ast::PropMethod"]{params, body});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(PropertyVal<>, PropLit{lit: crate::ddlog_std::Option<crate::ast::ExprId>}, PropGetter{body: crate::ddlog_std::Option<crate::ast::StmtId>}, PropSetter{params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>, body: crate::ddlog_std::Option<crate::ast::StmtId>}, PropSpread{value: crate::ddlog_std::Option<crate::ast::ExprId>}, PropInit{value: crate::ddlog_std::Option<crate::ast::ExprId>}, PropIdent{}, PropMethod{params: crate::ddlog_std::Option<crate::ddlog_std::Vec<crate::ast::FuncParam>>, body: crate::ddlog_std::Option<crate::ast::StmtId>});
 impl ::std::fmt::Display for PropertyVal {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -1563,9 +1605,11 @@ impl ::std::fmt::Display for PropertyVal {
                 ::std::fmt::Debug::fmt(body, __formatter)?;
                 __formatter.write_str("}")
             },
-            crate::ast::PropertyVal::PropSetter{params} => {
+            crate::ast::PropertyVal::PropSetter{params,body} => {
                 __formatter.write_str("ast::PropSetter{")?;
                 ::std::fmt::Debug::fmt(params, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(body, __formatter)?;
                 __formatter.write_str("}")
             },
             crate::ast::PropertyVal::PropSpread{value} => {
@@ -1961,6 +2005,21 @@ impl ::std::default::Default for UnaryOperand {
         crate::ast::UnaryOperand::UnaryIncrement{}
     }
 }
+pub fn body_ast_PropertyVal_ddlog_std_Option__ast_StmtId(prop: & crate::ast::PropertyVal) -> crate::ddlog_std::Option<crate::ast::StmtId>
+{   match (*prop) {
+        crate::ast::PropertyVal::PropGetter{body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: (*body).clone()}),
+        crate::ast::PropertyVal::PropSetter{params: _, body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: (*body).clone()}),
+        crate::ast::PropertyVal::PropMethod{params: _, body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: (*body).clone()}),
+        _ => (crate::ddlog_std::Option::None{})
+    }
+}
+pub fn body_ast_ClassElement_ddlog_std_Option__ast_StmtId(elem: & crate::ast::ClassElement) -> crate::ddlog_std::Option<crate::ast::StmtId>
+{   match (*elem) {
+        crate::ast::ClassElement::ClassMethod{name: _, params: _, body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: (*body).clone()}),
+        crate::ast::ClassElement::ClassStaticMethod{name: _, params: _, body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: (*body).clone()}),
+        _ => (crate::ddlog_std::Option::None{})
+    }
+}
 pub fn bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat: & crate::ast::IPattern) -> crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>
 {   match (*crate::internment::ival(pat)) {
         crate::ast::Pattern::SinglePattern{name: crate::ddlog_std::Option::Some{x: ref name}} => {
@@ -2014,6 +2073,23 @@ pub fn bound_vars_internment_Intern__ast_ObjectPatternProp_ddlog_std_Vec__ast_Sp
         _ => (*(&*crate::__STATIC_1)).clone()
     }
 }
+pub fn bound_vars_ast_FuncParam_ddlog_std_Vec____Tuple2__ast_Spanned__internment_Intern____Stringval___Boolval(param: & crate::ast::FuncParam) -> crate::ddlog_std::Vec<crate::ddlog_std::tuple2<crate::ast::Spanned<crate::ast::Name>, bool>>
+{   crate::vec::map::<crate::ast::Spanned<crate::ast::Name>, crate::ddlog_std::tuple2<crate::ast::Spanned<crate::ast::Name>, bool>>((&crate::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval((&param.pattern))), (&{
+                                                                                                                                                                                                                                                                                 (Box::new(closure::ClosureImpl{
+                                                                                                                                                                                                                                                                                     description: "(function(v: ast::Spanned<ast::Name>):(ast::Spanned<ast::Name>, bool){(v, (param.implicit))})",
+                                                                                                                                                                                                                                                                                     captured: param.clone(),
+                                                                                                                                                                                                                                                                                     f: {
+                                                                                                                                                                                                                                                                                            fn __f(__args:*const crate::ast::Spanned<crate::ast::Name>, __captured: &crate::ast::FuncParam) -> crate::ddlog_std::tuple2<crate::ast::Spanned<crate::ast::Name>, bool>
+                                                                                                                                                                                                                                                                                            {
+                                                                                                                                                                                                                                                                                                let param = __captured;
+                                                                                                                                                                                                                                                                                                let v = unsafe{&*__args};
+                                                                                                                                                                                                                                                                                                crate::ddlog_std::tuple2((*v).clone(), param.implicit.clone())
+                                                                                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                                                                                            __f
+                                                                                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                                                                                 }) as Box<dyn closure::Closure<(*const crate::ast::Spanned<crate::ast::Name>), crate::ddlog_std::tuple2<crate::ast::Spanned<crate::ast::Name>, bool>>>)
+                                                                                                                                                                                                                                                                             }))
+}
 pub fn free_variable(clause: & crate::ast::NamedImport) -> crate::ddlog_std::Option<crate::ast::Spanned<crate::ast::Name>>
 {   crate::utils::or_else::<crate::ast::Spanned<crate::ast::Name>>((&clause.alias), (&clause.name))
 }
@@ -2052,6 +2128,12 @@ pub fn is_expr(id: & crate::ast::AnyId) -> bool
         _ => false
     }
 }
+pub fn is_function(id: & crate::ast::AnyId) -> bool
+{   match (*id) {
+        crate::ast::AnyId::AnyIdFunc{func: _} => true,
+        _ => false
+    }
+}
 pub fn is_global(id: & crate::ast::AnyId) -> bool
 {   match (*id) {
         crate::ast::AnyId::AnyIdGlobal{global: _} => true,
@@ -2060,6 +2142,20 @@ pub fn is_global(id: & crate::ast::AnyId) -> bool
 }
 pub fn is_variable_decl(kind: & crate::ast::StmtKind) -> bool
 {   ((((&*kind) == (&*(&(crate::ast::StmtKind::StmtVarDecl{})))) || ((&*kind) == (&*(&(crate::ast::StmtKind::StmtLetDecl{}))))) || ((&*kind) == (&*(&(crate::ast::StmtKind::StmtConstDecl{})))))
+}
+pub fn method_comps_ast_PropertyVal_ddlog_std_Option____Tuple2__ddlog_std_Vec__ast_FuncParam_ast_StmtId(prop: & crate::ast::PropertyVal) -> crate::ddlog_std::Option<crate::ddlog_std::tuple2<crate::ddlog_std::Vec<crate::ast::FuncParam>, crate::ast::StmtId>>
+{   match (*prop) {
+        crate::ast::PropertyVal::PropSetter{params: crate::ddlog_std::Option::Some{x: ref params}, body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: crate::ddlog_std::tuple2((*params).clone(), (*body).clone())}),
+        crate::ast::PropertyVal::PropMethod{params: crate::ddlog_std::Option::Some{x: ref params}, body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: crate::ddlog_std::tuple2((*params).clone(), (*body).clone())}),
+        _ => (crate::ddlog_std::Option::None{})
+    }
+}
+pub fn method_comps_ast_ClassElement_ddlog_std_Option____Tuple2__ddlog_std_Vec__ast_FuncParam_ast_StmtId(elem: & crate::ast::ClassElement) -> crate::ddlog_std::Option<crate::ddlog_std::tuple2<crate::ddlog_std::Vec<crate::ast::FuncParam>, crate::ast::StmtId>>
+{   match (*elem) {
+        crate::ast::ClassElement::ClassMethod{name: _, params: crate::ddlog_std::Option::Some{x: ref params}, body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: crate::ddlog_std::tuple2((*params).clone(), (*body).clone())}),
+        crate::ast::ClassElement::ClassStaticMethod{name: _, params: crate::ddlog_std::Option::Some{x: ref params}, body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: crate::ddlog_std::tuple2((*params).clone(), (*body).clone())}),
+        _ => (crate::ddlog_std::Option::None{})
+    }
 }
 pub fn to_string_ast_ScopeId___Stringval(scope: & crate::ast::ScopeId) -> String
 {   string_append(String::from(r###"Scope_"###), (&crate::ddlog_std::__builtin_2string((&scope.id))))

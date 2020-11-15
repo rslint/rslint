@@ -10,5 +10,5 @@ flamegraph.svg
 package-lock.json
 **/dist
 rslint.svg
-**/output.log/
+**/output.log/**
 yarn.lock

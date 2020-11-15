@@ -1,0 +1,15 @@
+import ast
+import name_in_scope
+import utils
+import inputs
+
+relation IsExported(file: FileId, id: AnyId)
+IsExported(file, AnyIdFunc { id }) :- Function(id, file, _, _, _, true).
+IsExported(file, AnyIdClass { id }) :- Class(id, file, _, _, _, _, true).
+IsExported(file, AnyIdStmt { id }) :- VarDecl(id, file, _, _, true).
+IsExported(file, AnyIdStmt { id }) :- LetDecl(id, file, _, _, true).
+IsExported(file, AnyIdStmt { id }) :- ConstDecl(id, file, _, _, true).
+IsExported(file, id) :-
+    FileExport(file, NamedExport { export_name, export_alias }, export_scope),
+    Some { Spanned { var name, _ }} = export_alias.or_else(export_name),
+    NameInScope(file, name, export_scope, _, id, _, _, _).

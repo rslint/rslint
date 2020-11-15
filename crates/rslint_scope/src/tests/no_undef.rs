@@ -2,6 +2,7 @@
 
 rule_test! {
     no_undef,
+    rule_conf: |conf| conf.no_undef(true),
     filter: DatalogLint::is_no_undef,
     // Should pass
     { "var a = 1, b = 2; a + b;" },
@@ -58,6 +59,41 @@ rule_test! {
     { "export * as ns from \"source\"", module: true },
     { "import.meta", module: true },
     { "let x; x.y" },
+    { "let x = 10; while (true) { x += 1; }" },
+    {
+        "import {",
+        "    UpdateEmpty, LoopContinues, X,",
+        "    EnsureCompletion, Evaluate, Q,",
+        "    GetValue, ToBoolean, Value,",
+        "    Completion, NormalCompletion,",
+        "} from '../bullshit.mjs';",
+        "function* LabelledEvaluation_IterationStatement_DoWhileStatement({ Statement, Expression }, labelSet) {",
+        "    // 1. Let V be undefined.",
+        "    let V = Value.undefined;",
+        "    // 2. Repeat,",
+        "    while (true) {",
+        "        // a. Let stmtResult be the result of evaluating Statement.",
+        "        const stmtResult = EnsureCompletion(yield* Evaluate(Statement));",
+        "        // b. If LoopContinues(stmtResult, labelSet) is false, return Completion(UpdateEmpty(stmtResult, V)).",
+        "        if (LoopContinues(stmtResult, labelSet) === Value.false) {",
+        "            return Completion(UpdateEmpty(stmtResult, V));",
+        "        }",
+        "        // c. If stmtResult.[[Value]] is not empty, set V to stmtResult.[[Value]].",
+        "        if (stmtResult.Value !== undefined) {",
+        "            V = stmtResult.Value;",
+        "        }",
+        "        // d. Let exprRef be the result of evaluating Expression.",
+        "        const exprRef = yield* Evaluate(Expression);",
+        "        // e. Let exprValue be ? GetValue(exprRef).",
+        "        const exprValue = Q(GetValue(exprRef));",
+        "        // f. If ! ToBoolean(exprValue) is false, return NormalCompletion(V).",
+        "        if (X(ToBoolean(exprValue)) === Value.false) {",
+        "            return NormalCompletion(V);",
+        "        }",
+        "    }",
+        "}",
+        module: true,
+    },
 
     // Should fail
     { "a = 1;", errors: [DatalogLint::no_undef("a", 0..1)] },
@@ -74,4 +110,7 @@ rule_test! {
     // FIXME: Assignment pattern parsing is broken
     // { "[obj.a, obj.b] = [0, 1];", errors: [DatalogLint::no_undef("obj", 1..4), DatalogLint::no_undef("obj", 8..11)] },
     { "const c = 0; const a = {...b, c};", errors: [DatalogLint::no_undef("b", 27..28)] },
+    { "function b() { var a; } a;", errors: [DatalogLint::no_undef("a", 24..25)] },
+    { "function b(a) {} a;", errors: [DatalogLint::no_undef("a", 17..18)] },
+    { "a; function b(a) {}", errors: [DatalogLint::no_undef("a", 0..1)] },
 }

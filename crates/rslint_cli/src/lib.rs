@@ -14,6 +14,7 @@ pub use rslint_core::Outcome;
 pub use rslint_errors::{
     file, file::Files, Diagnostic, Emitter, Formatter, LongFormatter, Severity, ShortFormatter,
 };
+use rslint_scope::ScopeAnalyzer;
 
 use colored::*;
 use rayon::prelude::*;
@@ -34,6 +35,7 @@ pub fn run(
     no_global_config: bool,
 ) {
     let exit_code = run_inner(globs, verbose, fix, dirty, formatter, no_global_config);
+    #[cfg(not(debug_assertions))]
     process::exit(exit_code);
 }
 
@@ -64,11 +66,16 @@ fn run_inner(
     }
 
     let span = tracing::info_span!("lint files");
+    let analyzer = ScopeAnalyzer::new().unwrap();
+    // store.load_rule(Box::new(rslint_core::Scoper {
+    //     analyzer: analyzer.clone(),
+    // }));
+
     let guard = span.enter();
     let mut results = walker
         .files
         .par_values()
-        .map(|file| lint_file(file, &store, verbose))
+        .map(|file| lint_file(file, &store, verbose, &analyzer))
         .filter_map(|res| {
             if let Err(diagnostic) = res {
                 emit_diagnostic(&diagnostic, &walker);

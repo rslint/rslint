@@ -156,6 +156,20 @@ impl_id_traits! {
     ExprId,
 }
 
+impl FuncParam {
+    pub const fn new(pattern: IPattern, implicit: bool) -> Self {
+        Self { pattern, implicit }
+    }
+
+    pub const fn explicit(pattern: IPattern) -> Self {
+        Self::new(pattern, false)
+    }
+
+    pub const fn implicit(pattern: IPattern) -> Self {
+        Self::new(pattern, true)
+    }
+}
+
 impl From<AstUnaryOp> for UnaryOperand {
     fn from(op: AstUnaryOp) -> Self {
         match op {

@@ -1,0 +1,56 @@
+import ast
+import utils
+import group
+import scopes
+import inputs
+import config
+
+output relation NoUnusedLabels(
+    stmt_id: StmtId,
+    file: FileId,
+    label_name: Spanned<Name>,
+)
+
+NoUnusedLabels(stmt, file, name) :-
+    File(file, _, _, config),
+    config.no_unused_labels_enabled(),
+    Label(stmt, file, Some { name }, _, _),
+    not UsedLabel(stmt, file, name).
+
+relation UsedLabel(
+    stmt_id: StmtId,
+    file: FileId,
+    label_name: Spanned<Name>,
+)
+
+UsedLabel(stmt, file, name) :-
+    File(file, _, _, config),
+    config.no_unused_labels_enabled(),
+    Label(stmt, file, Some { name @ Spanned { label_name, _ }}, _, body_scope),
+    LabelUsage(_, file, label_name, body_scope).
+
+UsedLabel(stmt, file, name) :-
+    File(file, _, _, config),
+    config.no_unused_labels_enabled(),
+    Label(stmt, file, Some { name @ Spanned { label_name, _ }}, _, body_scope),
+    ChildScope(body_scope, child_scope, file),
+    LabelUsage(_, file, label_name, child_scope).
+
+relation LabelUsage(
+    stmt: StmtId,
+    file: FileId,
+    label_name: Name,
+    scope: ScopeId,
+)
+
+LabelUsage(stmt, file, name, scope) :-
+    File(file, _, _, config),
+    config.no_unused_labels_enabled(),
+    Break(stmt, file, Some { Spanned { name, _ }}),
+    Statement(stmt, file, _, scope, _).
+
+LabelUsage(stmt, file, name, scope) :-
+    File(file, _, _, config),
+    config.no_unused_labels_enabled(),
+    Continue(stmt, file, Some { Spanned { name, _ }}),
+    Statement(stmt, file, _, scope, _).

@@ -1,12 +1,12 @@
 rule_test! {
     no_unused_vars,
+    rule_conf: |conf| conf.no_unused_vars(true),
     filter: DatalogLint::is_no_unused_vars,
     // Should pass
     { "var foo = 5;\nlabel: while (true) {\n  console.log(foo);\n  break label;\n}", node: true },
     { "var foo = 5;\nwhile (true) {\n  console.log(foo);\n  break;\n}", node: true },
     { "let box;\nfor (let prop in box) {\n  box[prop] = parseInt(box[prop]);\n}" },
     { "var box = { a: 2 };\nfor (var prop in box) {\n  box[prop] = parseInt(box[prop]);\n}" },
-    // FIXME: Var hoisting
     { "a;\nvar a;" },
     { "var a = 10;\nalert(a);" },
     { "var a = 10;\n(function() { alert(a); })();" },
@@ -51,11 +51,10 @@ rule_test! {
     { "function Foo() {};\nvar x = new Foo();\nx.foo();" },
     { "function foo() {\n  var foo = 1;\n  return foo\n};\nfoo();" },
     { "function foo(foo) { return foo };\nfoo(1);" },
-    { "f({ set foo(a) { return; } });" },
-    { "function foo() {function foo() {return 1;}; return foo()}; foo();" },
-    { "function foo() {var foo = 1; return foo}; foo();" },
-    { "function foo(foo) {return foo}; foo(1);" },
-    { "function foo() {function foo() {return 1;}; return foo()}; foo();" },
+    { "function foo() { function foo() { return 1; }; return foo() }; foo();" },
+    { "function foo() { var foo = 1; return foo }; foo();" },
+    { "function foo(foo) { return foo }; foo(1);" },
+    { "function foo() { function foo() { return 1; }; return foo() }; foo();" },
     { "const x = 1; const [y = x] = []; foo(y);" },
     { "const x = 1; const {y = x} = {}; foo(y);" },
     { "const x = 1; const {z: [y = x]} = {}; foo(y);" },
@@ -97,7 +96,7 @@ rule_test! {
         "var unregisterFooWatcher;",
         "unregisterFooWatcher = $scope.$watch( \"foo\", function() {",
         "    unregisterFooWatcher();",
-        "});"
+        "});",
     },
     {
         "var ref;",
@@ -159,9 +158,18 @@ rule_test! {
     { "var a = function(){ return function () { a(); } }; a();" },
     { "const a = () => { a(); }; a();" },
     { "const a = () => () => { a(); }; a();" },
-
+    {
+        "const obj = {",
+        "   set latest(foo, bar) {",
+        "       this.foo = foo;",
+        "       this.bar = bar;",
+        "   }",
+        "};",
+        "foo(obj);",
+    },
 
     // Should fail
+    { "f({ set foo(a) { return; } });", errors: [DatalogLint::no_unused_vars("a", 12..13)] },
     { "function a(x, y){ return y; }; a();", errors: [DatalogLint::no_unused_vars("x", 11..12)] },
     { "var a = 10;", errors: [DatalogLint::no_unused_vars("a", 4..5)] },
     { "function g(bar, baz) { return baz; }; g();", errors: [DatalogLint::no_unused_vars("bar", 11..14)] },
@@ -181,7 +189,10 @@ rule_test! {
         "        }",
         "    });",
         "}",
-        errors: [DatalogLint::no_unused_vars("a", 11..12)],
+        errors: [
+            DatalogLint::no_unused_vars("a", 11..12),
+            DatalogLint::no_unused_vars("a", 40..41),
+        ],
     },
     {
         "function doStuff(f) {",
@@ -251,6 +262,99 @@ rule_test! {
         "}",
         errors: [DatalogLint::no_unused_vars("f", 9..10)],
     },
+    {
+        "const obj = {",
+        "   set latest(foo, bar) {}",
+        "};",
+        "foo(obj);",
+        errors: [
+            DatalogLint::no_unused_vars("foo", 28..31),
+            DatalogLint::no_unused_vars("bar", 33..36),
+        ],
+    },
+    {
+        "const obj = {",
+        "   set latest(foo, bar) {",
+        "       this.foo = foo;",
+        "   }",
+        "};",
+        "foo(obj);",
+        errors: [DatalogLint::no_unused_vars("bar", 33..36)],
+    },
+    {
+        "function f() {",
+        "    var x;",
+        "    function a() {",
+        "        x = 42;",
+        "    }",
+        "    function b() {",
+        "        alert(x);",
+        "    }",
+        "}",
+        errors: [
+            DatalogLint::no_unused_vars("f", 9..10),
+            DatalogLint::no_unused_vars("a", 39..40),
+            DatalogLint::no_unused_vars("b", 80..81),
+        ],
+    },
+    { "function f(a) {}; f();", errors: [DatalogLint::no_unused_vars("a", 11..12)] },
+    {
+        "function a(x, y, z){ return y; }; a();",
+        errors: [
+            DatalogLint::no_unused_vars("x", 11..12),
+            DatalogLint::no_unused_vars("z", 17..18),
+        ],
+    },
+    { "var min = Math.min", errors: [DatalogLint::no_unused_vars("min", 4..7)] },
+    { "var min = {min: 1}", errors: [DatalogLint::no_unused_vars("min", 4..7)] },
+    {
+        "Foo.bar = function(baz) { return 1; };",
+        errors: [DatalogLint::no_unused_vars("baz", 19..22)],
+    },
+    { "var min = {min: 1}", errors: [DatalogLint::no_unused_vars("min", 4..7)] },
+    {
+        "function gg(baz, bar) { return baz; }; gg();",
+        errors: [DatalogLint::no_unused_vars("bar", 17..20)],
+    },
+    {
+        "(function(foo, baz, bar) { return baz; })();",
+        errors: [
+            DatalogLint::no_unused_vars("foo", 10..13),
+            DatalogLint::no_unused_vars("bar", 20..23),
+        ],
+    },
+    {
+        "(function z(foo) { var bar = 33; })();",
+        errors: [
+            DatalogLint::no_unused_vars("foo", 12..15),
+            DatalogLint::no_unused_vars("bar", 23..26),
+        ],
+    },
+    {
+        "(function z(foo) { z(); })();",
+        errors: [DatalogLint::no_unused_vars("foo", 12..15)],
+    },
+    { "function f() { var a = 1; return function(){ f(a = 2); }; }", errors: [] },
+    {
+        "import x from \"y\";",
+        module: true,
+        errors: [DatalogLint::no_unused_vars("x", 7..8)],
+    },
+    {
+        "export function fn2({ x, y }) {",
+        "    console.log(x);",
+        "};",
+        module: true,
+        errors: [DatalogLint::no_unused_vars("y", 25..26)],
+    },
+    {
+        "export function fn2(x, y) {",
+        "    console.log(x);",
+        "};",
+        module: true,
+        errors: [DatalogLint::no_unused_vars("y", 23..24)],
+    },
+
 }
 
 /*
@@ -319,23 +423,6 @@ ruleTester.run("no-unused-vars", rule, {
         }
     ],
     invalid: [
-        { "function f(){var x;function a(){x=42;}function b(){alert(x);}}", errors: 3 },
-        { "function f(a) {}; f();", errors: [definedError("a")] },
-        { "function a(x, y, z){ return y; }; a();", errors: [definedError("z")] },
-        { "var min = Math.min", errors: [assignedError("min")] },
-        { "var min = {min: 1}", errors: [assignedError("min")] },
-        { "Foo.bar = function(baz) { return 1; };", errors: [definedError("baz")] },
-        { "var min = {min: 1}", options: [{ vars: "all" }], errors: [assignedError("min")] },
-        { "function gg(baz, bar) { return baz; }; gg();", options: [{ vars: "all" }], errors: [definedError("bar")] },
-        { "(function(foo, baz, bar) { return baz; })();", options: [{ vars: "all", args: "after-used" }], errors: [definedError("bar")] },
-        { "(function(foo, baz, bar) { return baz; })();", options: [{ vars: "all", args: "all" }], errors: [definedError("foo"), definedError("bar")] },
-        { "(function z(foo) { var bar = 33; })();", options: [{ vars: "all", args: "all" }], errors: [definedError("foo"), assignedError("bar")] },
-        { "(function z(foo) { z(); })();", options: [{}], errors: [definedError("foo")] },
-        { "function f() { var a = 1; return function(){ f(a = 2); }; }", options: [{}], errors: [definedError("f"), assignedError("a")] },
-        { "import x from \"y\";", module: true, errors: [definedError("x")] },
-        { "export function fn2({ x, y }) {\n console.log(x); \n};", module: true, errors: [definedError("y")] },
-        { "export function fn2( x, y ) {\n console.log(x); \n};", module: true, errors: [definedError("y")] },
-
         // exported
         { "/*exported max*/ var max = 1, min = {min: 1}", errors: [assignedError("min")] },
         { "/*exported x*/ var { x, y } = z", errors: [assignedError("y")] },
@@ -1050,7 +1137,7 @@ ruleTester.run("no-unused-vars", rule, {
                 }
             }`,
             parserOptions: { ecmaVersion: 2020 },
-            errors: [{ ...definedError("foo"), line: 3, column: 22 }, { ...assignedError("a"), line: 6, column: 21 }]
+            errors: [{ ..., line: 3, column: 22 }, { ...assignedError("a"), line: 6, column: 21 }]
         },
         {
             `let c = 'c'

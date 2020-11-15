@@ -3,8 +3,12 @@ name = "rslint_scope"
 version = "0.1.0"
 authors = ["RSLint developers"]
 edition = "2018"
-license = "MIT"
 description = "Scope analysis of JS programs"
+license = "MIT"
+repository = "https://github.com/RDambrosio016/RSLint"
+
+[features]
+schema = ["schemars"]
 
 [dependencies]
 rslint_parser = { path = "../rslint_parser", version = "0.2.1" }
@@ -15,6 +19,7 @@ dashmap = "3.11.10"
 types = { path = "./generated/types" }
 # Datalog
 differential_datalog = { path = "./generated/differential_datalog" }
+schemars = { version = "0.8.0", optional = true }
 
 # Generated datalog code
 [dependencies.rslint_scoping]

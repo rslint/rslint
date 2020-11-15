@@ -1037,13 +1037,13 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ContinueStmt {
             T![continue],
-            T![ident],
+            name: NameRef,
             T![;],
         }
 
         struct BreakStmt {
             T![break],
-            T![ident],
+            name: NameRef,
             T![;],
         }
 

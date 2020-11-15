@@ -55,6 +55,10 @@ pub use crate::directives::{
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
+use rslint_scope::{
+    globals::{BUILTIN, ES2021, NODE},
+    FileId, ScopeAnalyzer,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -113,14 +117,35 @@ impl LintResult<'_> {
 }
 
 /// Lint a file with a specific rule store.
-#[tracing::instrument(skip(file, store, verbose))]
-pub fn lint_file<'s>(
+#[tracing::instrument(skip(file_source, store, verbose))]
+pub fn lint_file<'a>(
     file: &File,
-    store: &'s CstRuleStore,
+    store: &'a CstRuleStore,
     verbose: bool,
-) -> Result<LintResult<'s>, Diagnostic> {
-    let (diagnostics, node) = file.parse_with_errors();
-    lint_file_inner(node, diagnostics, file, store, verbose)
+    analyzer: &ScopeAnalyzer,
+) -> Result<LintResult, Diagnostic> {
+    let (parser_diagnostics, green) = {
+        let span = tracing::info_span!("parsing file");
+        let _guard = span.enter();
+        if module {
+            let parse = parse_module(file_source.as_ref(), file_id);
+            (parse.errors().to_owned(), parse.green())
+        } else {
+            let parse = parse_text(file_source.as_ref(), file_id);
+            (parse.errors().to_owned(), parse.green())
+        }
+    };
+    let node = SyntaxNode::new_root(green);
+
+    let file = FileId::new(file_id as u32);
+    analyzer.inject_globals(file, BUILTIN).unwrap();
+    analyzer.inject_globals(file, ES2021).unwrap();
+    analyzer.inject_globals(file, NODE).unwrap();
+    analyzer
+        .analyze(file, &node, rslint_scope::Config::default())
+        .unwrap();
+
+    lint_file_inner(node, parser_diagnostics, file_id, store, verbose)
 }
 
 /// used by lint_file and incrementally_relint to not duplicate code
