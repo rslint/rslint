@@ -10,17 +10,18 @@ use rslint_lexer::{SyntaxKind, T};
 use rslint_parser::{
     ast::ModuleItem, util::Comment, JsNum, SyntaxNode, SyntaxNodeExt, SyntaxTokenExt, TextRange,
 };
+use std::ops::Range;
 
 /// A string that denotes that start of a directive (`rslint-`).
 pub const DECLARATOR: &str = "rslint-";
 
-pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
+pub type Result<T, E = DirectiveError> = std::result::Result<T, E>;
 
 /// The result of a parsed directive.
 #[derive(Default)]
 pub struct DirectiveResult {
     pub directives: Vec<Directive>,
-    pub diagnostics: Vec<Diagnostic>,
+    pub diagnostics: Vec<DirectiveError>,
 }
 
 impl DirectiveResult {
@@ -35,6 +36,31 @@ impl DirectiveResult {
             Err(d) => self.diagnostics.push(d),
         }
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct DirectiveError {
+    pub diagnostic: Diagnostic,
+    pub kind: DirectiveErrorKind,
+}
+
+impl DirectiveError {
+    pub fn range(&self) -> Range<usize> {
+        self.diagnostic.primary.as_ref().unwrap().span.range.clone()
+    }
+
+    pub fn new(diagnostic: Diagnostic, kind: DirectiveErrorKind) -> Self {
+        Self { diagnostic, kind }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum DirectiveErrorKind {
+    ExpectedNotFound(Instruction),
+    InvalidRule,
+    InvalidCommandName,
+    ExpectedCommand,
+    Other,
 }
 
 pub struct DirectiveParser<'store> {
@@ -152,7 +178,7 @@ impl<'store> DirectiveParser<'store> {
             let d = self
                 .err("expected command name, but the comment ends here")
                 .primary(range, "");
-            return Err(d);
+            return Err(DirectiveError::new(d, DirectiveErrorKind::ExpectedCommand));
         }
 
         let cmd_tok = lexer.next().unwrap();
@@ -171,7 +197,10 @@ impl<'store> DirectiveParser<'store> {
                     .err(&format!("unknown directive command: `{}`", cmd_name))
                     .primary(cmd_tok.range, "");
 
-                return Err(d);
+                return Err(DirectiveError::new(
+                    d,
+                    DirectiveErrorKind::InvalidCommandName,
+                ));
             }
         };
 
@@ -229,11 +258,11 @@ impl<'store> DirectiveParser<'store> {
                             .err("bigints are not supported in directives")
                             .primary(tok.range, "");
                         self.no_rewind = true;
-                        return Err(d);
+                        return Err(DirectiveError::new(d, DirectiveErrorKind::Other));
                     }
                     _ => {
                         let d = self.err("invalid number").primary(tok.range, "");
-                        return Err(d);
+                        return Err(DirectiveError::new(d, DirectiveErrorKind::Other));
                     }
                 };
                 Ok(vec![Component {
@@ -250,8 +279,14 @@ impl<'store> DirectiveParser<'store> {
                     .next()
                     .filter(|tok| tok.kind != SyntaxKind::EOF)
                     .ok_or_else(|| {
-                        self.err("expected rule name, but comment ends here")
-                            .primary(lexer.abs_cur()..lexer.abs_cur() + 1, "")
+                        let err = self
+                            .err("expected rule name, but comment ends here")
+                            .primary(lexer.abs_cur()..lexer.abs_cur() + 1, "");
+
+                        DirectiveError::new(
+                            err,
+                            DirectiveErrorKind::ExpectedNotFound(Instruction::RuleName),
+                        )
                     })?;
                 if !is_rule_name(first.kind) {
                     let d = self
@@ -261,7 +296,10 @@ impl<'store> DirectiveParser<'store> {
                         ))
                         .primary(first.range, "");
                     self.no_rewind = true;
-                    return Err(d);
+                    return Err(DirectiveError::new(
+                        d,
+                        DirectiveErrorKind::ExpectedNotFound(Instruction::RuleName),
+                    ));
                 }
                 let start = first.range.start();
 
@@ -295,7 +333,7 @@ impl<'store> DirectiveParser<'store> {
                     }
                     self.no_rewind = true;
 
-                    Err(d)
+                    Err(DirectiveError::new(d, DirectiveErrorKind::InvalidRule))
                 }
             }
             Instruction::Literal(lit) => {
@@ -310,7 +348,10 @@ impl<'store> DirectiveParser<'store> {
                         ))
                         .primary(tok.range, "");
                     self.no_rewind = true;
-                    Err(d)
+                    Err(DirectiveError::new(
+                        d,
+                        DirectiveErrorKind::ExpectedNotFound(Instruction::Literal(lit)),
+                    ))
                 } else {
                     Ok(vec![Component {
                         kind: ComponentKind::Literal(lit),

@@ -23,6 +23,12 @@ impl LanguageServer for Server {
             .map_err(|_| jsonrpc::Error::internal_error())
     }
 
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+        provider::completion::complete(self.session.clone(), params)
+            .await
+            .map_err(|_| jsonrpc::Error::internal_error())
+    }
+
     async fn initialized(&self, _: InitializedParams) {
         let typ = MessageType::Info;
         let message = "RSLint Language Server initialized!";

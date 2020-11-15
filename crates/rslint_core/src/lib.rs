@@ -42,7 +42,10 @@ pub use self::{
 };
 pub use rslint_errors::{Diagnostic, Severity, Span};
 
-pub use crate::directives::{apply_top_level_directives, skip_node, Directive, DirectiveParser};
+pub use crate::directives::{
+    apply_top_level_directives, skip_node, Directive, DirectiveError, DirectiveErrorKind,
+    DirectiveParser,
+};
 
 use dyn_clone::clone_box;
 use rayon::prelude::*;
@@ -61,7 +64,7 @@ pub struct LintResult<'s> {
     /// The diagnostics emitted by each rule run
     pub rule_results: HashMap<&'static str, RuleResult>,
     /// Any warnings or errors emitted by the directive parser
-    pub directive_diagnostics: Vec<Diagnostic>,
+    pub directive_diagnostics: Vec<DirectiveError>,
     pub parsed: SyntaxNode,
     pub file_id: usize,
     pub verbose: bool,
@@ -80,7 +83,7 @@ impl LintResult<'_> {
                     .map(|x| x.diagnostics.iter())
                     .flatten(),
             )
-            .chain(self.directive_diagnostics.iter())
+            .chain(self.directive_diagnostics.iter().map(|x| &x.diagnostic))
     }
 
     /// The overall outcome of linting this file (failure, warning, success, etc)

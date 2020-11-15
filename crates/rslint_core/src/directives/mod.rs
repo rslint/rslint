@@ -176,7 +176,7 @@ impl Directive {
 pub fn apply_top_level_directives(
     directives: &[Directive],
     store: &mut CstRuleStore,
-    diagnostics: &mut Vec<Diagnostic>,
+    diagnostics: &mut Vec<DirectiveError>,
     file_id: usize,
 ) {
     // TODO: More complex warnings, things like ignoring node directives because of file level directives
@@ -208,9 +208,10 @@ pub fn apply_top_level_directives(
                 "ignoring redundant rule ignore directive",
             )
             .secondary(range, "this directive ignores all rules")
-            .primary(ignored_range, "this directive is ignored");
+            .primary(ignored_range, "this directive is ignored")
+            .unnecessary();
 
-            diagnostics.push(warn);
+            diagnostics.push(DirectiveError::new(warn, DirectiveErrorKind::Other));
         }
     }
 }

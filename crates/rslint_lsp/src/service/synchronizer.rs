@@ -45,10 +45,11 @@ pub(crate) mod document {
                 Box::new(parse_text(&text, file_id)) as Box<dyn DocumentParse>
             };
 
-            document.directives =
-                DirectiveParser::new(SyntaxNode::new_root(document.parse.green()), file_id)
-                    .get_file_directives()
-                    .directives;
+            let res = DirectiveParser::new(SyntaxNode::new_root(document.parse.green()), file_id)
+                .get_file_directives();
+
+            document.directives = res.directives;
+            document.directive_errors = res.diagnostics;
         }
 
         provider::diagnostics::publish_diagnostics(session.clone(), uri).await?;

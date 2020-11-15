@@ -70,7 +70,15 @@ pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Res
 
     let mut diags = vec![];
 
-    process_diagnostics(&document, uri.clone(), directive_diagnostics, &mut diags);
+    process_diagnostics(
+        &document,
+        uri.clone(),
+        directive_diagnostics
+            .into_iter()
+            .map(|x| x.diagnostic)
+            .collect(),
+        &mut diags,
+    );
 
     process_diagnostics(
         &document,

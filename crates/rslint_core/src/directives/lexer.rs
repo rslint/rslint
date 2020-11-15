@@ -1,5 +1,6 @@
 use std::{collections::VecDeque, iter::Peekable};
 
+use super::{DirectiveError, DirectiveErrorKind};
 use rslint_errors::Diagnostic;
 use rslint_lexer::{Lexer as RawLexer, SyntaxKind};
 use rslint_parser::{TextRange, TextSize};
@@ -69,7 +70,7 @@ impl<'source> Lexer<'source> {
         self.rewind = true;
     }
 
-    pub fn expect(&mut self, kind: SyntaxKind) -> Result<Token, Diagnostic> {
+    pub fn expect(&mut self, kind: SyntaxKind) -> Result<Token, DirectiveError> {
         match self.peek() {
             Some(tok) if tok.kind == kind => Ok(self.next().unwrap()),
             Some(tok) if tok.kind == SyntaxKind::EOF => {
@@ -79,7 +80,7 @@ impl<'source> Lexer<'source> {
                         format_kind(kind)
                     ))
                     .primary(tok.range, "");
-                Err(d)
+                Err(DirectiveError::new(d, DirectiveErrorKind::Other))
             }
             Some(tok) => {
                 let d = self
@@ -89,7 +90,7 @@ impl<'source> Lexer<'source> {
                         format_kind(tok.kind)
                     ))
                     .primary(tok.range, "");
-                Err(d)
+                Err(DirectiveError::new(d, DirectiveErrorKind::Other))
             }
             _ => panic!("`expect` should not be called multiple times after EOF was reached"),
         }
