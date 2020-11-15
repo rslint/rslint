@@ -69,7 +69,7 @@ fn parse_ignore_command(
 
     if let Some(rules) = components.get(1).and_then(|c| c.kind.repetition()) {
         let rules = rules
-            .into_iter()
+            .iter()
             .flat_map(|c| c.kind.rule())
             .collect::<Vec<_>>();
 

@@ -187,7 +187,7 @@ impl<'store> DirectiveParser<'store> {
         let line = self.line_of(comment.token.text_range().start().into());
         Ok(Directive {
             // TODO: Report error for invalid command.
-            command: Command::parse(&components, line, node.clone()),
+            command: Command::parse(&components, line, node),
             line,
             comment,
             components,
