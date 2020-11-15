@@ -68,10 +68,7 @@ fn parse_ignore_command(
     // ignores the `until eof` part, which may not be obivous when looking at it.
 
     if let Some(rules) = components.get(1).and_then(|c| c.kind.repetition()) {
-        let rules = rules
-            .iter()
-            .flat_map(|c| c.kind.rule())
-            .collect::<Vec<_>>();
+        let rules = rules.iter().flat_map(|c| c.kind.rule()).collect::<Vec<_>>();
 
         if components
             .get(2)
