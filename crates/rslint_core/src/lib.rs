@@ -200,7 +200,7 @@ pub fn run_rule(
         verbose,
         diagnostics: vec![],
         fixer: None,
-        src: src.clone(),
+        src,
     };
 
     rule.check_root(&root, &mut ctx);

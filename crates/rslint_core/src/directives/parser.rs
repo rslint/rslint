@@ -161,8 +161,7 @@ impl<'store> DirectiveParser<'store> {
         let cmd = self
             .commands
             .iter()
-            .filter(|cmd| matches!(cmd.first(), Some(Instruction::CommandName(name)) if name.eq_ignore_ascii_case(cmd_name)))
-            .next();
+            .find(|cmd| matches!(cmd.first(), Some(Instruction::CommandName(name)) if name.eq_ignore_ascii_case(cmd_name)));
 
         let cmd = match cmd {
             Some(cmd) => cmd.clone(),

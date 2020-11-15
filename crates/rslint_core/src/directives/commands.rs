@@ -92,25 +92,19 @@ fn parse_ignore_command(
         } else {
             Some(Command::IgnoreFileRules(rules))
         }
-    } else {
-        if components
-            .get(1)
-            .and_then(|c| c.kind.literal())
-            .map_or(false, |l| l == "until")
-        {
-            match components.get(2).map(|c| &c.kind)? {
-                ComponentKind::Literal("eof") => {
-                    Some(Command::IgnoreUntil(line..usize::max_value()))
-                }
-                ComponentKind::Number(val) => {
-                    Some(Command::IgnoreUntil(line..line + *val as usize))
-                }
-                _ => None,
-            }
-        } else if let Some(node) = node {
-            Some(Command::IgnoreNode(node))
-        } else {
-            Some(Command::IgnoreFile)
+    } else if components
+        .get(1)
+        .and_then(|c| c.kind.literal())
+        .map_or(false, |l| l == "until")
+    {
+        match components.get(2).map(|c| &c.kind)? {
+            ComponentKind::Literal("eof") => Some(Command::IgnoreUntil(line..usize::max_value())),
+            ComponentKind::Number(val) => Some(Command::IgnoreUntil(line..line + *val as usize)),
+            _ => None,
         }
+    } else if let Some(node) = node {
+        Some(Command::IgnoreNode(node))
+    } else {
+        Some(Command::IgnoreFile)
     }
 }
