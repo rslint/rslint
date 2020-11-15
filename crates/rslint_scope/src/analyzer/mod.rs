@@ -5,7 +5,7 @@ mod visit;
 
 pub(crate) use visit::Visit;
 
-use crate::DatalogBuilder;
+use crate::datalog::DatalogBuilder;
 use rslint_parser::{
     ast::{AstChildren, Name, ObjectPatternProp, Pattern},
     AstNode,

@@ -14,7 +14,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use types::{
-    ast::{FileId, ScopeId},
+    ast::{FileId, Name, ScopeId, Span},
     ddlog_std::tuple2,
     NameInScope, NoUndef, TypeofUndef, UnusedVariables, UseBeforeDef,
 };
@@ -182,4 +182,101 @@ outputs! {
     no_undef: NoUndef,
     use_before_def: UseBeforeDef,
     unused_variables: UnusedVariables,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum DatalogLint {
+    NoUndef {
+        var: Name,
+        span: Span,
+        file: FileId,
+    },
+    NoUnusedVars {
+        var: Name,
+        declared: Span,
+        file: FileId,
+    },
+    TypeofUndef {
+        whole_expr: Span,
+        undefined_portion: Span,
+        file: FileId,
+    },
+    UseBeforeDef {
+        name: Name,
+        used: Span,
+        declared: Span,
+        file: FileId,
+    },
+}
+
+impl DatalogLint {
+    pub fn is_no_undef(&self) -> bool {
+        matches!(self, Self::NoUndef { .. })
+    }
+
+    pub fn is_no_unused_vars(&self) -> bool {
+        matches!(self, Self::NoUnusedVars { .. })
+    }
+
+    pub fn is_typeof_undef(&self) -> bool {
+        matches!(self, Self::TypeofUndef { .. })
+    }
+
+    pub fn is_use_before_def(&self) -> bool {
+        matches!(self, Self::UseBeforeDef { .. })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn no_undef(var: impl Into<Name>, span: std::ops::Range<u32>) -> Self {
+        Self::NoUndef {
+            var: var.into(),
+            span: span.into(),
+            file: FileId::new(0),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn no_unused_vars(var: impl Into<Name>, declared: std::ops::Range<u32>) -> Self {
+        Self::NoUnusedVars {
+            var: var.into(),
+            declared: declared.into(),
+            file: FileId::new(0),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn typeof_undef(
+        whole_expr: std::ops::Range<u32>,
+        undefined_portion: std::ops::Range<u32>,
+    ) -> Self {
+        Self::TypeofUndef {
+            whole_expr: whole_expr.into(),
+            undefined_portion: undefined_portion.into(),
+            file: FileId::new(0),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn use_before_def(
+        name: impl Into<Name>,
+        used: std::ops::Range<u32>,
+        declared: std::ops::Range<u32>,
+    ) -> Self {
+        Self::UseBeforeDef {
+            name: name.into(),
+            used: used.into(),
+            declared: declared.into(),
+            file: FileId::new(0),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn file_id_mut(&mut self) -> &mut FileId {
+        match self {
+            Self::NoUndef { file, .. } => file,
+            Self::NoUnusedVars { file, .. } => file,
+            Self::TypeofUndef { file, .. } => file,
+            Self::UseBeforeDef { file, .. } => file,
+        }
+    }
 }

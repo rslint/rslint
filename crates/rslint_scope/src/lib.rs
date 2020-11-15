@@ -4,9 +4,7 @@ pub mod globals;
 pub mod scoping;
 mod tests;
 
-pub use datalog::{
-    Datalog, DatalogBuilder, DatalogFunction, DatalogResult, DatalogScope, DatalogTransaction,
-};
+pub use datalog::{Datalog, DatalogLint, DatalogResult};
 
 use analyzer::{AnalyzerInner, Visit};
 use rslint_parser::{
