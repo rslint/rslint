@@ -717,21 +717,20 @@ pub fn ts_type_operator_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
 }
 
 pub fn ts_array_type_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
-    let ty = ts_non_array_type(p);
+    let mut ty = ts_non_array_type(p);
 
-    if !p.has_linebreak_before_n(0) && p.at(T!['[']) {
+    while !p.has_linebreak_before_n(0) && p.at(T!['[']) {
         let m = ty.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
         p.bump_any();
         if p.eat(T![']']) {
-            Some(m.complete(p, TS_ARRAY))
+            ty = Some(m.complete(p, TS_ARRAY));
         } else {
             no_recover!(p, ts_type(p));
             p.expect_no_recover(T![']'])?;
-            Some(m.complete(p, TS_INDEXED_ARRAY))
+            ty = Some(m.complete(p, TS_INDEXED_ARRAY));
         }
-    } else {
-        ty
     }
+    ty
 }
 
 pub fn ts_tuple(p: &mut Parser) -> Option<CompletedMarker> {
@@ -1070,6 +1069,7 @@ pub fn ts_mapped_type(p: &mut Parser) -> Option<CompletedMarker> {
     } else {
         p.bump_any();
     }
+    no_recover!(p, ts_type(p));
     if p.cur_src() == "as" {
         p.bump_any();
         ts_type(p);
