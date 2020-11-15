@@ -3,7 +3,9 @@
 //!
 //! See the [ECMAScript spec](https://www.ecma-international.org/ecma-262/5.1/#sec-11).
 
-use super::decl::{arrow_body, class_decl, formal_parameters, function_decl, method};
+use super::decl::{
+    arrow_body, class_decl, formal_parameters, function_decl, maybe_private_name, method,
+};
 use super::pat::pattern;
 use super::typescript::*;
 use super::util::*;
@@ -135,7 +137,7 @@ fn assign_expr_base(p: &mut Parser) -> Option<CompletedMarker> {
 
 pub(crate) fn is_valid_target(p: &mut Parser, marker: &CompletedMarker) -> bool {
     match marker.kind() {
-        DOT_EXPR | BRACKET_EXPR | NAME_REF => true,
+        DOT_EXPR | BRACKET_EXPR | NAME_REF | PRIVATE_PROP_ACCESS => true,
         GROUPING_EXPR => {
             // avoid parsing the marker because it is incredibly expensive and this is a hot path
             for (idx, event) in p.events[marker.start_pos as usize..].iter().enumerate() {
@@ -291,11 +293,17 @@ fn binary_expr_recursive(
         res.err_if_not_ts(p, "type assertions can only be used in TypeScript files");
         return binary_expr_recursive(p, Some(res), min_prec);
     }
-    let precedence = match p.cur() {
+    let kind = match p.cur() {
+        T![>] if p.nth_at(1, T![>]) && p.nth_at(2, T![>]) => T![>>>],
+        T![>] if p.nth_at(1, T![>]) => T![>>],
+        k => k,
+    };
+
+    let precedence = match kind {
         T![in] if p.state.include_in => 7,
         T![instanceof] => 7,
         _ => {
-            if let Some(prec) = get_precedence(p.cur()) {
+            if let Some(prec) = get_precedence(kind) {
                 prec
             } else {
                 return left;
@@ -307,11 +315,17 @@ fn binary_expr_recursive(
         return left;
     }
 
-    let op = p.cur();
+    let op = kind;
     let op_tok = p.cur_tok();
 
     let m = left.map(|m| m.precede(p)).unwrap_or_else(|| p.start());
-    p.bump_any();
+    if op == T![>>] {
+        p.bump_multiple(2, T![>>]);
+    } else if op == T![>>>] {
+        p.bump_multiple(3, T![>>>]);
+    } else {
+        p.bump_any();
+    }
 
     // This is a hack to allow us to effectively recover from `foo + / bar`
     let right = if get_precedence(p.cur()).is_some() && !p.at_ts(token_set![T![-], T![+]]) {
@@ -544,13 +558,34 @@ pub fn optional_chain(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
 // foo?.bar
 pub fn dot_expr(p: &mut Parser, lhs: CompletedMarker, optional_chain: bool) -> CompletedMarker {
     let m = lhs.precede(p);
-    if optional_chain {
-        p.expect(T![?.]);
+    let range = if optional_chain {
+        Some(p.cur_tok().range).filter(|_| p.expect(T![?.]))
     } else {
         p.expect(T![.]);
+        None
+    };
+    if let Some(priv_range) = maybe_private_name(p).filter(|x| x.kind() == PRIVATE_NAME) {
+        if !p.syntax.class_fields {
+            let err = p
+                .err_builder("private identifiers are unsupported")
+                .primary(priv_range.range(p), "");
+
+            p.error(err);
+            return m.complete(p, ERROR);
+        }
+        if let Some(range) = range {
+            let err = p
+                .err_builder("optional chaining cannot contain private identifiers")
+                .primary(range, "");
+
+            p.error(err);
+            m.complete(p, ERROR)
+        } else {
+            m.complete(p, PRIVATE_PROP_ACCESS)
+        }
+    } else {
+        m.complete(p, DOT_EXPR)
     }
-    identifier_name(p);
-    m.complete(p, DOT_EXPR)
 }
 
 /// An array expression for property access or indexing, such as `foo[0]` or `foo?.["bar"]`
@@ -694,8 +729,6 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
     // if we are in a ternary expression, then we need to try and see if parsing as an arrow worked
     // if it did then we just return it, otherwise it should be interpreted as a grouping expr
     if p.state.in_cond_expr && p.at(T![:]) {
-        // TODO: handle this more efficiently
-        let events = p.events.clone();
         let func = |p: &mut Parser| {
             let p = &mut *p.with_state(ParserState {
                 no_recovery: true,
@@ -709,15 +742,17 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
             arrow_body(p)?;
             Some(())
         };
-        if func(p).is_some() {
+        // we can't just rewind the parser, since the function rewinds, and cloning and replacing the
+        // events does not work apparently, therefore we need to clone the entire parser
+        let mut cloned = p.clone();
+        if func(&mut cloned).is_some() {
             let mut complete = m.complete(p, ARROW_EXPR);
             complete.err_if_not_ts(
                 p,
                 "arrow functions can only have return types in TypeScript files",
             );
+            *p = cloned;
             return complete;
-        } else {
-            p.events = events;
         }
     }
     let has_ret_type = !p.state.in_cond_expr && p.at(T![:]) && !p.state.in_case_cond;
@@ -1205,7 +1240,7 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
             // let b = {
             //  foo() {},
             // }
-            if p.at(T!['(']) {
+            if p.at(T!['(']) || p.at(T![<]) {
                 method(p, m, None)
             } else {
                 // test_err object_expr_error_prop_name

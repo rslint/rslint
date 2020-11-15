@@ -797,23 +797,28 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     let generator_range = p.cur_tok().range;
     if p.eat(T![*]) {
         let is_constructor = p.cur_src() == "constructor";
-        class_prop_name(p);
+        let mut guard = p.with_state(ParserState {
+            in_generator: true,
+            in_function: true,
+            ..p.state.clone()
+        });
+        class_prop_name(&mut *guard);
         if let Some(range) = readonly_range {
-            let err = p
+            let err = guard
                 .err_builder("class methods cannot be readonly")
                 .primary(range, "");
 
-            p.error(err);
+            guard.error(err);
         }
         if is_constructor {
-            let err = p
+            let err = guard
                 .err_builder("constructors can't be generators")
                 .primary(generator_range, "");
 
-            p.error(err);
+            guard.error(err);
         }
-        args_body(p);
-        return Some(m.complete(p, METHOD));
+        args_body(&mut *guard);
+        return Some(m.complete(&mut *guard, METHOD));
     }
 
     // async foo()`
@@ -824,27 +829,34 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     {
         let async_range = p.cur_tok().range;
         p.bump_remap(T![async]);
-        p.eat(T![*]);
+        let in_generator = p.eat(T![*]);
         let is_constructor = p.cur_src() == "constructor";
-        class_prop_name(p);
+        let mut guard = p.with_state(ParserState {
+            in_async: true,
+            in_generator,
+            in_function: true,
+            ..p.state.clone()
+        });
+        class_prop_name(&mut *guard);
 
         if is_constructor {
-            let err = p
+            let err = guard
                 .err_builder("constructors cannot be async")
                 .primary(async_range, "");
 
-            p.error(err);
+            guard.error(err);
         }
 
         if let Some(range) = readonly_range {
-            let err = p
+            let err = guard
                 .err_builder("constructors cannot be readonly")
                 .primary(range, "");
 
-            p.error(err);
+            guard.error(err);
         }
 
-        args_body(p);
+        args_body(&mut *guard);
+        drop(guard);
         return Some(m.complete(p, METHOD));
     }
 
@@ -970,10 +982,8 @@ pub fn method(
     p.state.in_function = true;
     // FIXME: handle get* which is a property + a generator
     let complete = match p.cur() {
-        // FIXME: this is wrong and it wrongfully allows things like `class foo { (bar) {} }`
-        T!['('] => {
-            formal_parameters(p);
-            block_stmt(p, true, None);
+        T!['('] | T![<] => {
+            args_body(p);
             m.complete(p, METHOD)
         }
 
@@ -1019,10 +1029,8 @@ pub fn method(
                 ..p.state.clone()
             });
             object_prop_name(&mut *guard, false);
-            formal_parameters(&mut *guard);
-            block_stmt(&mut *guard, true, None);
-            drop(guard);
-            m.complete(p, METHOD)
+            args_body(&mut *guard);
+            m.complete(&mut *guard, METHOD)
         }
         T![*] | STRING | NUMBER | T![await] | T![ident] | T![yield] | T!['['] => {
             let in_generator = p.eat(T![*]);

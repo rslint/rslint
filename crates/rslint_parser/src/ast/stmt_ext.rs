@@ -435,3 +435,9 @@ mod tests {
             .is_some());
     }
 }
+
+impl TsEnumMember {
+    pub fn string_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, STRING)
+    }
+}

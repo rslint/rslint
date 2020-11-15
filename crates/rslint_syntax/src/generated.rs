@@ -222,6 +222,7 @@ pub enum SyntaxKind {
     PRIVATE_PROP,
     CONSTRUCTOR,
     CONSTRUCTOR_PARAMETERS,
+    PRIVATE_PROP_ACCESS,
     TS_ANY,
     TS_UNKNOWN,
     TS_NUMBER,
@@ -282,6 +283,7 @@ pub enum SyntaxKind {
     TS_HERITAGE_CLAUSE,
     TS_INTERFACE_DECL,
     TS_ACCESSIBILITY,
+    TS_OBJECT_TYPE,
     #[doc(hidden)]
     __LAST,
 }

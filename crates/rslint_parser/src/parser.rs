@@ -76,6 +76,7 @@ use crate::*;
 ///
 /// assert_eq!(typed_expr.inner().unwrap().syntax().text(), "delete b");
 /// ```
+#[derive(Clone)]
 pub struct Parser<'t> {
     pub file_id: usize,
     tokens: TokenSource<'t>,
@@ -460,6 +461,13 @@ impl<'t> Parser<'t> {
 
     pub fn span_text(&self, span: impl rslint_errors::Span) -> &str {
         &self.tokens.source()[span.as_range()]
+    }
+
+    pub(crate) fn bump_multiple(&mut self, amount: u8, kind: SyntaxKind) {
+        self.push_event(Event::MultipleTokens { amount, kind });
+        for _ in 0..amount {
+            self.tokens.bump();
+        }
     }
 }
 

@@ -233,6 +233,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "PRIVATE_PROP",
         "CONSTRUCTOR",
         "CONSTRUCTOR_PARAMETERS",
+        "PRIVATE_PROP_ACCESS",
         // TypeScript
         "TS_ANY",
         "TS_UNKNOWN",
@@ -295,6 +296,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_HERITAGE_CLAUSE",
         "TS_INTERFACE_DECL",
         "TS_ACCESSIBILITY",
+        "TS_OBJECT_TYPE",
     ],
 };
 
@@ -761,6 +763,12 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![ident],
             type_params: TsTypeParams,
             extends: TsHeritageClause,
+            T!['{'],
+            members: [TsTypeElement],
+            T!['}']
+        }
+
+        struct TsObjectType {
             T!['{'],
             members: [TsTypeElement],
             T!['}']
@@ -1382,6 +1390,12 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![#],
             name: Name
         }
+
+        struct PrivatePropAccess {
+            lhs: Expr,
+            T![.],
+            rhs: PrivateName
+        }
     },
     enums: &ast_enums! {
         enum ObjectProp {
@@ -1511,6 +1525,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             ImportCall,
             YieldExpr,
             AwaitExpr,
+            PrivatePropAccess,
             TsNonNull,
             TsAssertion,
             TsConstAssertion
@@ -1553,6 +1568,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsFnType,
             TsConstructorType,
             TsConditionalType,
+            TsObjectType
         }
 
         enum TsThisOrName {

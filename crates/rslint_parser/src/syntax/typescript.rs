@@ -34,6 +34,15 @@ pub const DISALLOWED_TYPE_NAMES: &[&str] = &[
     "never",
 ];
 
+// ambiguity is fun!
+macro_rules! no_recover {
+    ($p:expr, $res:expr) => {
+        if $res.is_none() && $p.state.no_recovery {
+            return None;
+        }
+    };
+}
+
 pub(crate) fn maybe_ts_type_annotation(p: &mut Parser) -> Option<Range<usize>> {
     if p.at(T![:]) {
         let maybe_err = p.start();
@@ -162,21 +171,25 @@ pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     if p.cur_src() == "type" {
-        let m = p.start();
-        let start = p.cur_tok().range.start;
-        p.bump_any();
-        identifier_name(p);
-        if p.at(T![<]) {
-            ts_type_params(p);
-        }
-        let end = p.cur_tok().range.end;
-        p.expect(T![=]);
-        ts_type(p);
-        semi(p, start..end);
-        return Some(m.complete(p, TS_TYPE_ALIAS_DECL));
+        return ts_type_alias_decl(p);
     }
 
     None
+}
+
+pub fn ts_type_alias_decl(p: &mut Parser) -> Option<CompletedMarker> {
+    let m = p.start();
+    let start = p.cur_tok().range.start;
+    p.bump_any();
+    no_recover!(p, identifier_name(p));
+    if p.at(T![<]) {
+        no_recover!(p, ts_type_params(p));
+    }
+    let end = p.cur_tok().range.end;
+    p.expect_no_recover(T![=])?;
+    no_recover!(p, ts_type(p));
+    semi(p, start..end);
+    Some(m.complete(p, TS_TYPE_ALIAS_DECL))
 }
 
 pub(crate) fn ts_module_or_namespace_decl(
@@ -244,15 +257,6 @@ pub fn ts_module_block(p: &mut Parser) -> CompletedMarker {
     block_items(p, false, true, true, None);
     p.expect(T!['}']);
     m.complete(p, TS_MODULE_BLOCK)
-}
-
-// ambiguity is fun!
-macro_rules! no_recover {
-    ($p:expr, $res:expr) => {
-        if $res.is_none() && $p.state.no_recovery {
-            return None;
-        }
-    };
 }
 
 pub fn ts_interface(p: &mut Parser) -> Option<CompletedMarker> {
@@ -359,14 +363,14 @@ fn ts_property_or_method_sig(p: &mut Parser, m: Marker, readonly: bool) -> Optio
                 literal(p);
             }
             _ => {
-                let complete = maybe_private_name(p);
-                if let Some(PRIVATE_NAME) = complete.as_ref().map(|x| x.kind()) {
+                let mut complete = maybe_private_name(p)?;
+                if complete.kind() == PRIVATE_NAME {
                     let err = p
                         .err_builder("private names are not allowed outside of class bodies")
-                        .primary(complete.as_ref().unwrap().range(p), "");
+                        .primary(complete.range(p), "");
 
                     p.error(err);
-                    complete.unwrap().change_kind(p, ERROR);
+                    complete.change_kind(p, ERROR);
                 }
             }
         }
@@ -465,27 +469,34 @@ pub fn ts_enum(p: &mut Parser) -> CompletedMarker {
     while !p.at(EOF) && !p.at(T!['}']) {
         if first {
             first = false;
+        } else if p.at(T![,]) && p.nth_at(1, T!['}']) {
+            p.eat(T![,]);
+            break;
         } else {
             p.expect(T![,]);
         }
 
         let member = p.start();
-        let err_occured =
-            if !p.at_ts(token_set![T![ident], T![yield], T![await]]) && !p.cur().is_keyword() {
-                let err = p
-                    .err_builder("expected an identifier for an enum variant, but found none")
-                    .primary(p.cur_tok().range, "");
+        let err_occured = if !p.at_ts(token_set![T![ident], T![yield], T![await]])
+            && !p.cur().is_keyword()
+            && !p.at(STRING)
+        {
+            let err = p
+                .err_builder("expected an identifier or string for an enum variant, but found none")
+                .primary(p.cur_tok().range, "");
 
-                p.err_recover(
-                    err,
-                    token_set![T!['}'], T![ident], T![yield], T![await], T![=], T![,]],
-                    false,
-                );
-                true
-            } else {
+            p.err_recover(
+                err,
+                token_set![T!['}'], T![ident], T![yield], T![await], T![=], T![,]],
+                false,
+            );
+            true
+        } else {
+            if !p.eat(STRING) {
                 identifier_name(p).unwrap().undo_completion(p).abandon(p);
-                false
-            };
+            }
+            false
+        };
 
         if p.eat(T![=]) {
             assign_expr(p);
@@ -723,6 +734,81 @@ pub fn ts_array_type_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
+pub fn ts_tuple(p: &mut Parser) -> Option<CompletedMarker> {
+    let m = p.start();
+    p.expect_no_recover(T!['['])?;
+    let mut opt = None;
+    let mut maybe_invalid_rest_elems: Vec<(bool, TextRange)> = vec![];
+    let mut last_was_rest = false;
+
+    while !p.at(EOF) && !p.at(T![']']) {
+        let m = p.start();
+        let rest_range = p.cur_tok().range;
+        let rest = p.eat(T![...]);
+        let name = if (p.at_ts(token_set![T![ident], T![await], T![yield]]) || p.cur().is_keyword())
+            && !DISALLOWED_TYPE_NAMES.contains(&p.cur_src())
+        {
+            identifier_name(p);
+            true
+        } else {
+            false
+        };
+
+        let opt_range = p.cur_tok().range;
+        let is_opt = name && p.eat(T![?]);
+        if name {
+            p.expect(T![:]);
+        }
+        no_recover!(p, ts_type(p));
+        let compl = m.complete(p, TS_TUPLE_ELEMENT);
+        if is_opt {
+            opt = Some(compl.range(p));
+        }
+        if is_opt && rest {
+            let err = p
+                .err_builder("a tuple element cannot be both rest and optional")
+                .secondary(rest_range, "")
+                .primary(opt_range, "");
+
+            p.error(err);
+        }
+        if let Some(range) = opt.filter(|_| !is_opt) {
+            let err = p
+                .err_builder("a required tuple element cannot follow an optional element")
+                .secondary(range, "")
+                .primary(compl.range(p), "");
+
+            p.error(err);
+        }
+        if rest {
+            if last_was_rest {
+                maybe_invalid_rest_elems.last_mut().unwrap().0 = true;
+            }
+            maybe_invalid_rest_elems.push((false, compl.range(p)));
+            last_was_rest = true;
+        } else {
+            maybe_invalid_rest_elems
+                .iter_mut()
+                .for_each(|(b, _)| *b = true);
+            last_was_rest = false;
+        }
+        p.eat(T![,]);
+    }
+
+    p.expect_no_recover(T![']'])?;
+    for elem in maybe_invalid_rest_elems
+        .into_iter()
+        .filter_map(|(b, r)| Some(r).filter(|_| b))
+    {
+        let err = p
+            .err_builder("a rest element in a tuple must appear as the last element")
+            .primary(elem, "");
+
+        p.error(err);
+    }
+    Some(m.complete(p, TS_TUPLE))
+}
+
 pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
     match p.cur() {
         T![ident] | T![void] | T![yield] | T![null] | T![await] | T![break] => {
@@ -804,10 +890,17 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
             if is_mapped_type_start(p) {
                 ts_mapped_type(p)
             } else {
-                todo!("object types")
+                let m = p.start();
+                p.bump_any();
+                while !p.at(EOF) && !p.at(T!['}']) {
+                    ts_type_member(p);
+                    type_member_semi(p);
+                }
+                p.expect(T!['}']);
+                Some(m.complete(p, TS_OBJECT_TYPE))
             }
         }
-        T!['['] => todo!("tuples"),
+        T!['['] => ts_tuple(p),
         T!['('] => {
             let m = p.start();
             p.bump_any();
@@ -1109,6 +1202,7 @@ pub fn ts_entity_name(
 
     while p.at(T![.]) {
         let m = lhs.precede(p);
+        p.bump_any();
         // TODO: we should maybe move recovery out of ts_type_name since we dont need recovery here
         no_recover!(p, ts_type_name(p, set, allow_reserved));
         lhs = m.complete(p, TS_QUALIFIED_PATH);

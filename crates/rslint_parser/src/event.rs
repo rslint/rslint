@@ -36,6 +36,11 @@ pub enum Event {
         kind: SyntaxKind,
         range: Range<usize>,
     },
+
+    MultipleTokens {
+        amount: u8,
+        kind: SyntaxKind,
+    },
 }
 
 impl Event {
@@ -103,6 +108,7 @@ pub fn process(sink: &mut impl TreeSink, mut events: Vec<Event>, errors: Vec<Par
             Event::Token { kind, .. } => {
                 sink.token(kind);
             }
+            Event::MultipleTokens { amount, kind } => sink.consume_multiple_tokens(amount, kind),
         }
     }
 }

@@ -388,10 +388,14 @@ pub fn block_stmt(
         return None;
     }
     let m = p.start();
-    p.bump(T!['{']);
-    block_items(p, function_body, false, true, recovery_set);
-    p.expect(T!['}']);
-    Some(m.complete(p, BLOCK_STMT))
+    let mut guard = p.with_state(ParserState {
+        in_function: p.state.in_function || function_body,
+        ..p.state.clone()
+    });
+    guard.bump(T!['{']);
+    block_items(&mut *guard, function_body, false, true, recovery_set);
+    guard.expect(T!['}']);
+    Some(m.complete(&mut *guard, BLOCK_STMT))
 }
 
 pub fn block_stmt_unchecked(p: &mut Parser, function_body: bool) -> CompletedMarker {

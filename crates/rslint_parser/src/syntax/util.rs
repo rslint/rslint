@@ -26,7 +26,7 @@ pub fn check_simple_assign_target(p: &mut Parser, target: &Expr, range: TextRang
 
 fn is_simple_assign_target(p: &mut Parser, target: &Expr) -> bool {
     match target.syntax().kind() {
-        NAME_REF | BRACKET_EXPR | DOT_EXPR => true,
+        NAME_REF | BRACKET_EXPR | DOT_EXPR | PRIVATE_PROP_ACCESS => true,
         GROUPING_EXPR => {
             let inner = GroupingExpr::cast(target.syntax().to_owned())
                 .unwrap()

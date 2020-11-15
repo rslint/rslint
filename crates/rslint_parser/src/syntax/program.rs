@@ -4,6 +4,7 @@ use super::decl::{class_decl, function_decl};
 use super::expr::assign_expr;
 use super::pat::binding_identifier;
 use super::stmt::{block_items, semi, var_decl, STMT_RECOVERY_SET};
+use super::typescript::*;
 use crate::{SyntaxKind::*, *};
 
 pub fn parse(p: &mut Parser) -> CompletedMarker {
@@ -221,6 +222,9 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                     );
                     m.complete(p, EXPORT_DECL)
                 } else {
+                    if ts_decl(p).is_some() {
+                        return m.complete(p, EXPORT_DECL);
+                    }
                     let err = p
                         .err_builder("Expected an item to export, but found none")
                         .primary(p.cur_tok().range, "");

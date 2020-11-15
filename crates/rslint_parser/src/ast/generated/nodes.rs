@@ -603,6 +603,16 @@ impl TsInterfaceDecl {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsObjectType {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsObjectType {
+    pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
+    pub fn members(&self) -> AstChildren<TsTypeElement> { support::children(&self.syntax) }
+    pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
@@ -1564,6 +1574,16 @@ impl PrivateName {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PrivatePropAccess {
+    pub(crate) syntax: SyntaxNode,
+}
+impl PrivatePropAccess {
+    pub fn lhs(&self) -> Option<Expr> { support::child(&self.syntax) }
+    pub fn dot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [.]) }
+    pub fn rhs(&self) -> Option<PrivateName> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ObjectProp {
     LiteralProp(LiteralProp),
     Getter(Getter),
@@ -1672,6 +1692,7 @@ pub enum Expr {
     ImportCall(ImportCall),
     YieldExpr(YieldExpr),
     AwaitExpr(AwaitExpr),
+    PrivatePropAccess(PrivatePropAccess),
     TsNonNull(TsNonNull),
     TsAssertion(TsAssertion),
     TsConstAssertion(TsConstAssertion),
@@ -1714,6 +1735,7 @@ pub enum TsType {
     TsFnType(TsFnType),
     TsConstructorType(TsConstructorType),
     TsConditionalType(TsConditionalType),
+    TsObjectType(TsObjectType),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -2365,6 +2387,17 @@ impl AstNode for TsHeritageClause {
 }
 impl AstNode for TsInterfaceDecl {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_INTERFACE_DECL }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsObjectType {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_OBJECT_TYPE }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3386,6 +3419,17 @@ impl AstNode for PrivateName {
     }
     fn syntax(&self) -> &SyntaxNode { &self.syntax }
 }
+impl AstNode for PrivatePropAccess {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == PRIVATE_PROP_ACCESS }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
 impl From<LiteralProp> for ObjectProp {
     fn from(node: LiteralProp) -> ObjectProp { ObjectProp::LiteralProp(node) }
 }
@@ -3833,6 +3877,9 @@ impl From<YieldExpr> for Expr {
 impl From<AwaitExpr> for Expr {
     fn from(node: AwaitExpr) -> Expr { Expr::AwaitExpr(node) }
 }
+impl From<PrivatePropAccess> for Expr {
+    fn from(node: PrivatePropAccess) -> Expr { Expr::PrivatePropAccess(node) }
+}
 impl From<TsNonNull> for Expr {
     fn from(node: TsNonNull) -> Expr { Expr::TsNonNull(node) }
 }
@@ -3871,6 +3918,7 @@ impl AstNode for Expr {
                 | IMPORT_CALL
                 | YIELD_EXPR
                 | AWAIT_EXPR
+                | PRIVATE_PROP_ACCESS
                 | TS_NON_NULL
                 | TS_ASSERTION
                 | TS_CONST_ASSERTION
@@ -3903,6 +3951,7 @@ impl AstNode for Expr {
             IMPORT_CALL => Expr::ImportCall(ImportCall { syntax }),
             YIELD_EXPR => Expr::YieldExpr(YieldExpr { syntax }),
             AWAIT_EXPR => Expr::AwaitExpr(AwaitExpr { syntax }),
+            PRIVATE_PROP_ACCESS => Expr::PrivatePropAccess(PrivatePropAccess { syntax }),
             TS_NON_NULL => Expr::TsNonNull(TsNonNull { syntax }),
             TS_ASSERTION => Expr::TsAssertion(TsAssertion { syntax }),
             TS_CONST_ASSERTION => Expr::TsConstAssertion(TsConstAssertion { syntax }),
@@ -3937,6 +3986,7 @@ impl AstNode for Expr {
             Expr::ImportCall(it) => &it.syntax,
             Expr::YieldExpr(it) => &it.syntax,
             Expr::AwaitExpr(it) => &it.syntax,
+            Expr::PrivatePropAccess(it) => &it.syntax,
             Expr::TsNonNull(it) => &it.syntax,
             Expr::TsAssertion(it) => &it.syntax,
             Expr::TsConstAssertion(it) => &it.syntax,
@@ -4053,6 +4103,9 @@ impl From<TsConstructorType> for TsType {
 impl From<TsConditionalType> for TsType {
     fn from(node: TsConditionalType) -> TsType { TsType::TsConditionalType(node) }
 }
+impl From<TsObjectType> for TsType {
+    fn from(node: TsObjectType) -> TsType { TsType::TsObjectType(node) }
+}
 impl AstNode for TsType {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -4086,6 +4139,7 @@ impl AstNode for TsType {
                 | TS_FN_TYPE
                 | TS_CONSTRUCTOR_TYPE
                 | TS_CONDITIONAL_TYPE
+                | TS_OBJECT_TYPE
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -4119,6 +4173,7 @@ impl AstNode for TsType {
             TS_FN_TYPE => TsType::TsFnType(TsFnType { syntax }),
             TS_CONSTRUCTOR_TYPE => TsType::TsConstructorType(TsConstructorType { syntax }),
             TS_CONDITIONAL_TYPE => TsType::TsConditionalType(TsConditionalType { syntax }),
+            TS_OBJECT_TYPE => TsType::TsObjectType(TsObjectType { syntax }),
             _ => return None,
         };
         Some(res)
@@ -4154,6 +4209,7 @@ impl AstNode for TsType {
             TsType::TsFnType(it) => &it.syntax,
             TsType::TsConstructorType(it) => &it.syntax,
             TsType::TsConditionalType(it) => &it.syntax,
+            TsType::TsObjectType(it) => &it.syntax,
         }
     }
 }
@@ -4628,6 +4684,11 @@ impl std::fmt::Display for TsInterfaceDecl {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
+impl std::fmt::Display for TsObjectType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
 impl std::fmt::Display for Script {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
@@ -5084,6 +5145,11 @@ impl std::fmt::Display for AwaitExpr {
     }
 }
 impl std::fmt::Display for PrivateName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for PrivatePropAccess {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

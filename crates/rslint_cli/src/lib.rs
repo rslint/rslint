@@ -70,13 +70,7 @@ fn run_inner(
         .par_keys()
         .map(|id| {
             let file = walker.files.get(id).unwrap();
-            lint_file(
-                *id,
-                &file.source.clone(),
-                file.kind == JsFileKind::Module,
-                &store,
-                verbose,
-            )
+            lint_file(*id, &file.source.clone(), file.kind.into(), &store, verbose)
         })
         .filter_map(|res| {
             if let Err(diagnostic) = res {

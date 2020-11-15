@@ -7,6 +7,11 @@
 //! Do not use this to learn how to lex JavaScript, this is just needlessly fast and demonic because i can't control myself :)
 //!
 //! basic ANSI syntax highlighting is also offered through the `highlight` feature.
+//!
+//! # Warning ⚠️
+//!
+//! `>>` and `>>>` are not emitted as single tokens, they are emitted as multiple `>` tokens. This is because of
+//! TypeScript parsing and productions such as `T<U<N>>`
 
 #[macro_use]
 mod token;
@@ -998,19 +1003,18 @@ impl<'src> Lexer<'src> {
     fn resolve_greater_than(&mut self) -> LexerReturn {
         match self.next() {
             Some(b'>') => {
-                let next = self.next().copied();
-                if let Some(b'>') = next {
-                    if let Some(b'=') = self.next() {
-                        self.next();
+                if let Some(b'>') = self.bytes.get(self.cur + 1).copied() {
+                    if let Some(b'=') = self.bytes.get(self.cur + 2).copied() {
+                        self.advance(3);
                         tok!(USHREQ, 4)
                     } else {
-                        tok!(USHR, 3)
+                        tok!(>)
                     }
-                } else if next == Some(b'=') {
-                    self.next();
+                } else if self.bytes.get(self.cur + 1).copied() == Some(b'=') {
+                    self.advance(2);
                     tok!(SHREQ, 2)
                 } else {
-                    tok!(SHR, 2)
+                    tok!(>)
                 }
             }
             Some(b'=') => {

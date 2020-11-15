@@ -246,3 +246,12 @@ pub fn parse_expr(text: &str, file_id: usize) -> Parse<Expr> {
     let (green, parse_errors) = tree_sink.finish();
     Parse::new(green, parse_errors)
 }
+
+pub fn parse_with_syntax(text: &str, file_id: usize, syntax: Syntax) -> Parse<()> {
+    let (events, mut errors, tokens) = parse_common(text, file_id, syntax);
+    let mut tree_sink = LosslessTreeSink::new(text, &tokens);
+    crate::process(&mut tree_sink, events);
+    let (green, parse_errors) = tree_sink.finish();
+    errors.extend(parse_errors);
+    Parse::new(green, errors)
+}
