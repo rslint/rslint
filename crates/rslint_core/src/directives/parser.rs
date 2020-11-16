@@ -1,455 +1,418 @@
-use crate::{util::find_best_match_for_name, CstRule, CstRuleStore, Diagnostic, Severity};
-use rslint_lexer::Lexer as RawLexer;
-use rslint_parser::{
-    util::Comment, SyntaxKind, SyntaxNode, SyntaxToken, SyntaxTokenExt, TextRange, T,
+use crate::{get_rule_suggestion, CstRuleStore};
+
+use super::{
+    commands::Command,
+    lexer::{format_kind, Lexer, Token},
+    Component, ComponentKind, Directive, Instruction,
 };
-use std::collections::HashMap;
-use std::iter::Peekable;
+use rslint_errors::{file::line_starts, Diagnostic};
+use rslint_lexer::{SyntaxKind, T};
+use rslint_parser::{
+    ast::ModuleItem, util::Comment, JsNum, SyntaxNode, SyntaxNodeExt, SyntaxTokenExt, TextRange,
+};
 use std::ops::Range;
 
-pub struct DirectiveParseResult {
-    pub diagnostics: Vec<Diagnostic>,
-    pub directive: Directive,
+/// A string that denotes that start of a directive (`rslint-`).
+pub const DECLARATOR: &str = "rslint-";
+
+pub type Result<T, E = DirectiveError> = std::result::Result<T, E>;
+
+/// The result of a parsed directive.
+#[derive(Default)]
+pub struct DirectiveResult {
+    pub directives: Vec<Directive>,
+    pub diagnostics: Vec<DirectiveError>,
 }
 
-#[derive(Debug, Clone)]
-pub enum Command {
-    /// Ignore linting for the entire file.
-    IgnoreFile,
-    /// Ignore one or more rules on a node.
-    IgnoreRules(Vec<Box<dyn CstRule>>, TextRange),
-    /// Ignore any rules on a node.
-    // We cannot store the actual node because Nodes are !Sync and !Send because
-    // they are a wrapper around an Rc<NodeData>
-    IgnoreNode(TextRange),
-    /// Ignore rules for an entire file.
-    IgnoreRulesFile(Vec<Box<dyn CstRule>>),
-}
+impl DirectiveResult {
+    fn concat(&mut self, other: Self) {
+        self.diagnostics.extend(other.diagnostics);
+        self.directives.extend(other.directives);
+    }
 
-impl Command {
-    /// Whether this command applies to the entire file.
-    pub fn top_level(&self) -> bool {
-        matches!(self, Command::IgnoreFile | Command::IgnoreRulesFile(_))
+    fn extend(&mut self, res: Result<Directive>) {
+        match res {
+            Ok(d) => self.directives.push(d),
+            Err(d) => self.diagnostics.push(d),
+        }
     }
 }
 
-/// A command given to the linter by an inline comment.
-/// A single command may include multiple commands inside of it.
-/// A directive constitutes a single comment, which may have one or more commands inside of it.
 #[derive(Debug, Clone)]
-pub struct Directive {
-    pub commands: Vec<Command>,
-    pub comment: Comment,
+pub struct DirectiveError {
+    pub diagnostic: Diagnostic,
+    pub kind: DirectiveErrorKind,
 }
 
-struct RawCommand {
-    tokens: Vec<Token>,
-    // partially incomplete (rule vectors)
-    kind: Command,
+impl DirectiveError {
+    pub fn range(&self) -> Range<usize> {
+        self.diagnostic.primary.as_ref().unwrap().span.range.clone()
+    }
+
+    pub fn new(diagnostic: Diagnostic, kind: DirectiveErrorKind) -> Self {
+        Self { diagnostic, kind }
+    }
 }
 
-struct RawDirective {
-    commands: Vec<RawCommand>,
-    comment: Comment,
+#[derive(Debug, Clone)]
+pub enum DirectiveErrorKind {
+    ExpectedNotFound(Instruction),
+    InvalidRule,
+    InvalidCommandName,
+    ExpectedCommand,
+    Other,
 }
 
 pub struct DirectiveParser<'store> {
-    pub root_node: SyntaxNode,
-    /// A string denoting the start of a directive, `rslint-` by default.
-    pub declarator: String,
+    /// The root node of a file, `SCRIPT` or `MODULE`.
+    root: SyntaxNode,
+    line_starts: Box<[usize]>,
     file_id: usize,
-    store: &'store CstRuleStore,
+    store: Option<&'store CstRuleStore>,
+    commands: Box<[Box<[Instruction]>]>,
+    no_rewind: bool,
 }
 
 impl<'store> DirectiveParser<'store> {
-    /// Make a new directive parser from the root node of a file.
+    /// Create a new `DirectivesParser` with a root of a file which will
+    /// use all default rules to check the rule names of a directive.
     ///
     /// # Panics
-    /// Panics if the node's kind is not SCRIPT or MODULE
-    pub fn new(root_node: SyntaxNode, file_id: usize, store: &'store CstRuleStore) -> Self {
+    ///
+    /// If the given `root` is not `SCRIPT` or `MODULE`.
+    pub fn new(root: SyntaxNode, file_id: usize) -> Self {
+        Self::new_with_store(root, file_id, None)
+    }
+
+    /// Create a new `DirectivesParser` with a root of a file and a store of rules.
+    ///
+    /// # Panics
+    ///
+    /// If the given `root` is not `SCRIPT` or `MODULE`.
+    pub fn new_with_store(
+        root: SyntaxNode,
+        file_id: usize,
+        store: impl Into<Option<&'store CstRuleStore>>,
+    ) -> Self {
         assert!(matches!(
-            root_node.kind(),
+            root.kind(),
             SyntaxKind::SCRIPT | SyntaxKind::MODULE
         ));
 
         Self {
-            root_node,
-            declarator: "rslint-".to_string(),
+            line_starts: line_starts(&root.to_string()).collect(),
+            store: store.into(),
+            root,
             file_id,
-            store,
+            no_rewind: false,
+            commands: Command::instructions(),
         }
     }
 
-    pub fn get_file_directives(&self) -> Result<Vec<DirectiveParseResult>, Diagnostic> {
-        let mut raw = self.extract_top_level_directives()?;
-        // descendants yields the root node first, so we need to skip it
-        for descendant in self.root_node.descendants().skip(1) {
-            if let Some(comment) = descendant.first_token().and_then(|tok| tok.comment()) {
-                if comment.content.trim_start().starts_with(&self.declarator) {
-                    let commands = self.parse_directive(comment.token.clone(), Some(descendant))?;
-                    raw.push(RawDirective { comment, commands });
-                }
-            }
-        }
-
-        Ok(raw
-            .into_iter()
-            .map(|raw| self.bake_raw_directive(raw))
-            .collect())
+    fn err(&self, msg: &str) -> Diagnostic {
+        Diagnostic::error(self.file_id, "directives", msg)
     }
 
-    fn err(&self, message: impl AsRef<str>) -> Diagnostic {
-        Diagnostic::error(self.file_id, message.as_ref(), "directives")
+    fn line_of(&self, idx: usize) -> usize {
+        self.line_starts
+            .binary_search(&idx)
+            .unwrap_or_else(|next_line| next_line - 1)
     }
 
-    fn bake_raw_directive(&self, directive: RawDirective) -> DirectiveParseResult {
-        let mut diagnostics = vec![];
-        let mut commands = vec![];
+    pub fn get_file_directives(&mut self) -> DirectiveResult {
+        let top_level = self.top_level_directives();
+        let mut result = DirectiveResult::default();
 
-        for raw_command in directive.commands.into_iter() {
-            let (diags, rules) = self.bake_ignore_command(&raw_command);
-            diagnostics.extend(diags);
-            let command = match raw_command.kind {
-                Command::IgnoreFile | Command::IgnoreNode(_) => raw_command.kind,
-                Command::IgnoreRules(_, node) => Command::IgnoreRules(rules, node),
-                Command::IgnoreRulesFile(_) => Command::IgnoreRulesFile(rules),
+        for descendant in self.root.descendants().skip(1) {
+            let comment = descendant
+                .first_token()
+                .and_then(|tok| tok.comment())
+                .filter(|c| c.content.trim_start().starts_with(DECLARATOR));
+
+            let comment = match comment {
+                Some(comment) if comment.token.parent().is::<ModuleItem>() => comment,
+                _ => continue,
             };
-            commands.push(command);
+
+            let directive = self.parse_directive(comment, Some(descendant));
+            result.extend(directive);
         }
-        let directive = Directive {
-            commands,
-            comment: directive.comment,
+        result.concat(top_level);
+        result
+    }
+
+    pub fn top_level_directives(&mut self) -> DirectiveResult {
+        let mut result = DirectiveResult::default();
+
+        self.root
+            .children_with_tokens()
+            .flat_map(|item| item.into_token()?.comment())
+            .filter(|comment| comment.content.trim_start().starts_with(DECLARATOR))
+            .map(|comment| self.parse_directive(comment, None))
+            .for_each(|res| result.extend(res));
+
+        result
+    }
+
+    /// Parses a directive, based on all commands inside this `DirectivesParser`.
+    fn parse_directive(&mut self, comment: Comment, node: Option<SyntaxNode>) -> Result<Directive> {
+        let text = comment
+            .content
+            .trim_start()
+            .strip_prefix(DECLARATOR)
+            .unwrap();
+
+        let decl_offset = comment.content.len() - text.len();
+        let offset = usize::from(comment.token.text_range().start()) + decl_offset + 1;
+
+        let mut lexer = Lexer::new(text, self.file_id, offset);
+
+        if matches!(
+            lexer.peek(),
+            Some(Token {
+                kind: SyntaxKind::EOF,
+                ..
+            })
+        ) {
+            let range = lexer.next().unwrap().range;
+            let d = self
+                .err("expected command name, but the comment ends here")
+                .primary(range, "");
+            return Err(DirectiveError::new(d, DirectiveErrorKind::ExpectedCommand));
+        }
+
+        let cmd_tok = lexer.next().unwrap();
+        let cmd_name = lexer.source_of(&cmd_tok);
+
+        let cmd = self
+            .commands
+            .iter()
+            .find(|cmd| matches!(cmd.first(), Some(Instruction::CommandName(name)) if name.eq_ignore_ascii_case(cmd_name)));
+
+        let cmd = match cmd {
+            Some(cmd) => cmd.clone(),
+            None => {
+                // TODO: Suggest name using `find_best_match_for_name`
+                let d = self
+                    .err(&format!("unknown directive command: `{}`", cmd_name))
+                    .primary(cmd_tok.range, "");
+
+                return Err(DirectiveError::new(
+                    d,
+                    DirectiveErrorKind::InvalidCommandName,
+                ));
+            }
         };
 
-        DirectiveParseResult {
-            directive,
-            diagnostics,
-        }
-    }
+        let components = self.parse_command(
+            &mut lexer,
+            Component {
+                kind: ComponentKind::CommandName(cmd_name.into()),
+                range: cmd_tok.range,
+            },
+            &cmd,
+        )?;
 
-    fn bake_ignore_command(
-        &self,
-        command: &RawCommand,
-    ) -> (Vec<Diagnostic>, Vec<Box<dyn CstRule>>) {
-        let mut unique: HashMap<&String, &Range<usize>> =
-            HashMap::with_capacity(command.tokens.len());
-        let mut diagnostics = vec![];
-        let mut rules = Vec::with_capacity(command.tokens.len());
-
-        for Token { range, raw } in command.tokens.iter() {
-            if let Some(prev_range) = unique.get(raw) {
-                let warn = self
-                    .err("redundant duplicate rules in `ignore` directive")
-                    .severity(Severity::Warning)
-                    .secondary(
-                        prev_range.to_owned().to_owned(),
-                        format!("{} is ignored here", raw),
-                    )
-                    .primary(range.clone(), "this ignore is redundant");
-
-                diagnostics.push(warn);
-            } else {
-                unique.insert(raw, range);
-            }
-
-            if let Some(rule) = CstRuleStore::new().builtins().get(raw) {
-                if self.store.get(raw).is_none() {
-                    let warn = self
-                        .err(format!(
-                            "redundant rule in `ignore` directive, `{}` is already allowed",
-                            raw
-                        ))
-                        .severity(Severity::Warning)
-                        .primary(range.to_owned(), "");
-
-                    diagnostics.push(warn);
-                } else {
-                    rules.push(rule);
-                }
-            } else {
-                let mut err = self
-                    .err(format!("unknown rule `{}` used in directive", raw))
-                    .primary(range.to_owned(), "");
-
-                if let Some(suggestion) = find_best_match_for_name(
-                    CstRuleStore::new()
-                        .builtins()
-                        .rules
-                        .iter()
-                        .map(|x| x.name()),
-                    raw,
-                    None,
-                ) {
-                    err = err.footer_help(format!("did you mean `{}`?", suggestion));
-                }
-                diagnostics.push(err);
-            }
-        }
-        (diagnostics, rules)
-    }
-
-    /// Extract directives which apply to the whole file such as `rslint-ignore` or `rslint-ignore rule`.
-    fn extract_top_level_directives(&self) -> Result<Vec<RawDirective>, Diagnostic> {
-        let comments: Vec<Comment> = self
-            .root_node
-            .children_with_tokens()
-            .scan((), |_, item| {
-                item.into_token().filter(|tok| tok.kind().is_trivia())
-            })
-            .filter(|t| {
-                t.kind() == SyntaxKind::COMMENT
-                    && t.comment()
-                        .unwrap()
-                        .content
-                        .trim_start()
-                        .starts_with(&self.declarator)
-            })
-            .map(|token| token.comment().unwrap())
-            .collect();
-
-        self.parse_comments(comments)
-    }
-
-    fn parse_comments(&self, comments: Vec<Comment>) -> Result<Vec<RawDirective>, Diagnostic> {
-        let mut directives = Vec::with_capacity(comments.len());
-        for comment in comments {
-            let commands = self.parse_directive(comment.token.clone(), None)?;
-            directives.push(RawDirective { commands, comment });
-        }
-        Ok(directives)
-    }
-
-    fn parse_directive(
-        &self,
-        comment: SyntaxToken,
-        node: Option<SyntaxNode>,
-    ) -> Result<Vec<RawCommand>, Diagnostic> {
-        let inner_text = comment.comment().unwrap().content;
-        let stripped_text = inner_text
-            .trim_start()
-            .strip_prefix(&self.declarator)
-            .unwrap();
-        let declaration_offset = comment.text().len() - inner_text.len();
-        let offset = usize::from(comment.text_range().start())
-            + (inner_text.trim_start().len() - stripped_text.len())
-            + declaration_offset
-            + 1;
-        let string = self.root_node.to_string();
-        let mut lexer = Lexer::new(stripped_text, offset, self.file_id, string.as_str());
-
-        let mut first = true;
-        let mut raw_commands = vec![];
-
-        while !lexer
-            .peek_no_whitespace()
-            .map_or(false, |t| t.kind == T![--] || t.kind == SyntaxKind::EOF)
-        {
-            if first {
-                first = false;
-            } else if lexer.peek_no_whitespace().map(|x| x.kind) != Some(T![-]) {
-                return Err(self
-                    .err("Directive commands must be separated by `-`")
-                    .primary(
-                        lexer.cur..lexer.cur + lexer.peek_no_whitespace().unwrap().len,
-                        "",
-                    ));
-            } else {
-                lexer.next();
-            }
-
-            raw_commands.push(self.parse_command(&mut lexer, node.clone())?);
-        }
-        Ok(raw_commands)
-    }
-
-    /// Parse a single command and advance the token source accordingly.
-    fn parse_command(
-        &self,
-        lexer: &mut Lexer,
-        node: Option<SyntaxNode>,
-    ) -> Result<RawCommand, Diagnostic> {
-        let word = lexer.word()?;
-        match word.raw.as_str() {
-            "ignore" => {
-                if lexer
-                    .peek_no_whitespace()
-                    .map(|t| t.kind)
-                    .filter(|kind| kind == &T![ident] || kind.is_keyword())
-                    .is_some()
-                {
-                    let tokens = lexer.rule_list()?;
-                    let kind = if let Some(node) = node {
-                        Command::IgnoreRules(vec![], node.text_range())
-                    } else {
-                        Command::IgnoreRulesFile(vec![])
-                    };
-
-                    Ok(RawCommand { tokens, kind })
-                } else {
-                    let kind = if let Some(node) = node {
-                        Command::IgnoreNode(node.text_range())
-                    } else {
-                        Command::IgnoreFile
-                    };
-
-                    Ok(RawCommand {
-                        tokens: vec![],
-                        kind,
-                    })
-                }
-            }
-            text => {
-                const COMMANDS: [&str; 1] = ["ignore"];
-
-                let mut err = self
-                    .err(format!("unknown directive command `{}`", text))
-                    .primary(word.range, "");
-
-                if let Some(suggestion) =
-                    find_best_match_for_name(COMMANDS.iter().cloned(), text, None)
-                {
-                    err = err.footer_help(format!("did you mean `{}`", suggestion));
-                }
-                Err(err)
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct Token {
-    range: Range<usize>,
-    raw: String,
-}
-
-#[derive(Debug, Clone)]
-struct Lexer<'src> {
-    offset: usize,
-    // we just reuse rslint_lexer which takes care of the dirty work for us
-    raw: Peekable<RawLexer<'src>>,
-    src: &'src str,
-    pub cur: usize,
-    file_id: usize,
-}
-
-impl<'src> Lexer<'src> {
-    pub fn new(src: &'src str, offset: usize, file_id: usize, full_src: &'src str) -> Lexer<'src> {
-        Self {
-            offset,
-            raw: RawLexer::from_str(src, file_id).peekable(),
-            src: full_src,
-            cur: offset,
-            file_id,
-        }
-    }
-
-    fn next(&mut self) -> Option<rslint_lexer::Token> {
-        let next = self.raw.next();
-        if let Some((tok, _)) = next {
-            self.cur += tok.len;
-            if tok.kind.is_trivia() {
-                return self.next();
-            }
-            Some(tok)
-        } else {
-            None
-        }
-    }
-
-    pub fn peek_no_whitespace(&mut self) -> Option<rslint_lexer::Token> {
-        let peeked = self.raw.peek();
-        if let Some((tok, _)) = peeked {
-            if tok.kind.is_trivia() {
-                self.raw.next();
-                return self.peek();
-            }
-            Some(*tok)
-        } else {
-            None
-        }
-    }
-
-    pub fn peek(&mut self) -> Option<rslint_lexer::Token> {
-        self.raw.peek().map(|(t, _)| t).cloned()
-    }
-
-    fn err(&self, msg: impl AsRef<str>) -> Diagnostic {
-        Diagnostic::error(self.file_id, msg.as_ref(), "linter")
-    }
-
-    fn range(&self, token: rslint_lexer::Token) -> Range<usize> {
-        self.cur - token.len..self.cur
-    }
-
-    fn range_inclusive(&self, token: rslint_lexer::Token) -> Range<usize> {
-        self.cur - token.len..self.cur + 1
-    }
-
-    pub fn word(&mut self) -> Result<Token, Diagnostic> {
-        let end = self.src.len() + self.offset;
-        let next: rslint_lexer::Token = self.next().ok_or_else(|| {
-            self.err("Expected a word when parsing a directive, but the comment ends prematurely")
-                .primary(end..end + 1, "comment ends here")
-        })?;
-        if next.kind != T![ident] && !next.kind.is_keyword() {
-            return Err(self
-                .err("Expected a word when parsing a directive, but found none")
-                .primary(self.range(next), "expected a word here"));
-        }
-        let range = self.range(next);
-
-        Ok(Token {
-            range: range.clone(),
-            raw: self.src[range].to_string(),
+        let line = self.line_of(comment.token.text_range().start().into());
+        Ok(Directive {
+            // TODO: Report error for invalid command.
+            command: Command::parse(&components, line, node),
+            line,
+            comment,
+            components,
         })
     }
 
-    pub fn rule_name(&mut self) -> Result<Token, Diagnostic> {
-        let end = self.src.len() + self.offset;
-        let next = self.next().ok_or_else(|| {
-            self.err(
-                "Expected a rule name when parsing a directive, but the comment ends prematurely",
-            )
-            .primary(end..end + 1, "comment ends here")
-        })?;
-        let start = self.range(next).start + 1;
-        let mut tok = next;
+    fn parse_command(
+        &mut self,
+        lexer: &mut Lexer<'_>,
+        first_component: Component,
+        cmd: &[Instruction],
+    ) -> Result<Vec<Component>> {
+        self.no_rewind = false;
+        let mut components = vec![first_component];
 
-        loop {
-            if self.peek().map(|tok| tok.kind) == Some(T![-]) {
-                tok = self.next().unwrap();
-                let kind = self.peek().map(|t| t.kind);
-                if kind == Some(T![ident]) || kind.map_or(false, |kind| kind.is_keyword()) {
-                    tok = self.next().unwrap();
-                    continue;
-                } else {
-                    let range = start..self.range_inclusive(tok).end;
-                    return Ok(Token {
-                        range: range.clone(),
-                        raw: self.src[range].to_string(),
-                    });
-                }
-            } else {
-                let range = start..self.range_inclusive(tok).end;
-                return Ok(Token {
-                    range: range.clone(),
-                    raw: self.src[range].to_string(),
-                });
-            }
+        for insn in &cmd[1..] {
+            components.extend(self.parse_instruction(lexer, insn)?);
         }
+
+        Ok(components)
     }
 
-    pub fn rule_list(&mut self) -> Result<Vec<Token>, Diagnostic> {
-        let mut toks = vec![];
-
-        toks.push(self.rule_name()?);
-        loop {
-            if self.peek_no_whitespace().map(|t| t.kind) == Some(T![,]) {
-                self.next();
-                toks.push(self.rule_name()?);
-            } else {
-                return Ok(toks);
+    fn parse_instruction(
+        &mut self,
+        lexer: &mut Lexer<'_>,
+        insn: &Instruction,
+    ) -> Result<Vec<Component>> {
+        match insn {
+            Instruction::CommandName(_) => {
+                panic!("command name is only allowed as the first element")
             }
+            Instruction::Number => {
+                let tok = lexer.expect(SyntaxKind::NUMBER)?;
+                let num = lexer.source_of(&tok);
+                let num = match rslint_parser::parse_js_num(num.to_string()) {
+                    Some(JsNum::Float(val)) => val as u64,
+                    Some(JsNum::BigInt(_)) => {
+                        let d = self
+                            .err("bigints are not supported in directives")
+                            .primary(tok.range, "");
+                        self.no_rewind = true;
+                        return Err(DirectiveError::new(d, DirectiveErrorKind::Other));
+                    }
+                    _ => {
+                        let d = self.err("invalid number").primary(tok.range, "");
+                        return Err(DirectiveError::new(d, DirectiveErrorKind::Other));
+                    }
+                };
+                Ok(vec![Component {
+                    kind: ComponentKind::Number(num),
+                    range: tok.range,
+                }])
+            }
+            Instruction::RuleName => {
+                fn is_rule_name(kind: SyntaxKind) -> bool {
+                    kind == T![-] || kind == T![ident] || kind.is_keyword()
+                }
+
+                let first = lexer
+                    .next()
+                    .filter(|tok| tok.kind != SyntaxKind::EOF)
+                    .ok_or_else(|| {
+                        let err = self
+                            .err("expected rule name, but comment ends here")
+                            .primary(lexer.abs_cur()..lexer.abs_cur() + 1, "");
+
+                        DirectiveError::new(
+                            err,
+                            DirectiveErrorKind::ExpectedNotFound(Instruction::RuleName),
+                        )
+                    })?;
+                if !is_rule_name(first.kind) {
+                    let d = self
+                        .err(&format!(
+                            "expected `identifier`, `-` or `keyword`, but found `{}`",
+                            format_kind(first.kind),
+                        ))
+                        .primary(first.range, "");
+                    self.no_rewind = true;
+                    return Err(DirectiveError::new(
+                        d,
+                        DirectiveErrorKind::ExpectedNotFound(Instruction::RuleName),
+                    ));
+                }
+                let start = first.range.start();
+
+                while lexer
+                    .peek_with_spaces()
+                    .map_or(false, |tok| is_rule_name(tok.kind))
+                {
+                    lexer.next();
+                }
+
+                let end = lexer.abs_cur() as u32;
+                let name_range = TextRange::new(start, end.into());
+                let name = lexer.source_range(name_range);
+
+                let rule = self
+                    .store
+                    .map(|store| store.get(name))
+                    .unwrap_or_else(|| crate::get_rule_by_name(name));
+                if let Some(rule) = rule {
+                    Ok(vec![Component {
+                        kind: ComponentKind::Rule(rule),
+                        range: name_range,
+                    }])
+                } else {
+                    let mut d = self
+                        .err(&format!("invalid rule: `{}`", name))
+                        .primary(name_range, "");
+
+                    if let Some(suggestion) = get_rule_suggestion(name) {
+                        d = d.footer_help(format!("did you mean `{}`?", suggestion))
+                    }
+                    self.no_rewind = true;
+
+                    Err(DirectiveError::new(d, DirectiveErrorKind::InvalidRule))
+                }
+            }
+            Instruction::Literal(lit) => {
+                let tok = lexer.expect(SyntaxKind::IDENT)?;
+                let src = lexer.source_of(&tok);
+
+                if !src.eq_ignore_ascii_case(lit) {
+                    let d = self
+                        .err(&format!(
+                            "expected literal `{}`, but found literal `{}`",
+                            lit, src
+                        ))
+                        .primary(tok.range, "");
+                    self.no_rewind = true;
+                    Err(DirectiveError::new(
+                        d,
+                        DirectiveErrorKind::ExpectedNotFound(Instruction::Literal(lit)),
+                    ))
+                } else {
+                    Ok(vec![Component {
+                        kind: ComponentKind::Literal(lit),
+                        range: tok.range,
+                    }])
+                }
+            }
+            Instruction::Optional(insns) => {
+                let first = insns
+                    .first()
+                    .expect("every `Optional` instruction needs at least one element");
+                if let Ok(first) = self.parse_instruction(lexer, first) {
+                    let mut components = vec![];
+                    components.extend(first);
+
+                    for insn in insns.iter().skip(1) {
+                        components.extend(self.parse_instruction(lexer, insn)?);
+                    }
+
+                    Ok(components)
+                } else {
+                    Ok(vec![])
+                }
+            }
+            Instruction::Repetition(insn, separator) => {
+                let mut first = true;
+                let mut components = vec![];
+
+                lexer.mark(true);
+                let start = lexer.abs_cur() as u32;
+                while lexer.peek().map_or(false, |tok| tok.kind == *separator) || first {
+                    if !first {
+                        lexer.expect(*separator)?;
+                    }
+                    let res = match self.parse_instruction(lexer, insn) {
+                        Ok(res) => res,
+                        // The first element isn't valid, so we continute with next instruction.
+                        Err(_) if first && !self.no_rewind => {
+                            lexer.mark(false);
+                            lexer.rewind();
+                            return Ok(vec![]);
+                        }
+                        err @ Err(_) => return err,
+                    };
+                    components.extend(res);
+
+                    if first {
+                        first = false;
+                    }
+                }
+                lexer.mark(false);
+                let end = lexer.abs_cur() as u32;
+
+                Ok(vec![Component {
+                    kind: ComponentKind::Repetition(components),
+                    range: TextRange::new(start.into(), end.into()),
+                }])
+            }
+            Instruction::Either(left, right) => self
+                .parse_instruction(lexer, left)
+                .or_else(|_| self.parse_instruction(lexer, right)),
         }
     }
 }

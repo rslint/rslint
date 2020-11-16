@@ -1,7 +1,11 @@
 //! Definitions for the LSP server instance.
 
-use crate::{lsp::server::Server, service::synchronizer};
-use tower_lsp::{jsonrpc::Result, lsp_types::*, LanguageServer};
+use crate::{lsp::server::Server, provider, service::synchronizer};
+use tower_lsp::{
+    jsonrpc::{self, Result},
+    lsp_types::*,
+    LanguageServer,
+};
 
 #[tower_lsp::async_trait]
 impl LanguageServer for Server {
@@ -11,6 +15,18 @@ impl LanguageServer for Server {
             capabilities,
             ..InitializeResult::default()
         })
+    }
+
+    async fn hover(&self, params: HoverParams) -> Result<Option<Hover>> {
+        provider::hover::on_hover(self.session.clone(), params)
+            .await
+            .map_err(|_| jsonrpc::Error::internal_error())
+    }
+
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
+        provider::completion::complete(self.session.clone(), params)
+            .await
+            .map_err(|_| jsonrpc::Error::internal_error())
     }
 
     async fn initialized(&self, _: InitializedParams) {

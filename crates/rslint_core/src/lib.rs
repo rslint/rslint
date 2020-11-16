@@ -42,9 +42,11 @@ pub use self::{
 };
 pub use rslint_errors::{Diagnostic, Severity, Span};
 
-use crate::directives::skip_node;
-#[doc(inline)]
-pub use crate::directives::{apply_top_level_directives, Directive, DirectiveParser};
+pub use crate::directives::{
+    apply_top_level_directives, skip_node, Directive, DirectiveError, DirectiveErrorKind,
+    DirectiveParser,
+};
+
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
@@ -62,7 +64,7 @@ pub struct LintResult<'s> {
     /// The diagnostics emitted by each rule run
     pub rule_results: HashMap<&'static str, RuleResult>,
     /// Any warnings or errors emitted by the directive parser
-    pub directive_diagnostics: Vec<Diagnostic>,
+    pub directive_diagnostics: Vec<DirectiveError>,
     pub parsed: SyntaxNode,
     pub file_id: usize,
     pub verbose: bool,
@@ -81,7 +83,7 @@ impl LintResult<'_> {
                     .map(|x| x.diagnostics.iter())
                     .flatten(),
             )
-            .chain(self.directive_diagnostics.iter())
+            .chain(self.directive_diagnostics.iter().map(|x| &x.diagnostic))
     }
 
     /// The overall outcome of linting this file (failure, warning, success, etc)
@@ -139,16 +141,10 @@ pub(crate) fn lint_file_inner(
     verbose: bool,
 ) -> Result<LintResult, Diagnostic> {
     let mut new_store = store.clone();
-    let results = DirectiveParser::new(node.clone(), file_id, store).get_file_directives()?;
-    let mut directive_diagnostics = vec![];
-
-    let directives = results
-        .into_iter()
-        .map(|res| {
-            directive_diagnostics.extend(res.diagnostics);
-            res.directive
-        })
-        .collect::<Vec<_>>();
+    let directives::DirectiveResult {
+        directives,
+        diagnostics: mut directive_diagnostics,
+    } = DirectiveParser::new_with_store(node.clone(), file_id, store).get_file_directives();
 
     apply_top_level_directives(
         directives.as_slice(),
@@ -201,6 +197,7 @@ pub fn run_rule(
     src: Arc<String>,
 ) -> RuleResult {
     assert!(root.kind() == SyntaxKind::SCRIPT || root.kind() == SyntaxKind::MODULE);
+    let line_starts = rslint_errors::file::line_starts(&src).collect::<Vec<_>>();
     let mut ctx = RuleCtx {
         file_id,
         verbose,
@@ -214,7 +211,11 @@ pub fn run_rule(
     root.descendants_with_tokens_with(&mut |elem| {
         match elem {
             rslint_parser::NodeOrToken::Node(node) => {
-                if skip_node(directives, &node, rule) || node.kind() == SyntaxKind::ERROR {
+                let line = line_starts
+                    .binary_search(&elem.as_range().start)
+                    .unwrap_or_else(|next_line| next_line - 1);
+
+                if skip_node(directives, &node, rule, line) || node.kind() == SyntaxKind::ERROR {
                     return false;
                 }
                 rule.check_node(&node, &mut ctx);

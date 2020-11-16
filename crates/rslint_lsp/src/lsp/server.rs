@@ -31,6 +31,17 @@ pub fn capabilities() -> ServerCapabilities {
     ));
 
     ServerCapabilities {
+        hover_provider: Some(HoverProviderCapability::Simple(true)),
+        completion_provider: Some(CompletionOptions {
+            trigger_characters: Some(
+                ('a'..='z')
+                    .into_iter()
+                    .chain('A'..='Z')
+                    .map(|x| x.to_string())
+                    .collect(),
+            ),
+            ..Default::default()
+        }),
         text_document_sync,
         ..Default::default()
     }

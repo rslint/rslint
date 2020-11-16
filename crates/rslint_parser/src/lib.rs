@@ -83,7 +83,7 @@ pub use crate::{
     event::{process, Event},
     lossless_tree_sink::LosslessTreeSink,
     lossy_tree_sink::LossyTreeSink,
-    numbers::{BigInt, JsNum},
+    numbers::{parse_js_num, BigInt, JsNum},
     parse::*,
     parser::{CompletedMarker, Marker, Parser},
     state::{ParserState, StrictMode},
