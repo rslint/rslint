@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 
 - Moved util from a file to its own directory
+- Implemented a new directive parser which allows hover and auto-completion in lsp
 
 ## [0.2.1] - 2020-10-21
 
