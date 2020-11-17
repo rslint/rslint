@@ -199,7 +199,7 @@ pub fn tokenize(globs: Vec<String>) {
     )
 }
 
-fn collect_globs(globs: Vec<String>) -> impl Iterator<Item = PathBuf> {
+fn collect_globs(globs: Vec<String>) -> Vec<PathBuf> {
     globs
         .into_iter()
         .map(|pat| glob::glob(&pat))
@@ -212,6 +212,7 @@ fn collect_globs(globs: Vec<String>) -> impl Iterator<Item = PathBuf> {
             }
         })
         .flat_map(|path| path.filter_map(Result::ok))
+        .collect()
 }
 
 fn for_each_file(globs: Vec<String>, action: impl Fn(&FileWalker, &JsFile)) {

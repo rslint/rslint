@@ -16,7 +16,8 @@ pub fn infer(files: Vec<String>) {
             }
         })
         .flatten()
-        .flat_map(Result::ok);
+        .flat_map(Result::ok)
+        .collect();
 
     let walker = FileWalker::from_glob(globs);
     let parsed = walker.files.values().map(|f| f.parse());

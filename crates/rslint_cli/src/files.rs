@@ -2,13 +2,13 @@
 
 use crate::lint_warn;
 use hashbrown::HashMap;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rslint_errors::file::{FileId, Files};
 use rslint_parser::{parse_module, parse_text, SyntaxNode};
 use std::fs::read_to_string;
 use std::ops::Range;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::thread::Builder;
 use walkdir::WalkDir;
 
 // 0 is reserved for "no file id" (virtual files)
@@ -61,68 +61,46 @@ impl FileWalker {
 
     /// Make a new file walker from a compiled glob pattern. This also
     /// skips any unreadable files/dirs
-    pub fn from_glob(paths: impl IntoIterator<Item = impl AsRef<Path>>) -> Self {
+    pub fn from_glob(paths: Vec<PathBuf>) -> Self {
         let mut base = Self::default();
-        base.load_files(paths);
+        base.load_files(paths.into_par_iter());
         base
     }
 
-    pub fn load_files(&mut self, paths: impl IntoIterator<Item = impl AsRef<Path>>) {
-        let mut threads = Vec::new();
-        for entry in paths.into_iter() {
-            let entry = entry.as_ref();
-            if IGNORED.contains(
-                &entry
-                    .file_name()
-                    .map(|x| x.to_string_lossy().to_string())
-                    .unwrap_or_default()
-                    .as_str(),
-            ) {
-                continue;
-            }
-
-            let walkdir = WalkDir::new(entry)
-                .into_iter()
-                .filter_entry(|entry| !IGNORED.contains(&&*entry.file_name().to_string_lossy()));
-
-            for file in walkdir.filter_map(Result::ok) {
-                if !LINTED_FILES.contains(
-                    &file
-                        .path()
+    pub fn load_files(&mut self, paths: impl ParallelIterator<Item = PathBuf>) {
+        let jsfiles: HashMap<usize, JsFile> = paths
+            .filter(|p| {
+                !IGNORED.contains(&p.file_name().unwrap_or_default().to_string_lossy().as_ref())
+            })
+            .flat_map_iter(|path| {
+                WalkDir::new(path)
+                    .into_iter()
+                    .filter_entry(|p| !IGNORED.contains(&p.file_name().to_string_lossy().as_ref()))
+                    .filter_map(Result::ok)
+            })
+            .filter(|p| {
+                LINTED_FILES.contains(
+                    &p.path()
                         .extension()
-                        .map(|osstr| osstr.to_string_lossy().to_string())
                         .unwrap_or_default()
-                        .as_str(),
-                ) {
-                    continue;
-                }
-                // Give each io thread a name so we can potentially debug any io failures easily
-                let thread = Builder::new()
-                    .name(format!("io-{}", file.file_name().to_string_lossy()))
-                    .spawn(move || {
-                        let path = file.path();
-                        let content = match read_to_string(path) {
-                            Ok(v) => v,
-                            Err(err) => {
-                                crate::lint_err!("failed to read file {}: {}", path.display(), err);
-                                return None;
-                            }
-                        };
-                        Some((content, file.path().to_owned()))
-                    })
-                    .expect("Failed to spawn IO thread");
-                threads.push(thread);
-            }
-        }
-
-        let jsfiles: HashMap<usize, JsFile> = threads
-            .into_iter()
-            .map(|handle| handle.join())
-            .flat_map(|res| res.ok().flatten())
+                        .to_string_lossy()
+                        .as_ref(),
+                )
+            })
+            .filter_map(|entry| {
+                let path = entry.path();
+                let content = match read_to_string(path) {
+                    Ok(v) => v,
+                    Err(err) => {
+                        crate::lint_err!("failed to read file {}: {}", path.display(), err);
+                        return None;
+                    }
+                };
+                Some((content, path.to_owned()))
+            })
             .map(|(src, path)| JsFile::new_concrete(src, path))
             .map(|file| (file.id, file))
             .collect();
-
         self.files.extend(jsfiles);
     }
 
