@@ -33,6 +33,9 @@ pub(crate) struct Options {
     /// Disables the global config that is located in your global config directory.
     #[structopt(long)]
     no_global_config: bool,
+    /// Maximum number of threads that will be spawned by RSLint. (default: number of cpu cores)
+    #[structopt(long)]
+    max_threads: Option<usize>,
     /// The error formatter to use, either "short" or "long" (default)
     #[structopt(short = "F", long)]
     formatter: Option<String>,
@@ -66,6 +69,12 @@ fn main() {
     std::panic::set_hook(Box::new(rslint_cli::panic_hook));
 
     let opt = Options::from_args();
+
+    let num_threads = opt.max_threads.unwrap_or_else(|| num_cpus::get());
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build_global()
+        .expect("failed to build thread pool");
 
     match (opt.dev_flag, opt.cmd) {
         (Some(DevFlag::Help), _) => println!("{}", DEV_FLAGS_HELP),
