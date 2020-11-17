@@ -13,7 +13,7 @@ MODULE@0..34
       WHITESPACE@16..17 " "
       R_CURLY@17..18 "}"
       WHITESPACE@18..19 " "
-      IDENT@19..23 "from"
+      FROM_KW@19..23 "from"
       WHITESPACE@23..24 " "
       STRING@24..30 "\"life\""
     EMPTY_STMT@30..31

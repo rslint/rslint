@@ -27,8 +27,7 @@ MODULE@0..21
   VAR_DECL@17..21
     VAR_KW@17..20 "var"
     WHITESPACE@20..21 "\n"
-    DECLARATOR@21..21
-      ERROR@21..21
+    ERROR@21..21
 --
 error[SyntaxError]: expected `')'` but instead found `;`
   ┌─ invalid_arg_list.js:1:8

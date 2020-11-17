@@ -8,7 +8,7 @@ MODULE@0..28
       NAME@10..13
         IDENT@10..13 "foo"
       WHITESPACE@13..14 " "
-      IDENT@14..18 "from"
+      FROM_KW@14..18 "from"
       WHITESPACE@18..19 " "
       STRING@19..24 "\"bar\""
       SEMICOLON@24..25 ";"
