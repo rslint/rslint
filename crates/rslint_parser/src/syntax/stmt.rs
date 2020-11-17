@@ -111,6 +111,7 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                 true,
             )
         }
+
         T![ident] if p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)) => var_decl(p, false),
         // TODO: handle `<T>() => {};` with less of a hack
         _ if p.at_ts(STARTS_EXPR) || p.at(T![<]) => {
@@ -130,7 +131,7 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                 && !p.nth_at(1, T![:])
                 && !p.nth_at(1, T![.])
             {
-                if let Some(mut res) = ts_expr_stmt(p) {
+                if let Some(mut res) = try_parse_ts(p, |p| ts_expr_stmt(p)) {
                     res.err_if_not_ts(
                         p,
                         "TypeScript declarations can only be used in TypeScript files",
@@ -347,7 +348,7 @@ pub fn return_stmt(p: &mut Parser) -> CompletedMarker {
     semi(p, start..p.cur_tok().range.end);
     let complete = m.complete(p, RETURN_STMT);
 
-    if !p.state.in_function {
+    if !p.state.in_function && !p.syntax.global_return {
         let err = p
             .err_builder("Illegal return statement outside of a function")
             .primary(complete.range(p), "");
@@ -661,13 +662,14 @@ fn declarator(
     let m = p.start();
     p.state.should_record_names = is_const.is_some() || is_let;
     let pat_m = p.start();
-    let pat = pattern(p);
+    let pat = pattern(p, false)?;
     p.state.should_record_names = false;
-    let kind = pat.map(|x| x.kind()).unwrap_or(ERROR);
+    let kind = pat.kind();
+    pat.undo_completion(p).abandon(p);
 
     let cur = p.cur_tok().range;
-    let mut should_abandon = !p.eat(T![!]);
-    if !should_abandon && !p.typescript() {
+    let opt = p.eat(T![!]);
+    if opt && !p.typescript() {
         let err = p
             .err_builder("definite assignment assertions can only be used in TypeScript files")
             .primary(cur, "");
@@ -676,7 +678,6 @@ fn declarator(
     }
 
     if p.eat(T![:]) {
-        should_abandon = false;
         let start = p.cur_tok().range.start;
         let ty = ts_type(p);
         let end = ty
@@ -698,38 +699,29 @@ fn declarator(
         }
     }
 
-    if !should_abandon {
-        if let Some(pat) = pat {
-            pat.undo_completion(p).abandon(p);
-        }
-        pat_m.complete(p, kind);
-    } else {
-        pat_m.abandon(p);
-    }
+    let marker = pat_m.complete(p, kind);
 
     if p.eat(T![=]) {
         assign_expr(p);
-    } else if let Some(ref marker) = pat {
-        if marker.kind() != SINGLE_PATTERN && !for_stmt && !p.state.in_declare {
-            let err = p
-                .err_builder("Object and Array patterns require initializers")
-                .primary(
-                    marker.range(p),
-                    "this pattern is declared, but it is not given an initialized value",
-                );
+    } else if marker.kind() != SINGLE_PATTERN && !for_stmt && !p.state.in_declare {
+        let err = p
+            .err_builder("Object and Array patterns require initializers")
+            .primary(
+                marker.range(p),
+                "this pattern is declared, but it is not given an initialized value",
+            );
 
-            p.error(err);
-        // FIXME: does ts allow const var declarations without initializers in .d.ts files?
-        } else if is_const.is_some() && !for_stmt {
-            let err = p
-                .err_builder("Const var declarations must have an initialized value")
-                .primary(marker.range(p), "this variable needs to be initialized");
+        p.error(err);
+    // FIXME: does ts allow const var declarations without initializers in .d.ts files?
+    } else if is_const.is_some() && !for_stmt {
+        let err = p
+            .err_builder("Const var declarations must have an initialized value")
+            .primary(marker.range(p), "this variable needs to be initialized");
 
-            p.error(err);
-        }
+        p.error(err);
     }
 
-    m.complete(p, DECLARATOR)
+    Some(m.complete(p, DECLARATOR))
 }
 
 // A do.. while statement, such as `do {} while (true)`
@@ -966,7 +958,7 @@ fn catch_clause(p: &mut Parser) {
 
     if p.eat(T!['(']) {
         let m = p.start();
-        let kind = pattern(p).map(|x| x.kind());
+        let kind = pattern(p, false).map(|x| x.kind());
         if p.at(T![:]) {
             let start = p.cur_tok().range.start;
             let ty = ts_type(p);

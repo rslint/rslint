@@ -801,11 +801,11 @@ impl<'src> Lexer<'src> {
                 }
                 tok!(COMMENT, self.cur - start)
             }
+            _ if self.state.expr_allowed => self.read_regex(),
             Some(b'=') => {
                 self.advance(2);
                 tok!(SLASHEQ, self.cur - start)
             }
-            _ if self.state.expr_allowed => self.read_regex(),
             _ => self.eat(tok![/]),
         }
     }

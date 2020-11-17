@@ -43,9 +43,13 @@ pub fn import_decl(p: &mut Parser) -> CompletedMarker {
             named_imports(p);
             from_clause(p);
         }
+        _ if p.cur_src() == "type" && p.nth_at(1, T!['{']) => {
+            named_imports(p);
+            from_clause(p);
+        }
         T![ident] | T![await] | T![yield] => {
             binding_identifier(p);
-            if p.eat(T![,]) && p.at_ts(token_set![T![*], T!['{']]) {
+            if p.eat(T![,]) && (p.at_ts(token_set![T![*], T!['{']]) || p.cur_src() == "type") {
                 match p.cur() {
                     T![*] => wildcard(p, None).complete(p, WILDCARD_IMPORT),
                     _ => named_list(p, None).complete(p, NAMED_IMPORTS),
@@ -82,6 +86,9 @@ fn wildcard(p: &mut Parser, m: impl Into<Option<Marker>>) -> Marker {
 
 fn named_list(p: &mut Parser, m: impl Into<Option<Marker>>) -> Marker {
     let m = m.into().unwrap_or_else(|| p.start());
+    if p.cur_src() == "type" {
+        p.bump_remap(T![type]);
+    }
     p.expect(T!['{']);
     let mut first = true;
     while !p.at(EOF) && !p.at(T!['}']) {
@@ -104,7 +111,7 @@ fn specifier(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     binding_identifier(p);
     if p.cur_src() == "as" {
-        p.bump_any();
+        p.bump_remap(T![as]);
         binding_identifier(p);
     }
     m.complete(p, SPECIFIER)
@@ -118,7 +125,7 @@ fn from_clause(p: &mut Parser) {
 
         p.err_recover(err, STMT_RECOVERY_SET, true);
     } else {
-        p.bump_any();
+        p.bump_remap(T![from]);
     }
 
     p.expect(STRING);
@@ -146,7 +153,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                     && !p.has_linebreak_before_n(1)
                 {
                     let inner = p.start();
-                    p.bump_any();
+                    p.bump_remap(T![async]);
                     function_decl(
                         &mut *p.with_state(ParserState {
                             in_async: true,
@@ -195,6 +202,15 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                 }
                 inner.complete(p, EXPORT_NAMED)
             }
+            _ if p.cur_src() == "type" && p.nth_at(1, T!['{']) => {
+                let start_marker = p.start();
+                p.bump_remap(T![type]);
+                let inner = named_list(p, start_marker);
+                if p.cur_src() == "from" {
+                    from_clause(p);
+                }
+                inner.complete(p, EXPORT_NAMED)
+            }
             T![*] => {
                 let start_marker = p.start();
                 let inner = wildcard(p, start_marker);
@@ -211,7 +227,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
                     && !p.has_linebreak_before_n(1)
                 {
                     let inner = p.start();
-                    p.bump_any();
+                    p.bump_remap(T![async]);
                     function_decl(
                         &mut *p.with_state(ParserState {
                             in_async: true,

@@ -118,7 +118,8 @@ fn assign_expr_base(p: &mut Parser) -> Option<CompletedMarker> {
     if p.state.in_generator && p.at(T![yield]) {
         return Some(yield_expr(p));
     }
-    if p.state.in_async && p.at(T![await]) {
+    // FIXME: this shouldnt allow await in sync functions
+    if (p.state.in_async || p.syntax.top_level_await) && p.at(T![await]) {
         let m = p.start();
         p.bump_any();
         unary_expr(p);
@@ -187,7 +188,7 @@ fn assign_expr_recursive(
         if p.at(T![=]) {
             if !is_valid_target(p, &target) && target.kind() != TEMPLATE {
                 p.rewind(checkpoint);
-                target = pattern(p)?;
+                target = pattern(p, false)?;
             }
         } else {
             check_assign_target_from_marker(p, &target);

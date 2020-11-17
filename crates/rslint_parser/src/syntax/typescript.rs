@@ -143,10 +143,7 @@ pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     if p.at(T![enum]) {
-        let m = p.start();
-        p.bump_any();
-        ts_enum(p).undo_completion(p).abandon(p);
-        return Some(m.complete(p, TS_ENUM));
+        return Some(ts_enum(p));
     }
 
     if p.cur_src() == "interface" {
@@ -320,7 +317,8 @@ pub(crate) fn ts_heritage_clause(p: &mut Parser) -> CompletedMarker {
     if p.cur_src() == "implements" {
         p.bump_remap(T![implements]);
     } else {
-        p.bump_any();
+        debug_assert_eq!(p.cur_src(), "extends");
+        p.bump_remap(T![extends]);
     }
     ts_entity_name(p, None, false);
     if p.at(T![<]) {
@@ -381,9 +379,8 @@ fn ts_property_or_method_sig(p: &mut Parser, m: Marker, readonly: bool) -> Optio
         if p.at(T![<]) {
             no_recover!(p, ts_type_params(p));
         }
-        p.expect(T!['(']);
         formal_parameters(p);
-        if p.eat(T![:]) {
+        if p.at(T![:]) {
             ts_type_or_type_predicate_ann(p, T![:]);
         }
         type_member_semi(p);
@@ -746,6 +743,7 @@ pub fn ts_tuple(p: &mut Parser) -> Option<CompletedMarker> {
         let rest = p.eat(T![...]);
         let name = if (p.at_ts(token_set![T![ident], T![await], T![yield]]) || p.cur().is_keyword())
             && !DISALLOWED_TYPE_NAMES.contains(&p.cur_src())
+            && p.nth_at(1, T![:])
         {
             identifier_name(p);
             true
@@ -985,22 +983,42 @@ pub fn ts_type_params(p: &mut Parser) -> Option<CompletedMarker> {
 
 fn type_param(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
-    if let Some(x) = identifier_name(p) {
-        x.undo_completion(p).abandon(p)
-    }
-    if p.at(T![extends]) {
+    let mut should_complete =
+        if p.at_ts(token_set![T![ident], T![await], T![yield]]) || p.cur().is_keyword() {
+            p.bump_remap(T![ident]);
+            true
+        } else {
+            false
+        };
+    if p.cur_src() == "extends" {
+        should_complete = true;
         let _m = p.start();
-        p.bump_any();
+        p.bump_remap(T![extends]);
         no_recover!(p, ts_type(p));
         _m.complete(p, TS_CONSTRAINT);
     }
     if p.at(T![=]) {
+        should_complete = true;
         let _m = p.start();
         p.bump_any();
         no_recover!(p, ts_type(p));
         _m.complete(p, TS_DEFAULT);
     }
-    Some(m.complete(p, TS_TYPE_PARAM))
+    if should_complete {
+        Some(m.complete(p, TS_TYPE_PARAM))
+    } else {
+        m.abandon(p);
+        let err = p
+            .err_builder("expected a type parameter, but found none")
+            .primary(p.cur_tok().range, "");
+
+        p.err_recover(
+            err,
+            token_set![T![ident], T![yield], T![await], T![>], T![=]],
+            false,
+        );
+        None
+    }
 }
 
 pub fn ts_import(p: &mut Parser) -> Option<CompletedMarker> {

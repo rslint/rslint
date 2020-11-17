@@ -124,6 +124,9 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "abstract",
         "static",
         "async",
+        "type",
+        "from",
+        "as",
     ],
     literals: &["NUMBER", "STRING", "REGEX"],
     tokens: &[
@@ -788,18 +791,19 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct ImportDecl {
             T![import],
             imports: [ImportClause],
-            /* from */
+            T![from],
             /* source */
             T![;]
         }
 
         struct WildcardImport {
             T![*],
-            /* as */
-            /* alias */
+            T![as],
+            T![ident]
         }
 
         struct NamedImports {
+            T![type],
             T!['{'],
             specifiers: [Specifier],
             T!['}']
@@ -816,19 +820,20 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ExportNamed {
             T![export],
+            T![type],
             T!['{'],
             specifiers: [Specifier],
             T!['}'],
-            /* from */
+            T![from],
             /* source */
         }
 
         struct ExportWildcard {
             T![export],
             T![*],
-            /* as */
-            /* name */
-            /* from */
+            T![as],
+            T![ident],
+            T![from],
             /* source */
         }
 

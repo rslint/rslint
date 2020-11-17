@@ -281,13 +281,6 @@ impl Specifier {
 }
 
 impl WildcardImport {
-    pub fn as_token(&self) -> Option<SyntaxToken> {
-        self.syntax()
-            .children_with_tokens()
-            .filter_map(|x| x.into_token())
-            .nth(1)
-    }
-
     pub fn alias(&self) -> Option<Name> {
         self.syntax().children().find_map(|x| x.try_to())
     }
