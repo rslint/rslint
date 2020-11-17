@@ -70,7 +70,7 @@ fn main() {
 
     let opt = Options::from_args();
 
-    let num_threads = opt.max_threads.unwrap_or_else(|| num_cpus::get());
+    let num_threads = opt.max_threads.unwrap_or_else(num_cpus::get);
     rayon::ThreadPoolBuilder::new()
         .num_threads(num_threads)
         .build_global()
