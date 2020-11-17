@@ -1,7 +1,7 @@
 //! Core definitions related to documents.
 
 use crate::core::language::{Language, LanguageId};
-use rslint_core::{Directive, DirectiveError, DirectiveParser};
+use rslint_core::{autofix::Fixer, Directive, DirectiveError, DirectiveParser};
 use rslint_errors::file::SimpleFiles;
 use rslint_parser::{ast, parse_module, parse_text, GreenNode, Parse, ParserError, SyntaxNode};
 use std::convert::TryFrom;
@@ -35,6 +35,11 @@ impl DocumentParse for Parse<ast::Script> {
     }
 }
 
+pub struct RuleResult {
+    pub diagnostics: Vec<Diagnostic>,
+    pub fixer: Option<Fixer>,
+}
+
 /// The current state of a document.
 pub struct Document {
     /// The files database containing the document.
@@ -53,6 +58,8 @@ pub struct Document {
     pub text: String,
     /// The errors which occured while parsing the directive
     pub directive_errors: Vec<DirectiveError>,
+    /// The result of running rules on the document
+    pub rule_results: Vec<RuleResult>,
 }
 
 impl Document {
@@ -87,6 +94,7 @@ impl Document {
             parse,
             text,
             directive_errors: res.diagnostics,
+            rule_results: vec![],
         };
 
         Ok(document)

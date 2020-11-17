@@ -1,6 +1,9 @@
 //! Provider for LSP diagnostics.
 
-use crate::core::{document::Document, session::Session};
+use crate::core::{
+    document::{Document, RuleResult},
+    session::Session,
+};
 use rayon::prelude::*;
 use rslint_core::{
     apply_top_level_directives, directives::DirectiveResult, run_rule, DirectiveParser,
@@ -33,7 +36,7 @@ fn process_diagnostics(
 }
 
 pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Result<()> {
-    let document = session.get_document(&uri).await?;
+    let mut document = session.get_mut_document(&uri).await?;
     let file_id = document.file_id;
 
     let mut new_store = session.store.clone();
@@ -56,14 +59,14 @@ pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Res
 
     let verbose = false;
     let src = Arc::new(document.text.clone());
-    let rule_diagnostics: HashMap<&str, Vec<rslint_errors::Diagnostic>> = new_store
+    let rule_results: HashMap<&str, rslint_core::RuleResult> = new_store
         .rules
         .par_iter()
         .map(|rule| {
             let root = SyntaxNode::new_root(document.parse.green());
             (
                 rule.name(),
-                run_rule(&**rule, file_id, root, verbose, &directives, src.clone()).diagnostics,
+                run_rule(&**rule, file_id, root, verbose, &directives, src.clone()),
             )
         })
         .collect();
@@ -87,9 +90,18 @@ pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Res
         &mut diags,
     );
 
-    for (_, diagnostics) in rule_diagnostics {
-        process_diagnostics(&document, uri.clone(), diagnostics.to_owned(), &mut diags);
+    for diagnostics in rule_results.clone().into_iter().map(|(_, r)| r.diagnostics) {
+        process_diagnostics(&document, uri.clone(), diagnostics, &mut diags);
     }
+
+    document.rule_results = rule_results
+        .into_iter()
+        .map(|(_, v)| v)
+        .map(|res| RuleResult {
+            diagnostics: diags.to_owned(),
+            fixer: res.fixer,
+        })
+        .collect();
 
     let version = Default::default();
     session

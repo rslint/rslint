@@ -1,7 +1,6 @@
 //! The RSLint Language Server.
 
 #![deny(clippy::all)]
-#![deny(missing_docs)]
 #![deny(unsafe_code)]
 
 // Core definitions for the RSLint Language Server.

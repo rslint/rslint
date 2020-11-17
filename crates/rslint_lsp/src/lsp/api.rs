@@ -29,6 +29,12 @@ impl LanguageServer for Server {
             .map_err(|_| jsonrpc::Error::internal_error())
     }
 
+    async fn code_action(&self, params: CodeActionParams) -> Result<Option<CodeActionResponse>> {
+        provider::actions::actions(self.session.clone(), params)
+            .await
+            .map_err(|_| jsonrpc::Error::internal_error())
+    }
+
     async fn initialized(&self, _: InitializedParams) {
         let typ = MessageType::Info;
         let message = "RSLint Language Server initialized!";

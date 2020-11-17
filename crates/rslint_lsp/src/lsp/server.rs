@@ -42,6 +42,7 @@ pub fn capabilities() -> ServerCapabilities {
             ),
             ..Default::default()
         }),
+        code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
         text_document_sync,
         ..Default::default()
     }
