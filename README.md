@@ -11,7 +11,6 @@ Please see the [website](https://rslint.org) for installation instructions and d
 ## Currently known big issues
 
 - Optional chaining is not parsed correctly
-- Empty template literals panic
 - A lot of error recoveries do not work and result in infinite recursion
 
 ### Financial Contributors
@@ -72,7 +71,7 @@ RSLint's goal is to provide extremely fast and user friendly linting for the who
 - [ ] Scope analysis (WIP)
 - [x] Tests for parser, including test262
 - [ ] Implementation of ESLint reccomended rules
-- [ ] Benchmarks
+- [x] Benchmarks
 - [ ] Markdown support
 - [x] Config files (partially done)
 - [x] Rule options
