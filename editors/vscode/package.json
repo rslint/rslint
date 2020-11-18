@@ -57,6 +57,12 @@
           "description": "Whether to offer autofix actions even if the file contains syntax errors, may sometimes cause incorrect fixes"
         }
       }
-    }
+    },
+    "jsonValidation": [
+      {
+        "fileMatch": "rslintrc.json",
+        "url": "./schema.json"
+      }
+    ]
   }
 }
