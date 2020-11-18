@@ -4,6 +4,8 @@ use crate::project_root;
 use convert_case::{Case, Casing};
 use extract::*;
 use quote::ToTokens;
+use rslint_config::ConfigRepr;
+use schemars::schema_for;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::{read_dir, read_to_string, write};
@@ -48,6 +50,11 @@ pub fn run() {
         rules_markdown(groups),
     )
     .expect("Failed to write rules readme");
+    write(
+        project_root().join("editors/vscode/schema.json"),
+        serde_json::to_string_pretty(&schema_for!(ConfigRepr)).unwrap(),
+    )
+    .expect("Failed to write schema")
 }
 
 const RULES_PRELUDE: &str =

@@ -5,14 +5,54 @@ use dashmap::{
     mapref::one::{Ref, RefMut},
     DashMap,
 };
+use futures::executor::block_on;
 use rslint_core::CstRuleStore;
+use serde::Deserialize;
+use serde_json::Value;
+use std::sync::RwLock;
+use taplo::{parser::Parse, util::coords::Mapper};
+use tower_lsp::lsp_types::ConfigurationItem;
 use tower_lsp::{lsp_types::*, Client};
+
+#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Deserialize)]
+pub struct Config {
+    pub incorrect_file_autofixes: bool,
+}
+
+impl Config {
+    pub fn from_value(value: Value) -> anyhow::Result<Self> {
+        Ok(serde_json::from_value(value)?)
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            incorrect_file_autofixes: true,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TomlDocument {
+    pub parse: Parse,
+    pub mapper: Mapper,
+}
+
+impl TomlDocument {
+    pub fn new(parse: Parse, mapper: Mapper) -> Self {
+        Self { parse, mapper }
+    }
+}
 
 /// Represents the current state of the LSP session.
 pub struct Session {
     client: Option<Client>,
     documents: DashMap<Url, Document>,
     pub(crate) store: CstRuleStore,
+    pub(crate) config: RwLock<Config>,
+    pub(crate) config_doc: RwLock<Option<TomlDocument>>,
 }
 
 impl Session {
@@ -20,10 +60,27 @@ impl Session {
     pub fn new(client: Option<Client>) -> anyhow::Result<Self> {
         let documents = DashMap::new();
         let store = CstRuleStore::new().builtins();
+        let config = RwLock::new(
+            client
+                .as_ref()
+                .and_then(|x| {
+                    let config = block_on(x.configuration(vec![ConfigurationItem {
+                        scope_uri: None,
+                        section: Some("vscode-rslint".to_owned()),
+                    }]))
+                    .ok()?;
+
+                    Config::from_value(config.first()?.to_owned()).ok()
+                })
+                .unwrap_or_default(),
+        );
+
         Ok(Session {
             client,
             documents,
             store,
+            config,
+            config_doc: RwLock::new(None),
         })
     }
 

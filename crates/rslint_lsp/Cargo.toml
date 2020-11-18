@@ -31,7 +31,11 @@ rayon = "1.4.0"
 rslint_core = { path = "../rslint_core", version = "0.2" }
 rslint_parser = { path = "../rslint_parser", version = "0.2" }
 rslint_errors = { path = "../rslint_errors", version = "0.1", features = ["lsp"] }
+rslint_config = { path = "../rslint_config", version = "0.1", features = ["schema"] }
 serde_json = "1.0"
 thiserror = "1.0"
 tokio = { version = "0.2", features = ["io-std", "macros"] }
 tower-lsp = "=0.13.3"
+serde = { version = "1.0.117", features = ["derive"] }
+taplo = { version = "0.3.1", features = ["schema"], path = "../../../taplo/taplo" }
+schemars = "0.8.0"

@@ -19,8 +19,9 @@ pub const CONFIG_NAME: &str = "rslintrc.toml";
 /// A list of boxed rule implementations.
 pub type RuleList = Vec<Box<dyn CstRule>>;
 
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Serialize)]
-struct ConfigRepr {
+pub struct ConfigRepr {
     rules: Option<RulesConfigRepr>,
     #[serde(default)]
     errors: ErrorsConfigRepr,
@@ -48,6 +49,102 @@ struct RulesConfigRepr {
     allowed: Vec<String>,
 }
 
+#[cfg(feature = "schema")]
+impl schemars::JsonSchema for RulesConfigRepr {
+    fn json_schema(_gen: &mut schemars::gen::SchemaGenerator) -> schemars::schema::Schema {
+        use schemars::schema::*;
+        use schemars::*;
+
+        macro_rules! string_schema {
+            ($val:expr) => {
+                Schema::Object(SchemaObject {
+                    string: Some(Box::new(StringValidation {
+                        pattern: Some($val.to_string()),
+                        ..Default::default()
+                    })),
+                    ..Default::default()
+                })
+            };
+            ($val:expr, $rule_desc:expr) => {{
+                let mut split = $rule_desc.split('\n');
+                let header = split.next().unwrap_or("");
+                let body = split.next().unwrap_or("").to_string();
+
+                Schema::Object(SchemaObject {
+                    string: Some(Box::new(StringValidation {
+                        pattern: Some($val.to_string()),
+                        ..Default::default()
+                    })),
+                    metadata: Some(Box::new(Metadata {
+                        title: Some(header.to_string()),
+                        description: Some(body),
+                        ..Default::default()
+                    })),
+                    ..Default::default()
+                })
+            }};
+        }
+
+        let rules = CstRuleStore::new().builtins().rules;
+        let mut rule_items = vec![];
+
+        for rule in &rules {
+            rule_items.push(string_schema!(rule.name(), rule.docs()));
+        }
+        let rule_items_schema = Schema::Object(SchemaObject {
+            array: Some(Box::new(ArrayValidation {
+                items: Some(SingleOrVec::Vec(rule_items)),
+                ..Default::default()
+            })),
+            ..Default::default()
+        });
+
+        // TODO(RDambrosio016): dont hardcode it like this
+        let group_items = vec![string_schema!("errors"), string_schema!("style")];
+
+        let groups_schema = Schema::Object(SchemaObject {
+            array: Some(Box::new(ArrayValidation {
+                items: Some(SingleOrVec::Vec(group_items)),
+                ..Default::default()
+            })),
+            ..Default::default()
+        });
+
+        let mut rule_obj_items = Map::new();
+        for rule in &rules {
+            if let Some(schema) = rule.schema() {
+                rule_obj_items.insert(rule.name().to_string(), Schema::Object(schema.schema));
+            }
+        }
+        let rules_schema = Schema::Object(SchemaObject {
+            object: Some(Box::new(ObjectValidation {
+                properties: rule_obj_items,
+                ..Default::default()
+            })),
+            ..Default::default()
+        });
+
+        let mut map = Map::new();
+        map.insert("groups".to_string(), groups_schema);
+        map.insert("allowed".to_string(), rule_items_schema);
+        map.insert("errors".to_string(), rules_schema.clone());
+        map.insert("warnings".to_string(), rules_schema);
+
+        Schema::Object(SchemaObject {
+            object: Some(Box::new(ObjectValidation {
+                properties: map,
+                ..Default::default()
+            })),
+            ..Default::default()
+        })
+    }
+
+    fn schema_name() -> String {
+        "rules".to_string()
+    }
+}
+
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[derive(Debug, Deserialize, Serialize)]
 struct ErrorsConfigRepr {
     formatter: String,

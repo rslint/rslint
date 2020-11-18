@@ -96,4 +96,4 @@ for(var i = 5; foo; i++) {}
 ```
 :::
 
-[Source](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups/errors/no_constant_condition.rs)
+[Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/errors/no_constant_condition.rs)

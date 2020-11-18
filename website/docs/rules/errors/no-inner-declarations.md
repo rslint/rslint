@@ -89,4 +89,4 @@ export function bar() {}
 ```
 :::
 
-[Source](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups/errors/no_inner_declarations.rs)
+[Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/errors/no_inner_declarations.rs)

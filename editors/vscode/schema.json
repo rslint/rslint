@@ -1,0 +1,608 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConfigRepr",
+  "type": "object",
+  "properties": {
+    "errors": {
+      "default": {
+        "formatter": "long"
+      },
+      "allOf": [
+        {
+          "$ref": "#/definitions/ErrorsConfigRepr"
+        }
+      ]
+    },
+    "rules": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/rules"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "ErrorsConfigRepr": {
+      "type": "object",
+      "required": [
+        "formatter"
+      ],
+      "properties": {
+        "formatter": {
+          "type": "string"
+        }
+      }
+    },
+    "rules": {
+      "properties": {
+        "allowed": {
+          "items": [
+            {
+              "title": "Forbid the use of unsafe control flow statements in try and catch blocks.",
+              "description": "",
+              "pattern": "no-unsafe-finally"
+            },
+            {
+              "title": "Forbid the use of assignment expressions in conditions which may yield unwanted behavior.",
+              "description": "",
+              "pattern": "no-cond-assign"
+            },
+            {
+              "title": "Disallow await inside of loops.",
+              "description": "",
+              "pattern": "no-await-in-loop"
+            },
+            {
+              "title": "Disallow getter properties which do not always return a value.",
+              "description": "",
+              "pattern": "getter-return"
+            },
+            {
+              "title": "Deny the use of `!` on the left hand side of an `instanceof` or `in` expression where it is ambiguous.",
+              "description": "",
+              "pattern": "no-unsafe-negation"
+            },
+            {
+              "title": "Disallow comparison against `-0` which yields unexpected behavior.",
+              "description": "",
+              "pattern": "no-compare-neg-zero"
+            },
+            {
+              "title": "Disallow async functions as promise executors.",
+              "description": "",
+              "pattern": "no-async-promise-executor"
+            },
+            {
+              "title": "Disallow constant conditions which always yield one result.",
+              "description": "",
+              "pattern": "no-constant-condition"
+            },
+            {
+              "title": "Disallow for loops which update their counter in the wrong direction.",
+              "description": "",
+              "pattern": "for-direction"
+            },
+            {
+              "title": "Disallow the use of debugger statements.",
+              "description": "",
+              "pattern": "no-debugger"
+            },
+            {
+              "title": "Disallow duplicate keys in object literals.",
+              "description": "",
+              "pattern": "no-dupe-keys"
+            },
+            {
+              "title": "Disallow duplicate test cases in `switch` statements.",
+              "description": "",
+              "pattern": "no-duplicate-cases"
+            },
+            {
+              "title": "Disallow empty block statements.",
+              "description": "",
+              "pattern": "no-empty"
+            },
+            {
+              "title": "Disallow unneeded semicolons.",
+              "description": "",
+              "pattern": "no-extra-semi"
+            },
+            {
+              "title": "Disallow variable and function declarations in nested blocks.",
+              "description": "",
+              "pattern": "no-inner-declarations"
+            },
+            {
+              "title": "Disallow weird/irregular whitespace.",
+              "description": "",
+              "pattern": "no-irregular-whitespace"
+            },
+            {
+              "title": "Disallow constructing `Symbol` using `new`.",
+              "description": "",
+              "pattern": "no-new-symbol"
+            },
+            {
+              "title": "Disallow direct use of `Object.prototype` builtins directly.",
+              "description": "",
+              "pattern": "no-prototype-builtins"
+            },
+            {
+              "title": "Disallow sparse arrays.",
+              "description": "",
+              "pattern": "no-sparse-arrays"
+            },
+            {
+              "title": "Disallow confusing newlines in expressions.",
+              "description": "",
+              "pattern": "no-unexpected-multiline"
+            },
+            {
+              "title": "Disallow incorrect comparisons against `NaN`.",
+              "description": "",
+              "pattern": "use-isnan"
+            },
+            {
+              "title": "Disallow setters to return values.",
+              "description": "",
+              "pattern": "no-setter-return"
+            },
+            {
+              "title": "Enforce the use of valid string literals in a `typeof` comparison.",
+              "description": "",
+              "pattern": "valid-typeof"
+            },
+            {
+              "title": "Disallow unnecessary boolean casts.",
+              "description": "",
+              "pattern": "no-extra-boolean-cast"
+            },
+            {
+              "title": "Disallow arrow functions where they could be confused with comparisons.",
+              "description": "",
+              "pattern": "no-confusing-arrow"
+            },
+            {
+              "title": "Enforce or disallow spaces inside of blocks after the opening and closing brackets.",
+              "description": "",
+              "pattern": "block-spacing"
+            }
+          ]
+        },
+        "errors": {
+          "properties": {
+            "block-spacing": {
+              "title": "BlockSpacing",
+              "type": "object",
+              "properties": {
+                "style": {
+                  "description": "The style of spacing, either \"always\" (default) to require one or more spaces, or \"never\" to disallow spaces",
+                  "default": "always",
+                  "type": "string"
+                }
+              }
+            },
+            "for-direction": {
+              "title": "ForDirection",
+              "type": "object"
+            },
+            "getter-return": {
+              "title": "GetterReturn",
+              "type": "object",
+              "required": [
+                "allowImplicit"
+              ],
+              "properties": {
+                "allowImplicit": {
+                  "description": "Whether to allow implicitly returning undefined with `return;`. `true` by default.",
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-async-promise-executor": {
+              "title": "NoAsyncPromiseExecutor",
+              "type": "object"
+            },
+            "no-await-in-loop": {
+              "title": "NoAwaitInLoop",
+              "type": "object"
+            },
+            "no-compare-neg-zero": {
+              "title": "NoCompareNegZero",
+              "type": "object"
+            },
+            "no-cond-assign": {
+              "title": "NoCondAssign",
+              "type": "object",
+              "properties": {
+                "allowParens": {
+                  "description": "Allow an assignment if they are enclosed in parentheses to allow things like reassigning a variable.",
+                  "default": true,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-confusing-arrow": {
+              "title": "NoConfusingArrow",
+              "type": "object",
+              "properties": {
+                "allowParens": {
+                  "description": "Relaxes the rule and accepts parenthesis as a valid \"confusion-preventing\" syntax. `true` by default.",
+                  "default": true,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-constant-condition": {
+              "title": "NoConstantCondition",
+              "type": "object"
+            },
+            "no-debugger": {
+              "title": "NoDebugger",
+              "type": "object"
+            },
+            "no-dupe-keys": {
+              "title": "NoDupeKeys",
+              "type": "object"
+            },
+            "no-duplicate-cases": {
+              "title": "NoDuplicateCases",
+              "type": "object"
+            },
+            "no-empty": {
+              "title": "NoEmpty",
+              "type": "object",
+              "properties": {
+                "allowEmptyCatch": {
+                  "description": "Whether to allow empty `catch` clauses without a comment.",
+                  "default": false,
+                  "type": "boolean"
+                },
+                "disallowEmptyFunctions": {
+                  "description": "Whether to disallow empty block statements in function declarations, arrow functions, getters, setters, and methods.",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-extra-boolean-cast": {
+              "title": "NoExtraBooleanCast",
+              "type": "object",
+              "properties": {
+                "enforceForLogicalOperands": {
+                  "description": "If this option is `true`, this rule will also check for unnecessary boolean cast inside logical expression, which is disabled by default.",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-extra-semi": {
+              "title": "NoExtraSemi",
+              "type": "object"
+            },
+            "no-inner-declarations": {
+              "title": "NoInnerDeclarations",
+              "type": "object",
+              "properties": {
+                "disallowed": {
+                  "description": "What declarations to disallow in nested blocks, it can include two possible options: \"functions\" and \"variables\", you can include either or, or both. Disallows only functions by default.",
+                  "default": [
+                    "functions"
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "no-irregular-whitespace": {
+              "title": "NoIrregularWhitespace",
+              "type": "object",
+              "properties": {
+                "skipComments": {
+                  "description": "Whether to allow any whitespace in comments (false by default)",
+                  "default": false,
+                  "type": "boolean"
+                },
+                "skipRegex": {
+                  "description": "Whether to allow any whitespace in regular expressions (false by default)",
+                  "default": false,
+                  "type": "boolean"
+                },
+                "skipStrings": {
+                  "description": "Whether to allow any whitespace in string literals (true by default)",
+                  "default": true,
+                  "type": "boolean"
+                },
+                "skipTemplates": {
+                  "description": "Whether to allow any whitespace in template literals (false by default)",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-new-symbol": {
+              "title": "NoNewSymbol",
+              "type": "object"
+            },
+            "no-prototype-builtins": {
+              "title": "NoPrototypeBuiltins",
+              "type": "object"
+            },
+            "no-setter-return": {
+              "title": "NoSetterReturn",
+              "type": "object"
+            },
+            "no-sparse-arrays": {
+              "title": "NoSparseArrays",
+              "type": "object"
+            },
+            "no-unexpected-multiline": {
+              "title": "NoUnexpectedMultiline",
+              "type": "object"
+            },
+            "no-unsafe-finally": {
+              "title": "NoUnsafeFinally",
+              "type": "object"
+            },
+            "no-unsafe-negation": {
+              "title": "NoUnsafeNegation",
+              "type": "object"
+            },
+            "use-isnan": {
+              "title": "UseIsnan",
+              "type": "object",
+              "properties": {
+                "enforceForIndexOf": {
+                  "description": "Index functions like `indexOf` and `lastIndexOf` use `===` internally, therefore matching them against `NaN` will always yield `-1`. This option disallows using `indexOf(NaN)` and `lastIndexOf(NaN)` (false by default)",
+                  "default": false,
+                  "type": "boolean"
+                },
+                "enforceForSwitchCase": {
+                  "description": "Switch statements use `===` internally to match an expression, therefore `switch (NaN)` and `case NaN` will never match. This rule disables uses like that which are always incorrect (true by default)",
+                  "default": true,
+                  "type": "boolean"
+                }
+              }
+            },
+            "valid-typeof": {
+              "title": "ValidTypeof",
+              "type": "object",
+              "properties": {
+                "requireStringLiterals": {
+                  "description": "If this option is `true`, `typeof` expression can only be compared to valid string literals, or other `typeof` expressions, but can not be compared to any other value.",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        },
+        "groups": {
+          "items": [
+            {
+              "pattern": "errors"
+            },
+            {
+              "pattern": "style"
+            }
+          ]
+        },
+        "warnings": {
+          "properties": {
+            "block-spacing": {
+              "title": "BlockSpacing",
+              "type": "object",
+              "properties": {
+                "style": {
+                  "description": "The style of spacing, either \"always\" (default) to require one or more spaces, or \"never\" to disallow spaces",
+                  "default": "always",
+                  "type": "string"
+                }
+              }
+            },
+            "for-direction": {
+              "title": "ForDirection",
+              "type": "object"
+            },
+            "getter-return": {
+              "title": "GetterReturn",
+              "type": "object",
+              "required": [
+                "allowImplicit"
+              ],
+              "properties": {
+                "allowImplicit": {
+                  "description": "Whether to allow implicitly returning undefined with `return;`. `true` by default.",
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-async-promise-executor": {
+              "title": "NoAsyncPromiseExecutor",
+              "type": "object"
+            },
+            "no-await-in-loop": {
+              "title": "NoAwaitInLoop",
+              "type": "object"
+            },
+            "no-compare-neg-zero": {
+              "title": "NoCompareNegZero",
+              "type": "object"
+            },
+            "no-cond-assign": {
+              "title": "NoCondAssign",
+              "type": "object",
+              "properties": {
+                "allowParens": {
+                  "description": "Allow an assignment if they are enclosed in parentheses to allow things like reassigning a variable.",
+                  "default": true,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-confusing-arrow": {
+              "title": "NoConfusingArrow",
+              "type": "object",
+              "properties": {
+                "allowParens": {
+                  "description": "Relaxes the rule and accepts parenthesis as a valid \"confusion-preventing\" syntax. `true` by default.",
+                  "default": true,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-constant-condition": {
+              "title": "NoConstantCondition",
+              "type": "object"
+            },
+            "no-debugger": {
+              "title": "NoDebugger",
+              "type": "object"
+            },
+            "no-dupe-keys": {
+              "title": "NoDupeKeys",
+              "type": "object"
+            },
+            "no-duplicate-cases": {
+              "title": "NoDuplicateCases",
+              "type": "object"
+            },
+            "no-empty": {
+              "title": "NoEmpty",
+              "type": "object",
+              "properties": {
+                "allowEmptyCatch": {
+                  "description": "Whether to allow empty `catch` clauses without a comment.",
+                  "default": false,
+                  "type": "boolean"
+                },
+                "disallowEmptyFunctions": {
+                  "description": "Whether to disallow empty block statements in function declarations, arrow functions, getters, setters, and methods.",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-extra-boolean-cast": {
+              "title": "NoExtraBooleanCast",
+              "type": "object",
+              "properties": {
+                "enforceForLogicalOperands": {
+                  "description": "If this option is `true`, this rule will also check for unnecessary boolean cast inside logical expression, which is disabled by default.",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-extra-semi": {
+              "title": "NoExtraSemi",
+              "type": "object"
+            },
+            "no-inner-declarations": {
+              "title": "NoInnerDeclarations",
+              "type": "object",
+              "properties": {
+                "disallowed": {
+                  "description": "What declarations to disallow in nested blocks, it can include two possible options: \"functions\" and \"variables\", you can include either or, or both. Disallows only functions by default.",
+                  "default": [
+                    "functions"
+                  ],
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "no-irregular-whitespace": {
+              "title": "NoIrregularWhitespace",
+              "type": "object",
+              "properties": {
+                "skipComments": {
+                  "description": "Whether to allow any whitespace in comments (false by default)",
+                  "default": false,
+                  "type": "boolean"
+                },
+                "skipRegex": {
+                  "description": "Whether to allow any whitespace in regular expressions (false by default)",
+                  "default": false,
+                  "type": "boolean"
+                },
+                "skipStrings": {
+                  "description": "Whether to allow any whitespace in string literals (true by default)",
+                  "default": true,
+                  "type": "boolean"
+                },
+                "skipTemplates": {
+                  "description": "Whether to allow any whitespace in template literals (false by default)",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
+            },
+            "no-new-symbol": {
+              "title": "NoNewSymbol",
+              "type": "object"
+            },
+            "no-prototype-builtins": {
+              "title": "NoPrototypeBuiltins",
+              "type": "object"
+            },
+            "no-setter-return": {
+              "title": "NoSetterReturn",
+              "type": "object"
+            },
+            "no-sparse-arrays": {
+              "title": "NoSparseArrays",
+              "type": "object"
+            },
+            "no-unexpected-multiline": {
+              "title": "NoUnexpectedMultiline",
+              "type": "object"
+            },
+            "no-unsafe-finally": {
+              "title": "NoUnsafeFinally",
+              "type": "object"
+            },
+            "no-unsafe-negation": {
+              "title": "NoUnsafeNegation",
+              "type": "object"
+            },
+            "use-isnan": {
+              "title": "UseIsnan",
+              "type": "object",
+              "properties": {
+                "enforceForIndexOf": {
+                  "description": "Index functions like `indexOf` and `lastIndexOf` use `===` internally, therefore matching them against `NaN` will always yield `-1`. This option disallows using `indexOf(NaN)` and `lastIndexOf(NaN)` (false by default)",
+                  "default": false,
+                  "type": "boolean"
+                },
+                "enforceForSwitchCase": {
+                  "description": "Switch statements use `===` internally to match an expression, therefore `switch (NaN)` and `case NaN` will never match. This rule disables uses like that which are always incorrect (true by default)",
+                  "default": true,
+                  "type": "boolean"
+                }
+              }
+            },
+            "valid-typeof": {
+              "title": "ValidTypeof",
+              "type": "object",
+              "properties": {
+                "requireStringLiterals": {
+                  "description": "If this option is `true`, `typeof` expression can only be compared to valid string literals, or other `typeof` expressions, but can not be compared to any other value.",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

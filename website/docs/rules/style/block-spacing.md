@@ -209,4 +209,4 @@ foo(); }
 ```
 :::
 
-[Source](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups/style/block_spacing.rs)
+[Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/style/block_spacing.rs)

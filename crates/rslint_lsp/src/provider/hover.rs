@@ -3,13 +3,12 @@
 use crate::core::session::Session;
 use anyhow::Result;
 use rslint_errors::file::Files;
-use std::sync::Arc;
 use tower_lsp::lsp_types::{
     Hover, HoverContents, HoverParams, MarkedString, Position, TextDocumentIdentifier,
     TextDocumentPositionParams,
 };
 
-pub async fn on_hover(session: Arc<Session>, params: HoverParams) -> Result<Option<Hover>> {
+pub async fn on_hover(session: &Session, params: HoverParams) -> Result<Option<Hover>> {
     let TextDocumentPositionParams {
         text_document: TextDocumentIdentifier { uri },
         position: Position { line, character },

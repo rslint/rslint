@@ -2,17 +2,28 @@
 
 use crate::core::session::Session;
 use anyhow::Result;
+use rslint_errors::Severity;
 use std::ops::Range;
-use std::sync::Arc;
 use tower_lsp::lsp_types::{
-    CodeAction, CodeActionOrCommand, CodeActionParams, CodeActionResponse, TextEdit, WorkspaceEdit,
+    CodeAction, CodeActionKind, CodeActionOrCommand, CodeActionParams, CodeActionResponse,
+    TextEdit, WorkspaceEdit,
 };
 
 pub async fn actions(
-    session: Arc<Session>,
+    session: &Session,
     params: CodeActionParams,
 ) -> Result<Option<CodeActionResponse>> {
     let document = session.get_document(&params.text_document.uri).await?;
+    if document
+        .parse
+        .parser_diagnostics()
+        .iter()
+        .any(|d| d.severity == Severity::Error)
+        && !session.config.read().unwrap().incorrect_file_autofixes
+    {
+        return Ok(None);
+    }
+
     let action_range =
         rslint_errors::lsp::range_to_byte_span(&document.files, document.file_id, &params.range)?;
 
@@ -69,12 +80,12 @@ pub async fn actions(
                     edit,
                     is_preferred: Some(true),
                     diagnostics,
+                    kind: Some(CodeActionKind::QUICKFIX),
                     ..Default::default()
                 };
                 actions.push(CodeActionOrCommand::CodeAction(action));
             }
         }
     }
-    log::info!("{:#?}", actions);
     Ok(Some(actions))
 }

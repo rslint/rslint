@@ -21,11 +21,14 @@ export async function launch(context: vscode.ExtensionContext): Promise<lspClien
     documentSelector: [
       { language: "javascript", scheme: "file" },
       { language: "javascript", scheme: "untitled" },
+      { language: "toml", scheme: "file" },
+      { language: "toml", scheme: "untitled" },
     ],
     synchronize: {
       fileEvents: [
         vscode.workspace.createFileSystemWatcher("**/*.js"),
         vscode.workspace.createFileSystemWatcher("**/*.mjs"),
+        vscode.workspace.createFileSystemWatcher("**/rslintrc.toml"),
       ],
     },
     middleware: {} as lspClient.Middleware,

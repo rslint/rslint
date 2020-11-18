@@ -65,4 +65,4 @@ var x = a => (1 ? 2 : 3)
 ```
 :::
 
-[Source](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups/errors/no_confusing_arrow.rs)
+[Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/errors/no_confusing_arrow.rs)

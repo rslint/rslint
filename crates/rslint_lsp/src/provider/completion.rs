@@ -6,14 +6,13 @@ use rslint_core::{
     directives::ComponentKind, directives::Instruction, util::levenshtein_distance, CstRuleStore,
     DirectiveErrorKind,
 };
-use std::sync::Arc;
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionParams, CompletionResponse, Documentation,
     MarkupContent, MarkupKind,
 };
 
 pub async fn complete(
-    session: Arc<Session>,
+    session: &Session,
     params: CompletionParams,
 ) -> Result<Option<CompletionResponse>> {
     let document = session

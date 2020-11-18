@@ -10,4 +10,4 @@ Rules which relate to code style and formatting.
 | ---- | ----------- |
 | [block-spacing](./block-spacing.md) | Enforce or disallow spaces inside of blocks after the opening and closing brackets. |
 
-[Source](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups/style)
+[Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/style)

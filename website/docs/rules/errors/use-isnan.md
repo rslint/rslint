@@ -3,39 +3,39 @@
 -->
 # use-isnan
 
-    Disallow incorrect comparisons against `NaN`.
+Disallow incorrect comparisons against `NaN`.
 
-    `NaN` is a special `Number` value used to represent "not a number" results in calculations.
-    This value is specified in the IEEE Standard for Binary Floating-Point-Arithmetic.
+`NaN` is a special `Number` value used to represent "not a number" results in calculations.
+This value is specified in the IEEE Standard for Binary Floating-Point-Arithmetic.
 
-    In JavaScript, `NaN` is unique, it is not equal to anything, including itself! therefore
-    any comparisons to it will either always yield `true` or `false`. Therefore you should
-    use `isNaN(/* num */)` instead to test if a value is `NaN`. This rule is aimed at removing this footgun.
+In JavaScript, `NaN` is unique, it is not equal to anything, including itself! therefore
+any comparisons to it will either always yield `true` or `false`. Therefore you should
+use `isNaN(/* num */)` instead to test if a value is `NaN`. This rule is aimed at removing this footgun.
 
-    ## Invalid Code Examples
+## Invalid Code Examples
 
-    ```js
-    if (foo == NaN) {
-        // unreachable
-    }
+```js
+if (foo == NaN) {
+    // unreachable
+}
 
-    if (NaN != NaN) {
-        // always runs
-    }
-    ```
+if (NaN != NaN) {
+    // always runs
+}
+```
 
-    ## Correct Code Examples
+## Correct Code Examples
 
-    ```js
-    if (isNaN(foo)) {
-        /* */
-    }
+```js
+if (isNaN(foo)) {
+    /* */
+}
 
-    if (!isNaN(foo)) {
-        /* */
-    }
-    ```
-    
+if (!isNaN(foo)) {
+    /* */
+}
+```
+
 ## Config
 | Name | Type | Description |
 | ---- | ---- | ----------- |
@@ -175,4 +175,4 @@ foo.lastIndexOf(NaN)
 ```
 :::
 
-[Source](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups/errors/use_isnan.rs)
+[Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/errors/use_isnan.rs)

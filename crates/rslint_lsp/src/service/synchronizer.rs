@@ -13,12 +13,11 @@ pub(crate) mod document {
     use rslint_core::DirectiveParser;
     use rslint_errors::file::SimpleFiles;
     use rslint_parser::{parse_module, parse_text, SyntaxNode};
-    use std::sync::Arc;
     use tower_lsp::lsp_types::*;
 
     /// Handle a document "change" event.
     pub(crate) async fn change(
-        session: Arc<Session>,
+        session: &Session,
         params: DidChangeTextDocumentParams,
     ) -> anyhow::Result<()> {
         let DidChangeTextDocumentParams {
@@ -52,14 +51,14 @@ pub(crate) mod document {
             document.directive_errors = res.diagnostics;
         }
 
-        provider::diagnostics::publish_diagnostics(session.clone(), uri).await?;
+        provider::diagnostics::publish_diagnostics(session, uri).await?;
 
         Ok(())
     }
 
     /// Handle a document "close" event.
     pub(crate) async fn close(
-        session: Arc<Session>,
+        session: &Session,
         params: DidCloseTextDocumentParams,
     ) -> anyhow::Result<()> {
         let DidCloseTextDocumentParams {
@@ -80,7 +79,7 @@ pub(crate) mod document {
 
     /// Handle a document "open" event.
     pub(crate) async fn open(
-        session: Arc<Session>,
+        session: &Session,
         params: DidOpenTextDocumentParams,
     ) -> anyhow::Result<()> {
         let DidOpenTextDocumentParams {

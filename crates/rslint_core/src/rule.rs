@@ -86,6 +86,10 @@ pub trait Rule: Debug + DynClone + Send + Sync {
     fn docs(&self) -> &'static str {
         ""
     }
+    #[cfg(feature = "schema")]
+    fn schema(&self) -> Option<schemars::schema::RootSchema> {
+        None
+    }
 }
 
 dyn_clone::clone_trait_object!(Rule);
@@ -321,6 +325,7 @@ macro_rules! __declare_lint_inner {
 
         #[doc = $doc]
         #[serde(rename_all = "camelCase")]
+        #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
         $(#[$outer])*
         #[derive(Debug, Clone, Deserialize, Serialize)]
         pub struct $name {
@@ -349,6 +354,11 @@ macro_rules! __declare_lint_inner {
 
             fn docs(&self) -> &'static str {
                 $doc
+            }
+
+            #[cfg(feature = "schema")]
+            fn schema(&self) -> Option<schemars::schema::RootSchema> {
+                Some(schemars::schema_for!($name))
             }
         }
     };

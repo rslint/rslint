@@ -35,7 +35,7 @@ fn process_diagnostics(
     }
 }
 
-pub async fn publish_diagnostics(session: Arc<Session>, uri: Url) -> anyhow::Result<()> {
+pub async fn publish_diagnostics(session: &Session, uri: Url) -> anyhow::Result<()> {
     let mut document = session.get_mut_document(&uri).await?;
     let file_id = document.file_id;
 

@@ -44,5 +44,19 @@
     "onLanguage:javascript",
     "workspaceContains:**/*.js",
     "workspaceContains:**/*.mjs"
-  ]
+  ],
+  "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "RSLint",
+      "properties": {
+        "vscode-rslint.incorrectFileAutofixes": {
+          "scope": "resource",
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to offer autofix actions even if the file contains syntax errors, may sometimes cause incorrect fixes"
+        }
+      }
+    }
+  }
 }
