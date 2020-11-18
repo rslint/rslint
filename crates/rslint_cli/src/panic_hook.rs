@@ -3,7 +3,7 @@
 use std::io::{self, Write};
 use std::panic::PanicInfo;
 
-pub fn panic_hook(info: &PanicInfo) {
+pub fn panic_hook(info: &PanicInfo<'_>) {
     let stderr = io::stderr();
 
     let mut stderr_lock = stderr.lock();

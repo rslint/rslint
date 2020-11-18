@@ -1,11 +1,8 @@
-//! CLI options
+//! Implementation of non-linting cli features.
 
-use crate::lint_err;
-use ansi_term::Color::{Green, White, RGB};
-use colored::Colorize;
+use colored::{Color, Colorize};
 use regex::{Captures, Regex};
-use rslint_core::{get_rule_docs, CstRuleStore};
-use rslint_lexer::{ansi_term, color};
+use rslint_core::{get_rule_docs, lexer::color, CstRuleStore};
 use std::collections::HashSet;
 
 /// A structure for converting user facing markdown docs to ANSI colored terminal explanations.
@@ -25,7 +22,7 @@ impl ExplanationRunner {
             .filter_map(|rule| {
                 let res = get_rule_docs(&rule).map(|x| x.to_string());
                 if res.is_none() {
-                    lint_err!("Invalid rule: {}", rule);
+                    crate::lint_err!("Invalid rule: {}", rule);
                 }
                 res
             })
@@ -38,8 +35,9 @@ impl ExplanationRunner {
         let regex = Regex::new("#+ (.*)").unwrap();
         for rule in self.rules.iter_mut() {
             *rule = regex
-                .replace_all(rule, |cap: &Captures| {
-                    White.bold().paint(cap.get(1).unwrap().as_str()).to_string()
+                .replace_all(rule, |cap: &Captures<'_>| {
+                    let s = cap.get(1).unwrap().as_str();
+                    s.bold().white().to_string()
                 })
                 .to_string();
         }
@@ -49,7 +47,7 @@ impl ExplanationRunner {
         let regex = Regex::new("```js\n([\\s\\S]*?)\n```").unwrap();
         for rule in self.rules.iter_mut() {
             *rule = regex
-                .replace_all(rule, |cap: &Captures| {
+                .replace_all(rule, |cap: &Captures<'_>| {
                     format!("\n{}\n", color(cap.get(1).unwrap().as_str()))
                 })
                 .to_string();
@@ -71,13 +69,14 @@ impl ExplanationRunner {
         let regex = Regex::new("`(.+?)`").unwrap();
         for rule in self.rules.iter_mut() {
             *rule = regex
-                .replace_all(rule, |cap: &Captures| {
-                    let color = RGB(42, 42, 42);
-                    ansi_term::Style::new()
-                        .on(color)
-                        .fg(White)
-                        .paint(cap.get(1).unwrap().as_str())
-                        .to_string()
+                .replace_all(rule, |cap: &Captures<'_>| {
+                    let color = Color::TrueColor {
+                        r: 42,
+                        g: 42,
+                        b: 42,
+                    };
+                    let s = cap.get(1).unwrap().as_str();
+                    s.on_color(color).white().to_string()
                 })
                 .to_string();
         }
@@ -87,7 +86,7 @@ impl ExplanationRunner {
         for (docs, name) in self.rules.iter_mut().zip(self.rule_names.iter()) {
             let group = rslint_core::get_rule_by_name(&name).unwrap().group();
             let link = format!("https://rslint.org/rules/{}/{}.html", group, name);
-            docs.push_str(&format!("{}: {}\n", Green.paint("Docs").to_string(), link));
+            docs.push_str(&format!("{}: {}\n", "Docs".green(), link));
         }
     }
 

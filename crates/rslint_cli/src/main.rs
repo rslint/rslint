@@ -3,11 +3,9 @@ use structopt::{clap::arg_enum, StructOpt};
 
 const DEV_FLAGS_HELP: &str = "
 Developer flags that are used by RSLint developers to debug RSLint.
-
     -Z help     -- Shows this message
     -Z tokenize -- Tokenizes the input files and dumps the tokens
     -Z dumpast  -- Parses the input files and prints the parsed AST
-
 Run with 'rslint -Z <FLAG> <FILES>'.";
 
 #[derive(Debug, StructOpt)]
@@ -33,9 +31,6 @@ pub(crate) struct Options {
     /// Disables the global config that is located in your global config directory.
     #[structopt(long)]
     no_global_config: bool,
-    /// Maximum number of threads that will be spawned by RSLint. (default: number of cpu cores)
-    #[structopt(long)]
-    max_threads: Option<usize>,
     /// The error formatter to use, either "short" or "long" (default)
     #[structopt(short = "F", long)]
     formatter: Option<String>,
@@ -65,32 +60,30 @@ pub(crate) enum SubCommand {
 }
 
 fn main() {
+    smol::block_on(real_main())
+}
+
+async fn real_main() {
     #[cfg(not(debug_assertions))]
     std::panic::set_hook(Box::new(rslint_cli::panic_hook));
 
     let opt = Options::from_args();
 
-    let num_threads = opt.max_threads.unwrap_or_else(num_cpus::get);
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(num_threads)
-        .build_global()
-        .expect("failed to build thread pool");
-
     match (opt.dev_flag, opt.cmd) {
         (Some(DevFlag::Help), _) => println!("{}", DEV_FLAGS_HELP),
-        (Some(DevFlag::Tokenize), _) => rslint_cli::tokenize(opt.files),
-        (Some(DevFlag::DumpAst), _) => rslint_cli::dump_ast(opt.files),
-
+        (Some(DevFlag::Tokenize), _) => rslint_cli::tokenize(opt.files).await,
+        (Some(DevFlag::DumpAst), _) => rslint_cli::dump_ast(opt.files).await,
         (_, Some(SubCommand::Explain { rules })) => ExplanationRunner::new(rules).print(),
         (_, Some(SubCommand::Rules)) => rslint_cli::show_all_rules(),
-        (_, Some(SubCommand::Infer { files })) => rslint_cli::infer(files),
-        (_, None) => rslint_cli::run(
-            opt.files,
-            opt.verbose,
-            opt.fix,
-            opt.dirty,
-            opt.formatter,
-            opt.no_global_config,
-        ),
+        _ => todo!(),
+        //(_, Some(SubCommand::Infer { files })) => rslint_cli::infer(files),
+        //(_, None) => rslint_cli::run(
+        //opt.files,
+        //opt.verbose,
+        //opt.fix,
+        //opt.dirty,
+        //opt.formatter,
+        //opt.no_global_config,
+        //),
     }
 }

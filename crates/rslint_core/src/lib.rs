@@ -36,6 +36,10 @@ pub mod groups;
 pub mod rule_prelude;
 pub mod util;
 
+pub use rslint_errors as errors;
+pub use rslint_lexer as lexer;
+pub use rslint_parser as parser;
+
 pub use self::{
     rule::{CstRule, Inferable, Outcome, Rule, RuleCtx, RuleLevel, RuleResult},
     store::CstRuleStore,

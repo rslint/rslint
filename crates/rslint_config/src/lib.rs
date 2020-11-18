@@ -1,17 +1,12 @@
 //! Configuration file support.
 
 mod de;
+use async_fs::read_to_string;
 use dirs_next::config_dir;
 use rslint_core::{get_group_rules_by_name, CstRule, CstRuleStore, Diagnostic, RuleLevel};
 use rslint_errors::file::{Files, SimpleFile};
 use serde::{Deserialize, Serialize};
-use std::{
-    cell::RefCell,
-    env,
-    fs::read_to_string,
-    path::PathBuf,
-    thread::{self, JoinHandle},
-};
+use std::{cell::RefCell, env, path::PathBuf};
 
 /// The name of the config file to search for.
 pub const CONFIG_NAME: &str = "rslintrc.toml";
@@ -76,41 +71,44 @@ impl Config {
     ///
     /// The config or an `Err` if the toml inside the config is invalid.
     /// The `Diagnostic` can be emitted by using the `SimpleFile` as a file database.
-    pub fn new_threaded(
+    pub async fn new_threaded(
         no_global_config: bool,
         emit_diagnostic: fn(SimpleFile, Diagnostic),
-    ) -> JoinHandle<Self> {
-        thread::spawn(move || {
-            let path = Self::find_config(no_global_config);
-            let (source, path) = match path.as_ref().and_then(|path| read_to_string(path).ok()) {
-                Some(source) => (source, path.unwrap()),
-                None => return Default::default(),
-            };
+    ) -> Self {
+        let path = Self::find_config(no_global_config);
 
-            match toml::from_str::<ConfigRepr>(&source) {
-                Ok(repr) => Self {
-                    repr,
-                    warnings: Default::default(),
-                },
-
-                Err(err) => {
-                    let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
-                    let d = if let Some(idx) = err
-                        .line_col()
-                        .and_then(|(line, col)| Some(config_file.line_range(0, line)?.start + col))
-                    {
-                        let pos_regex = regex::Regex::new(" at line \\d+ column \\d+$").unwrap();
-                        let msg = err.to_string();
-                        let msg = pos_regex.replace(&msg, "");
-                        Diagnostic::error(1, "config", msg).primary(idx..idx, "")
-                    } else {
-                        Diagnostic::error(1, "config", err.to_string())
-                    };
-                    emit_diagnostic(config_file, d);
-                    Default::default()
-                }
+        let (source, path) = if let Some(path) = path.as_ref() {
+            match read_to_string(path).await {
+                Ok(c) => (c, path),
+                Err(_) => return Self::default(),
             }
-        })
+        } else {
+            return Self::default();
+        };
+
+        match toml::from_str::<ConfigRepr>(&source) {
+            Ok(repr) => Self {
+                repr,
+                warnings: Default::default(),
+            },
+
+            Err(err) => {
+                let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
+                let d = if let Some(idx) = err
+                    .line_col()
+                    .and_then(|(line, col)| Some(config_file.line_range(0, line)?.start + col))
+                {
+                    let pos_regex = regex::Regex::new(" at line \\d+ column \\d+$").unwrap();
+                    let msg = err.to_string();
+                    let msg = pos_regex.replace(&msg, "");
+                    Diagnostic::error(1, "config", msg).primary(idx..idx, "")
+                } else {
+                    Diagnostic::error(1, "config", err.to_string())
+                };
+                emit_diagnostic(config_file, d);
+                Default::default()
+            }
+        }
     }
 
     fn find_config(global_config: bool) -> Option<PathBuf> {
