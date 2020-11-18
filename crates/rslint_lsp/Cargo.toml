@@ -37,5 +37,5 @@ thiserror = "1.0"
 tokio = { version = "0.2", features = ["io-std", "macros"] }
 tower-lsp = "=0.13.3"
 serde = { version = "1.0.117", features = ["derive"] }
-taplo = { version = "0.3.1", features = ["schema"], path = "../../../taplo/taplo" }
+taplo = { version = "0.4", features = ["schema"] }
 schemars = "0.8.0"

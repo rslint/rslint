@@ -1968,7 +1968,9 @@ dependencies = [
 
 [[package]]
 name = "taplo"
-version = "0.3.1"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8b99bfa4e7f09aa8276f0166ee950931699edd07fc6f34fa3ef2b7fa07fb22e"
 dependencies = [
  "glob",
  "indexmap",
