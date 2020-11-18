@@ -272,3 +272,29 @@ pub fn line_starts(source: &str) -> impl '_ + Iterator<Item = usize> {
             .map(|(i, _)| i + 1),
     )
 }
+
+pub fn empty_files() -> impl Files {
+    struct EmptyFiles;
+
+    impl Files for EmptyFiles {
+        fn name(&self, _id: FileId) -> Option<&str> {
+            None
+        }
+
+        fn source(&self, _id: FileId) -> Option<&str> {
+            None
+        }
+
+        fn line_index(&self, _file_id: FileId, _byte_index: usize) -> Option<usize> {
+            None
+        }
+
+        fn line_range(&self, _id: FileId, _line_index: usize) -> Option<Range<usize>> {
+            None
+        }
+    }
+
+    const EMPTY_FILES: EmptyFiles = EmptyFiles;
+
+    EMPTY_FILES
+}

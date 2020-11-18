@@ -1,4 +1,4 @@
-use crate::{lint_file_inner, LintResult, RuleResult};
+use crate::{lint_file_inner, CstRuleStore, LintResult, RuleResult};
 use rslint_parser::*;
 use rslint_text_edit::{apply_indels, Indel};
 use std::collections::HashMap;
@@ -30,7 +30,7 @@ fn get_runnable_indels(mut tagged: Vec<TaggedIndel>) -> Vec<TaggedIndel> {
         .collect()
 }
 
-pub fn recursively_apply_fixes(result: &mut LintResult) -> String {
+pub fn recursively_apply_fixes(result: &mut LintResult, store: &CstRuleStore) -> String {
     let script = result.parsed.kind() == SyntaxKind::SCRIPT;
     let mut parsed = result.parsed.clone();
     let file_id = result.file_id;
@@ -59,18 +59,8 @@ pub fn recursively_apply_fixes(result: &mut LintResult) -> String {
         };
 
         // TODO: should we panic on Err? autofix causing the linter to fail should always be incorrect
-        let res = lint_file_inner(
-            parsed.clone(),
-            vec![],
-            file_id,
-            result.store,
-            result.verbose,
-        );
-        if let Ok(res) = res {
-            cur_results = res.rule_results;
-        } else {
-            continue;
-        }
+        let res = lint_file_inner(parsed.clone(), vec![], file_id, store, result.verbose);
+        cur_results = res.rule_results;
     }
     result.rule_results = cur_results;
     parsed.text().to_string()

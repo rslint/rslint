@@ -75,15 +75,17 @@ async fn real_main() {
         (Some(DevFlag::DumpAst), _) => rslint_cli::dump_ast(opt.files).await,
         (_, Some(SubCommand::Explain { rules })) => ExplanationRunner::new(rules).print(),
         (_, Some(SubCommand::Rules)) => rslint_cli::show_all_rules(),
-        _ => todo!(),
-        //(_, Some(SubCommand::Infer { files })) => rslint_cli::infer(files),
-        //(_, None) => rslint_cli::run(
-        //opt.files,
-        //opt.verbose,
-        //opt.fix,
-        //opt.dirty,
-        //opt.formatter,
-        //opt.no_global_config,
-        //),
+        (_, Some(SubCommand::Infer { files })) => rslint_cli::infer(files).await,
+        (_, None) => {
+            rslint_cli::run(
+                opt.files,
+                opt.verbose,
+                opt.fix,
+                opt.dirty,
+                opt.formatter,
+                opt.no_global_config,
+            )
+            .await
+        }
     }
 }

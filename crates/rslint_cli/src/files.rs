@@ -22,7 +22,7 @@ const LINTED_FILES: [&str; 2] = ["js", "mjs"];
 /// and loading files.
 // TODO: io_uring on linux
 pub struct FileWalker {
-    files: HashMap<usize, JsFile>,
+    pub files: HashMap<usize, JsFile>,
 }
 
 impl FileWalker {
@@ -30,6 +30,14 @@ impl FileWalker {
         Self {
             files: HashMap::new(),
         }
+    }
+
+    pub fn new(files: HashMap<usize, JsFile>) -> Self {
+        Self { files }
+    }
+
+    pub fn into_files(self) -> impl Iterator<Item = JsFile> {
+        self.files.into_iter().map(|(_, v)| v)
     }
 
     pub fn files_stream<'glob>(globs: &'glob [String]) -> impl Stream<Item = JsFile> + 'glob {
@@ -70,8 +78,8 @@ impl FileWalker {
             .await;
     }
 
-    pub async fn from_globs(globs: &[String]) -> Self {
-        let files: HashMap<usize, JsFile> = Self::files_stream(globs)
+    pub async fn from_globs(globs: Vec<String>) -> Self {
+        let files: HashMap<usize, JsFile> = Self::files_stream(&globs)
             .map(|file| (file.id, file))
             .collect()
             .await;

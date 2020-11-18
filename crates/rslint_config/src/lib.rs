@@ -71,10 +71,7 @@ impl Config {
     ///
     /// The config or an `Err` if the toml inside the config is invalid.
     /// The `Diagnostic` can be emitted by using the `SimpleFile` as a file database.
-    pub async fn new_threaded(
-        no_global_config: bool,
-        emit_diagnostic: fn(SimpleFile, Diagnostic),
-    ) -> Self {
+    pub async fn new(no_global_config: bool, emit_diagnostic: fn(SimpleFile, Diagnostic)) -> Self {
         let path = Self::find_config(no_global_config);
 
         let (source, path) = if let Some(path) = path.as_ref() {

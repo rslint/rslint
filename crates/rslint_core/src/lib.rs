@@ -60,11 +60,9 @@ use std::sync::Arc;
 /// The result of linting a file.
 // TODO: A lot of this stuff can be shoved behind a "linter options" struct
 #[derive(Debug, Clone)]
-pub struct LintResult<'s> {
+pub struct LintResult {
     /// Any diagnostics (errors, warnings, etc) emitted from the parser
     pub parser_diagnostics: Vec<Diagnostic>,
-    /// The store used for the lint run
-    pub store: &'s CstRuleStore,
     /// The diagnostics emitted by each rule run
     pub rule_results: HashMap<&'static str, RuleResult>,
     /// Any warnings or errors emitted by the directive parser
@@ -75,7 +73,7 @@ pub struct LintResult<'s> {
     pub fixed_code: Option<String>,
 }
 
-impl LintResult<'_> {
+impl LintResult {
     /// Get all of the diagnostics thrown during linting, in the order of parser diagnostics, then
     /// the diagnostics of each rule sequentially.
     pub fn diagnostics(&self) -> impl Iterator<Item = &Diagnostic> {
@@ -98,7 +96,7 @@ impl LintResult<'_> {
     /// Attempt to automatically fix any fixable issues and return the fixed code.
     ///
     /// This will not run if there are syntax errors unless `dirty` is set to true.
-    pub fn fix(&mut self, dirty: bool) -> Option<String> {
+    pub fn fix(&mut self, store: &CstRuleStore, dirty: bool) -> Option<String> {
         if self
             .parser_diagnostics
             .iter()
@@ -107,7 +105,7 @@ impl LintResult<'_> {
         {
             None
         } else {
-            Some(autofix::recursively_apply_fixes(self))
+            Some(autofix::recursively_apply_fixes(self, store))
         }
     }
 }
@@ -119,7 +117,7 @@ pub fn lint_file(
     module: bool,
     store: &CstRuleStore,
     verbose: bool,
-) -> Result<LintResult, Diagnostic> {
+) -> LintResult {
     let (parser_diagnostics, green) = if module {
         let parse = parse_module(file_source.as_ref(), file_id);
         (parse.errors().to_owned(), parse.green())
@@ -143,7 +141,7 @@ pub(crate) fn lint_file_inner(
     file_id: usize,
     store: &CstRuleStore,
     verbose: bool,
-) -> Result<LintResult, Diagnostic> {
+) -> LintResult {
     let mut new_store = store.clone();
     let directives::DirectiveResult {
         directives,
@@ -176,16 +174,15 @@ pub(crate) fn lint_file_inner(
         })
         .collect();
 
-    Ok(LintResult {
+    LintResult {
         parser_diagnostics,
-        store,
         rule_results: results,
         directive_diagnostics,
         parsed: node,
         file_id,
         verbose,
         fixed_code: None,
-    })
+    }
 }
 
 /// Run a single run on an entire parsed file.

@@ -1462,9 +1462,11 @@ dependencies = [
  "colored",
  "glob",
  "regex",
+ "rslint_config",
  "rslint_core",
  "smol",
  "structopt",
+ "toml",
 ]
 
 [[package]]
