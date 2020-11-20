@@ -230,9 +230,10 @@ impl std::fmt::Display for Stmt {
 }
 
 impl VarDecl {
+    // TODO: switch this to a contextual keyword once the typescript pr lands
     pub fn let_token(&self) -> Option<SyntaxToken> {
         self.syntax()
-            .first_token()
+            .first_lossy_token()
             .filter(|t| t.kind() == T![ident] && t.text() == "let")
     }
 
@@ -383,5 +384,21 @@ impl AstNode for ModuleItem {
             ModuleItem::ExportDecl(it) => &it.syntax,
             ModuleItem::Stmt(it) => &it.syntax(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn var_decl_let_token() {
+        let parsed = parse_text("/* */let a = 5;", 0).syntax();
+
+        assert!(parsed
+            .child_with_ast::<ast::VarDecl>()
+            .unwrap()
+            .let_token()
+            .is_some());
     }
 }

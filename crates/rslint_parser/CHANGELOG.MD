@@ -21,6 +21,8 @@ catch(){
 finally{}
 ```
 
+- Fixed `let_token` in VarDecl not working when there is trivia attached to it
+
 ### Changed
 
 - Made "redundant strict mode declaration" have a primary label instead of a single secondary label
