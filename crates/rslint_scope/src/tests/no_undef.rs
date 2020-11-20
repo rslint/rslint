@@ -94,6 +94,33 @@ rule_test! {
         "}",
         module: true,
     },
+    {
+        "export function test() {",
+        "   let thingy = {};",
+        "   Object.entries(thingy).forEach(([x, y] => {",
+        "      x += 1;",
+        "      y += 1;",
+        "   });",
+        "}",
+    },
+    {
+        "const bareKeyRe = /^[a-zA-Z_][a-zA-Z_0-9]*$/;",
+        "const INSPECTORS = {",
+        "    Something: (x) => {},",
+        "    Object: (obj) => {",
+        "        try {",
+        "            let cache = [];",
+        "            for (const key of obj) {",
+        "                if (true) {",
+        "                    cache.push(",
+        "                        bareKeyRe.test(key.stringValue()) ? key.stringValue() : i(key)",
+        "                    );",
+        "                }",
+        "            }",
+        "        } catch { }",
+        "    },",
+        "};",
+    },
 
     // Should fail
     { "a = 1;", errors: [DatalogLint::no_undef("a", 0..1)] },
@@ -113,4 +140,11 @@ rule_test! {
     { "function b() { var a; } a;", errors: [DatalogLint::no_undef("a", 24..25)] },
     { "function b(a) {} a;", errors: [DatalogLint::no_undef("a", 17..18)] },
     { "a; function b(a) {}", errors: [DatalogLint::no_undef("a", 0..1)] },
+}
+
+rule_test! {
+    no_undef_typed_array_constructor,
+    "corpus/TypedArrayConstructor.mjs",
+    module: true,
+    config: |_| Config::default(),
 }

@@ -16,7 +16,7 @@ use types::{
         ArrayElement, ClassElement as DatalogClassElement, ExprId, FuncParam,
         Pattern as DatalogPattern, PropertyKey, PropertyVal,
     },
-    ddlog_std::Either,
+    ddlog_std::{tuple2, Either},
     internment::Intern,
     IMPLICIT_ARGUMENTS,
 };
@@ -105,13 +105,18 @@ impl<'ddlog> Visit<'ddlog, ArrowExpr> for AnalyzerInner {
     type Output = ExprId;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, arrow: ArrowExpr) -> Self::Output {
-        let body = arrow.body().map(|body| match body {
-            ExprOrBlock::Expr(expr) => Either::Left {
-                l: self.visit(scope, expr),
-            },
-            ExprOrBlock::Block(block) => Either::Right {
-                r: self.visit(scope, block),
-            },
+        let body = arrow.body().map(|body| {
+            let scope = scope.scope();
+            let body = match body {
+                ExprOrBlock::Expr(expr) => Either::Left {
+                    l: self.visit(&scope, expr),
+                },
+                ExprOrBlock::Block(block) => Either::Right {
+                    r: self.visit(&scope, block),
+                },
+            };
+
+            tuple2(body, scope.scope_id())
         });
 
         let params = arrow

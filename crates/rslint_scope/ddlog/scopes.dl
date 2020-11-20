@@ -83,8 +83,7 @@ FunctionLevelScope(scope, scope, file, AnyIdExpr { expr }) :-
 
 // Arrow functions
 FunctionLevelScope(scope, scope, file, AnyIdExpr { expr }) :-
-    Arrow(expr, file, Some { Right { body }}),
-    Statement(body, file, _, scope, _).
+    Arrow(expr, file, Some { (_, scope) }).
 
 // FIXME: This still causes duplication because `parent` isn't included in
 //        the aggregate, but I can't be fucked right now

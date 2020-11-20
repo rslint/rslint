@@ -14,6 +14,7 @@ fn tokenize(source: &str) {
     Lexer::from_str(source, 0).for_each(drop);
 }
 
+<<<<<<< HEAD
 fn lint(file: &File) {
     let _ = rslint_core::lint_file(file, &CstRuleStore::new().builtins(), false);
 }
@@ -25,6 +26,32 @@ fn bench_source(c: &mut Criterion, file: &File) {
     group.bench_function("tokenize", |b| b.iter(|| tokenize(black_box(&file.source))));
     group.bench_function("parse", |b| b.iter(|| parse(black_box(&file.source))));
     group.bench_function("lint", |b| b.iter(|| lint(black_box(file))));
+=======
+fn lint(analyzer: ScopeAnalyzer, source: &str) {
+    let _ = rslint_core::lint_file(
+        0,
+        source,
+        false,
+        &CstRuleStore::new().builtins(),
+        false,
+        analyzer,
+    );
+}
+
+fn bench_source(c: &mut Criterion, name: &str, source: &str) {
+    let analyzer = ScopeAnalyzer::new().unwrap();
+
+    let mut group = c.benchmark_group(name);
+    group
+        .sample_size(10)
+        .throughput(Throughput::Bytes(source.len() as u64))
+        .bench_function("tokenize", |b| b.iter(|| tokenize(black_box(&source))))
+        .bench_function("parse", |b| b.iter(|| parse(black_box(&source))))
+        .bench_function("lint", |b| {
+            b.iter(|| lint(analyzer.clone(), black_box(&source)))
+        });
+
+>>>>>>> c867fc5... Actual rule integration
     group.finish();
 }
 

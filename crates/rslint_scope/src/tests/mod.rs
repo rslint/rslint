@@ -54,6 +54,53 @@ macro_rules! rule_test {
             analyzer.report_outcome();
         }
     };
+
+    (
+        $rule_name:ident,
+        $code:literal
+        $(, filter: $filter:expr)?
+        $(, globals: [$($global:literal),* $(,)?])?
+        $(, browser: $browser:literal)?
+        $(, node: $node:literal)?
+        $(, ecma: $ecma:literal)?
+        $(, module: $module:literal)?
+        $(, es2021: $es2021:literal)?
+        $(, errors: [$($error:expr),* $(,)?])?
+        $(, config: $config:expr)?
+        $(,)?
+    ) => {
+        #[test]
+        #[allow(unused_imports, clippy::needless_update, clippy::redundant_closure_call)]
+        fn $rule_name() {
+            use crate::{
+                tests::DatalogTestHarness,
+                datalog::DatalogLint::{self, *},
+            };
+            use types::{
+                ast::Span,
+                config::{Config, NoShadowHoisting::{self, *}},
+            };
+            use std::borrow::Cow;
+            use rayon::iter::{ParallelIterator, IntoParallelIterator};
+
+            let analyzer = DatalogTestHarness::new()
+                $(.with_filter($filter as fn(&DatalogLint) -> bool))?;
+
+            analyzer
+                .test(include_str!($code), stringify!($rule_name))
+                $(.with_globals(vec![$(Cow::Borrowed($global)),*]))?
+                $(.with_browser($browser))?
+                $(.with_node($node))?
+                $(.with_ecma($ecma))?
+                $(.is_module($module))?
+                $(.with_es2021($es2021))?
+                $(.with_errors(vec![$($error),*]))?
+                .with_config($(($config as fn(Config) -> Config))?(Config::empty()))
+                .run();
+
+            analyzer.report_outcome();
+        }
+    };
 }
 
 mod no_shadow;
@@ -316,12 +363,14 @@ impl<'a> TestCase<'a> {
                 &mut file,
                 "============ FAILURE ============\n\n\
                 => Source:\n{}\n\n\
+                => AST:\n{:#?}\n\n\
                 => Expected:\n{:#?}\n\n\
                 => Got:\n{:#?}\n\n\
                 => Inputs:\n{}\n\n\
                 => Outputs:\n{:#?}\n\n\
                 ============ END FAILURE ============\n\n",
                 ast.text(),
+                &ast,
                 self.errors,
                 self.harness.datalog.get_lints(file_id).unwrap(),
                 self.harness

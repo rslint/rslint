@@ -9,13 +9,13 @@ use differential_datalog::{
     ddval::{DDValConvert, DDValue},
     program::{IdxId, RelId, Update},
     record::Record,
-    DDlog,
+    DDlog, DeltaMap,
 };
 use rslint_scoping_ddlog::{api::HDDlog, Indexes, Relations, INPUT_RELIDMAP};
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeSet,
-    sync::Mutex,
+    sync::{Mutex, MutexGuard},
 };
 use types::{
     ast::{
@@ -29,7 +29,7 @@ use types::{
 };
 
 // TODO: Make this runtime configurable
-const DATALOG_WORKERS: usize = 2;
+const DATALOG_WORKERS: usize = 6;
 
 // TODO: Work on the internment situation, I don't like
 //       having to allocate strings for idents
@@ -85,17 +85,6 @@ impl Datalog {
         })
     }
 
-    // FIXME: Make this only apply to a single file or remove it
-    pub fn clear_globals(&self) -> DatalogResult<()> {
-        let _transaction_guard = self.transaction_lock.lock().unwrap();
-
-        self.hddlog.transaction_start()?;
-        self.hddlog
-            .clear_relation(Relations::inputs_ImplicitGlobal as RelId)?;
-
-        self.hddlog.transaction_commit()
-    }
-
     pub fn dump_inputs(&self) -> DatalogResult<String> {
         let mut inputs = Vec::new();
         self.hddlog.dump_input_snapshot(&mut inputs).unwrap();
@@ -116,17 +105,28 @@ impl Datalog {
         let result = transaction(&mut trans)?;
 
         let delta = {
-            let _transaction_guard = self.transaction_lock.lock().unwrap();
-
-            self.hddlog.transaction_start()?;
+            let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
             self.hddlog
                 .apply_valupdates(inner.updates.borrow_mut().drain(..))?;
 
-            self.hddlog.transaction_commit_dump_changes()?
+            guard.commit_dump_changes()?
         };
         self.outputs.batch_update(delta);
 
         Ok(result)
+    }
+
+    pub fn get_expr(&self, expr: ExprId, file: FileId) -> Option<Expression> {
+        let query = self.query(
+            Indexes::inputs_ExpressionById,
+            Some(tuple2(expr, file).into_ddvalue()),
+        );
+
+        query
+            .ok()
+            // TODO: Log error if there's more than one value
+            .and_then(|query| query.into_iter().next())
+            .map(|expr| unsafe { Expression::from_ddvalue(expr) })
     }
 
     pub(crate) fn query(
@@ -139,6 +139,53 @@ impl Datalog {
         } else {
             self.hddlog.dump_index(index as IdxId)
         }
+    }
+
+    pub fn purge_file(&self, file: FileId) -> DatalogResult<()> {
+        fn delete_all(
+            values: BTreeSet<DDValue>,
+            relation: Relations,
+        ) -> impl Iterator<Item = Update<DDValue>> {
+            values.into_iter().map(move |value| Update::DeleteValue {
+                relid: relation as RelId,
+                v: value,
+            })
+        }
+
+        let files = self.query(Indexes::inputs_FileById, Some(file.into_ddvalue()))?;
+        let input_scopes =
+            self.query(Indexes::inputs_InputScopeByFile, Some(file.into_ddvalue()))?;
+        let every_scope =
+            self.query(Indexes::inputs_EveryScopeByFile, Some(file.into_ddvalue()))?;
+        let implicit_globals = self.query(
+            Indexes::inputs_ImplicitGlobalByFile,
+            Some(file.into_ddvalue()),
+        )?;
+        let statements = self.query(Indexes::inputs_StatementByFile, Some(file.into_ddvalue()))?;
+        let expressions =
+            self.query(Indexes::inputs_ExpressionByFile, Some(file.into_ddvalue()))?;
+
+        // TODO: More though deletion of all sub-relations, this should get rid of
+        //       a decently large amount of data though
+        let updates = delete_all(files, Relations::inputs_File)
+            .chain(delete_all(input_scopes, Relations::inputs_InputScope))
+            .chain(delete_all(every_scope, Relations::inputs_EveryScope))
+            .chain(delete_all(
+                implicit_globals,
+                Relations::inputs_ImplicitGlobal,
+            ))
+            .chain(delete_all(statements, Relations::inputs_Statement))
+            .chain(delete_all(expressions, Relations::inputs_Expression));
+
+        let delta = {
+            let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
+            self.hddlog.apply_valupdates(updates)?;
+
+            guard.commit_dump_changes()?
+        };
+        self.outputs.batch_update(delta);
+
+        Ok(())
     }
 
     pub fn get_lints(&self, file: FileId) -> DatalogResult<Vec<DatalogLint>> {
@@ -156,7 +203,7 @@ impl Datalog {
             }
         }));
 
-        lints.extend(self.outputs().unused_variables.iter().filter_map(|unused| {
+        lints.extend(self.outputs().no_unused_vars.iter().filter_map(|unused| {
             if unused.key().file == file {
                 Some(DatalogLint::NoUnusedVars {
                     var: unused.key().name.clone(),
@@ -168,7 +215,7 @@ impl Datalog {
             }
         }));
 
-        lints.extend(self.outputs().typeof_undef.iter().filter_map(|undef| {
+        lints.extend(self.outputs().no_typeof_undef.iter().filter_map(|undef| {
             if undef.key().file != file {
                 return None;
             }
@@ -498,6 +545,42 @@ fn dump_delta(delta: &differential_datalog::DeltaMap<DDValue>) {
 
         if !changes.is_empty() {
             println!();
+        }
+    }
+}
+
+struct TransactionGuard<'a> {
+    committed: bool,
+    hddlog: &'a HDDlog,
+    _lock: MutexGuard<'a, ()>,
+}
+
+impl<'a> TransactionGuard<'a> {
+    pub fn new(hddlog: &'a HDDlog, lock: &'a Mutex<()>) -> DatalogResult<Self> {
+        let this = Self {
+            committed: false,
+            hddlog,
+            _lock: lock.lock().expect("failed to lock transaction"),
+        };
+        this.hddlog.transaction_start()?;
+
+        Ok(this)
+    }
+
+    pub fn commit_dump_changes(mut self) -> DatalogResult<DeltaMap<DDValue>> {
+        let delta = self.hddlog.transaction_commit_dump_changes()?;
+        self.committed = true;
+
+        Ok(delta)
+    }
+}
+
+impl Drop for TransactionGuard<'_> {
+    fn drop(&mut self) {
+        if !self.committed {
+            if let Err(err) = self.hddlog.transaction_rollback() {
+                eprintln!("failed to rollback transaction: {}", err);
+            }
         }
     }
 }

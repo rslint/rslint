@@ -10,7 +10,7 @@ use types::{
         Name, Pattern, PropertyKey, PropertyVal, ScopeId, Spanned, StmtId, StmtKind, SwitchClause,
         TryHandler, UnaryOperand,
     },
-    ddlog_std::Either,
+    ddlog_std::{tuple2, Either},
     inputs::{
         Array, Arrow, ArrowParam, Assign, Await, BinOp, BracketAccess, Break, Call, Class,
         ClassExpr, ConstDecl, Continue, DoWhile, DotAccess, EveryScope, ExprBigInt, ExprBool,
@@ -934,7 +934,7 @@ pub trait DatalogBuilder<'ddlog> {
 
     fn arrow(
         &self,
-        body: Option<Either<ExprId, StmtId>>,
+        body: Option<tuple2<Either<ExprId, StmtId>, ScopeId>>,
         params: Vec<IPattern>,
         span: TextRange,
     ) -> ExprId {

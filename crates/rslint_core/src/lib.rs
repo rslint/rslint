@@ -40,27 +40,27 @@ pub mod groups;
 pub mod rule_prelude;
 pub mod util;
 
-pub use self::{
+pub use crate::{
+    directives::{
+        apply_top_level_directives, skip_node, Directive, DirectiveError, DirectiveErrorKind,
+        DirectiveParser,
+    },
     file::File,
     rule::{CstRule, Inferable, Outcome, Rule, RuleCtx, RuleLevel, RuleResult},
     store::CstRuleStore,
 };
 pub use rslint_errors::{Diagnostic, Severity, Span};
-
-pub use crate::directives::{
-    apply_top_level_directives, skip_node, Directive, DirectiveError, DirectiveErrorKind,
-    DirectiveParser,
-};
+pub use rslint_scope::ScopeAnalyzer;
 
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
 use rslint_scope::{
     globals::{BUILTIN, ES2021, NODE},
-    FileId, ScopeAnalyzer,
+    FileId, NoShadowHoisting,
 };
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc, thread};
+use tracing::*;
 
 /// The result of linting a file.
 // TODO: A lot of this stuff can be shoved behind a "linter options" struct
@@ -122,8 +122,8 @@ pub fn lint_file<'a>(
     file: &File,
     store: &'a CstRuleStore,
     verbose: bool,
-    analyzer: &ScopeAnalyzer,
-) -> Result<LintResult, Diagnostic> {
+    analyzer: ScopeAnalyzer,
+) -> Result<LintResult<'a>, Diagnostic> {
     let (parser_diagnostics, green) = {
         let span = tracing::info_span!("parsing file");
         let _guard = span.enter();
@@ -142,10 +142,35 @@ pub fn lint_file<'a>(
     analyzer.inject_globals(file, ES2021).unwrap();
     analyzer.inject_globals(file, NODE).unwrap();
     analyzer
-        .analyze(file, &node, rslint_scope::Config::default())
+        .analyze(
+            file,
+            &node,
+            rslint_scope::Config {
+                no_shadow: store.contains("no-shadow"),
+                no_shadow_hoisting: NoShadowHoisting::Always,
+                no_undef: store.contains("no-undef"),
+                no_unused_labels: store.contains("no-unused-labels"),
+                no_typeof_undef: store.contains("no-typeof-undef"),
+                no_unused_vars: store.contains("no-unused-vars"),
+                no_use_before_def: store.contains("no-use-before-def"),
+            },
+        )
         .unwrap();
 
-    lint_file_inner(node, parser_diagnostics, file_id, store, verbose)
+    let res = lint_file_inner(
+        node,
+        parser_diagnostics,
+        file_id,
+        store,
+        verbose,
+        Some(analyzer.clone()),
+    );
+
+    thread::spawn(move || {
+        let _ = analyzer.purge_file(file);
+    });
+
+    res
 }
 
 /// used by lint_file and incrementally_relint to not duplicate code
@@ -155,6 +180,7 @@ pub(crate) fn lint_file_inner<'s>(
     file: &File,
     store: &'s CstRuleStore,
     verbose: bool,
+    analyzer: Option<ScopeAnalyzer>,
 ) -> Result<LintResult<'s>, Diagnostic> {
     let mut new_store = store.clone();
     let directives::DirectiveResult {
@@ -191,6 +217,7 @@ pub(crate) fn lint_file_inner<'s>(
                     verbose,
                     &directives,
                     src.clone(),
+                    analyzer.clone(),
                 ),
             )
         })
@@ -219,6 +246,7 @@ pub fn run_rule(
     verbose: bool,
     directives: &[Directive],
     src: Arc<str>,
+    analyzer: Option<ScopeAnalyzer>,
 ) -> RuleResult {
     let span = tracing::info_span!("run rule", rule = rule.name());
     let _gaurd = span.enter();
@@ -230,6 +258,7 @@ pub fn run_rule(
         diagnostics: vec![],
         fixer: None,
         src,
+        analyzer,
     };
 
     rule.check_root(&root, &mut ctx);

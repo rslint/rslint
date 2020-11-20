@@ -7,6 +7,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub no_shadow: bool,
     pub no_shadow_hoisting: NoShadowHoisting,
@@ -124,6 +125,7 @@ decl_record_mutator_struct!(
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub enum NoShadowHoisting {
     Never,
     Always,

@@ -3,7 +3,7 @@ members = ["crates/*", "xtask"]
 default-members = ["crates/rslint_cli"]
 
 [profile]
-release = { lto = "fat", codegen-units = 1 }
+release = { lto = "fat", codegen-units = 1, debug = 2 }
 bench = { lto = "fat", codegen-units = 1 }
 
 [profile.dev]

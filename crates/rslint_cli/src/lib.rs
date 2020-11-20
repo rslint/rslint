@@ -22,8 +22,8 @@ use rslint_core::{autofix::recursively_apply_fixes, File};
 use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
 #[allow(unused_imports)]
-use std::process;
-use std::{fs::write, path::PathBuf};
+use std::{fs::write, path::PathBuf, process};
+use tracing::*;
 
 #[allow(unused_must_use, unused_variables)]
 pub fn run(
@@ -67,15 +67,12 @@ fn run_inner(
 
     let span = tracing::info_span!("lint files");
     let analyzer = ScopeAnalyzer::new().unwrap();
-    // store.load_rule(Box::new(rslint_core::Scoper {
-    //     analyzer: analyzer.clone(),
-    // }));
 
     let guard = span.enter();
     let mut results = walker
         .files
         .par_values()
-        .map(|file| lint_file(file, &store, verbose, &analyzer))
+        .map(|file| lint_file(file, &store, verbose, analyzer.clone()))
         .filter_map(|res| {
             if let Err(diagnostic) = res {
                 emit_diagnostic(&diagnostic, &walker);

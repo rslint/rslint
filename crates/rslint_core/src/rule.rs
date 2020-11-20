@@ -8,6 +8,7 @@ use crate::Diagnostic;
 use dyn_clone::DynClone;
 use rslint_errors::Severity;
 use rslint_parser::{SyntaxNode, SyntaxNodeExt, SyntaxToken};
+use rslint_scope::ScopeAnalyzer;
 use rslint_text_edit::apply_indels;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
@@ -125,6 +126,7 @@ pub struct RuleCtx {
     pub diagnostics: Vec<Diagnostic>,
     pub fixer: Option<Fixer>,
     pub src: Arc<str>,
+    pub analyzer: Option<ScopeAnalyzer>,
 }
 
 impl RuleCtx {
@@ -153,6 +155,7 @@ impl RuleCtx {
             diagnostics: vec![],
             fixer: None,
             src: Arc::from(String::new()),
+            analyzer: None,
         }
     }
 }

@@ -182,10 +182,10 @@ impl InnerOutputs {
 }
 
 outputs! {
-    typeof_undef: TypeofUndef, outputs_typeof_undef_TypeofUndef,
+    no_typeof_undef: TypeofUndef, outputs_typeof_undef_TypeofUndef,
     no_undef: NoUndef, outputs_no_undef_NoUndef,
     use_before_def: UseBeforeDef, outputs_use_before_def_UseBeforeDef,
-    unused_variables: UnusedVariables, outputs_unused_vars_UnusedVariables,
+    no_unused_vars: UnusedVariables, outputs_unused_vars_UnusedVariables,
     no_shadow: NoShadow, outputs_no_shadow_NoShadow,
     no_unused_labels: NoUnusedLabels, outputs_no_unused_labels_NoUnusedLabels,
 }

@@ -8,7 +8,9 @@ input relation File(
     top_level_scope: ScopeId,
     config: Config,
 )
+
 primary key (f) (f.id)
+index FileById(file: FileId) on File(file, _, _, _)
 
 input relation FileExport(
     file: FileId,
@@ -23,10 +25,14 @@ input relation InputScope(
     child: ScopeId,
     file: FileId,
 )
+
 index InputScopeByParent(parent: ScopeId, file: FileId) on InputScope(parent, _, file)
 index InputScopeByChild(child: ScopeId, file: FileId) on InputScope(_, child, file)
+index InputScopeByFile(file: FileId) on InputScope(_, _, file)
 
 input relation EveryScope(scope: ScopeId, file: FileId)
+
+index EveryScopeByFile(file: FileId) on EveryScope(_, file)
 
 // Functions
 input relation Function(
@@ -37,6 +43,7 @@ input relation Function(
     body: ScopeId,
     exported: bool,
 )
+
 primary key (f) (f.id, f.file)
 
 input relation FunctionArg(
@@ -56,6 +63,7 @@ input relation Class(
     scope: ScopeId,
     exported: bool,
 )
+
 primary key (c) (c.id, c.file)
 
 // Imports
@@ -73,6 +81,8 @@ input relation ImplicitGlobal(
     privileges: GlobalPriv,
 )
 
+index ImplicitGlobalByFile(file: FileId) on ImplicitGlobal(_, file, _, _)
+
 // Statements
 input relation Statement(
     id: StmtId,
@@ -81,11 +91,11 @@ input relation Statement(
     scope: ScopeId,
     span: Span,
 )
+
 primary key (stmt) (stmt.id, stmt.file)
-
 index StatementById(id: StmtId, file: FileId) on Statement(id, file, _, _, _)
-
 index StatementBySpan(span: Span, file: FileId) on Statement(_, file, _, _, span)
+index StatementByFile(file: FileId) on Expression(_, file, _, _, _)
 
 input relation VarDecl(
     stmt_id: StmtId,
@@ -221,11 +231,11 @@ typedef Expression = Expression {
     span: Span,
 }
 input relation Expression[Expression]
+
 primary key (e) (e.id, e.file)
-
 index ExpressionById(id: ExprId, file: FileId) on Expression[Expression { .id = id, .file = file }]
-
 index ExpressionBySpan(span: Span, file: FileId) on Expression[Expression { .span = span, .file = file }]
+index ExpressionByFile(file: FileId) on Expression[Expression { .file = file }]
 
 input relation ExprNumber(
     expr_id: ExprId,
@@ -272,7 +282,7 @@ input relation Await(
 input relation Arrow(
     expr_id: ExprId,
     file: FileId,
-    body: Option<Either<ExprId, StmtId>>,
+    body: Option<(Either<ExprId, StmtId>, ScopeId)>,
 )
 
 // TODO: Inline this into Arrow?

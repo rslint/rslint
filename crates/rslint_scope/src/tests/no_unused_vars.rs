@@ -167,6 +167,17 @@ rule_test! {
         "};",
         "foo(obj);",
     },
+    {
+        "const keys = Q(object.OwnPropertyKeys());",
+        "// ii. for each key of keys in List order, do",
+        "for (const key of keys) {",
+        "    // 1. If Type(key) is String, then",
+        "    if (Type(key) === 'String') {",
+        "        // a. Append key to remaining.",
+        "        remaining.push(key);",
+        "    }",
+        "}",
+    },
 
     // Should fail
     { "f({ set foo(a) { return; } });", errors: [DatalogLint::no_unused_vars("a", 12..13)] },

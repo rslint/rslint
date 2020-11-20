@@ -187,19 +187,9 @@ NameInScope(file, name, body, Some { span }, AnyIdFunc { func }, implicit, true,
 // // Scope: { ... }
 // ```
 //
-// TODO: Can we address Expr/Stmt at the same time instead of seperate rules?
 NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, false, true, UserDefined { scope }) :-
     ArrowParam(expr, file, pat),
-    Arrow(expr, file, Some { Left { body }}),
-    Expression(body, file, _, scope, _),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound_var.
-
-NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, false, true, UserDefined { scope }) :-
-    ArrowParam(expr, file, pat),
-    Arrow(expr, file, Some { Right { body }}),
-    Statement(body, file, _, scope, _),
+    Arrow(expr, file, Some { (_, scope) }),
     // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
     var bound_var = FlatMap(pat.bound_vars()),
     Spanned { var name, var span } = bound_var.

@@ -64,12 +64,12 @@ impl ::std::fmt::Debug for Array {
 pub struct Arrow {
     pub expr_id: crate::ast::ExprId,
     pub file: crate::ast::FileId,
-    pub body: crate::ddlog_std::Option<crate::ddlog_std::Either<crate::ast::ExprId, crate::ast::StmtId>>
+    pub body: crate::ddlog_std::Option<crate::ddlog_std::tuple2<crate::ddlog_std::Either<crate::ast::ExprId, crate::ast::StmtId>, crate::ast::ScopeId>>
 }
 impl abomonation::Abomonation for Arrow{}
-::differential_datalog::decl_struct_from_record!(Arrow["inputs::Arrow"]<>, ["inputs::Arrow"][3]{[0]expr_id["expr_id"]: crate::ast::ExprId, [1]file["file"]: crate::ast::FileId, [2]body["body"]: crate::ddlog_std::Option<crate::ddlog_std::Either<crate::ast::ExprId, crate::ast::StmtId>>});
+::differential_datalog::decl_struct_from_record!(Arrow["inputs::Arrow"]<>, ["inputs::Arrow"][3]{[0]expr_id["expr_id"]: crate::ast::ExprId, [1]file["file"]: crate::ast::FileId, [2]body["body"]: crate::ddlog_std::Option<crate::ddlog_std::tuple2<crate::ddlog_std::Either<crate::ast::ExprId, crate::ast::StmtId>, crate::ast::ScopeId>>});
 ::differential_datalog::decl_struct_into_record!(Arrow, ["inputs::Arrow"]<>, expr_id, file, body);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Arrow, <>, expr_id: crate::ast::ExprId, file: crate::ast::FileId, body: crate::ddlog_std::Option<crate::ddlog_std::Either<crate::ast::ExprId, crate::ast::StmtId>>);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(Arrow, <>, expr_id: crate::ast::ExprId, file: crate::ast::FileId, body: crate::ddlog_std::Option<crate::ddlog_std::tuple2<crate::ddlog_std::Either<crate::ast::ExprId, crate::ast::StmtId>, crate::ast::ScopeId>>);
 impl ::std::fmt::Display for Arrow {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
