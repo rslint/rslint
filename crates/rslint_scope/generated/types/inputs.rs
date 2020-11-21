@@ -844,6 +844,45 @@ impl ::std::fmt::Debug for ForIn {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct ForOf {
+    pub stmt_id: crate::ast::StmtId,
+    pub file: crate::ast::FileId,
+    pub awaited: bool,
+    pub elem: crate::ddlog_std::Option<crate::ast::ForInit>,
+    pub collection: crate::ddlog_std::Option<crate::ast::ExprId>,
+    pub body: crate::ddlog_std::Option<crate::ast::StmtId>
+}
+impl abomonation::Abomonation for ForOf{}
+::differential_datalog::decl_struct_from_record!(ForOf["inputs::ForOf"]<>, ["inputs::ForOf"][6]{[0]stmt_id["stmt_id"]: crate::ast::StmtId, [1]file["file"]: crate::ast::FileId, [2]awaited["awaited"]: bool, [3]elem["elem"]: crate::ddlog_std::Option<crate::ast::ForInit>, [4]collection["collection"]: crate::ddlog_std::Option<crate::ast::ExprId>, [5]body["body"]: crate::ddlog_std::Option<crate::ast::StmtId>});
+::differential_datalog::decl_struct_into_record!(ForOf, ["inputs::ForOf"]<>, stmt_id, file, awaited, elem, collection, body);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ForOf, <>, stmt_id: crate::ast::StmtId, file: crate::ast::FileId, awaited: bool, elem: crate::ddlog_std::Option<crate::ast::ForInit>, collection: crate::ddlog_std::Option<crate::ast::ExprId>, body: crate::ddlog_std::Option<crate::ast::StmtId>);
+impl ::std::fmt::Display for ForOf {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::inputs::ForOf{stmt_id,file,awaited,elem,collection,body} => {
+                __formatter.write_str("inputs::ForOf{")?;
+                ::std::fmt::Debug::fmt(stmt_id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(awaited, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(elem, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(collection, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(body, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ForOf {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct Function {
     pub id: crate::ast::FuncId,
     pub file: crate::ast::FileId,

@@ -1763,6 +1763,7 @@ pub enum StmtKind {
     StmtWhile,
     StmtFor,
     StmtForIn,
+    StmtForOf,
     StmtContinue,
     StmtWith,
     StmtLabel,
@@ -1773,9 +1774,9 @@ pub enum StmtKind {
     StmtEmpty
 }
 impl abomonation::Abomonation for StmtKind{}
-::differential_datalog::decl_enum_from_record!(StmtKind["ast::StmtKind"]<>, StmtVarDecl["ast::StmtVarDecl"][0]{}, StmtLetDecl["ast::StmtLetDecl"][0]{}, StmtConstDecl["ast::StmtConstDecl"][0]{}, StmtExpr["ast::StmtExpr"][1]{[0]expr_id["expr_id"]: crate::ddlog_std::Option<crate::ast::ExprId>}, StmtReturn["ast::StmtReturn"][0]{}, StmtIf["ast::StmtIf"][0]{}, StmtBreak["ast::StmtBreak"][0]{}, StmtDoWhile["ast::StmtDoWhile"][0]{}, StmtWhile["ast::StmtWhile"][0]{}, StmtFor["ast::StmtFor"][0]{}, StmtForIn["ast::StmtForIn"][0]{}, StmtContinue["ast::StmtContinue"][0]{}, StmtWith["ast::StmtWith"][0]{}, StmtLabel["ast::StmtLabel"][0]{}, StmtSwitch["ast::StmtSwitch"][0]{}, StmtThrow["ast::StmtThrow"][0]{}, StmtTry["ast::StmtTry"][0]{}, StmtDebugger["ast::StmtDebugger"][0]{}, StmtEmpty["ast::StmtEmpty"][0]{});
-::differential_datalog::decl_enum_into_record!(StmtKind<>, StmtVarDecl["ast::StmtVarDecl"]{}, StmtLetDecl["ast::StmtLetDecl"]{}, StmtConstDecl["ast::StmtConstDecl"]{}, StmtExpr["ast::StmtExpr"]{expr_id}, StmtReturn["ast::StmtReturn"]{}, StmtIf["ast::StmtIf"]{}, StmtBreak["ast::StmtBreak"]{}, StmtDoWhile["ast::StmtDoWhile"]{}, StmtWhile["ast::StmtWhile"]{}, StmtFor["ast::StmtFor"]{}, StmtForIn["ast::StmtForIn"]{}, StmtContinue["ast::StmtContinue"]{}, StmtWith["ast::StmtWith"]{}, StmtLabel["ast::StmtLabel"]{}, StmtSwitch["ast::StmtSwitch"]{}, StmtThrow["ast::StmtThrow"]{}, StmtTry["ast::StmtTry"]{}, StmtDebugger["ast::StmtDebugger"]{}, StmtEmpty["ast::StmtEmpty"]{});
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(StmtKind<>, StmtVarDecl{}, StmtLetDecl{}, StmtConstDecl{}, StmtExpr{expr_id: crate::ddlog_std::Option<crate::ast::ExprId>}, StmtReturn{}, StmtIf{}, StmtBreak{}, StmtDoWhile{}, StmtWhile{}, StmtFor{}, StmtForIn{}, StmtContinue{}, StmtWith{}, StmtLabel{}, StmtSwitch{}, StmtThrow{}, StmtTry{}, StmtDebugger{}, StmtEmpty{});
+::differential_datalog::decl_enum_from_record!(StmtKind["ast::StmtKind"]<>, StmtVarDecl["ast::StmtVarDecl"][0]{}, StmtLetDecl["ast::StmtLetDecl"][0]{}, StmtConstDecl["ast::StmtConstDecl"][0]{}, StmtExpr["ast::StmtExpr"][1]{[0]expr_id["expr_id"]: crate::ddlog_std::Option<crate::ast::ExprId>}, StmtReturn["ast::StmtReturn"][0]{}, StmtIf["ast::StmtIf"][0]{}, StmtBreak["ast::StmtBreak"][0]{}, StmtDoWhile["ast::StmtDoWhile"][0]{}, StmtWhile["ast::StmtWhile"][0]{}, StmtFor["ast::StmtFor"][0]{}, StmtForIn["ast::StmtForIn"][0]{}, StmtForOf["ast::StmtForOf"][0]{}, StmtContinue["ast::StmtContinue"][0]{}, StmtWith["ast::StmtWith"][0]{}, StmtLabel["ast::StmtLabel"][0]{}, StmtSwitch["ast::StmtSwitch"][0]{}, StmtThrow["ast::StmtThrow"][0]{}, StmtTry["ast::StmtTry"][0]{}, StmtDebugger["ast::StmtDebugger"][0]{}, StmtEmpty["ast::StmtEmpty"][0]{});
+::differential_datalog::decl_enum_into_record!(StmtKind<>, StmtVarDecl["ast::StmtVarDecl"]{}, StmtLetDecl["ast::StmtLetDecl"]{}, StmtConstDecl["ast::StmtConstDecl"]{}, StmtExpr["ast::StmtExpr"]{expr_id}, StmtReturn["ast::StmtReturn"]{}, StmtIf["ast::StmtIf"]{}, StmtBreak["ast::StmtBreak"]{}, StmtDoWhile["ast::StmtDoWhile"]{}, StmtWhile["ast::StmtWhile"]{}, StmtFor["ast::StmtFor"]{}, StmtForIn["ast::StmtForIn"]{}, StmtForOf["ast::StmtForOf"]{}, StmtContinue["ast::StmtContinue"]{}, StmtWith["ast::StmtWith"]{}, StmtLabel["ast::StmtLabel"]{}, StmtSwitch["ast::StmtSwitch"]{}, StmtThrow["ast::StmtThrow"]{}, StmtTry["ast::StmtTry"]{}, StmtDebugger["ast::StmtDebugger"]{}, StmtEmpty["ast::StmtEmpty"]{});
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(StmtKind<>, StmtVarDecl{}, StmtLetDecl{}, StmtConstDecl{}, StmtExpr{expr_id: crate::ddlog_std::Option<crate::ast::ExprId>}, StmtReturn{}, StmtIf{}, StmtBreak{}, StmtDoWhile{}, StmtWhile{}, StmtFor{}, StmtForIn{}, StmtForOf{}, StmtContinue{}, StmtWith{}, StmtLabel{}, StmtSwitch{}, StmtThrow{}, StmtTry{}, StmtDebugger{}, StmtEmpty{});
 impl ::std::fmt::Display for StmtKind {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
@@ -1822,6 +1823,10 @@ impl ::std::fmt::Display for StmtKind {
             },
             crate::ast::StmtKind::StmtForIn{} => {
                 __formatter.write_str("ast::StmtForIn{")?;
+                __formatter.write_str("}")
+            },
+            crate::ast::StmtKind::StmtForOf{} => {
+                __formatter.write_str("ast::StmtForOf{")?;
                 __formatter.write_str("}")
             },
             crate::ast::StmtKind::StmtContinue{} => {

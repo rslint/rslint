@@ -172,6 +172,15 @@ input relation ForIn(
     body: Option<StmtId>,
 )
 
+input relation ForOf(
+    stmt_id: StmtId,
+    file: FileId,
+    awaited: bool,
+    elem: Option<ForInit>,
+    collection: Option<ExprId>,
+    body: Option<StmtId>,
+)
+
 input relation Continue(
     stmt_id: StmtId,
     file: FileId,

@@ -126,7 +126,7 @@ impl Datalog {
             .ok()
             // TODO: Log error if there's more than one value
             .and_then(|query| query.into_iter().next())
-            .map(|expr| unsafe { Expression::from_ddvalue(expr) })
+            .map(Expression::from_ddvalue)
     }
 
     pub(crate) fn query(
@@ -228,7 +228,7 @@ impl Datalog {
                 .ok()?
                 .into_iter()
                 .next()
-                .map(|expr| unsafe { Expression::from_ddvalue(expr) })?;
+                .map(Expression::from_ddvalue)?;
 
             let undefined_portion = self
                 .query(
@@ -238,7 +238,7 @@ impl Datalog {
                 .ok()?
                 .into_iter()
                 .next()
-                .map(|expr| unsafe { Expression::from_ddvalue(expr) })?
+                .map(Expression::from_ddvalue)?
                 .span;
 
             Some(DatalogLint::TypeofUndef {

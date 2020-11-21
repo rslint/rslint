@@ -14,10 +14,10 @@ use types::{
     inputs::{
         Array, Arrow, ArrowParam, Assign, Await, BinOp, BracketAccess, Break, Call, Class,
         ClassExpr, ConstDecl, Continue, DoWhile, DotAccess, EveryScope, ExprBigInt, ExprBool,
-        ExprNumber, ExprString, Expression, FileExport, For, ForIn, Function, If, ImplicitGlobal,
-        ImportDecl, InlineFunc, InlineFuncParam, InputScope, Label, LetDecl, NameRef, New,
-        Property, Return, Statement, Switch, SwitchCase, Template, Ternary, Throw, Try, UnaryOp,
-        VarDecl, While, With, Yield,
+        ExprNumber, ExprString, Expression, FileExport, For, ForIn, ForOf, Function, If,
+        ImplicitGlobal, ImportDecl, InlineFunc, InlineFuncParam, InputScope, Label, LetDecl,
+        NameRef, New, Property, Return, Statement, Switch, SwitchCase, Template, Ternary, Throw,
+        Try, UnaryOp, VarDecl, While, With, Yield,
     },
     internment::Intern,
 };
@@ -442,6 +442,43 @@ pub trait DatalogBuilder<'ddlog> {
         stmt_id
     }
 
+    fn for_of(
+        &self,
+        awaited: bool,
+        elem: Option<ForInit>,
+        collection: Option<ExprId>,
+        body: Option<StmtId>,
+        span: TextRange,
+    ) -> StmtId {
+        let datalog = self.datalog();
+        let stmt_id = datalog.inc_statement();
+
+        datalog
+            .insert(
+                Relations::inputs_ForOf,
+                ForOf {
+                    stmt_id,
+                    file: self.file_id(),
+                    awaited,
+                    elem: elem.into(),
+                    collection: collection.into(),
+                    body: body.into(),
+                },
+            )
+            .insert(
+                Relations::inputs_Statement,
+                Statement {
+                    id: stmt_id,
+                    file: self.file_id(),
+                    kind: StmtKind::StmtForOf,
+                    scope: self.scope_id(),
+                    span: span.into(),
+                },
+            );
+
+        stmt_id
+    }
+
     fn cont(&self, label: Option<Spanned<Name>>, span: TextRange) -> StmtId {
         let datalog = self.datalog();
         let stmt_id = datalog.inc_statement();
@@ -729,7 +766,7 @@ pub trait DatalogBuilder<'ddlog> {
 
         datalog
             .insert(
-                Relations::inputs_ExprNumber,
+                Relations::inputs_ExprBigInt,
                 ExprBigInt {
                     expr_id,
                     file: self.file_id(),

@@ -5,8 +5,8 @@ use crate::{
 use rslint_parser::{
     ast::{
         AstChildren, BlockStmt, BreakStmt, ClassDecl, ContinueStmt, DebuggerStmt, Decl,
-        DoWhileStmt, FnDecl, ForHead, ForInStmt, ForStmt, IfStmt, LabelledStmt, ReturnStmt, Stmt,
-        SwitchCase, SwitchStmt, ThrowStmt, TryStmt, VarDecl, WhileStmt, WithStmt,
+        DoWhileStmt, FnDecl, ForHead, ForInStmt, ForOfStmt, ForStmt, IfStmt, LabelledStmt,
+        ReturnStmt, Stmt, SwitchCase, SwitchStmt, ThrowStmt, TryStmt, VarDecl, WhileStmt, WithStmt,
     },
     AstNode, SyntaxNodeExt,
 };
@@ -35,6 +35,7 @@ impl<'ddlog> Visit<'ddlog, Stmt> for AnalyzerInner {
             Stmt::WhileStmt(while_stmt) => (Some(self.visit(scope, while_stmt)), scope.scope()),
             Stmt::ForStmt(for_stmt) => (Some(self.visit(scope, for_stmt)), scope.scope()),
             Stmt::ForInStmt(for_in) => (Some(self.visit(scope, for_in)), scope.scope()),
+            Stmt::ForOfStmt(for_of) => (Some(self.visit(scope, for_of)), scope.scope()),
             Stmt::ContinueStmt(cont) => (Some(self.visit(scope, cont)), scope.scope()),
             Stmt::BreakStmt(brk) => (Some(self.visit(scope, brk)), scope.scope()),
             Stmt::ReturnStmt(ret) => (Some(self.visit(scope, ret)), scope.scope()),
@@ -272,6 +273,30 @@ impl<'ddlog> Visit<'ddlog, ForInStmt> for AnalyzerInner {
 
         // TODO: Does the scope created by the elem segment need to be passed on?
         scope.for_in(elem, collection, body, for_in.range())
+    }
+}
+
+impl<'ddlog> Visit<'ddlog, ForOfStmt> for AnalyzerInner {
+    type Output = StmtId;
+
+    fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, for_of: ForOfStmt) -> Self::Output {
+        let awaited = for_of.await_token().is_some();
+        let (elem, elem_scope) = for_of
+            .left()
+            .and_then(|elem| elem.inner())
+            .map(|elem| self.visit(scope, elem))
+            .map_or((None, None), |(elem, scope)| (Some(elem), scope));
+        let elem_scope: &dyn DatalogBuilder<'_> = elem_scope
+            .as_ref()
+            .map_or(scope, |s| s as &dyn DatalogBuilder<'_>);
+
+        let collection = for_of.right().map(|coll| self.visit(elem_scope, coll));
+        let body = for_of
+            .cons()
+            .and_then(|stmt| self.visit(elem_scope, stmt).0);
+
+        // TODO: Does the scope created by the elem segment need to be passed on?
+        scope.for_of(awaited, elem, collection, body, for_of.range())
     }
 }
 

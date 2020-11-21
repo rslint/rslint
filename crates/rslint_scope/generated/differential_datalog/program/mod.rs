@@ -2004,22 +2004,22 @@ impl RunningProgram {
     /// Insert one record into input relation. Relations have set semantics, i.e.,
     /// adding an existing record is a no-op.
     pub fn insert(&mut self, relid: RelId, v: DDValue) -> Response<()> {
-        self.apply_updates(iter::once(Update::Insert { relid, v }))
+        self.apply_updates(iter::once(Update::Insert { relid, v }), |_| Ok(()))
     }
 
     /// Insert one record into input relation or replace existing record with the same key.
     pub fn insert_or_update(&mut self, relid: RelId, v: DDValue) -> Response<()> {
-        self.apply_updates(iter::once(Update::InsertOrUpdate { relid, v }))
+        self.apply_updates(iter::once(Update::InsertOrUpdate { relid, v }), |_| Ok(()))
     }
 
     /// Remove a record if it exists in the relation.
     pub fn delete_value(&mut self, relid: RelId, v: DDValue) -> Response<()> {
-        self.apply_updates(iter::once(Update::DeleteValue { relid, v }))
+        self.apply_updates(iter::once(Update::DeleteValue { relid, v }), |_| Ok(()))
     }
 
     /// Remove a key if it exists in the relation.
     pub fn delete_key(&mut self, relid: RelId, k: DDValue) -> Response<()> {
-        self.apply_updates(iter::once(Update::DeleteKey { relid, k }))
+        self.apply_updates(iter::once(Update::DeleteKey { relid, k }), |_| Ok(()))
     }
 
     /// Modify a key if it exists in the relation.
@@ -2029,7 +2029,7 @@ impl RunningProgram {
         k: DDValue,
         m: Arc<dyn Mutator<DDValue> + Send + Sync>,
     ) -> Response<()> {
-        self.apply_updates(iter::once(Update::Modify { relid, k, m }))
+        self.apply_updates(iter::once(Update::Modify { relid, k, m }), |_| Ok(()))
     }
 
     /// Applies a single update.
@@ -2063,10 +2063,11 @@ impl RunningProgram {
 
     /// Apply multiple insert and delete operations in one batch.
     /// Updates can only be applied to input relations (see `struct Relation`).
-    pub fn apply_updates<I: Iterator<Item = Update<DDValue>>>(
-        &mut self,
-        updates: I,
-    ) -> Response<()> {
+    pub fn apply_updates<I, F>(&mut self, updates: I, inspect: F) -> Response<()>
+    where
+        I: Iterator<Item = Update<DDValue>>,
+        F: Fn(&Update<DDValue>) -> Response<()>,
+    {
         if !self.transaction_in_progress {
             return Err("apply_updates: no transaction in progress".to_string());
         }
@@ -2074,6 +2075,7 @@ impl RunningProgram {
         // Remove no-op updates to maintain set semantics
         let mut filtered_updates = Vec::new();
         for update in updates {
+            inspect(&update)?;
             self.apply_update(update, &mut filtered_updates)?;
         }
 
@@ -2129,7 +2131,7 @@ impl RunningProgram {
             }
         };
 
-        self.apply_updates(updates.into_iter())
+        self.apply_updates(updates.into_iter(), |_| Ok(()))
     }
 
     /// Returns all values in the arrangement with the specified key.
@@ -2597,7 +2599,7 @@ impl RunningProgram {
         }
 
         // println!("updates: {:?}", updates);
-        self.apply_updates(updates.into_iter())
+        self.apply_updates(updates.into_iter(), |_| Ok(()))
             .and_then(|_| self.flush())
             .map(|_| {
                 /* validation: all deltas must be empty */

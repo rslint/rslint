@@ -270,6 +270,7 @@ impl DDlog for HDDlog {
                 }
             }
         }));
+
         match msg {
             Some(e) => Err(e),
             None => res,
@@ -285,16 +286,43 @@ impl DDlog for HDDlog {
         self.apply_valupdates(upds?.into_iter())
     }
 
-    fn apply_valupdates<I>(&self, upds: I) -> Result<(), String>
+    fn apply_valupdates<I>(&self, updates: I) -> Result<(), String>
     where
         I: Iterator<Item = Update<DDValue>>,
     {
+        // Make sure that the updates being inserted have the correct value types for their
+        // relation
+        let inspect_update: fn(&Update<DDValue>) -> Result<(), String> = |update| {
+            let relation = Relations::try_from(update.relid())
+                .map_err(|_| format!("unknown index {}", update.relid()))?;
+
+            if let Some(value) = update.get_value() {
+                if relation.type_id() != value.type_id() {
+                    dbg!(value, relation.type_id(), value.type_id());
+                    return Err(format!(
+                        "attempted to insert {} into {:?}",
+                        value.type_name(),
+                        relation,
+                    ));
+                }
+            }
+
+            Ok(())
+        };
+
         if let Some(ref f) = self.replay_file {
             let mut file = f.lock().unwrap();
-            let upds = record_val_upds::<Self::Convert, _, _, _>(&mut *file, upds, |_| ());
-            self.prog.lock().unwrap().apply_updates(upds)
+            let updates = record_val_upds::<Self::Convert, _, _, _>(&mut *file, updates, |_| ());
+
+            self.prog
+                .lock()
+                .unwrap()
+                .apply_updates(updates, inspect_update)
         } else {
-            self.prog.lock().unwrap().apply_updates(upds)
+            self.prog
+                .lock()
+                .unwrap()
+                .apply_updates(updates, inspect_update)
         }
     }
 

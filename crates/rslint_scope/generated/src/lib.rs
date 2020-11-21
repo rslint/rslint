@@ -27,7 +27,7 @@ use std::hash::Hash;
 use std::ops::Deref;
 use std::ptr;
 use std::result;
-use std::sync;
+use std::{any::TypeId, sync};
 
 use ordered_float::*;
 
@@ -204,7 +204,7 @@ impl TryFrom<&RelIdentifier> for Relations {
 }
 
 
-decl_update_deserializer!(UpdateSerializer,(9, ::types::inputs::Array), (10, ::types::inputs::Arrow), (11, ::types::inputs::ArrowParam), (12, ::types::inputs::Assign), (13, ::types::inputs::Await), (14, ::types::inputs::BinOp), (15, ::types::inputs::BracketAccess), (16, ::types::inputs::Break), (17, ::types::inputs::Call), (18, ::types::inputs::Class), (19, ::types::inputs::ClassExpr), (20, ::types::inputs::ConstDecl), (21, ::types::inputs::Continue), (22, ::types::inputs::DoWhile), (23, ::types::inputs::DotAccess), (24, ::types::inputs::EveryScope), (25, ::types::inputs::ExprBigInt), (26, ::types::inputs::ExprBool), (27, ::types::inputs::ExprNumber), (28, ::types::inputs::ExprString), (29, ::types::inputs::Expression), (30, ::types::inputs::File), (31, ::types::inputs::FileExport), (32, ::types::inputs::For), (33, ::types::inputs::ForIn), (34, ::types::inputs::Function), (35, ::types::inputs::FunctionArg), (36, ::types::inputs::If), (37, ::types::inputs::ImplicitGlobal), (38, ::types::inputs::ImportDecl), (39, ::types::inputs::InlineFunc), (40, ::types::inputs::InlineFuncParam), (41, ::types::inputs::InputScope), (42, ::types::inputs::Label), (43, ::types::inputs::LetDecl), (44, ::types::inputs::NameRef), (45, ::types::inputs::New), (46, ::types::inputs::Property), (47, ::types::inputs::Return), (48, ::types::inputs::Statement), (49, ::types::inputs::Switch), (50, ::types::inputs::SwitchCase), (51, ::types::inputs::Template), (52, ::types::inputs::Ternary), (53, ::types::inputs::Throw), (54, ::types::inputs::Try), (55, ::types::inputs::UnaryOp), (56, ::types::inputs::VarDecl), (57, ::types::inputs::While), (58, ::types::inputs::With), (59, ::types::inputs::Yield), (62, ::types::outputs::no_shadow::NoShadow), (64, ::types::outputs::no_undef::NoUndef), (66, ::types::outputs::no_unused_labels::NoUnusedLabels), (68, ::types::outputs::typeof_undef::TypeofUndef), (70, ::types::outputs::unused_vars::UnusedVariables), (72, ::types::outputs::use_before_def::UseBeforeDef));
+decl_update_deserializer!(UpdateSerializer,(9, ::types::inputs::Array), (10, ::types::inputs::Arrow), (11, ::types::inputs::ArrowParam), (12, ::types::inputs::Assign), (13, ::types::inputs::Await), (14, ::types::inputs::BinOp), (15, ::types::inputs::BracketAccess), (16, ::types::inputs::Break), (17, ::types::inputs::Call), (18, ::types::inputs::Class), (19, ::types::inputs::ClassExpr), (20, ::types::inputs::ConstDecl), (21, ::types::inputs::Continue), (22, ::types::inputs::DoWhile), (23, ::types::inputs::DotAccess), (24, ::types::inputs::EveryScope), (25, ::types::inputs::ExprBigInt), (26, ::types::inputs::ExprBool), (27, ::types::inputs::ExprNumber), (28, ::types::inputs::ExprString), (29, ::types::inputs::Expression), (30, ::types::inputs::File), (31, ::types::inputs::FileExport), (32, ::types::inputs::For), (33, ::types::inputs::ForIn), (34, ::types::inputs::ForOf), (35, ::types::inputs::Function), (36, ::types::inputs::FunctionArg), (37, ::types::inputs::If), (38, ::types::inputs::ImplicitGlobal), (39, ::types::inputs::ImportDecl), (40, ::types::inputs::InlineFunc), (41, ::types::inputs::InlineFuncParam), (42, ::types::inputs::InputScope), (43, ::types::inputs::Label), (44, ::types::inputs::LetDecl), (45, ::types::inputs::NameRef), (46, ::types::inputs::New), (47, ::types::inputs::Property), (48, ::types::inputs::Return), (49, ::types::inputs::Statement), (50, ::types::inputs::Switch), (51, ::types::inputs::SwitchCase), (52, ::types::inputs::Template), (53, ::types::inputs::Ternary), (54, ::types::inputs::Throw), (55, ::types::inputs::Try), (56, ::types::inputs::UnaryOp), (57, ::types::inputs::VarDecl), (58, ::types::inputs::While), (59, ::types::inputs::With), (60, ::types::inputs::Yield), (63, ::types::outputs::no_shadow::NoShadow), (65, ::types::outputs::no_undef::NoUndef), (67, ::types::outputs::no_unused_labels::NoUnusedLabels), (69, ::types::outputs::typeof_undef::TypeofUndef), (71, ::types::outputs::unused_vars::UnusedVariables), (73, ::types::outputs::use_before_def::UseBeforeDef));
 impl TryFrom<&str> for Relations {
     type Error = ();
     fn try_from(rname: &str) -> ::std::result::Result<Self, ()> {
@@ -243,6 +243,7 @@ impl TryFrom<&str> for Relations {
         "inputs::FileExport" => Ok(Relations::inputs_FileExport),
         "inputs::For" => Ok(Relations::inputs_For),
         "inputs::ForIn" => Ok(Relations::inputs_ForIn),
+        "inputs::ForOf" => Ok(Relations::inputs_ForOf),
         "inputs::Function" => Ok(Relations::inputs_Function),
         "inputs::FunctionArg" => Ok(Relations::inputs_FunctionArg),
         "inputs::If" => Ok(Relations::inputs_If),
@@ -332,6 +333,7 @@ impl Relations {
         Relations::inputs_FileExport => true,
         Relations::inputs_For => true,
         Relations::inputs_ForIn => true,
+        Relations::inputs_ForOf => true,
         Relations::inputs_Function => true,
         Relations::inputs_FunctionArg => true,
         Relations::inputs_If => true,
@@ -359,6 +361,91 @@ impl Relations {
         Relations::inputs_With => true,
         Relations::inputs_Yield => true,
             _  => false
+        }
+    }
+}
+impl Relations {
+    pub fn type_id(&self) -> ::std::any::TypeId {
+        match self {
+            Relations::__Prefix_0 => ::std::any::TypeId::of::<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>(),
+            Relations::__Prefix_1 => ::std::any::TypeId::of::<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>(),
+            Relations::__Prefix_2 => ::std::any::TypeId::of::<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::StmtId, ::types::ast::Spanned<::types::ast::Name>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>(),
+            Relations::__Prefix_3 => ::std::any::TypeId::of::<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>(),
+            Relations::__Prefix_4 => ::std::any::TypeId::of::<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>(),
+            Relations::__Prefix_5 => ::std::any::TypeId::of::<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>(),
+            Relations::__Prefix_6 => ::std::any::TypeId::of::<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>(),
+            Relations::__Prefix_7 => ::std::any::TypeId::of::<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>(),
+            Relations::__Prefix_8 => ::std::any::TypeId::of::<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>(),
+            Relations::inputs_Array => ::std::any::TypeId::of::<::types::inputs::Array>(),
+            Relations::inputs_Arrow => ::std::any::TypeId::of::<::types::inputs::Arrow>(),
+            Relations::inputs_ArrowParam => ::std::any::TypeId::of::<::types::inputs::ArrowParam>(),
+            Relations::inputs_Assign => ::std::any::TypeId::of::<::types::inputs::Assign>(),
+            Relations::inputs_Await => ::std::any::TypeId::of::<::types::inputs::Await>(),
+            Relations::inputs_BinOp => ::std::any::TypeId::of::<::types::inputs::BinOp>(),
+            Relations::inputs_BracketAccess => ::std::any::TypeId::of::<::types::inputs::BracketAccess>(),
+            Relations::inputs_Break => ::std::any::TypeId::of::<::types::inputs::Break>(),
+            Relations::inputs_Call => ::std::any::TypeId::of::<::types::inputs::Call>(),
+            Relations::inputs_Class => ::std::any::TypeId::of::<::types::inputs::Class>(),
+            Relations::inputs_ClassExpr => ::std::any::TypeId::of::<::types::inputs::ClassExpr>(),
+            Relations::inputs_ConstDecl => ::std::any::TypeId::of::<::types::inputs::ConstDecl>(),
+            Relations::inputs_Continue => ::std::any::TypeId::of::<::types::inputs::Continue>(),
+            Relations::inputs_DoWhile => ::std::any::TypeId::of::<::types::inputs::DoWhile>(),
+            Relations::inputs_DotAccess => ::std::any::TypeId::of::<::types::inputs::DotAccess>(),
+            Relations::inputs_EveryScope => ::std::any::TypeId::of::<::types::inputs::EveryScope>(),
+            Relations::inputs_ExprBigInt => ::std::any::TypeId::of::<::types::inputs::ExprBigInt>(),
+            Relations::inputs_ExprBool => ::std::any::TypeId::of::<::types::inputs::ExprBool>(),
+            Relations::inputs_ExprNumber => ::std::any::TypeId::of::<::types::inputs::ExprNumber>(),
+            Relations::inputs_ExprString => ::std::any::TypeId::of::<::types::inputs::ExprString>(),
+            Relations::inputs_Expression => ::std::any::TypeId::of::<::types::inputs::Expression>(),
+            Relations::inputs_File => ::std::any::TypeId::of::<::types::inputs::File>(),
+            Relations::inputs_FileExport => ::std::any::TypeId::of::<::types::inputs::FileExport>(),
+            Relations::inputs_For => ::std::any::TypeId::of::<::types::inputs::For>(),
+            Relations::inputs_ForIn => ::std::any::TypeId::of::<::types::inputs::ForIn>(),
+            Relations::inputs_ForOf => ::std::any::TypeId::of::<::types::inputs::ForOf>(),
+            Relations::inputs_Function => ::std::any::TypeId::of::<::types::inputs::Function>(),
+            Relations::inputs_FunctionArg => ::std::any::TypeId::of::<::types::inputs::FunctionArg>(),
+            Relations::inputs_If => ::std::any::TypeId::of::<::types::inputs::If>(),
+            Relations::inputs_ImplicitGlobal => ::std::any::TypeId::of::<::types::inputs::ImplicitGlobal>(),
+            Relations::inputs_ImportDecl => ::std::any::TypeId::of::<::types::inputs::ImportDecl>(),
+            Relations::inputs_InlineFunc => ::std::any::TypeId::of::<::types::inputs::InlineFunc>(),
+            Relations::inputs_InlineFuncParam => ::std::any::TypeId::of::<::types::inputs::InlineFuncParam>(),
+            Relations::inputs_InputScope => ::std::any::TypeId::of::<::types::inputs::InputScope>(),
+            Relations::inputs_Label => ::std::any::TypeId::of::<::types::inputs::Label>(),
+            Relations::inputs_LetDecl => ::std::any::TypeId::of::<::types::inputs::LetDecl>(),
+            Relations::inputs_NameRef => ::std::any::TypeId::of::<::types::inputs::NameRef>(),
+            Relations::inputs_New => ::std::any::TypeId::of::<::types::inputs::New>(),
+            Relations::inputs_Property => ::std::any::TypeId::of::<::types::inputs::Property>(),
+            Relations::inputs_Return => ::std::any::TypeId::of::<::types::inputs::Return>(),
+            Relations::inputs_Statement => ::std::any::TypeId::of::<::types::inputs::Statement>(),
+            Relations::inputs_Switch => ::std::any::TypeId::of::<::types::inputs::Switch>(),
+            Relations::inputs_SwitchCase => ::std::any::TypeId::of::<::types::inputs::SwitchCase>(),
+            Relations::inputs_Template => ::std::any::TypeId::of::<::types::inputs::Template>(),
+            Relations::inputs_Ternary => ::std::any::TypeId::of::<::types::inputs::Ternary>(),
+            Relations::inputs_Throw => ::std::any::TypeId::of::<::types::inputs::Throw>(),
+            Relations::inputs_Try => ::std::any::TypeId::of::<::types::inputs::Try>(),
+            Relations::inputs_UnaryOp => ::std::any::TypeId::of::<::types::inputs::UnaryOp>(),
+            Relations::inputs_VarDecl => ::std::any::TypeId::of::<::types::inputs::VarDecl>(),
+            Relations::inputs_While => ::std::any::TypeId::of::<::types::inputs::While>(),
+            Relations::inputs_With => ::std::any::TypeId::of::<::types::inputs::With>(),
+            Relations::inputs_Yield => ::std::any::TypeId::of::<::types::inputs::Yield>(),
+            Relations::is_exported_IsExported => ::std::any::TypeId::of::<::types::is_exported::IsExported>(),
+            Relations::name_in_scope_NameInScope => ::std::any::TypeId::of::<::types::name_in_scope::NameInScope>(),
+            Relations::outputs_no_shadow_NoShadow => ::std::any::TypeId::of::<::types::outputs::no_shadow::NoShadow>(),
+            Relations::outputs_no_undef_ChainedWith => ::std::any::TypeId::of::<::types::outputs::no_undef::ChainedWith>(),
+            Relations::outputs_no_undef_NoUndef => ::std::any::TypeId::of::<::types::outputs::no_undef::NoUndef>(),
+            Relations::outputs_no_unused_labels_LabelUsage => ::std::any::TypeId::of::<::types::outputs::no_unused_labels::LabelUsage>(),
+            Relations::outputs_no_unused_labels_NoUnusedLabels => ::std::any::TypeId::of::<::types::outputs::no_unused_labels::NoUnusedLabels>(),
+            Relations::outputs_no_unused_labels_UsedLabel => ::std::any::TypeId::of::<::types::outputs::no_unused_labels::UsedLabel>(),
+            Relations::outputs_typeof_undef_TypeofUndef => ::std::any::TypeId::of::<::types::outputs::typeof_undef::TypeofUndef>(),
+            Relations::outputs_typeof_undef_WithinTypeofExpr => ::std::any::TypeId::of::<::types::outputs::typeof_undef::WithinTypeofExpr>(),
+            Relations::outputs_unused_vars_UnusedVariables => ::std::any::TypeId::of::<::types::outputs::unused_vars::UnusedVariables>(),
+            Relations::outputs_unused_vars_VariableUsages => ::std::any::TypeId::of::<::types::outputs::unused_vars::VariableUsages>(),
+            Relations::outputs_use_before_def_UseBeforeDef => ::std::any::TypeId::of::<::types::outputs::use_before_def::UseBeforeDef>(),
+            Relations::scopes_ChildScope => ::std::any::TypeId::of::<::types::scopes::ChildScope>(),
+            Relations::scopes_FunctionLevelScope => ::std::any::TypeId::of::<::types::scopes::FunctionLevelScope>(),
+            Relations::scopes_IsHoistable => ::std::any::TypeId::of::<::types::scopes::IsHoistable>(),
+            Relations::scopes_ScopeOfId => ::std::any::TypeId::of::<::types::scopes::ScopeOfId>(),
+            Relations::variable_decl_VariableDecl => ::std::any::TypeId::of::<::types::variable_decl::VariableDecl>(),
         }
     }
 }
@@ -400,50 +487,51 @@ impl TryFrom<RelId> for Relations {
         31 => Ok(Relations::inputs_FileExport),
         32 => Ok(Relations::inputs_For),
         33 => Ok(Relations::inputs_ForIn),
-        34 => Ok(Relations::inputs_Function),
-        35 => Ok(Relations::inputs_FunctionArg),
-        36 => Ok(Relations::inputs_If),
-        37 => Ok(Relations::inputs_ImplicitGlobal),
-        38 => Ok(Relations::inputs_ImportDecl),
-        39 => Ok(Relations::inputs_InlineFunc),
-        40 => Ok(Relations::inputs_InlineFuncParam),
-        41 => Ok(Relations::inputs_InputScope),
-        42 => Ok(Relations::inputs_Label),
-        43 => Ok(Relations::inputs_LetDecl),
-        44 => Ok(Relations::inputs_NameRef),
-        45 => Ok(Relations::inputs_New),
-        46 => Ok(Relations::inputs_Property),
-        47 => Ok(Relations::inputs_Return),
-        48 => Ok(Relations::inputs_Statement),
-        49 => Ok(Relations::inputs_Switch),
-        50 => Ok(Relations::inputs_SwitchCase),
-        51 => Ok(Relations::inputs_Template),
-        52 => Ok(Relations::inputs_Ternary),
-        53 => Ok(Relations::inputs_Throw),
-        54 => Ok(Relations::inputs_Try),
-        55 => Ok(Relations::inputs_UnaryOp),
-        56 => Ok(Relations::inputs_VarDecl),
-        57 => Ok(Relations::inputs_While),
-        58 => Ok(Relations::inputs_With),
-        59 => Ok(Relations::inputs_Yield),
-        60 => Ok(Relations::is_exported_IsExported),
-        61 => Ok(Relations::name_in_scope_NameInScope),
-        62 => Ok(Relations::outputs_no_shadow_NoShadow),
-        63 => Ok(Relations::outputs_no_undef_ChainedWith),
-        64 => Ok(Relations::outputs_no_undef_NoUndef),
-        65 => Ok(Relations::outputs_no_unused_labels_LabelUsage),
-        66 => Ok(Relations::outputs_no_unused_labels_NoUnusedLabels),
-        67 => Ok(Relations::outputs_no_unused_labels_UsedLabel),
-        68 => Ok(Relations::outputs_typeof_undef_TypeofUndef),
-        69 => Ok(Relations::outputs_typeof_undef_WithinTypeofExpr),
-        70 => Ok(Relations::outputs_unused_vars_UnusedVariables),
-        71 => Ok(Relations::outputs_unused_vars_VariableUsages),
-        72 => Ok(Relations::outputs_use_before_def_UseBeforeDef),
-        73 => Ok(Relations::scopes_ChildScope),
-        74 => Ok(Relations::scopes_FunctionLevelScope),
-        75 => Ok(Relations::scopes_IsHoistable),
-        76 => Ok(Relations::scopes_ScopeOfId),
-        77 => Ok(Relations::variable_decl_VariableDecl),
+        34 => Ok(Relations::inputs_ForOf),
+        35 => Ok(Relations::inputs_Function),
+        36 => Ok(Relations::inputs_FunctionArg),
+        37 => Ok(Relations::inputs_If),
+        38 => Ok(Relations::inputs_ImplicitGlobal),
+        39 => Ok(Relations::inputs_ImportDecl),
+        40 => Ok(Relations::inputs_InlineFunc),
+        41 => Ok(Relations::inputs_InlineFuncParam),
+        42 => Ok(Relations::inputs_InputScope),
+        43 => Ok(Relations::inputs_Label),
+        44 => Ok(Relations::inputs_LetDecl),
+        45 => Ok(Relations::inputs_NameRef),
+        46 => Ok(Relations::inputs_New),
+        47 => Ok(Relations::inputs_Property),
+        48 => Ok(Relations::inputs_Return),
+        49 => Ok(Relations::inputs_Statement),
+        50 => Ok(Relations::inputs_Switch),
+        51 => Ok(Relations::inputs_SwitchCase),
+        52 => Ok(Relations::inputs_Template),
+        53 => Ok(Relations::inputs_Ternary),
+        54 => Ok(Relations::inputs_Throw),
+        55 => Ok(Relations::inputs_Try),
+        56 => Ok(Relations::inputs_UnaryOp),
+        57 => Ok(Relations::inputs_VarDecl),
+        58 => Ok(Relations::inputs_While),
+        59 => Ok(Relations::inputs_With),
+        60 => Ok(Relations::inputs_Yield),
+        61 => Ok(Relations::is_exported_IsExported),
+        62 => Ok(Relations::name_in_scope_NameInScope),
+        63 => Ok(Relations::outputs_no_shadow_NoShadow),
+        64 => Ok(Relations::outputs_no_undef_ChainedWith),
+        65 => Ok(Relations::outputs_no_undef_NoUndef),
+        66 => Ok(Relations::outputs_no_unused_labels_LabelUsage),
+        67 => Ok(Relations::outputs_no_unused_labels_NoUnusedLabels),
+        68 => Ok(Relations::outputs_no_unused_labels_UsedLabel),
+        69 => Ok(Relations::outputs_typeof_undef_TypeofUndef),
+        70 => Ok(Relations::outputs_typeof_undef_WithinTypeofExpr),
+        71 => Ok(Relations::outputs_unused_vars_UnusedVariables),
+        72 => Ok(Relations::outputs_unused_vars_VariableUsages),
+        73 => Ok(Relations::outputs_use_before_def_UseBeforeDef),
+        74 => Ok(Relations::scopes_ChildScope),
+        75 => Ok(Relations::scopes_FunctionLevelScope),
+        76 => Ok(Relations::scopes_IsHoistable),
+        77 => Ok(Relations::scopes_ScopeOfId),
+        78 => Ok(Relations::variable_decl_VariableDecl),
              _  => Err(())
          }
     }
@@ -484,50 +572,51 @@ pub fn relid2name(rid: RelId) -> Option<&'static str> {
         31 => Some(&"inputs::FileExport"),
         32 => Some(&"inputs::For"),
         33 => Some(&"inputs::ForIn"),
-        34 => Some(&"inputs::Function"),
-        35 => Some(&"inputs::FunctionArg"),
-        36 => Some(&"inputs::If"),
-        37 => Some(&"inputs::ImplicitGlobal"),
-        38 => Some(&"inputs::ImportDecl"),
-        39 => Some(&"inputs::InlineFunc"),
-        40 => Some(&"inputs::InlineFuncParam"),
-        41 => Some(&"inputs::InputScope"),
-        42 => Some(&"inputs::Label"),
-        43 => Some(&"inputs::LetDecl"),
-        44 => Some(&"inputs::NameRef"),
-        45 => Some(&"inputs::New"),
-        46 => Some(&"inputs::Property"),
-        47 => Some(&"inputs::Return"),
-        48 => Some(&"inputs::Statement"),
-        49 => Some(&"inputs::Switch"),
-        50 => Some(&"inputs::SwitchCase"),
-        51 => Some(&"inputs::Template"),
-        52 => Some(&"inputs::Ternary"),
-        53 => Some(&"inputs::Throw"),
-        54 => Some(&"inputs::Try"),
-        55 => Some(&"inputs::UnaryOp"),
-        56 => Some(&"inputs::VarDecl"),
-        57 => Some(&"inputs::While"),
-        58 => Some(&"inputs::With"),
-        59 => Some(&"inputs::Yield"),
-        60 => Some(&"is_exported::IsExported"),
-        61 => Some(&"name_in_scope::NameInScope"),
-        62 => Some(&"outputs::no_shadow::NoShadow"),
-        63 => Some(&"outputs::no_undef::ChainedWith"),
-        64 => Some(&"outputs::no_undef::NoUndef"),
-        65 => Some(&"outputs::no_unused_labels::LabelUsage"),
-        66 => Some(&"outputs::no_unused_labels::NoUnusedLabels"),
-        67 => Some(&"outputs::no_unused_labels::UsedLabel"),
-        68 => Some(&"outputs::typeof_undef::TypeofUndef"),
-        69 => Some(&"outputs::typeof_undef::WithinTypeofExpr"),
-        70 => Some(&"outputs::unused_vars::UnusedVariables"),
-        71 => Some(&"outputs::unused_vars::VariableUsages"),
-        72 => Some(&"outputs::use_before_def::UseBeforeDef"),
-        73 => Some(&"scopes::ChildScope"),
-        74 => Some(&"scopes::FunctionLevelScope"),
-        75 => Some(&"scopes::IsHoistable"),
-        76 => Some(&"scopes::ScopeOfId"),
-        77 => Some(&"variable_decl::VariableDecl"),
+        34 => Some(&"inputs::ForOf"),
+        35 => Some(&"inputs::Function"),
+        36 => Some(&"inputs::FunctionArg"),
+        37 => Some(&"inputs::If"),
+        38 => Some(&"inputs::ImplicitGlobal"),
+        39 => Some(&"inputs::ImportDecl"),
+        40 => Some(&"inputs::InlineFunc"),
+        41 => Some(&"inputs::InlineFuncParam"),
+        42 => Some(&"inputs::InputScope"),
+        43 => Some(&"inputs::Label"),
+        44 => Some(&"inputs::LetDecl"),
+        45 => Some(&"inputs::NameRef"),
+        46 => Some(&"inputs::New"),
+        47 => Some(&"inputs::Property"),
+        48 => Some(&"inputs::Return"),
+        49 => Some(&"inputs::Statement"),
+        50 => Some(&"inputs::Switch"),
+        51 => Some(&"inputs::SwitchCase"),
+        52 => Some(&"inputs::Template"),
+        53 => Some(&"inputs::Ternary"),
+        54 => Some(&"inputs::Throw"),
+        55 => Some(&"inputs::Try"),
+        56 => Some(&"inputs::UnaryOp"),
+        57 => Some(&"inputs::VarDecl"),
+        58 => Some(&"inputs::While"),
+        59 => Some(&"inputs::With"),
+        60 => Some(&"inputs::Yield"),
+        61 => Some(&"is_exported::IsExported"),
+        62 => Some(&"name_in_scope::NameInScope"),
+        63 => Some(&"outputs::no_shadow::NoShadow"),
+        64 => Some(&"outputs::no_undef::ChainedWith"),
+        65 => Some(&"outputs::no_undef::NoUndef"),
+        66 => Some(&"outputs::no_unused_labels::LabelUsage"),
+        67 => Some(&"outputs::no_unused_labels::NoUnusedLabels"),
+        68 => Some(&"outputs::no_unused_labels::UsedLabel"),
+        69 => Some(&"outputs::typeof_undef::TypeofUndef"),
+        70 => Some(&"outputs::typeof_undef::WithinTypeofExpr"),
+        71 => Some(&"outputs::unused_vars::UnusedVariables"),
+        72 => Some(&"outputs::unused_vars::VariableUsages"),
+        73 => Some(&"outputs::use_before_def::UseBeforeDef"),
+        74 => Some(&"scopes::ChildScope"),
+        75 => Some(&"scopes::FunctionLevelScope"),
+        76 => Some(&"scopes::IsHoistable"),
+        77 => Some(&"scopes::ScopeOfId"),
+        78 => Some(&"variable_decl::VariableDecl"),
        _  => None
    }
 }
@@ -537,7 +626,7 @@ pub fn relid2cname(rid: RelId) -> Option<&'static ::std::ffi::CStr> {
 }   /// A map of `RelId`s to their name as an `&'static str`
 pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(78, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(79, ::fnv::FnvBuildHasher::default());
         map.insert(Relations::__Prefix_0, "__Prefix_0");
         map.insert(Relations::__Prefix_1, "__Prefix_1");
         map.insert(Relations::__Prefix_2, "__Prefix_2");
@@ -572,6 +661,7 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
         map.insert(Relations::inputs_FileExport, "inputs::FileExport");
         map.insert(Relations::inputs_For, "inputs::For");
         map.insert(Relations::inputs_ForIn, "inputs::ForIn");
+        map.insert(Relations::inputs_ForOf, "inputs::ForOf");
         map.insert(Relations::inputs_Function, "inputs::Function");
         map.insert(Relations::inputs_FunctionArg, "inputs::FunctionArg");
         map.insert(Relations::inputs_If, "inputs::If");
@@ -622,7 +712,7 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
 #[cfg(feature = "c_api")]
 pub static RELIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<RelId, &'static ::std::ffi::CStr>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(78, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(79, ::fnv::FnvBuildHasher::default());
         map.insert(0, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_0\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(1, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_1\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(2, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_2\0").expect("Unreachable: A null byte was specifically inserted"));
@@ -657,56 +747,57 @@ pub static RELIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<RelId, &'static 
         map.insert(31, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::FileExport\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(32, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::For\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(33, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ForIn\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(34, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Function\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(35, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::FunctionArg\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(36, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::If\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(37, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ImplicitGlobal\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(38, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ImportDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(39, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InlineFunc\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(40, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InlineFuncParam\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(41, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InputScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(42, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Label\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(43, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::LetDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(44, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::NameRef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(45, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::New\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(46, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Property\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(47, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Return\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(48, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Statement\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(49, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Switch\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(50, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::SwitchCase\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(51, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Template\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(52, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Ternary\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(53, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Throw\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(54, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Try\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(55, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::UnaryOp\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(56, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::VarDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(57, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::While\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(58, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::With\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(59, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Yield\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(60, ::std::ffi::CStr::from_bytes_with_nul(b"is_exported::IsExported\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(61, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::NameInScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(62, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_shadow::NoShadow\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(63, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::ChainedWith\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(64, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::NoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(65, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::LabelUsage\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(66, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::NoUnusedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(67, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::UsedLabel\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(68, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::typeof_undef::TypeofUndef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(69, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::typeof_undef::WithinTypeofExpr\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(70, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::UnusedVariables\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(71, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::VariableUsages\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(72, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::use_before_def::UseBeforeDef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(73, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ChildScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(74, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::FunctionLevelScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(75, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::IsHoistable\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(76, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeOfId\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(77, ::std::ffi::CStr::from_bytes_with_nul(b"variable_decl::VariableDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(34, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ForOf\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(35, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Function\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(36, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::FunctionArg\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(37, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::If\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(38, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ImplicitGlobal\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(39, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ImportDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(40, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InlineFunc\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(41, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InlineFuncParam\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(42, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InputScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(43, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Label\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(44, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::LetDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(45, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::NameRef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(46, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::New\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(47, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Property\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(48, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Return\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(49, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Statement\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(50, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Switch\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(51, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::SwitchCase\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(52, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Template\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(53, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Ternary\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(54, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Throw\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(55, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Try\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(56, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::UnaryOp\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(57, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::VarDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(58, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::While\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(59, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::With\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(60, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Yield\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(61, ::std::ffi::CStr::from_bytes_with_nul(b"is_exported::IsExported\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(62, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::NameInScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(63, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_shadow::NoShadow\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(64, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::ChainedWith\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(65, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::NoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(66, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::LabelUsage\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(67, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::NoUnusedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(68, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::UsedLabel\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(69, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::typeof_undef::TypeofUndef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(70, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::typeof_undef::WithinTypeofExpr\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(71, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::UnusedVariables\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(72, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::VariableUsages\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(73, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::use_before_def::UseBeforeDef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(74, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ChildScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(75, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::FunctionLevelScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(76, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::IsHoistable\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(77, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeOfId\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(78, ::std::ffi::CStr::from_bytes_with_nul(b"variable_decl::VariableDecl\0").expect("Unreachable: A null byte was specifically inserted"));
         map
     });
     /// A map of input `Relations`s to their name as an `&'static str`
 pub static INPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(51, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(52, ::fnv::FnvBuildHasher::default());
         map.insert(Relations::inputs_Array, "inputs::Array");
         map.insert(Relations::inputs_Arrow, "inputs::Arrow");
         map.insert(Relations::inputs_ArrowParam, "inputs::ArrowParam");
@@ -732,6 +823,7 @@ pub static INPUT_RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, 
         map.insert(Relations::inputs_FileExport, "inputs::FileExport");
         map.insert(Relations::inputs_For, "inputs::For");
         map.insert(Relations::inputs_ForIn, "inputs::ForIn");
+        map.insert(Relations::inputs_ForOf, "inputs::ForOf");
         map.insert(Relations::inputs_Function, "inputs::Function");
         map.insert(Relations::inputs_FunctionArg, "inputs::FunctionArg");
         map.insert(Relations::inputs_If, "inputs::If");
@@ -988,6 +1080,9 @@ pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::R
         Relations::inputs_ForIn => {
             Ok(<::types::inputs::ForIn>::from_record(_rec)?.into_ddvalue())
         },
+        Relations::inputs_ForOf => {
+            Ok(<::types::inputs::ForOf>::from_record(_rec)?.into_ddvalue())
+        },
         Relations::inputs_Function => {
             Ok(<::types::inputs::Function>::from_record(_rec)?.into_ddvalue())
         },
@@ -1198,16 +1293,16 @@ pub fn indexes2arrid(idx: Indexes) -> ArrId {
         Indexes::inputs_ExpressionById => ( 29, 6),
         Indexes::inputs_ExpressionBySpan => ( 29, 7),
         Indexes::inputs_FileById => ( 30, 1),
-        Indexes::inputs_ImplicitGlobalByFile => ( 37, 1),
-        Indexes::inputs_InputScopeByChild => ( 41, 1),
-        Indexes::inputs_InputScopeByFile => ( 41, 2),
-        Indexes::inputs_InputScopeByParent => ( 41, 3),
+        Indexes::inputs_ImplicitGlobalByFile => ( 38, 1),
+        Indexes::inputs_InputScopeByChild => ( 42, 1),
+        Indexes::inputs_InputScopeByFile => ( 42, 2),
+        Indexes::inputs_InputScopeByParent => ( 42, 3),
         Indexes::inputs_StatementByFile => ( 29, 5),
-        Indexes::inputs_StatementById => ( 48, 3),
-        Indexes::inputs_StatementBySpan => ( 48, 4),
-        Indexes::name_in_scope_Index_VariableInScope => ( 61, 12),
-        Indexes::name_in_scope_Index_VariablesForScope => ( 61, 13),
-        Indexes::scopes_ChildScopeByParent => ( 73, 2),
+        Indexes::inputs_StatementById => ( 49, 3),
+        Indexes::inputs_StatementBySpan => ( 49, 4),
+        Indexes::name_in_scope_Index_VariableInScope => ( 62, 12),
+        Indexes::name_in_scope_Index_VariablesForScope => ( 62, 13),
+        Indexes::scopes_ChildScopeByParent => ( 74, 2),
     }
 }
 #[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
@@ -1246,50 +1341,51 @@ pub enum Relations {
     inputs_FileExport = 31,
     inputs_For = 32,
     inputs_ForIn = 33,
-    inputs_Function = 34,
-    inputs_FunctionArg = 35,
-    inputs_If = 36,
-    inputs_ImplicitGlobal = 37,
-    inputs_ImportDecl = 38,
-    inputs_InlineFunc = 39,
-    inputs_InlineFuncParam = 40,
-    inputs_InputScope = 41,
-    inputs_Label = 42,
-    inputs_LetDecl = 43,
-    inputs_NameRef = 44,
-    inputs_New = 45,
-    inputs_Property = 46,
-    inputs_Return = 47,
-    inputs_Statement = 48,
-    inputs_Switch = 49,
-    inputs_SwitchCase = 50,
-    inputs_Template = 51,
-    inputs_Ternary = 52,
-    inputs_Throw = 53,
-    inputs_Try = 54,
-    inputs_UnaryOp = 55,
-    inputs_VarDecl = 56,
-    inputs_While = 57,
-    inputs_With = 58,
-    inputs_Yield = 59,
-    is_exported_IsExported = 60,
-    name_in_scope_NameInScope = 61,
-    outputs_no_shadow_NoShadow = 62,
-    outputs_no_undef_ChainedWith = 63,
-    outputs_no_undef_NoUndef = 64,
-    outputs_no_unused_labels_LabelUsage = 65,
-    outputs_no_unused_labels_NoUnusedLabels = 66,
-    outputs_no_unused_labels_UsedLabel = 67,
-    outputs_typeof_undef_TypeofUndef = 68,
-    outputs_typeof_undef_WithinTypeofExpr = 69,
-    outputs_unused_vars_UnusedVariables = 70,
-    outputs_unused_vars_VariableUsages = 71,
-    outputs_use_before_def_UseBeforeDef = 72,
-    scopes_ChildScope = 73,
-    scopes_FunctionLevelScope = 74,
-    scopes_IsHoistable = 75,
-    scopes_ScopeOfId = 76,
-    variable_decl_VariableDecl = 77
+    inputs_ForOf = 34,
+    inputs_Function = 35,
+    inputs_FunctionArg = 36,
+    inputs_If = 37,
+    inputs_ImplicitGlobal = 38,
+    inputs_ImportDecl = 39,
+    inputs_InlineFunc = 40,
+    inputs_InlineFuncParam = 41,
+    inputs_InputScope = 42,
+    inputs_Label = 43,
+    inputs_LetDecl = 44,
+    inputs_NameRef = 45,
+    inputs_New = 46,
+    inputs_Property = 47,
+    inputs_Return = 48,
+    inputs_Statement = 49,
+    inputs_Switch = 50,
+    inputs_SwitchCase = 51,
+    inputs_Template = 52,
+    inputs_Ternary = 53,
+    inputs_Throw = 54,
+    inputs_Try = 55,
+    inputs_UnaryOp = 56,
+    inputs_VarDecl = 57,
+    inputs_While = 58,
+    inputs_With = 59,
+    inputs_Yield = 60,
+    is_exported_IsExported = 61,
+    name_in_scope_NameInScope = 62,
+    outputs_no_shadow_NoShadow = 63,
+    outputs_no_undef_ChainedWith = 64,
+    outputs_no_undef_NoUndef = 65,
+    outputs_no_unused_labels_LabelUsage = 66,
+    outputs_no_unused_labels_NoUnusedLabels = 67,
+    outputs_no_unused_labels_UsedLabel = 68,
+    outputs_typeof_undef_TypeofUndef = 69,
+    outputs_typeof_undef_WithinTypeofExpr = 70,
+    outputs_unused_vars_UnusedVariables = 71,
+    outputs_unused_vars_VariableUsages = 72,
+    outputs_use_before_def_UseBeforeDef = 73,
+    scopes_ChildScope = 74,
+    scopes_FunctionLevelScope = 75,
+    scopes_IsHoistable = 76,
+    scopes_ScopeOfId = 77,
+    variable_decl_VariableDecl = 78
 }
 #[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
 pub enum Indexes {
@@ -1338,7 +1434,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                    {
                                        let __cloned = __v.clone();
-                                       match unsafe {< ::types::inputs::Arrow>::from_ddvalue(__v) } {
+                                       match < ::types::inputs::Arrow>::from_ddvalue(__v) {
                                            ::types::inputs::Arrow{expr_id: ref _0, file: ref _1, body: ::types::ddlog_std::Option::Some{x: ::types::ddlog_std::tuple2(_, _)}} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                            _ => None
                                        }.map(|x|(x,__cloned))
@@ -1363,7 +1459,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::ArrowParam>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::ArrowParam>::from_ddvalue(__v) {
                                                 ::types::inputs::ArrowParam{expr_id: ref _0, file: ref _1, param: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1388,7 +1484,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                     afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                     {
                                         let __cloned = __v.clone();
-                                        match unsafe {< ::types::inputs::Assign>::from_ddvalue(__v) } {
+                                        match < ::types::inputs::Assign>::from_ddvalue(__v) {
                                             ::types::inputs::Assign{expr_id: _, file: ref _0, lhs: ::types::ddlog_std::Option::Some{x: ::types::ddlog_std::Either::Left{l: _}}, rhs: _, op: _} => Some(((*_0).clone()).into_ddvalue()),
                                             _ => None
                                         }.map(|x|(x,__cloned))
@@ -1439,7 +1535,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                            afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                            {
                                                let __cloned = __v.clone();
-                                               match unsafe {< ::types::inputs::BracketAccess>::from_ddvalue(__v) } {
+                                               match < ::types::inputs::BracketAccess>::from_ddvalue(__v) {
                                                    ::types::inputs::BracketAccess{expr_id: _, file: ref _0, object: ::types::ddlog_std::Option::Some{x: _}, prop: ::types::ddlog_std::Option::Some{x: _}} => Some(((*_0).clone()).into_ddvalue()),
                                                    _ => None
                                                }.map(|x|(x,__cloned))
@@ -1464,7 +1560,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                    {
                                        let __cloned = __v.clone();
-                                       match unsafe {< ::types::inputs::Break>::from_ddvalue(__v) } {
+                                       match < ::types::inputs::Break>::from_ddvalue(__v) {
                                            ::types::inputs::Break{stmt_id: _, file: ref _0, label: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: _}}} => Some(((*_0).clone()).into_ddvalue()),
                                            _ => None
                                        }.map(|x|(x,__cloned))
@@ -1489,7 +1585,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                   afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                   {
                                       let __cloned = __v.clone();
-                                      match unsafe {< ::types::inputs::Call>::from_ddvalue(__v) } {
+                                      match < ::types::inputs::Call>::from_ddvalue(__v) {
                                           ::types::inputs::Call{expr_id: _, file: ref _0, callee: ::types::ddlog_std::Option::Some{x: _}, args: _} => Some(((*_0).clone()).into_ddvalue()),
                                           _ => None
                                       }.map(|x|(x,__cloned))
@@ -1505,7 +1601,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                            distinct:     false,
                            caching_mode: CachingMode::Set,
                            key_func:     Some((|__key: &DDValue| {
-                                                  let ref c = *unsafe {<::types::inputs::Class>::from_ddvalue_ref(__key) };
+                                                  let ref c = *<::types::inputs::Class>::from_ddvalue_ref(__key);
                                                   (::types::ddlog_std::tuple2(c.id.clone(), c.file.clone())).into_ddvalue()
                                               })),
                            id:           Relations::inputs_Class as RelId,
@@ -1517,7 +1613,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                    {
                                        let __cloned = __v.clone();
-                                       match unsafe {< ::types::inputs::Class>::from_ddvalue(__v) } {
+                                       match < ::types::inputs::Class>::from_ddvalue(__v) {
                                            ::types::inputs::Class{id: ref _0, file: ref _1, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: _}}, parent: _, elements: _, scope: _, exported: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                            _ => None
                                        }.map(|x|(x,__cloned))
@@ -1530,7 +1626,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                    {
                                        let __cloned = __v.clone();
-                                       match unsafe {< ::types::inputs::Class>::from_ddvalue(__v) } {
+                                       match < ::types::inputs::Class>::from_ddvalue(__v) {
                                            ::types::inputs::Class{id: _, file: ref _0, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: ref _1, span: _}}, parent: _, elements: _, scope: _, exported: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                            _ => None
                                        }.map(|x|(x,__cloned))
@@ -1554,7 +1650,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        name: r###"(inputs::ClassExpr{.expr_id=(_0: ast::ExprId), .file=(_1: ast::FileId), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>)}: inputs::ClassExpr) /*semijoin*/"###.to_string(),
                                        fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                        {
-                                           match unsafe {< ::types::inputs::ClassExpr>::from_ddvalue(__v) } {
+                                           match < ::types::inputs::ClassExpr>::from_ddvalue(__v) {
                                                ::types::inputs::ClassExpr{expr_id: ref _0, file: ref _1, elements: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                _ => None
                                            }
@@ -1579,7 +1675,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                        {
                                            let __cloned = __v.clone();
-                                           match unsafe {< ::types::inputs::ConstDecl>::from_ddvalue(__v) } {
+                                           match < ::types::inputs::ConstDecl>::from_ddvalue(__v) {
                                                ::types::inputs::ConstDecl{stmt_id: ref _0, file: ref _1, pattern: ::types::ddlog_std::Option::Some{x: _}, value: _, exported: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                _ => None
                                            }.map(|x|(x,__cloned))
@@ -1604,7 +1700,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                       afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                       {
                                           let __cloned = __v.clone();
-                                          match unsafe {< ::types::inputs::Continue>::from_ddvalue(__v) } {
+                                          match < ::types::inputs::Continue>::from_ddvalue(__v) {
                                               ::types::inputs::Continue{stmt_id: _, file: ref _0, label: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: _}}} => Some(((*_0).clone()).into_ddvalue()),
                                               _ => None
                                           }.map(|x|(x,__cloned))
@@ -1642,7 +1738,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                        {
                                            let __cloned = __v.clone();
-                                           match unsafe {< ::types::inputs::DotAccess>::from_ddvalue(__v) } {
+                                           match < ::types::inputs::DotAccess>::from_ddvalue(__v) {
                                                ::types::inputs::DotAccess{expr_id: _, file: ref _0, object: ::types::ddlog_std::Option::Some{x: _}, prop: _} => Some(((*_0).clone()).into_ddvalue()),
                                                _ => None
                                            }.map(|x|(x,__cloned))
@@ -1667,7 +1763,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::EveryScope>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::EveryScope>::from_ddvalue(__v) {
                                                 ::types::inputs::EveryScope{scope: _, file: ref _0} => Some(((*_0).clone()).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1680,7 +1776,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::EveryScope>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::EveryScope>::from_ddvalue(__v) {
                                                 ::types::inputs::EveryScope{scope: _, file: ref _0} => Some(((*_0).clone()).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1748,7 +1844,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                 distinct:     false,
                                 caching_mode: CachingMode::Set,
                                 key_func:     Some((|__key: &DDValue| {
-                                                       let ref e = *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__key) };
+                                                       let ref e = *<::types::inputs::Expression>::from_ddvalue_ref(__key);
                                                        (::types::ddlog_std::tuple2(e.id.clone(), e.file.clone())).into_ddvalue()
                                                    })),
                                 id:           Relations::inputs_Expression as RelId,
@@ -1760,7 +1856,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::Expression>::from_ddvalue(__v) {
                                                 ::types::inputs::Expression{id: ref _0, file: ref _1, kind: _, scope: _, span: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1773,7 +1869,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::Expression>::from_ddvalue(__v) {
                                                 ::types::inputs::Expression{id: ref _0, file: ref _1, kind: ::types::ast::ExprKind::ExprNameRef{}, scope: _, span: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1786,7 +1882,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::Expression>::from_ddvalue(__v) {
                                                 ::types::inputs::Expression{id: ref _0, file: ref _1, kind: ::types::ast::ExprKind::ExprGrouping{inner: ::types::ddlog_std::Option::Some{x: _}}, scope: _, span: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1799,7 +1895,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::Expression>::from_ddvalue(__v) {
                                                 ::types::inputs::Expression{id: ref _0, file: ref _1, kind: ::types::ast::ExprKind::ExprSequence{exprs: _}, scope: _, span: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1811,7 +1907,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         name: r###"(inputs::Expression{.id=(_0: ast::ExprId), .file=(_1: ast::FileId), .kind=(_: ast::ExprKind), .scope=(_2: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression) /*semijoin*/"###.to_string(),
                                         fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                         {
-                                            match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::Expression>::from_ddvalue(__v) {
                                                 ::types::inputs::Expression{id: ref _0, file: ref _1, kind: _, scope: ref _2, span: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                 _ => None
                                             }
@@ -1824,7 +1920,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::Expression>::from_ddvalue(__v) {
                                                 ::types::inputs::Expression{id: _, file: ref _0, kind: _, scope: _, span: _} => Some(((*_0).clone()).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1837,7 +1933,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::Expression>::from_ddvalue(__v) {
                                                 ::types::inputs::Expression{id: ref _0, file: ref _1, kind: _, scope: _, span: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1850,7 +1946,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::Expression>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::Expression>::from_ddvalue(__v) {
                                                 ::types::inputs::Expression{id: _, file: ref _1, kind: _, scope: _, span: ref _0} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -1866,7 +1962,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                           distinct:     false,
                           caching_mode: CachingMode::Set,
                           key_func:     Some((|__key: &DDValue| {
-                                                 let ref f = *unsafe {<::types::inputs::File>::from_ddvalue_ref(__key) };
+                                                 let ref f = *<::types::inputs::File>::from_ddvalue_ref(__key);
                                                  (f.id.clone()).into_ddvalue()
                                              })),
                           id:           Relations::inputs_File as RelId,
@@ -1878,7 +1974,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                   afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                   {
                                       let __cloned = __v.clone();
-                                      match unsafe {< ::types::inputs::File>::from_ddvalue(__v) } {
+                                      match < ::types::inputs::File>::from_ddvalue(__v) {
                                           ::types::inputs::File{id: ref _0, kind: _, top_level_scope: _, config: _} => Some(((*_0).clone()).into_ddvalue()),
                                           _ => None
                                       }.map(|x|(x,__cloned))
@@ -1891,7 +1987,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                   afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                   {
                                       let __cloned = __v.clone();
-                                      match unsafe {< ::types::inputs::File>::from_ddvalue(__v) } {
+                                      match < ::types::inputs::File>::from_ddvalue(__v) {
                                           ::types::inputs::File{id: ref _0, kind: _, top_level_scope: _, config: _} => Some(((*_0).clone()).into_ddvalue()),
                                           _ => None
                                       }.map(|x|(x,__cloned))
@@ -1917,7 +2013,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                  description: "head of __Prefix_4[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_unused_vars_enabled(config))." .to_string(),
                                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                  {
-                                                     let (ref file, ref config) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(&__v) } {
+                                                     let (ref file, ref config) = match *<::types::inputs::File>::from_ddvalue_ref(&__v) {
                                                          ::types::inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
                                                          _ => return None
                                                      };
@@ -1934,7 +2030,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple2(ref _0, _) => Some(((*_0).clone()).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -1960,7 +2056,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                  description: "head of __Prefix_5[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_undef_enabled(config))." .to_string(),
                                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                  {
-                                                     let (ref file, ref config) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(&__v) } {
+                                                     let (ref file, ref config) = match *<::types::inputs::File>::from_ddvalue_ref(&__v) {
                                                          ::types::inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
                                                          _ => return None
                                                      };
@@ -1977,7 +2073,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple2(ref _0, _) => Some(((*_0).clone()).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -2005,11 +2101,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                               arrangement: (Relations::inputs_BracketAccess as RelId,0),
                                                               jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                               {
-                                                                  let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                  let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                       ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                       _ => return None
                                                                   };
-                                                                  let (ref object, ref property) = match *unsafe {<::types::inputs::BracketAccess>::from_ddvalue_ref(__v2) } {
+                                                                  let (ref object, ref property) = match *<::types::inputs::BracketAccess>::from_ddvalue_ref(__v2) {
                                                                       ::types::inputs::BracketAccess{expr_id: _, file: _, object: ::types::ddlog_std::Option::Some{x: ref object}, prop: ::types::ddlog_std::Option::Some{x: ref property}} => ((*object).clone(), (*property).clone()),
                                                                       _ => return None
                                                                   };
@@ -2029,11 +2125,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                               arrangement: (Relations::inputs_DotAccess as RelId,0),
                                                               jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                               {
-                                                                  let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                  let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                       ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                       _ => return None
                                                                   };
-                                                                  let (ref property, ref object) = match *unsafe {<::types::inputs::DotAccess>::from_ddvalue_ref(__v2) } {
+                                                                  let (ref property, ref object) = match *<::types::inputs::DotAccess>::from_ddvalue_ref(__v2) {
                                                                       ::types::inputs::DotAccess{expr_id: ref property, file: _, object: ::types::ddlog_std::Option::Some{x: ref object}, prop: _} => ((*property).clone(), (*object).clone()),
                                                                       _ => return None
                                                                   };
@@ -2053,11 +2149,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                               arrangement: (Relations::outputs_no_undef_ChainedWith as RelId,0),
                                                               jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                               {
-                                                                  let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                  let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                       ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                       _ => return None
                                                                   };
-                                                                  let (ref object, ref interum) = match *unsafe {<::types::outputs::no_undef::ChainedWith>::from_ddvalue_ref(__v2) } {
+                                                                  let (ref object, ref interum) = match *<::types::outputs::no_undef::ChainedWith>::from_ddvalue_ref(__v2) {
                                                                       ::types::outputs::no_undef::ChainedWith{object: ref object, property: ref interum, file: _} => ((*object).clone(), (*interum).clone()),
                                                                       _ => return None
                                                                   };
@@ -2068,7 +2164,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                       description: "arrange __Prefix_5[((file: ast::FileId), (config: config::Config))], outputs::no_undef::ChainedWith[(outputs::no_undef::ChainedWith{.object=(object: ast::ExprId), .property=(interum: ast::ExprId), .file=(file: ast::FileId)}: outputs::no_undef::ChainedWith)] by (interum, file)" .to_string(),
                                                                                       afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                       {
-                                                                                          let ::types::ddlog_std::tuple3(ref file, ref object, ref interum) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v ) };
+                                                                                          let ::types::ddlog_std::tuple3(ref file, ref object, ref interum) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v );
                                                                                           Some(((::types::ddlog_std::tuple2((*interum).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple2((*file).clone(), (*object).clone())).into_ddvalue()))
                                                                                       }
                                                                                       __f},
@@ -2078,8 +2174,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                          arrangement: (Relations::outputs_no_undef_ChainedWith as RelId,1),
                                                                                                          jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                          {
-                                                                                                             let ::types::ddlog_std::tuple2(ref file, ref object) = *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                             let ref property = match *unsafe {<::types::outputs::no_undef::ChainedWith>::from_ddvalue_ref(__v2) } {
+                                                                                                             let ::types::ddlog_std::tuple2(ref file, ref object) = *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 );
+                                                                                                             let ref property = match *<::types::outputs::no_undef::ChainedWith>::from_ddvalue_ref(__v2) {
                                                                                                                  ::types::outputs::no_undef::ChainedWith{object: _, property: ref property, file: _} => (*property).clone(),
                                                                                                                  _ => return None
                                                                                                              };
@@ -2097,7 +2193,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                    {
                                                        let __cloned = __v.clone();
-                                                       match unsafe {< ::types::outputs::no_undef::ChainedWith>::from_ddvalue(__v) } {
+                                                       match < ::types::outputs::no_undef::ChainedWith>::from_ddvalue(__v) {
                                                            ::types::outputs::no_undef::ChainedWith{object: _, property: _, file: ref _0} => Some(((*_0).clone()).into_ddvalue()),
                                                            _ => None
                                                        }.map(|x|(x,__cloned))
@@ -2110,7 +2206,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                    {
                                                        let __cloned = __v.clone();
-                                                       match unsafe {< ::types::outputs::no_undef::ChainedWith>::from_ddvalue(__v) } {
+                                                       match < ::types::outputs::no_undef::ChainedWith>::from_ddvalue(__v) {
                                                            ::types::outputs::no_undef::ChainedWith{object: ref _0, property: _, file: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                            _ => None
                                                        }.map(|x|(x,__cloned))
@@ -2122,7 +2218,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                    name: r###"(outputs::no_undef::ChainedWith{.object=(_: ast::ExprId), .property=(_0: ast::ExprId), .file=(_1: ast::FileId)}: outputs::no_undef::ChainedWith) /*antijoin*/"###.to_string(),
                                                    fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                    {
-                                                       match unsafe {< ::types::outputs::no_undef::ChainedWith>::from_ddvalue(__v) } {
+                                                       match < ::types::outputs::no_undef::ChainedWith>::from_ddvalue(__v) {
                                                            ::types::outputs::no_undef::ChainedWith{object: _, property: ref _0, file: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                            _ => None
                                                        }
@@ -2148,7 +2244,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                  description: "head of __Prefix_6[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_use_before_def_enabled(config))." .to_string(),
                                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                  {
-                                                     let (ref file, ref config) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(&__v) } {
+                                                     let (ref file, ref config) = match *<::types::inputs::File>::from_ddvalue_ref(&__v) {
                                                          ::types::inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
                                                          _ => return None
                                                      };
@@ -2165,7 +2261,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple2(ref _0, _) => Some(((*_0).clone()).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -2191,7 +2287,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                  description: "head of __Prefix_7[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_unused_labels_enabled(config))." .to_string(),
                                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                  {
-                                                     let (ref file, ref config) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(&__v) } {
+                                                     let (ref file, ref config) = match *<::types::inputs::File>::from_ddvalue_ref(&__v) {
                                                          ::types::inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
                                                          _ => return None
                                                      };
@@ -2208,7 +2304,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple2(ref _0, _) => Some(((*_0).clone()).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -2234,7 +2330,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                  description: "head of __Prefix_8[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], ((config::no_undef_enabled(config)) or (config::no_typeof_undef_enabled(config)))." .to_string(),
                                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                  {
-                                                     let (ref file, ref config) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(&__v) } {
+                                                     let (ref file, ref config) = match *<::types::inputs::File>::from_ddvalue_ref(&__v) {
                                                          ::types::inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
                                                          _ => return None
                                                      };
@@ -2251,7 +2347,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple2(ref _0, _) => Some(((*_0).clone()).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -2300,13 +2396,26 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                ],
                            change_cb:    None
                        };
+    let inputs_ForOf = Relation {
+                           name:         "inputs::ForOf".to_string(),
+                           input:        true,
+                           distinct:     false,
+                           caching_mode: CachingMode::Set,
+                           key_func:     None,
+                           id:           Relations::inputs_ForOf as RelId,
+                           rules:        vec![
+                               ],
+                           arrangements: vec![
+                               ],
+                           change_cb:    None
+                       };
     let inputs_Function = Relation {
                               name:         "inputs::Function".to_string(),
                               input:        true,
                               distinct:     false,
                               caching_mode: CachingMode::Set,
                               key_func:     Some((|__key: &DDValue| {
-                                                     let ref f = *unsafe {<::types::inputs::Function>::from_ddvalue_ref(__key) };
+                                                     let ref f = *<::types::inputs::Function>::from_ddvalue_ref(__key);
                                                      (::types::ddlog_std::tuple2(f.id.clone(), f.file.clone())).into_ddvalue()
                                                  })),
                               id:           Relations::inputs_Function as RelId,
@@ -2318,7 +2427,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                       afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                       {
                                           let __cloned = __v.clone();
-                                          match unsafe {< ::types::inputs::Function>::from_ddvalue(__v) } {
+                                          match < ::types::inputs::Function>::from_ddvalue(__v) {
                                               ::types::inputs::Function{id: _, file: ref _1, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: _}}, scope: ref _0, body: _, exported: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                               _ => None
                                           }.map(|x|(x,__cloned))
@@ -2331,7 +2440,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                       afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                       {
                                           let __cloned = __v.clone();
-                                          match unsafe {< ::types::inputs::Function>::from_ddvalue(__v) } {
+                                          match < ::types::inputs::Function>::from_ddvalue(__v) {
                                               ::types::inputs::Function{id: ref _0, file: ref _1, name: _, scope: _, body: _, exported: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                               _ => None
                                           }.map(|x|(x,__cloned))
@@ -2344,7 +2453,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                       afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                       {
                                           let __cloned = __v.clone();
-                                          match unsafe {< ::types::inputs::Function>::from_ddvalue(__v) } {
+                                          match < ::types::inputs::Function>::from_ddvalue(__v) {
                                               ::types::inputs::Function{id: ref _0, file: ref _1, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: _}}, scope: _, body: _, exported: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                               _ => None
                                           }.map(|x|(x,__cloned))
@@ -2369,7 +2478,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                          afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                          {
                                              let __cloned = __v.clone();
-                                             match unsafe {< ::types::inputs::FunctionArg>::from_ddvalue(__v) } {
+                                             match < ::types::inputs::FunctionArg>::from_ddvalue(__v) {
                                                  ::types::inputs::FunctionArg{parent_func: ref _0, file: ref _1, pattern: _, implicit: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                  _ => None
                                              }.map(|x|(x,__cloned))
@@ -2407,7 +2516,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                             afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                             {
                                                 let __cloned = __v.clone();
-                                                match unsafe {< ::types::inputs::ImplicitGlobal>::from_ddvalue(__v) } {
+                                                match < ::types::inputs::ImplicitGlobal>::from_ddvalue(__v) {
                                                     ::types::inputs::ImplicitGlobal{id: _, file: ref _0, name: _, privileges: _} => Some(((*_0).clone()).into_ddvalue()),
                                                     _ => None
                                                 }.map(|x|(x,__cloned))
@@ -2420,7 +2529,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                             afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                             {
                                                 let __cloned = __v.clone();
-                                                match unsafe {< ::types::inputs::ImplicitGlobal>::from_ddvalue(__v) } {
+                                                match < ::types::inputs::ImplicitGlobal>::from_ddvalue(__v) {
                                                     ::types::inputs::ImplicitGlobal{id: _, file: ref _0, name: _, privileges: _} => Some(((*_0).clone()).into_ddvalue()),
                                                     _ => None
                                                 }.map(|x|(x,__cloned))
@@ -2445,7 +2554,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::ImportDecl>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::ImportDecl>::from_ddvalue(__v) {
                                                 ::types::inputs::ImportDecl{id: _, file: ref _0, clause: _} => Some(((*_0).clone()).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2470,7 +2579,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::InlineFunc>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::InlineFunc>::from_ddvalue(__v) {
                                                 ::types::inputs::InlineFunc{expr_id: _, file: ref _1, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: _}}, body: ::types::ddlog_std::Option::Some{x: ref _0}} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2483,7 +2592,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::InlineFunc>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::InlineFunc>::from_ddvalue(__v) {
                                                 ::types::inputs::InlineFunc{expr_id: ref _0, file: ref _1, name: _, body: ::types::ddlog_std::Option::Some{x: _}} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2496,7 +2605,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::InlineFunc>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::InlineFunc>::from_ddvalue(__v) {
                                                 ::types::inputs::InlineFunc{expr_id: _, file: ref _1, name: _, body: ::types::ddlog_std::Option::Some{x: ref _0}} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2521,7 +2630,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                              {
                                                  let __cloned = __v.clone();
-                                                 match unsafe {< ::types::inputs::InlineFuncParam>::from_ddvalue(__v) } {
+                                                 match < ::types::inputs::InlineFuncParam>::from_ddvalue(__v) {
                                                      ::types::inputs::InlineFuncParam{expr_id: ref _0, file: ref _1, param: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                      _ => None
                                                  }.map(|x|(x,__cloned))
@@ -2546,7 +2655,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::InputScope>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::InputScope>::from_ddvalue(__v) {
                                                 ::types::inputs::InputScope{parent: _, child: ref _0, file: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2559,7 +2668,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::InputScope>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::InputScope>::from_ddvalue(__v) {
                                                 ::types::inputs::InputScope{parent: _, child: ref _0, file: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2572,7 +2681,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::InputScope>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::InputScope>::from_ddvalue(__v) {
                                                 ::types::inputs::InputScope{parent: _, child: _, file: ref _0} => Some(((*_0).clone()).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2585,7 +2694,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::inputs::InputScope>::from_ddvalue(__v) } {
+                                            match < ::types::inputs::InputScope>::from_ddvalue(__v) {
                                                 ::types::inputs::InputScope{parent: ref _0, child: _, file: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2611,7 +2720,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                         description: "head of scopes::ChildScope[(scopes::ChildScope{.parent=parent, .child=child, .file=file}: scopes::ChildScope)] :- inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)], (parent != child)." .to_string(),
                                                         fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                         {
-                                                            let (ref parent, ref child, ref file) = match *unsafe {<::types::inputs::InputScope>::from_ddvalue_ref(&__v) } {
+                                                            let (ref parent, ref child, ref file) = match *<::types::inputs::InputScope>::from_ddvalue_ref(&__v) {
                                                                 ::types::inputs::InputScope{parent: ref parent, child: ref child, file: ref file} => ((*parent).clone(), (*child).clone(), (*file).clone()),
                                                                 _ => return None
                                                             };
@@ -2632,11 +2741,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                    arrangement: (Relations::scopes_ChildScope as RelId,0),
                                                    jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                    {
-                                                       let (ref parent, ref interum, ref file) = match *unsafe {<::types::inputs::InputScope>::from_ddvalue_ref(__v1) } {
+                                                       let (ref parent, ref interum, ref file) = match *<::types::inputs::InputScope>::from_ddvalue_ref(__v1) {
                                                            ::types::inputs::InputScope{parent: ref parent, child: ref interum, file: ref file} => ((*parent).clone(), (*interum).clone(), (*file).clone()),
                                                            _ => return None
                                                        };
-                                                       let ref child = match *unsafe {<::types::scopes::ChildScope>::from_ddvalue_ref(__v2) } {
+                                                       let ref child = match *<::types::scopes::ChildScope>::from_ddvalue_ref(__v2) {
                                                            ::types::scopes::ChildScope{parent: _, child: ref child, file: _} => (*child).clone(),
                                                            _ => return None
                                                        };
@@ -2653,7 +2762,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::scopes::ChildScope>::from_ddvalue(__v) } {
+                                            match < ::types::scopes::ChildScope>::from_ddvalue(__v) {
                                                 ::types::scopes::ChildScope{parent: ref _0, child: _, file: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2665,7 +2774,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         name: r###"(scopes::ChildScope{.parent=(_0: ast::ScopeId), .child=(_1: ast::ScopeId), .file=(_2: ast::FileId)}: scopes::ChildScope) /*antijoin*/"###.to_string(),
                                         fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                         {
-                                            match unsafe {< ::types::scopes::ChildScope>::from_ddvalue(__v) } {
+                                            match < ::types::scopes::ChildScope>::from_ddvalue(__v) {
                                                 ::types::scopes::ChildScope{parent: ref _0, child: ref _1, file: ref _2} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                 _ => None
                                             }
@@ -2678,7 +2787,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                         {
                                             let __cloned = __v.clone();
-                                            match unsafe {< ::types::scopes::ChildScope>::from_ddvalue(__v) } {
+                                            match < ::types::scopes::ChildScope>::from_ddvalue(__v) {
                                                 ::types::scopes::ChildScope{parent: ref _0, child: _, file: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                 _ => None
                                             }.map(|x|(x,__cloned))
@@ -2703,7 +2812,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                    {
                                        let __cloned = __v.clone();
-                                       match unsafe {< ::types::inputs::Label>::from_ddvalue(__v) } {
+                                       match < ::types::inputs::Label>::from_ddvalue(__v) {
                                            ::types::inputs::Label{stmt_id: _, file: ref _0, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: _}}, body: _, body_scope: _} => Some(((*_0).clone()).into_ddvalue()),
                                            _ => None
                                        }.map(|x|(x,__cloned))
@@ -2716,7 +2825,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                    {
                                        let __cloned = __v.clone();
-                                       match unsafe {< ::types::inputs::Label>::from_ddvalue(__v) } {
+                                       match < ::types::inputs::Label>::from_ddvalue(__v) {
                                            ::types::inputs::Label{stmt_id: _, file: ref _0, name: ::types::ddlog_std::Option::Some{x: _}, body: _, body_scope: _} => Some(((*_0).clone()).into_ddvalue()),
                                            _ => None
                                        }.map(|x|(x,__cloned))
@@ -2744,11 +2853,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                             arrangement: (Relations::inputs_Label as RelId,0),
                                             jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                             {
-                                                let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                     ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                     _ => return None
                                                 };
-                                                let (ref stmt, ref name, ref label_name, ref body_scope) = match *unsafe {<::types::inputs::Label>::from_ddvalue_ref(__v2) } {
+                                                let (ref stmt, ref name, ref label_name, ref body_scope) = match *<::types::inputs::Label>::from_ddvalue_ref(__v2) {
                                                     ::types::inputs::Label{stmt_id: ref stmt, file: _, name: ::types::ddlog_std::Option::Some{x: ref name}, body: _, body_scope: ref body_scope} => match name {
                                                                                                                                                                                                         ::types::ast::Spanned{data: ref label_name, span: _} => ((*stmt).clone(), (*name).clone(), (*label_name).clone(), (*body_scope).clone()),
                                                                                                                                                                                                         _ => return None
@@ -2767,7 +2876,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple6(ref _0, _, _, _, ref _1, ref _2) => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -2780,7 +2889,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple6(ref _1, _, _, _, _, ref _0) => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -2805,7 +2914,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                      {
                                          let __cloned = __v.clone();
-                                         match unsafe {< ::types::inputs::LetDecl>::from_ddvalue(__v) } {
+                                         match < ::types::inputs::LetDecl>::from_ddvalue(__v) {
                                              ::types::inputs::LetDecl{stmt_id: ref _0, file: ref _1, pattern: ::types::ddlog_std::Option::Some{x: _}, value: _, exported: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                              _ => None
                                          }.map(|x|(x,__cloned))
@@ -2830,7 +2939,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                      {
                                          let __cloned = __v.clone();
-                                         match unsafe {< ::types::inputs::NameRef>::from_ddvalue(__v) } {
+                                         match < ::types::inputs::NameRef>::from_ddvalue(__v) {
                                              ::types::inputs::NameRef{expr_id: ref _0, file: ref _1, value: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                              _ => None
                                          }.map(|x|(x,__cloned))
@@ -2843,7 +2952,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                      {
                                          let __cloned = __v.clone();
-                                         match unsafe {< ::types::inputs::NameRef>::from_ddvalue(__v) } {
+                                         match < ::types::inputs::NameRef>::from_ddvalue(__v) {
                                              ::types::inputs::NameRef{expr_id: _, file: ref _0, value: _} => Some(((*_0).clone()).into_ddvalue()),
                                              _ => None
                                          }.map(|x|(x,__cloned))
@@ -2856,7 +2965,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                      {
                                          let __cloned = __v.clone();
-                                         match unsafe {< ::types::inputs::NameRef>::from_ddvalue(__v) } {
+                                         match < ::types::inputs::NameRef>::from_ddvalue(__v) {
                                              ::types::inputs::NameRef{expr_id: _, file: ref _0, value: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                              _ => None
                                          }.map(|x|(x,__cloned))
@@ -2881,7 +2990,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::inputs::New>::from_ddvalue(__v) } {
+                                     match < ::types::inputs::New>::from_ddvalue(__v) {
                                          ::types::inputs::New{expr_id: _, file: ref _0, object: ::types::ddlog_std::Option::Some{x: _}, args: _} => Some(((*_0).clone()).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -2893,7 +3002,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  name: r###"(inputs::New{.expr_id=(_: ast::ExprId), .file=(_0: ast::FileId), .object=(ddlog_std::Some{.x=(_1: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::New) /*antijoin*/"###.to_string(),
                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                  {
-                                     match unsafe {< ::types::inputs::New>::from_ddvalue(__v) } {
+                                     match < ::types::inputs::New>::from_ddvalue(__v) {
                                          ::types::inputs::New{expr_id: _, file: ref _0, object: ::types::ddlog_std::Option::Some{x: ref _1}, args: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                          _ => None
                                      }
@@ -2921,11 +3030,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                             arrangement: (Relations::inputs_New as RelId,0),
                                             jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                             {
-                                                let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                     ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                     _ => return None
                                                 };
-                                                let (ref expr, ref object) = match *unsafe {<::types::inputs::New>::from_ddvalue_ref(__v2) } {
+                                                let (ref expr, ref object) = match *<::types::inputs::New>::from_ddvalue_ref(__v2) {
                                                     ::types::inputs::New{expr_id: ref expr, file: _, object: ::types::ddlog_std::Option::Some{x: ref object}, args: _} => ((*expr).clone(), (*object).clone()),
                                                     _ => return None
                                                 };
@@ -2936,7 +3045,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                     description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::New[(inputs::New{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .object=(ddlog_std::Some{.x=(object: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::New)] by (expr, file)" .to_string(),
                                                                     afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                     {
-                                                                        let ::types::ddlog_std::tuple4(ref file, ref config, ref expr, ref object) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v ) };
+                                                                        let ::types::ddlog_std::tuple4(ref file, ref config, ref expr, ref object) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v );
                                                                         Some(((::types::ddlog_std::tuple2((*expr).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*config).clone(), (*expr).clone(), (*object).clone())).into_ddvalue()))
                                                                     }
                                                                     __f},
@@ -2946,8 +3055,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                        arrangement: (Relations::inputs_Expression as RelId,0),
                                                                                        jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                        {
-                                                                                           let ::types::ddlog_std::tuple4(ref file, ref config, ref expr, ref object) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 ) };
-                                                                                           let (ref used_scope, ref used_in) = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                                                           let ::types::ddlog_std::tuple4(ref file, ref config, ref expr, ref object) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 );
+                                                                                           let (ref used_scope, ref used_in) = match *<::types::inputs::Expression>::from_ddvalue_ref(__v2) {
                                                                                                ::types::inputs::Expression{id: _, file: _, kind: _, scope: ref used_scope, span: ref used_in} => ((*used_scope).clone(), (*used_in).clone()),
                                                                                                _ => return None
                                                                                            };
@@ -2965,7 +3074,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple6(ref _1, _, _, ref _0, _, _) => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -2978,7 +3087,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple6(ref _0, _, _, _, _, _) => Some(((*_0).clone()).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -3006,11 +3115,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                             arrangement: (Relations::inputs_NameRef as RelId,0),
                                             jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                             {
-                                                let (ref file, ref config, ref expr, ref object, ref used_scope, ref used_in) = match *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref(__v1) } {
+                                                let (ref file, ref config, ref expr, ref object, ref used_scope, ref used_in) = match *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref(__v1) {
                                                     ::types::ddlog_std::tuple6(ref file, ref config, ref expr, ref object, ref used_scope, ref used_in) => ((*file).clone(), (*config).clone(), (*expr).clone(), (*object).clone(), (*used_scope).clone(), (*used_in).clone()),
                                                     _ => return None
                                                 };
-                                                let ref name = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v2) } {
+                                                let ref name = match *<::types::inputs::NameRef>::from_ddvalue_ref(__v2) {
                                                     ::types::inputs::NameRef{expr_id: _, file: _, value: ref name} => (*name).clone(),
                                                     _ => return None
                                                 };
@@ -3026,7 +3135,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple7<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple7<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple7(ref _0, _, _, _, ref _2, _, ref _1) => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -3039,7 +3148,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple7<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple7<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple7(ref _0, _, _, _, _, _, ref _1) => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -3081,7 +3190,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                distinct:     false,
                                caching_mode: CachingMode::Set,
                                key_func:     Some((|__key: &DDValue| {
-                                                      let ref stmt = *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__key) };
+                                                      let ref stmt = *<::types::inputs::Statement>::from_ddvalue_ref(__key);
                                                       (::types::ddlog_std::tuple2(stmt.id.clone(), stmt.file.clone())).into_ddvalue()
                                                   })),
                                id:           Relations::inputs_Statement as RelId,
@@ -3093,7 +3202,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                        {
                                            let __cloned = __v.clone();
-                                           match unsafe {< ::types::inputs::Statement>::from_ddvalue(__v) } {
+                                           match < ::types::inputs::Statement>::from_ddvalue(__v) {
                                                ::types::inputs::Statement{id: ref _0, file: ref _1, kind: _, scope: _, span: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                _ => None
                                            }.map(|x|(x,__cloned))
@@ -3106,7 +3215,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                        {
                                            let __cloned = __v.clone();
-                                           match unsafe {< ::types::inputs::Statement>::from_ddvalue(__v) } {
+                                           match < ::types::inputs::Statement>::from_ddvalue(__v) {
                                                ::types::inputs::Statement{id: _, file: ref _0, kind: _, scope: _, span: _} => Some(((*_0).clone()).into_ddvalue()),
                                                _ => None
                                            }.map(|x|(x,__cloned))
@@ -3119,7 +3228,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                        {
                                            let __cloned = __v.clone();
-                                           match unsafe {< ::types::inputs::Statement>::from_ddvalue(__v) } {
+                                           match < ::types::inputs::Statement>::from_ddvalue(__v) {
                                                ::types::inputs::Statement{id: ref _0, file: ref _1, kind: ::types::ast::StmtKind::StmtVarDecl{}, scope: _, span: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                _ => None
                                            }.map(|x|(x,__cloned))
@@ -3132,7 +3241,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                        {
                                            let __cloned = __v.clone();
-                                           match unsafe {< ::types::inputs::Statement>::from_ddvalue(__v) } {
+                                           match < ::types::inputs::Statement>::from_ddvalue(__v) {
                                                ::types::inputs::Statement{id: ref _0, file: ref _1, kind: _, scope: _, span: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                _ => None
                                            }.map(|x|(x,__cloned))
@@ -3145,7 +3254,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                        {
                                            let __cloned = __v.clone();
-                                           match unsafe {< ::types::inputs::Statement>::from_ddvalue(__v) } {
+                                           match < ::types::inputs::Statement>::from_ddvalue(__v) {
                                                ::types::inputs::Statement{id: _, file: ref _1, kind: _, scope: _, span: ref _0} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                _ => None
                                            }.map(|x|(x,__cloned))
@@ -3173,11 +3282,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::inputs_Break as RelId,0),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref stmt, ref name) = match *unsafe {<::types::inputs::Break>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref stmt, ref name) = match *<::types::inputs::Break>::from_ddvalue_ref(__v2) {
                                                                              ::types::inputs::Break{stmt_id: ref stmt, file: _, label: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: ref name, span: _}}} => ((*stmt).clone(), (*name).clone()),
                                                                              _ => return None
                                                                          };
@@ -3188,7 +3297,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_7[((file: ast::FileId), (config: config::Config))], inputs::Break[(inputs::Break{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .label=(ddlog_std::Some{.x=(ast::Spanned{.data=(name: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>)}: inputs::Break)] by (stmt, file)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple2((*stmt).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*file).clone(), (*stmt).clone(), (*name).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -3198,8 +3307,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                 arrangement: (Relations::inputs_Statement as RelId,0),
                                                                                                                 jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                 {
-                                                                                                                    let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                    let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                                                                                    let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 );
+                                                                                                                    let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                                                                         ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                                                                         _ => return None
                                                                                                                     };
@@ -3221,11 +3330,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::inputs_Continue as RelId,0),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref stmt, ref name) = match *unsafe {<::types::inputs::Continue>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref stmt, ref name) = match *<::types::inputs::Continue>::from_ddvalue_ref(__v2) {
                                                                              ::types::inputs::Continue{stmt_id: ref stmt, file: _, label: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: ref name, span: _}}} => ((*stmt).clone(), (*name).clone()),
                                                                              _ => return None
                                                                          };
@@ -3236,7 +3345,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_7[((file: ast::FileId), (config: config::Config))], inputs::Continue[(inputs::Continue{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .label=(ddlog_std::Some{.x=(ast::Spanned{.data=(name: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>)}: inputs::Continue)] by (stmt, file)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple2((*stmt).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*file).clone(), (*stmt).clone(), (*name).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -3246,8 +3355,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                 arrangement: (Relations::inputs_Statement as RelId,0),
                                                                                                                 jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                 {
-                                                                                                                    let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                    let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                                                                                    let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 );
+                                                                                                                    let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                                                                         ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                                                                         _ => return None
                                                                                                                     };
@@ -3264,7 +3373,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                           name: r###"(outputs::no_unused_labels::LabelUsage{.stmt=(_: ast::StmtId), .file=(_0: ast::FileId), .label_name=(_1: internment::Intern<string>), .scope=(_2: ast::ScopeId)}: outputs::no_unused_labels::LabelUsage) /*semijoin*/"###.to_string(),
                                                           fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                           {
-                                                              match unsafe {< ::types::outputs::no_unused_labels::LabelUsage>::from_ddvalue(__v) } {
+                                                              match < ::types::outputs::no_unused_labels::LabelUsage>::from_ddvalue(__v) {
                                                                   ::types::outputs::no_unused_labels::LabelUsage{stmt: _, file: ref _0, label_name: ref _1, scope: ref _2} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                                   _ => None
                                                               }
@@ -3292,7 +3401,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                     arrangement: (Relations::outputs_no_unused_labels_LabelUsage as RelId,0),
                                                                     jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,___v2: &()) -> Option<DDValue>
                                                                     {
-                                                                        let (ref file, ref config, ref stmt, ref name, ref label_name, ref body_scope) = match *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue_ref(__v1) } {
+                                                                        let (ref file, ref config, ref stmt, ref name, ref label_name, ref body_scope) = match *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue_ref(__v1) {
                                                                             ::types::ddlog_std::tuple6(ref file, ref config, ref stmt, ref name, ref label_name, ref body_scope) => ((*file).clone(), (*config).clone(), (*stmt).clone(), (*name).clone(), (*label_name).clone(), (*body_scope).clone()),
                                                                             _ => return None
                                                                         };
@@ -3312,11 +3421,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                     arrangement: (Relations::scopes_ChildScope as RelId,0),
                                                                     jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                     {
-                                                                        let (ref file, ref config, ref stmt, ref name, ref label_name, ref body_scope) = match *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue_ref(__v1) } {
+                                                                        let (ref file, ref config, ref stmt, ref name, ref label_name, ref body_scope) = match *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue_ref(__v1) {
                                                                             ::types::ddlog_std::tuple6(ref file, ref config, ref stmt, ref name, ref label_name, ref body_scope) => ((*file).clone(), (*config).clone(), (*stmt).clone(), (*name).clone(), (*label_name).clone(), (*body_scope).clone()),
                                                                             _ => return None
                                                                         };
-                                                                        let ref child_scope = match *unsafe {<::types::scopes::ChildScope>::from_ddvalue_ref(__v2) } {
+                                                                        let ref child_scope = match *<::types::scopes::ChildScope>::from_ddvalue_ref(__v2) {
                                                                             ::types::scopes::ChildScope{parent: _, child: ref child_scope, file: _} => (*child_scope).clone(),
                                                                             _ => return None
                                                                         };
@@ -3327,7 +3436,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                             description: "arrange __Prefix_2[((file: ast::FileId), (config: config::Config), (stmt: ast::StmtId), (name: ast::Spanned<ast::Name>), (label_name: internment::Intern<string>), (body_scope: ast::ScopeId))], scopes::ChildScope[(scopes::ChildScope{.parent=(body_scope: ast::ScopeId), .child=(child_scope: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ChildScope)] by (file, label_name, child_scope)" .to_string(),
                                                                                             afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                             {
-                                                                                                let ::types::ddlog_std::tuple5(ref file, ref stmt, ref name, ref label_name, ref child_scope) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                let ::types::ddlog_std::tuple5(ref file, ref stmt, ref name, ref label_name, ref child_scope) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                 Some(((::types::ddlog_std::tuple3((*file).clone(), (*label_name).clone(), (*child_scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*file).clone(), (*stmt).clone(), (*name).clone())).into_ddvalue()))
                                                                                             }
                                                                                             __f},
@@ -3337,7 +3446,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                arrangement: (Relations::outputs_no_unused_labels_LabelUsage as RelId,0),
                                                                                                                jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,___v2: &()) -> Option<DDValue>
                                                                                                                {
-                                                                                                                   let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>>>::from_ddvalue_ref( __v1 ) };
+                                                                                                                   let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>>>::from_ddvalue_ref( __v1 );
                                                                                                                    Some(((::types::outputs::no_unused_labels::UsedLabel{stmt_id: (*stmt).clone(), file: (*file).clone(), label_name: (*name).clone()})).into_ddvalue())
                                                                                                                }
                                                                                                                __f},
@@ -3351,7 +3460,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                          name: r###"(outputs::no_unused_labels::UsedLabel{.stmt_id=(_0: ast::StmtId), .file=(_1: ast::FileId), .label_name=(_2: ast::Spanned<ast::Name>)}: outputs::no_unused_labels::UsedLabel) /*antijoin*/"###.to_string(),
                                                          fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                          {
-                                                             match unsafe {< ::types::outputs::no_unused_labels::UsedLabel>::from_ddvalue(__v) } {
+                                                             match < ::types::outputs::no_unused_labels::UsedLabel>::from_ddvalue(__v) {
                                                                  ::types::outputs::no_unused_labels::UsedLabel{stmt_id: ref _0, file: ref _1, label_name: ref _2} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                                  _ => None
                                                              }
@@ -3379,11 +3488,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                          arrangement: (Relations::inputs_Label as RelId,1),
                                                                          jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                          {
-                                                                             let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                             let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                                  ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                                  _ => return None
                                                                              };
-                                                                             let (ref stmt, ref name) = match *unsafe {<::types::inputs::Label>::from_ddvalue_ref(__v2) } {
+                                                                             let (ref stmt, ref name) = match *<::types::inputs::Label>::from_ddvalue_ref(__v2) {
                                                                                  ::types::inputs::Label{stmt_id: ref stmt, file: _, name: ::types::ddlog_std::Option::Some{x: ref name}, body: _, body_scope: _} => ((*stmt).clone(), (*name).clone()),
                                                                                  _ => return None
                                                                              };
@@ -3394,7 +3503,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                  description: "arrange __Prefix_7[((file: ast::FileId), (config: config::Config))], inputs::Label[(inputs::Label{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .name=(ddlog_std::Some{.x=(name: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(_: ddlog_std::Option<ast::StmtId>), .body_scope=(_: ast::ScopeId)}: inputs::Label)] by (stmt, file, name)" .to_string(),
                                                                                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                  {
-                                                                                                     let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>>>::from_ddvalue_ref( &__v ) };
+                                                                                                     let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>>>::from_ddvalue_ref( &__v );
                                                                                                      Some(((::types::ddlog_std::tuple3((*stmt).clone(), (*file).clone(), (*name).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*file).clone(), (*stmt).clone(), (*name).clone())).into_ddvalue()))
                                                                                                  }
                                                                                                  __f},
@@ -3406,7 +3515,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                             description: "head of outputs::no_unused_labels::NoUnusedLabels[(outputs::no_unused_labels::NoUnusedLabels{.stmt_id=stmt, .file=file, .label_name=name}: outputs::no_unused_labels::NoUnusedLabels)] :- __Prefix_7[((file: ast::FileId), (config: config::Config))], inputs::Label[(inputs::Label{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .name=(ddlog_std::Some{.x=(name: ast::Spanned<ast::Name>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(_: ddlog_std::Option<ast::StmtId>), .body_scope=(_: ast::ScopeId)}: inputs::Label)], not outputs::no_unused_labels::UsedLabel[(outputs::no_unused_labels::UsedLabel{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .label_name=(name: ast::Spanned<ast::Name>)}: outputs::no_unused_labels::UsedLabel)]." .to_string(),
                                                                                                                                             fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                             {
-                                                                                                                                                let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                let ::types::ddlog_std::tuple3(ref file, ref stmt, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::StmtId, ::types::ast::Spanned<::types::internment::Intern<String>>>>::from_ddvalue_ref( &__v );
                                                                                                                                                 Some(((::types::outputs::no_unused_labels::NoUnusedLabels{stmt_id: (*stmt).clone(), file: (*file).clone(), label_name: (*name).clone()})).into_ddvalue())
                                                                                                                                             }
                                                                                                                                             __f},
@@ -3436,7 +3545,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                 description: "head of scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdFile{.file=file}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(scope: ast::ScopeId), .config=(_: config::Config)}: inputs::File)]." .to_string(),
                                                                 fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                 {
-                                                                    let (ref file, ref scope) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(&__v) } {
+                                                                    let (ref file, ref scope) = match *<::types::inputs::File>::from_ddvalue_ref(&__v) {
                                                                         ::types::inputs::File{id: ref file, kind: _, top_level_scope: ref scope, config: _} => ((*file).clone(), (*scope).clone()),
                                                                         _ => return None
                                                                     };
@@ -3454,7 +3563,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                 description: "head of scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=body, .nearest=body, .file=file, .id=(ast::AnyIdFunc{.func=func}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Function[(inputs::Function{.id=(func: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(body: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]." .to_string(),
                                                                 fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                 {
-                                                                    let (ref func, ref file, ref body) = match *unsafe {<::types::inputs::Function>::from_ddvalue_ref(&__v) } {
+                                                                    let (ref func, ref file, ref body) = match *<::types::inputs::Function>::from_ddvalue_ref(&__v) {
                                                                         ::types::inputs::Function{id: ref func, file: ref file, name: _, scope: _, body: ref body, exported: _} => ((*func).clone(), (*file).clone(), (*body).clone()),
                                                                         _ => return None
                                                                     };
@@ -3472,7 +3581,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                 description: "inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], var body = FlatMap(((vec::filter_map: function(ddlog_std::Vec<ast::IClassElement>, function(internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>):ddlog_std::Vec<ast::StmtId>)(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{((ast::body: function(ast::ClassElement):ddlog_std::Option<ast::StmtId>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))}))))" .to_string(),
                                                                 fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                 {
-                                                                    let (ref class, ref file, ref elements) = match *unsafe {<::types::inputs::Class>::from_ddvalue_ref(&__v) } {
+                                                                    let (ref class, ref file, ref elements) = match *<::types::inputs::Class>::from_ddvalue_ref(&__v) {
                                                                         ::types::inputs::Class{id: ref class, file: ref file, name: _, parent: _, elements: ::types::ddlog_std::Option::Some{x: ref elements}, scope: _, exported: _} => ((*class).clone(), (*file).clone(), (*elements).clone()),
                                                                         _ => return None
                                                                     };
@@ -3499,7 +3608,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                         description: "arrange inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], var body = FlatMap(((vec::filter_map: function(ddlog_std::Vec<ast::IClassElement>, function(internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>):ddlog_std::Vec<ast::StmtId>)(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{((ast::body: function(ast::ClassElement):ddlog_std::Option<ast::StmtId>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))})))) by (body, file)" .to_string(),
                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                         {
-                                                                                            let ::types::ddlog_std::tuple3(ref body, ref class, ref file) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::StmtId, ::types::ast::ClassId, ::types::ast::FileId>>::from_ddvalue_ref( &__v ) };
+                                                                                            let ::types::ddlog_std::tuple3(ref body, ref class, ref file) = *<::types::ddlog_std::tuple3<::types::ast::StmtId, ::types::ast::ClassId, ::types::ast::FileId>>::from_ddvalue_ref( &__v );
                                                                                             Some(((::types::ddlog_std::tuple2((*body).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple2((*class).clone(), (*file).clone())).into_ddvalue()))
                                                                                         }
                                                                                         __f},
@@ -3509,8 +3618,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            arrangement: (Relations::inputs_Statement as RelId,0),
                                                                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple2(ref class, ref file) = *unsafe {<::types::ddlog_std::tuple2<::types::ast::ClassId, ::types::ast::FileId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                               let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                                                                               let ::types::ddlog_std::tuple2(ref class, ref file) = *<::types::ddlog_std::tuple2<::types::ast::ClassId, ::types::ast::FileId>>::from_ddvalue_ref( __v1 );
+                                                                                                               let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                                                                    ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                                                                    _ => return None
                                                                                                                };
@@ -3530,7 +3639,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                 description: "inputs::ClassExpr[(inputs::ClassExpr{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>)}: inputs::ClassExpr)], var body = FlatMap(((vec::filter_map: function(ddlog_std::Vec<ast::IClassElement>, function(internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>):ddlog_std::Vec<ast::StmtId>)(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{((ast::body: function(ast::ClassElement):ddlog_std::Option<ast::StmtId>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))}))))" .to_string(),
                                                                 fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                 {
-                                                                    let (ref expr, ref file, ref elements) = match *unsafe {<::types::inputs::ClassExpr>::from_ddvalue_ref(&__v) } {
+                                                                    let (ref expr, ref file, ref elements) = match *<::types::inputs::ClassExpr>::from_ddvalue_ref(&__v) {
                                                                         ::types::inputs::ClassExpr{expr_id: ref expr, file: ref file, elements: ::types::ddlog_std::Option::Some{x: ref elements}} => ((*expr).clone(), (*file).clone(), (*elements).clone()),
                                                                         _ => return None
                                                                     };
@@ -3557,7 +3666,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                         description: "arrange inputs::ClassExpr[(inputs::ClassExpr{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>)}: inputs::ClassExpr)], var body = FlatMap(((vec::filter_map: function(ddlog_std::Vec<ast::IClassElement>, function(internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>):ddlog_std::Vec<ast::StmtId>)(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{((ast::body: function(ast::ClassElement):ddlog_std::Option<ast::StmtId>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))})))) by (body, file)" .to_string(),
                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                         {
-                                                                                            let ::types::ddlog_std::tuple3(ref body, ref expr, ref file) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::StmtId, ::types::ast::ExprId, ::types::ast::FileId>>::from_ddvalue_ref( &__v ) };
+                                                                                            let ::types::ddlog_std::tuple3(ref body, ref expr, ref file) = *<::types::ddlog_std::tuple3<::types::ast::StmtId, ::types::ast::ExprId, ::types::ast::FileId>>::from_ddvalue_ref( &__v );
                                                                                             Some(((::types::ddlog_std::tuple2((*body).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple2((*expr).clone(), (*file).clone())).into_ddvalue()))
                                                                                         }
                                                                                         __f},
@@ -3567,8 +3676,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            arrangement: (Relations::inputs_Statement as RelId,0),
                                                                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple2(ref expr, ref file) = *unsafe {<::types::ddlog_std::tuple2<::types::ast::ExprId, ::types::ast::FileId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                               let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                                                                               let ::types::ddlog_std::tuple2(ref expr, ref file) = *<::types::ddlog_std::tuple2<::types::ast::ExprId, ::types::ast::FileId>>::from_ddvalue_ref( __v1 );
+                                                                                                               let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                                                                    ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                                                                    _ => return None
                                                                                                                };
@@ -3590,11 +3699,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_Statement as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref expr, ref file, ref body) = match *unsafe {<::types::inputs::InlineFunc>::from_ddvalue_ref(__v1) } {
+                                                               let (ref expr, ref file, ref body) = match *<::types::inputs::InlineFunc>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::InlineFunc{expr_id: ref expr, file: ref file, name: _, body: ::types::ddlog_std::Option::Some{x: ref body}} => ((*expr).clone(), (*file).clone(), (*body).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                               let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                    _ => return None
                                                                };
@@ -3612,7 +3721,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                 description: "arrange inputs::Property[(inputs::Property{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .key=(_: ddlog_std::Option<ast::PropertyKey>), .val=(ddlog_std::Some{.x=(val: ast::PropertyVal)}: ddlog_std::Option<ast::PropertyVal>)}: inputs::Property)] by (body, file)" .to_string(),
                                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                 {
-                                                                    let (ref expr, ref file, ref val) = match *unsafe {<::types::inputs::Property>::from_ddvalue_ref(&__v) } {
+                                                                    let (ref expr, ref file, ref val) = match *<::types::inputs::Property>::from_ddvalue_ref(&__v) {
                                                                         ::types::inputs::Property{expr_id: ref expr, file: ref file, key: _, val: ::types::ddlog_std::Option::Some{x: ref val}} => ((*expr).clone(), (*file).clone(), (*val).clone()),
                                                                         _ => return None
                                                                     };
@@ -3629,8 +3738,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    arrangement: (Relations::inputs_Statement as RelId,0),
                                                                                    jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple2(ref expr, ref file) = *unsafe {<::types::ddlog_std::tuple2<::types::ast::ExprId, ::types::ast::FileId>>::from_ddvalue_ref( __v1 ) };
-                                                                                       let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                                                       let ::types::ddlog_std::tuple2(ref expr, ref file) = *<::types::ddlog_std::tuple2<::types::ast::ExprId, ::types::ast::FileId>>::from_ddvalue_ref( __v1 );
+                                                                                       let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                                            ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                                            _ => return None
                                                                                        };
@@ -3649,7 +3758,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                 description: "head of scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdExpr{.expr=expr}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Arrow[(inputs::Arrow{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .body=(ddlog_std::Some{.x=((_: ddlog_std::Either<ast::ExprId,ast::StmtId>), (scope: ast::ScopeId))}: ddlog_std::Option<(ddlog_std::Either<ast::ExprId,ast::StmtId>, ast::ScopeId)>)}: inputs::Arrow)]." .to_string(),
                                                                 fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                 {
-                                                                    let (ref expr, ref file, ref scope) = match *unsafe {<::types::inputs::Arrow>::from_ddvalue_ref(&__v) } {
+                                                                    let (ref expr, ref file, ref scope) = match *<::types::inputs::Arrow>::from_ddvalue_ref(&__v) {
                                                                         ::types::inputs::Arrow{expr_id: ref expr, file: ref file, body: ::types::ddlog_std::Option::Some{x: ::types::ddlog_std::tuple2(_, ref scope)}} => ((*expr).clone(), (*file).clone(), (*scope).clone()),
                                                                         _ => return None
                                                                     };
@@ -3669,11 +3778,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::scopes_ChildScope as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref parent, ref scope, ref file, ref id) = match *unsafe {<::types::scopes::FunctionLevelScope>::from_ddvalue_ref(__v1) } {
+                                                               let (ref parent, ref scope, ref file, ref id) = match *<::types::scopes::FunctionLevelScope>::from_ddvalue_ref(__v1) {
                                                                    ::types::scopes::FunctionLevelScope{scope: ref parent, nearest: ref scope, file: ref file, id: ref id} => ((*parent).clone(), (*scope).clone(), (*file).clone(), (*id).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref child = match *unsafe {<::types::scopes::ChildScope>::from_ddvalue_ref(__v2) } {
+                                                               let ref child = match *<::types::scopes::ChildScope>::from_ddvalue_ref(__v2) {
                                                                    ::types::scopes::ChildScope{parent: _, child: ref child, file: _} => (*child).clone(),
                                                                    _ => return None
                                                                };
@@ -3684,7 +3793,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    description: "arrange scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=(parent: ast::ScopeId), .nearest=(scope: ast::ScopeId), .file=(file: ast::FileId), .id=(id: ast::AnyId)}: scopes::FunctionLevelScope)], scopes::ChildScope[(scopes::ChildScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ChildScope)] by (child, file)" .to_string(),
                                                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple5(ref parent, ref scope, ref file, ref id, ref child) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::ScopeId, ::types::ast::ScopeId, ::types::ast::FileId, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                       let ::types::ddlog_std::tuple5(ref parent, ref scope, ref file, ref id, ref child) = *<::types::ddlog_std::tuple5<::types::ast::ScopeId, ::types::ast::ScopeId, ::types::ast::FileId, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                        Some(((::types::ddlog_std::tuple2((*child).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple5((*parent).clone(), (*scope).clone(), (*file).clone(), (*id).clone(), (*child).clone())).into_ddvalue()))
                                                                                    }
                                                                                    __f},
@@ -3693,10 +3802,10 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                       ffun: None,
                                                                                                       aggfun: &{fn __f(__key: &DDValue, __group__: &[(&DDValue, Weight)]) -> Option<DDValue>
                                                                                                   {
-                                                                                                      let ::types::ddlog_std::tuple2(ref child, ref file) = *unsafe {<::types::ddlog_std::tuple2<::types::ast::ScopeId, ::types::ast::FileId>>::from_ddvalue_ref( __key ) };
+                                                                                                      let ::types::ddlog_std::tuple2(ref child, ref file) = *<::types::ddlog_std::tuple2<::types::ast::ScopeId, ::types::ast::FileId>>::from_ddvalue_ref( __key );
                                                                                                       let ref __group = unsafe{::types::ddlog_std::Group::new_by_ref(::types::ddlog_std::tuple2((*child).clone(), (*file).clone()), __group__, {fn __f(__v: &DDValue) ->  ::types::ddlog_std::tuple2<::types::ast::ScopeId, ::types::ast::AnyId>
                                                                                                                                                                                                                                                {
-                                                                                                                                                                                                                                                   let ::types::ddlog_std::tuple5(ref parent, ref scope, ref file, ref id, ref child) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::ScopeId, ::types::ast::ScopeId, ::types::ast::FileId, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v ) };
+                                                                                                                                                                                                                                                   let ::types::ddlog_std::tuple5(ref parent, ref scope, ref file, ref id, ref child) = *<::types::ddlog_std::tuple5<::types::ast::ScopeId, ::types::ast::ScopeId, ::types::ast::FileId, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v );
                                                                                                                                                                                                                                                    ::types::ddlog_std::tuple2((*scope).clone(), (*id).clone())
                                                                                                                                                                                                                                                }
                                                                                                                                                                                                                                                ::std::rc::Rc::new(__f)})};
@@ -3724,7 +3833,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                               description: "head of scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=child, .nearest=scope, .file=file, .id=id}: scopes::FunctionLevelScope)] :- scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=(parent: ast::ScopeId), .nearest=(scope: ast::ScopeId), .file=(file: ast::FileId), .id=(id: ast::AnyId)}: scopes::FunctionLevelScope)], scopes::ChildScope[(scopes::ChildScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ChildScope)], var __group = (scope, id).group_by((child, file)), (((var scope: ast::ScopeId), (var id: ast::AnyId)) = ((group::arg_max: function(ddlog_std::Group<(ast::ScopeId, ast::FileId),(ast::ScopeId, ast::AnyId)>, function((ast::ScopeId, ast::AnyId)):ast::ScopeId):(ast::ScopeId, ast::AnyId))(__group, (function(scope: (ast::ScopeId, ast::AnyId)):ast::ScopeId{(scope.0)}))))." .to_string(),
                                                                                                                               fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                               {
-                                                                                                                                  let ::types::ddlog_std::tuple4(ref child, ref file, ref scope, ref id) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ScopeId, ::types::ast::FileId, ::types::ast::ScopeId, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                  let ::types::ddlog_std::tuple4(ref child, ref file, ref scope, ref id) = *<::types::ddlog_std::tuple4<::types::ast::ScopeId, ::types::ast::FileId, ::types::ast::ScopeId, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                                                   Some(((::types::scopes::FunctionLevelScope{scope: (*child).clone(), nearest: (*scope).clone(), file: (*file).clone(), id: (*id).clone()})).into_ddvalue())
                                                                                                                               }
                                                                                                                               __f},
@@ -3740,7 +3849,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::scopes::FunctionLevelScope>::from_ddvalue(__v) } {
+                                                    match < ::types::scopes::FunctionLevelScope>::from_ddvalue(__v) {
                                                         ::types::scopes::FunctionLevelScope{scope: ref _0, nearest: _, file: ref _1, id: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -3766,7 +3875,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                        description: "head of scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdFile{.file=id}: ast::AnyId), .file=id, .scope=scope}: scopes::ScopeOfId)] :- inputs::File[(inputs::File{.id=(id: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(scope: ast::ScopeId), .config=(_: config::Config)}: inputs::File)]." .to_string(),
                                                        fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                        {
-                                                           let (ref id, ref scope) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(&__v) } {
+                                                           let (ref id, ref scope) = match *<::types::inputs::File>::from_ddvalue_ref(&__v) {
                                                                ::types::inputs::File{id: ref id, kind: _, top_level_scope: ref scope, config: _} => ((*id).clone(), (*scope).clone()),
                                                                _ => return None
                                                            };
@@ -3784,7 +3893,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                        description: "head of scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdFunc{.func=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(scope: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]." .to_string(),
                                                        fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                        {
-                                                           let (ref id, ref file, ref scope) = match *unsafe {<::types::inputs::Function>::from_ddvalue_ref(&__v) } {
+                                                           let (ref id, ref file, ref scope) = match *<::types::inputs::Function>::from_ddvalue_ref(&__v) {
                                                                ::types::inputs::Function{id: ref id, file: ref file, name: _, scope: ref scope, body: _, exported: _} => ((*id).clone(), (*file).clone(), (*scope).clone()),
                                                                _ => return None
                                                            };
@@ -3802,7 +3911,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                        description: "head of scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdClass{.class=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Class[(inputs::Class{.id=(id: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(scope: ast::ScopeId), .exported=(_: bool)}: inputs::Class)]." .to_string(),
                                                        fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                        {
-                                                           let (ref id, ref file, ref scope) = match *unsafe {<::types::inputs::Class>::from_ddvalue_ref(&__v) } {
+                                                           let (ref id, ref file, ref scope) = match *<::types::inputs::Class>::from_ddvalue_ref(&__v) {
                                                                ::types::inputs::Class{id: ref id, file: ref file, name: _, parent: _, elements: _, scope: ref scope, exported: _} => ((*id).clone(), (*file).clone(), (*scope).clone()),
                                                                _ => return None
                                                            };
@@ -3820,7 +3929,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                        description: "head of scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Statement[(inputs::Statement{.id=(id: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]." .to_string(),
                                                        fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                        {
-                                                           let (ref id, ref file, ref scope) = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(&__v) } {
+                                                           let (ref id, ref file, ref scope) = match *<::types::inputs::Statement>::from_ddvalue_ref(&__v) {
                                                                ::types::inputs::Statement{id: ref id, file: ref file, kind: _, scope: ref scope, span: _} => ((*id).clone(), (*file).clone(), (*scope).clone()),
                                                                _ => return None
                                                            };
@@ -3838,7 +3947,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                        description: "head of scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdExpr{.expr=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Expression[(inputs::Expression{.id=(id: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]." .to_string(),
                                                        fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                        {
-                                                           let (ref id, ref file, ref scope) = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(&__v) } {
+                                                           let (ref id, ref file, ref scope) = match *<::types::inputs::Expression>::from_ddvalue_ref(&__v) {
                                                                ::types::inputs::Expression{id: ref id, file: ref file, kind: _, scope: ref scope, span: _} => ((*id).clone(), (*file).clone(), (*scope).clone()),
                                                                _ => return None
                                                            };
@@ -3858,11 +3967,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                   arrangement: (Relations::inputs_File as RelId,0),
                                                   jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                   {
-                                                      let (ref id, ref file) = match *unsafe {<::types::inputs::ImportDecl>::from_ddvalue_ref(__v1) } {
+                                                      let (ref id, ref file) = match *<::types::inputs::ImportDecl>::from_ddvalue_ref(__v1) {
                                                           ::types::inputs::ImportDecl{id: ref id, file: ref file, clause: _} => ((*id).clone(), (*file).clone()),
                                                           _ => return None
                                                       };
-                                                      let ref scope = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(__v2) } {
+                                                      let ref scope = match *<::types::inputs::File>::from_ddvalue_ref(__v2) {
                                                           ::types::inputs::File{id: _, kind: _, top_level_scope: ref scope, config: _} => (*scope).clone(),
                                                           _ => return None
                                                       };
@@ -3878,7 +3987,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                        {
                                            let __cloned = __v.clone();
-                                           match unsafe {< ::types::scopes::ScopeOfId>::from_ddvalue(__v) } {
+                                           match < ::types::scopes::ScopeOfId>::from_ddvalue(__v) {
                                                ::types::scopes::ScopeOfId{id: ref _0, file: ref _1, scope: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                _ => None
                                            }.map(|x|(x,__cloned))
@@ -3968,7 +4077,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::inputs::Try>::from_ddvalue(__v) } {
+                                     match < ::types::inputs::Try>::from_ddvalue(__v) {
                                          ::types::inputs::Try{stmt_id: _, file: ref _0, body: _, handler: ::types::ast::TryHandler{error: ::types::ddlog_std::Option::Some{x: _}, body: ::types::ddlog_std::Option::Some{x: _}}, finalizer: _} => Some(((*_0).clone()).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -3993,7 +4102,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                      {
                                          let __cloned = __v.clone();
-                                         match unsafe {< ::types::inputs::UnaryOp>::from_ddvalue(__v) } {
+                                         match < ::types::inputs::UnaryOp>::from_ddvalue(__v) {
                                              ::types::inputs::UnaryOp{expr_id: _, file: ref _0, op: ::types::ddlog_std::Option::Some{x: ::types::ast::UnaryOperand::UnaryTypeof{}}, expr: ::types::ddlog_std::Option::Some{x: _}} => Some(((*_0).clone()).into_ddvalue()),
                                              _ => None
                                          }.map(|x|(x,__cloned))
@@ -4021,11 +4130,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                             arrangement: (Relations::outputs_typeof_undef_WithinTypeofExpr as RelId,0),
                                             jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                             {
-                                                let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                     ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                     _ => return None
                                                 };
-                                                let (ref type_of, ref expr) = match *unsafe {<::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue_ref(__v2) } {
+                                                let (ref type_of, ref expr) = match *<::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue_ref(__v2) {
                                                     ::types::outputs::typeof_undef::WithinTypeofExpr{type_of: ref type_of, expr: ref expr, file: _} => ((*type_of).clone(), (*expr).clone()),
                                                     _ => return None
                                                 };
@@ -4041,7 +4150,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                  {
                                      let __cloned = __v.clone();
-                                     match unsafe {< ::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue(__v) } {
+                                     match < ::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue(__v) {
                                          ::types::ddlog_std::tuple4(ref _1, _, _, ref _0) => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                          _ => None
                                      }.map(|x|(x,__cloned))
@@ -4069,11 +4178,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                        arrangement: (Relations::inputs_UnaryOp as RelId,0),
                                                                        jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                        {
-                                                                           let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                           let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                                ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                                _ => return None
                                                                            };
-                                                                           let (ref type_of, ref expr) = match *unsafe {<::types::inputs::UnaryOp>::from_ddvalue_ref(__v2) } {
+                                                                           let (ref type_of, ref expr) = match *<::types::inputs::UnaryOp>::from_ddvalue_ref(__v2) {
                                                                                ::types::inputs::UnaryOp{expr_id: ref type_of, file: _, op: ::types::ddlog_std::Option::Some{x: ::types::ast::UnaryOperand::UnaryTypeof{}}, expr: ::types::ddlog_std::Option::Some{x: ref expr}} => ((*type_of).clone(), (*expr).clone()),
                                                                                _ => return None
                                                                            };
@@ -4093,11 +4202,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                        arrangement: (Relations::inputs_Expression as RelId,2),
                                                                        jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                        {
-                                                                           let (ref file, ref config, ref type_of, ref expr) = match *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref(__v1) } {
+                                                                           let (ref file, ref config, ref type_of, ref expr) = match *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref(__v1) {
                                                                                ::types::ddlog_std::tuple4(ref file, ref config, ref type_of, ref expr) => ((*file).clone(), (*config).clone(), (*type_of).clone(), (*expr).clone()),
                                                                                _ => return None
                                                                            };
-                                                                           let ref grouped = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                                           let ref grouped = match *<::types::inputs::Expression>::from_ddvalue_ref(__v2) {
                                                                                ::types::inputs::Expression{id: _, file: _, kind: ::types::ast::ExprKind::ExprGrouping{inner: ::types::ddlog_std::Option::Some{x: ref grouped}}, scope: _, span: _} => (*grouped).clone(),
                                                                                _ => return None
                                                                            };
@@ -4117,11 +4226,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                        arrangement: (Relations::inputs_Expression as RelId,3),
                                                                        jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                        {
-                                                                           let (ref file, ref config, ref type_of, ref expr) = match *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref(__v1) } {
+                                                                           let (ref file, ref config, ref type_of, ref expr) = match *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref(__v1) {
                                                                                ::types::ddlog_std::tuple4(ref file, ref config, ref type_of, ref expr) => ((*file).clone(), (*config).clone(), (*type_of).clone(), (*expr).clone()),
                                                                                _ => return None
                                                                            };
-                                                                           let ref sequence = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                                           let ref sequence = match *<::types::inputs::Expression>::from_ddvalue_ref(__v2) {
                                                                                ::types::inputs::Expression{id: _, file: _, kind: ::types::ast::ExprKind::ExprSequence{exprs: ref sequence}, scope: _, span: _} => (*sequence).clone(),
                                                                                _ => return None
                                                                            };
@@ -4141,7 +4250,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                             afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                             {
                                                                 let __cloned = __v.clone();
-                                                                match unsafe {< ::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue(__v) } {
+                                                                match < ::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue(__v) {
                                                                     ::types::outputs::typeof_undef::WithinTypeofExpr{type_of: _, expr: _, file: ref _0} => Some(((*_0).clone()).into_ddvalue()),
                                                                     _ => None
                                                                 }.map(|x|(x,__cloned))
@@ -4153,7 +4262,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                             name: r###"(outputs::typeof_undef::WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(_0: ast::ExprId), .file=(_1: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr) /*antijoin*/"###.to_string(),
                                                             fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                             {
-                                                                match unsafe {< ::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue(__v) } {
+                                                                match < ::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue(__v) {
                                                                     ::types::outputs::typeof_undef::WithinTypeofExpr{type_of: _, expr: ref _0, file: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                                     _ => None
                                                                 }
@@ -4166,7 +4275,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                             afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                             {
                                                                 let __cloned = __v.clone();
-                                                                match unsafe {< ::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue(__v) } {
+                                                                match < ::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue(__v) {
                                                                     ::types::outputs::typeof_undef::WithinTypeofExpr{type_of: _, expr: ref _0, file: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                                     _ => None
                                                                 }.map(|x|(x,__cloned))
@@ -4191,7 +4300,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                      {
                                          let __cloned = __v.clone();
-                                         match unsafe {< ::types::inputs::VarDecl>::from_ddvalue(__v) } {
+                                         match < ::types::inputs::VarDecl>::from_ddvalue(__v) {
                                              ::types::inputs::VarDecl{stmt_id: ref _0, file: ref _1, pattern: ::types::ddlog_std::Option::Some{x: _}, value: _, exported: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                              _ => None
                                          }.map(|x|(x,__cloned))
@@ -4219,11 +4328,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_EveryScope as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref global, ref file, ref name) = match *unsafe {<::types::inputs::ImplicitGlobal>::from_ddvalue_ref(__v1) } {
+                                                               let (ref global, ref file, ref name) = match *<::types::inputs::ImplicitGlobal>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::ImplicitGlobal{id: ref global, file: ref file, name: ref name, privileges: _} => ((*global).clone(), (*file).clone(), (*name).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref scope = match *unsafe {<::types::inputs::EveryScope>::from_ddvalue_ref(__v2) } {
+                                                               let ref scope = match *<::types::inputs::EveryScope>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::EveryScope{scope: ref scope, file: _} => (*scope).clone(),
                                                                    _ => return None
                                                                };
@@ -4243,11 +4352,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_EveryScope as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref id, ref file, ref clause) = match *unsafe {<::types::inputs::ImportDecl>::from_ddvalue_ref(__v1) } {
+                                                               let (ref id, ref file, ref clause) = match *<::types::inputs::ImportDecl>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::ImportDecl{id: ref id, file: ref file, clause: ref clause} => ((*id).clone(), (*file).clone(), (*clause).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref scope = match *unsafe {<::types::inputs::EveryScope>::from_ddvalue_ref(__v2) } {
+                                                               let ref scope = match *<::types::inputs::EveryScope>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::EveryScope{scope: ref scope, file: _} => (*scope).clone(),
                                                                    _ => return None
                                                                };
@@ -4258,7 +4367,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    description: "inputs::ImportDecl[(inputs::ImportDecl{.id=(id: ast::ImportId), .file=(file: ast::FileId), .clause=(clause: ast::ImportClause)}: inputs::ImportDecl)], inputs::EveryScope[(inputs::EveryScope{.scope=(scope: ast::ScopeId), .file=(file: ast::FileId)}: inputs::EveryScope)], var free_var = FlatMap((ast::free_variables(clause)))" .to_string(),
                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple4(ref id, ref file, ref clause, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ImportId, ::types::ast::FileId, ::types::ast::ImportClause, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                       let ::types::ddlog_std::tuple4(ref id, ref file, ref clause, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::ImportId, ::types::ast::FileId, ::types::ast::ImportClause, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                        let __flattened = ::types::ast::free_variables(clause);
                                                                                        let id = (*id).clone();
                                                                                        let file = (*file).clone();
@@ -4270,7 +4379,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=scope, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdImport{.import_=id}: ast::AnyId), .implicit=false, .is_arg=false, .origin=(name_in_scope::Imported{}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::ImportDecl[(inputs::ImportDecl{.id=(id: ast::ImportId), .file=(file: ast::FileId), .clause=(clause: ast::ImportClause)}: inputs::ImportDecl)], inputs::EveryScope[(inputs::EveryScope{.scope=(scope: ast::ScopeId), .file=(file: ast::FileId)}: inputs::EveryScope)], var free_var = FlatMap((ast::free_variables(clause))), ((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>) = free_var)." .to_string(),
                                                                                                            fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple4(ref free_var, ref id, ref file, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ImportId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                               let ::types::ddlog_std::tuple4(ref free_var, ref id, ref file, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ImportId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                let (ref name, ref span): (::types::internment::Intern<String>, ::types::ast::Span) = match (*free_var).clone() {
                                                                                                                    ::types::ast::Spanned{data: name, span: span} => (name, span),
                                                                                                                    _ => return None
@@ -4291,7 +4400,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                 description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=scope, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdClass{.class=class}: ast::AnyId), .implicit=false, .is_arg=false, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(name: internment::Intern<string>), .span=(span: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(scope: ast::ScopeId), .exported=(_: bool)}: inputs::Class)]." .to_string(),
                                                                 fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                 {
-                                                                    let (ref class, ref file, ref name, ref span, ref scope) = match *unsafe {<::types::inputs::Class>::from_ddvalue_ref(&__v) } {
+                                                                    let (ref class, ref file, ref name, ref span, ref scope) = match *<::types::inputs::Class>::from_ddvalue_ref(&__v) {
                                                                         ::types::inputs::Class{id: ref class, file: ref file, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: ref name, span: ref span}}, parent: _, elements: _, scope: ref scope, exported: _} => ((*class).clone(), (*file).clone(), (*name).clone(), (*span).clone(), (*scope).clone()),
                                                                         _ => return None
                                                                     };
@@ -4311,11 +4420,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_Statement as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref stmt, ref file, ref pat) = match *unsafe {<::types::inputs::LetDecl>::from_ddvalue_ref(__v1) } {
+                                                               let (ref stmt, ref file, ref pat) = match *<::types::inputs::LetDecl>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::LetDecl{stmt_id: ref stmt, file: ref file, pattern: ::types::ddlog_std::Option::Some{x: ref pat}, value: _, exported: _} => ((*stmt).clone(), (*file).clone(), (*pat).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                               let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                    _ => return None
                                                                };
@@ -4326,7 +4435,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    description: "inputs::LetDecl[(inputs::LetDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(ddlog_std::Some{.x=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::LetDecl)], inputs::Statement[(inputs::Statement{.id=(stmt: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat)))" .to_string(),
                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple4(ref stmt, ref file, ref pat, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                       let ::types::ddlog_std::tuple4(ref stmt, ref file, ref pat, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                        let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat);
                                                                                        let stmt = (*stmt).clone();
                                                                                        let file = (*file).clone();
@@ -4338,7 +4447,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=scope, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdStmt{.stmt=stmt}: ast::AnyId), .implicit=false, .is_arg=false, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::LetDecl[(inputs::LetDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(ddlog_std::Some{.x=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::LetDecl)], inputs::Statement[(inputs::Statement{.id=(stmt: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), ((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>) = bound_var)." .to_string(),
                                                                                                            fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref stmt, ref file, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::StmtId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref stmt, ref file, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::StmtId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                let (ref name, ref span): (::types::internment::Intern<String>, ::types::ast::Span) = match (*bound_var).clone() {
                                                                                                                    ::types::ast::Spanned{data: name, span: span} => (name, span),
                                                                                                                    _ => return None
@@ -4361,11 +4470,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_Statement as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref stmt, ref file, ref pat) = match *unsafe {<::types::inputs::ConstDecl>::from_ddvalue_ref(__v1) } {
+                                                               let (ref stmt, ref file, ref pat) = match *<::types::inputs::ConstDecl>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::ConstDecl{stmt_id: ref stmt, file: ref file, pattern: ::types::ddlog_std::Option::Some{x: ref pat}, value: _, exported: _} => ((*stmt).clone(), (*file).clone(), (*pat).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                               let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                    _ => return None
                                                                };
@@ -4376,7 +4485,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    description: "inputs::ConstDecl[(inputs::ConstDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(ddlog_std::Some{.x=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::ConstDecl)], inputs::Statement[(inputs::Statement{.id=(stmt: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat)))" .to_string(),
                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple4(ref stmt, ref file, ref pat, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                       let ::types::ddlog_std::tuple4(ref stmt, ref file, ref pat, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                        let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat);
                                                                                        let stmt = (*stmt).clone();
                                                                                        let file = (*file).clone();
@@ -4388,7 +4497,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=scope, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdStmt{.stmt=stmt}: ast::AnyId), .implicit=false, .is_arg=false, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::ConstDecl[(inputs::ConstDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(ddlog_std::Some{.x=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::ConstDecl)], inputs::Statement[(inputs::Statement{.id=(stmt: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), ((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>) = bound_var)." .to_string(),
                                                                                                            fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref stmt, ref file, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::StmtId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref stmt, ref file, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::StmtId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                let (ref name, ref span): (::types::internment::Intern<String>, ::types::ast::Span) = match (*bound_var).clone() {
                                                                                                                    ::types::ast::Spanned{data: name, span: span} => (name, span),
                                                                                                                    _ => return None
@@ -4411,11 +4520,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_Statement as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref stmt, ref file, ref pat) = match *unsafe {<::types::inputs::VarDecl>::from_ddvalue_ref(__v1) } {
+                                                               let (ref stmt, ref file, ref pat) = match *<::types::inputs::VarDecl>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::VarDecl{stmt_id: ref stmt, file: ref file, pattern: ::types::ddlog_std::Option::Some{x: ref pat}, value: _, exported: _} => ((*stmt).clone(), (*file).clone(), (*pat).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                               let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                    _ => return None
                                                                };
@@ -4426,7 +4535,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    description: "arrange inputs::VarDecl[(inputs::VarDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(ddlog_std::Some{.x=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::VarDecl)], inputs::Statement[(inputs::Statement{.id=(stmt: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)] by (scope, file)" .to_string(),
                                                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple4(ref stmt, ref file, ref pat, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                       let ::types::ddlog_std::tuple4(ref stmt, ref file, ref pat, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                        Some(((::types::ddlog_std::tuple2((*scope).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*stmt).clone(), (*file).clone(), (*pat).clone(), (*scope).clone())).into_ddvalue()))
                                                                                    }
                                                                                    __f},
@@ -4436,8 +4545,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                       arrangement: (Relations::scopes_FunctionLevelScope as RelId,0),
                                                                                                       jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                       {
-                                                                                                          let ::types::ddlog_std::tuple4(ref stmt, ref file, ref pat, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                          let ref nearest = match *unsafe {<::types::scopes::FunctionLevelScope>::from_ddvalue_ref(__v2) } {
+                                                                                                          let ::types::ddlog_std::tuple4(ref stmt, ref file, ref pat, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 );
+                                                                                                          let ref nearest = match *<::types::scopes::FunctionLevelScope>::from_ddvalue_ref(__v2) {
                                                                                                               ::types::scopes::FunctionLevelScope{scope: _, nearest: ref nearest, file: _, id: _} => (*nearest).clone(),
                                                                                                               _ => return None
                                                                                                           };
@@ -4448,7 +4557,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                               description: "inputs::VarDecl[(inputs::VarDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(ddlog_std::Some{.x=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::VarDecl)], inputs::Statement[(inputs::Statement{.id=(stmt: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=(scope: ast::ScopeId), .nearest=(nearest: ast::ScopeId), .file=(file: ast::FileId), .id=(_: ast::AnyId)}: scopes::FunctionLevelScope)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat)))" .to_string(),
                                                                                                                               fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                                                               {
-                                                                                                                                  let ::types::ddlog_std::tuple5(ref stmt, ref file, ref pat, ref scope, ref nearest) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                  let ::types::ddlog_std::tuple5(ref stmt, ref file, ref pat, ref scope, ref nearest) = *<::types::ddlog_std::tuple5<::types::ast::StmtId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                   let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat);
                                                                                                                                   let stmt = (*stmt).clone();
                                                                                                                                   let file = (*file).clone();
@@ -4461,7 +4570,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                       description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=nearest, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdStmt{.stmt=stmt}: ast::AnyId), .implicit=false, .is_arg=false, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(ddlog_std::Some{.x=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::VarDecl)], inputs::Statement[(inputs::Statement{.id=(stmt: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=(scope: ast::ScopeId), .nearest=(nearest: ast::ScopeId), .file=(file: ast::FileId), .id=(_: ast::AnyId)}: scopes::FunctionLevelScope)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), ((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>) = bound_var)." .to_string(),
                                                                                                                                                       fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                       {
-                                                                                                                                                          let ::types::ddlog_std::tuple5(ref bound_var, ref stmt, ref file, ref scope, ref nearest) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::StmtId, ::types::ast::FileId, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                          let ::types::ddlog_std::tuple5(ref bound_var, ref stmt, ref file, ref scope, ref nearest) = *<::types::ddlog_std::tuple5<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::StmtId, ::types::ast::FileId, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                           let (ref name, ref span): (::types::internment::Intern<String>, ::types::ast::Span) = match (*bound_var).clone() {
                                                                                                                                                               ::types::ast::Spanned{data: name, span: span} => (name, span),
                                                                                                                                                               _ => return None
@@ -4486,11 +4595,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::scopes_FunctionLevelScope as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref func, ref file, ref name, ref span, ref scope) = match *unsafe {<::types::inputs::Function>::from_ddvalue_ref(__v1) } {
+                                                               let (ref func, ref file, ref name, ref span, ref scope) = match *<::types::inputs::Function>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::Function{id: ref func, file: ref file, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: ref name, span: ref span}}, scope: ref scope, body: _, exported: _} => ((*func).clone(), (*file).clone(), (*name).clone(), (*span).clone(), (*scope).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref nearest = match *unsafe {<::types::scopes::FunctionLevelScope>::from_ddvalue_ref(__v2) } {
+                                                               let ref nearest = match *<::types::scopes::FunctionLevelScope>::from_ddvalue_ref(__v2) {
                                                                    ::types::scopes::FunctionLevelScope{scope: _, nearest: ref nearest, file: _, id: _} => (*nearest).clone(),
                                                                    _ => return None
                                                                };
@@ -4510,11 +4619,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_Function as RelId,1),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref func, ref file, ref pat, ref implicit) = match *unsafe {<::types::inputs::FunctionArg>::from_ddvalue_ref(__v1) } {
+                                                               let (ref func, ref file, ref pat, ref implicit) = match *<::types::inputs::FunctionArg>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::FunctionArg{parent_func: ref func, file: ref file, pattern: ref pat, implicit: ref implicit} => ((*func).clone(), (*file).clone(), (*pat).clone(), (*implicit).clone()),
                                                                    _ => return None
                                                                };
-                                                               let (ref scope, ref body) = match *unsafe {<::types::inputs::Function>::from_ddvalue_ref(__v2) } {
+                                                               let (ref scope, ref body) = match *<::types::inputs::Function>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::Function{id: _, file: _, name: _, scope: ref scope, body: ref body, exported: _} => ((*scope).clone(), (*body).clone()),
                                                                    _ => return None
                                                                };
@@ -4525,7 +4634,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    description: "inputs::FunctionArg[(inputs::FunctionArg{.parent_func=(func: ast::FuncId), .file=(file: ast::FileId), .pattern=(pat: internment::Intern<ast::Pattern>), .implicit=(implicit: bool)}: inputs::FunctionArg)], inputs::Function[(inputs::Function{.id=(func: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(scope: ast::ScopeId), .body=(body: ast::ScopeId), .exported=(_: bool)}: inputs::Function)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat)))" .to_string(),
                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple6(ref func, ref file, ref pat, ref implicit, ref scope, ref body) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FuncId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, bool, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                       let ::types::ddlog_std::tuple6(ref func, ref file, ref pat, ref implicit, ref scope, ref body) = *<::types::ddlog_std::tuple6<::types::ast::FuncId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, bool, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                        let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat);
                                                                                        let func = (*func).clone();
                                                                                        let file = (*file).clone();
@@ -4539,7 +4648,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=body, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdFunc{.func=func}: ast::AnyId), .implicit=implicit, .is_arg=true, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::FunctionArg[(inputs::FunctionArg{.parent_func=(func: ast::FuncId), .file=(file: ast::FileId), .pattern=(pat: internment::Intern<ast::Pattern>), .implicit=(implicit: bool)}: inputs::FunctionArg)], inputs::Function[(inputs::Function{.id=(func: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(scope: ast::ScopeId), .body=(body: ast::ScopeId), .exported=(_: bool)}: inputs::Function)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), ((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>) = bound_var)." .to_string(),
                                                                                                            fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple6(ref bound_var, ref func, ref file, ref implicit, ref scope, ref body) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::FuncId, ::types::ast::FileId, bool, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                               let ::types::ddlog_std::tuple6(ref bound_var, ref func, ref file, ref implicit, ref scope, ref body) = *<::types::ddlog_std::tuple6<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::FuncId, ::types::ast::FileId, bool, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                let (ref name, ref span): (::types::internment::Intern<String>, ::types::ast::Span) = match (*bound_var).clone() {
                                                                                                                    ::types::ast::Spanned{data: name, span: span} => (name, span),
                                                                                                                    _ => return None
@@ -4562,11 +4671,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_Arrow as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref expr, ref file, ref pat) = match *unsafe {<::types::inputs::ArrowParam>::from_ddvalue_ref(__v1) } {
+                                                               let (ref expr, ref file, ref pat) = match *<::types::inputs::ArrowParam>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::ArrowParam{expr_id: ref expr, file: ref file, param: ref pat} => ((*expr).clone(), (*file).clone(), (*pat).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref scope = match *unsafe {<::types::inputs::Arrow>::from_ddvalue_ref(__v2) } {
+                                                               let ref scope = match *<::types::inputs::Arrow>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::Arrow{expr_id: _, file: _, body: ::types::ddlog_std::Option::Some{x: ::types::ddlog_std::tuple2(_, ref scope)}} => (*scope).clone(),
                                                                    _ => return None
                                                                };
@@ -4577,7 +4686,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    description: "inputs::ArrowParam[(inputs::ArrowParam{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .param=(pat: internment::Intern<ast::Pattern>)}: inputs::ArrowParam)], inputs::Arrow[(inputs::Arrow{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .body=(ddlog_std::Some{.x=((_: ddlog_std::Either<ast::ExprId,ast::StmtId>), (scope: ast::ScopeId))}: ddlog_std::Option<(ddlog_std::Either<ast::ExprId,ast::StmtId>, ast::ScopeId)>)}: inputs::Arrow)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat)))" .to_string(),
                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple4(ref expr, ref file, ref pat, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                       let ::types::ddlog_std::tuple4(ref expr, ref file, ref pat, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                        let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat);
                                                                                        let expr = (*expr).clone();
                                                                                        let file = (*file).clone();
@@ -4589,7 +4698,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=scope, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdExpr{.expr=expr}: ast::AnyId), .implicit=false, .is_arg=true, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::ArrowParam[(inputs::ArrowParam{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .param=(pat: internment::Intern<ast::Pattern>)}: inputs::ArrowParam)], inputs::Arrow[(inputs::Arrow{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .body=(ddlog_std::Some{.x=((_: ddlog_std::Either<ast::ExprId,ast::StmtId>), (scope: ast::ScopeId))}: ddlog_std::Option<(ddlog_std::Either<ast::ExprId,ast::StmtId>, ast::ScopeId)>)}: inputs::Arrow)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), ((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>) = bound_var)." .to_string(),
                                                                                                            fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref expr, ref file, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ExprId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref expr, ref file, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ExprId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                let (ref name, ref span): (::types::internment::Intern<String>, ::types::ast::Span) = match (*bound_var).clone() {
                                                                                                                    ::types::ast::Spanned{data: name, span: span} => (name, span),
                                                                                                                    _ => return None
@@ -4612,11 +4721,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_Statement as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref expr, ref file, ref name, ref span, ref body) = match *unsafe {<::types::inputs::InlineFunc>::from_ddvalue_ref(__v1) } {
+                                                               let (ref expr, ref file, ref name, ref span, ref body) = match *<::types::inputs::InlineFunc>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::InlineFunc{expr_id: ref expr, file: ref file, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: ref name, span: ref span}}, body: ::types::ddlog_std::Option::Some{x: ref body}} => ((*expr).clone(), (*file).clone(), (*name).clone(), (*span).clone(), (*body).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                               let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                    _ => return None
                                                                };
@@ -4636,11 +4745,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_InlineFunc as RelId,1),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref expr, ref file, ref pat) = match *unsafe {<::types::inputs::InlineFuncParam>::from_ddvalue_ref(__v1) } {
+                                                               let (ref expr, ref file, ref pat) = match *<::types::inputs::InlineFuncParam>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::InlineFuncParam{expr_id: ref expr, file: ref file, param: ref pat} => ((*expr).clone(), (*file).clone(), (*pat).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref body = match *unsafe {<::types::inputs::InlineFunc>::from_ddvalue_ref(__v2) } {
+                                                               let ref body = match *<::types::inputs::InlineFunc>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::InlineFunc{expr_id: _, file: _, name: _, body: ::types::ddlog_std::Option::Some{x: ref body}} => (*body).clone(),
                                                                    _ => return None
                                                                };
@@ -4651,7 +4760,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    description: "arrange inputs::InlineFuncParam[(inputs::InlineFuncParam{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .param=(pat: internment::Intern<ast::Pattern>)}: inputs::InlineFuncParam)], inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)] by (body, file)" .to_string(),
                                                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple4(ref expr, ref file, ref pat, ref body) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::StmtId>>::from_ddvalue_ref( &__v ) };
+                                                                                       let ::types::ddlog_std::tuple4(ref expr, ref file, ref pat, ref body) = *<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::StmtId>>::from_ddvalue_ref( &__v );
                                                                                        Some(((::types::ddlog_std::tuple2((*body).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*expr).clone(), (*file).clone(), (*pat).clone())).into_ddvalue()))
                                                                                    }
                                                                                    __f},
@@ -4661,8 +4770,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                       arrangement: (Relations::inputs_Statement as RelId,0),
                                                                                                       jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                       {
-                                                                                                          let ::types::ddlog_std::tuple3(ref expr, ref file, ref pat) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::ExprId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                          let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                                                                          let ::types::ddlog_std::tuple3(ref expr, ref file, ref pat) = *<::types::ddlog_std::tuple3<::types::ast::ExprId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>>>::from_ddvalue_ref( __v1 );
+                                                                                                          let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                                                               ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                                                               _ => return None
                                                                                                           };
@@ -4673,7 +4782,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                               description: "inputs::InlineFuncParam[(inputs::InlineFuncParam{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .param=(pat: internment::Intern<ast::Pattern>)}: inputs::InlineFuncParam)], inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat)))" .to_string(),
                                                                                                                               fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                                                               {
-                                                                                                                                  let ::types::ddlog_std::tuple4(ref expr, ref file, ref pat, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                  let ::types::ddlog_std::tuple4(ref expr, ref file, ref pat, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                   let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat);
                                                                                                                                   let expr = (*expr).clone();
                                                                                                                                   let file = (*file).clone();
@@ -4685,7 +4794,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                       description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=scope, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdExpr{.expr=expr}: ast::AnyId), .implicit=false, .is_arg=true, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::InlineFuncParam[(inputs::InlineFuncParam{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .param=(pat: internment::Intern<ast::Pattern>)}: inputs::InlineFuncParam)], inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), ((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>) = bound_var)." .to_string(),
                                                                                                                                                       fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                       {
-                                                                                                                                                          let ::types::ddlog_std::tuple4(ref bound_var, ref expr, ref file, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ExprId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                          let ::types::ddlog_std::tuple4(ref bound_var, ref expr, ref file, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::ExprId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                           let (ref name, ref span): (::types::internment::Intern<String>, ::types::ast::Span) = match (*bound_var).clone() {
                                                                                                                                                               ::types::ast::Spanned{data: name, span: span} => (name, span),
                                                                                                                                                               _ => return None
@@ -4710,11 +4819,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::inputs_Statement as RelId,1),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref stmt, ref file, ref error, ref catcher) = match *unsafe {<::types::inputs::Try>::from_ddvalue_ref(__v1) } {
+                                                               let (ref stmt, ref file, ref error, ref catcher) = match *<::types::inputs::Try>::from_ddvalue_ref(__v1) {
                                                                    ::types::inputs::Try{stmt_id: ref stmt, file: ref file, body: _, handler: ::types::ast::TryHandler{error: ::types::ddlog_std::Option::Some{x: ref error}, body: ::types::ddlog_std::Option::Some{x: ref catcher}}, finalizer: _} => ((*stmt).clone(), (*file).clone(), (*error).clone(), (*catcher).clone()),
                                                                    _ => return None
                                                                };
-                                                               let (ref expr, ref scope) = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                               let (ref expr, ref scope) = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                    ::types::inputs::Statement{id: ref expr, file: _, kind: _, scope: ref scope, span: _} => ((*expr).clone(), (*scope).clone()),
                                                                    _ => return None
                                                                };
@@ -4725,7 +4834,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    description: "inputs::Try[(inputs::Try{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .body=(_: ddlog_std::Option<ast::StmtId>), .handler=(ast::TryHandler{.error=(ddlog_std::Some{.x=(error: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .body=(ddlog_std::Some{.x=(catcher: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: ast::TryHandler), .finalizer=(_: ddlog_std::Option<ast::StmtId>)}: inputs::Try)], inputs::Statement[(inputs::Statement{.id=(expr: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(error)))" .to_string(),
                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple4(ref file, ref error, ref catcher, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::StmtId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                       let ::types::ddlog_std::tuple4(ref file, ref error, ref catcher, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::StmtId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                        let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(error);
                                                                                        let file = (*file).clone();
                                                                                        let catcher = (*catcher).clone();
@@ -4737,7 +4846,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=scope, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdStmt{.stmt=catcher}: ast::AnyId), .implicit=false, .is_arg=false, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::Try[(inputs::Try{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .body=(_: ddlog_std::Option<ast::StmtId>), .handler=(ast::TryHandler{.error=(ddlog_std::Some{.x=(error: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .body=(ddlog_std::Some{.x=(catcher: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: ast::TryHandler), .finalizer=(_: ddlog_std::Option<ast::StmtId>)}: inputs::Try)], inputs::Statement[(inputs::Statement{.id=(expr: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(error))), ((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>) = bound_var)." .to_string(),
                                                                                                            fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref file, ref catcher, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::FileId, ::types::ast::StmtId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref file, ref catcher, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::FileId, ::types::ast::StmtId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                let (ref name, ref span): (::types::internment::Intern<String>, ::types::ast::Span) = match (*bound_var).clone() {
                                                                                                                    ::types::ast::Spanned{data: name, span: span} => (name, span),
                                                                                                                    _ => return None
@@ -4758,7 +4867,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                 description: "inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], var elem = FlatMap(elements)" .to_string(),
                                                                 fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                 {
-                                                                    let (ref class, ref file, ref elements) = match *unsafe {<::types::inputs::Class>::from_ddvalue_ref(&__v) } {
+                                                                    let (ref class, ref file, ref elements) = match *<::types::inputs::Class>::from_ddvalue_ref(&__v) {
                                                                         ::types::inputs::Class{id: ref class, file: ref file, name: _, parent: _, elements: ::types::ddlog_std::Option::Some{x: ref elements}, scope: _, exported: _} => ((*class).clone(), (*file).clone(), (*elements).clone()),
                                                                         _ => return None
                                                                     };
@@ -4772,7 +4881,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                         description: "arrange inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], var elem = FlatMap(elements) by (body, file)" .to_string(),
                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                         {
-                                                                                            let ::types::ddlog_std::tuple3(ref elem, ref class, ref file) = *unsafe {<::types::ddlog_std::tuple3<::types::internment::Intern<::types::ast::ClassElement>, ::types::ast::ClassId, ::types::ast::FileId>>::from_ddvalue_ref( &__v ) };
+                                                                                            let ::types::ddlog_std::tuple3(ref elem, ref class, ref file) = *<::types::ddlog_std::tuple3<::types::internment::Intern<::types::ast::ClassElement>, ::types::ast::ClassId, ::types::ast::FileId>>::from_ddvalue_ref( &__v );
                                                                                             let (ref params, ref body): (::types::ddlog_std::Vec<::types::ast::FuncParam>, ::types::ast::StmtId) = match ::types::ast::method_comps_ast_ClassElement_ddlog_std_Option____Tuple2__ddlog_std_Vec__ast_FuncParam_ast_StmtId(::types::internment::ival(elem)) {
                                                                                                 ::types::ddlog_std::Option::Some{x: ::types::ddlog_std::tuple2(params, body)} => (params, body),
                                                                                                 _ => return None
@@ -4786,8 +4895,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            arrangement: (Relations::inputs_Statement as RelId,0),
                                                                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple3(ref class, ref file, ref params) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::ClassId, ::types::ast::FileId, ::types::ddlog_std::Vec<::types::ast::FuncParam>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                               let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                                                                               let ::types::ddlog_std::tuple3(ref class, ref file, ref params) = *<::types::ddlog_std::tuple3<::types::ast::ClassId, ::types::ast::FileId, ::types::ddlog_std::Vec<::types::ast::FuncParam>>>::from_ddvalue_ref( __v1 );
+                                                                                                               let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                                                                    ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                                                                    _ => return None
                                                                                                                };
@@ -4798,7 +4907,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                    description: "inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], var elem = FlatMap(elements), ((ddlog_std::Some{.x=((var params: ddlog_std::Vec<ast::FuncParam>), (var body: ast::StmtId))}: ddlog_std::Option<(ddlog_std::Vec<ast::FuncParam>, ast::StmtId)>) = ((ast::method_comps: function(ast::ClassElement):ddlog_std::Option<(ddlog_std::Vec<ast::FuncParam>, ast::StmtId)>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((vec::flatmap: function(ddlog_std::Vec<ast::FuncParam>, function(ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>)(params, (function(param: ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>{((ast::bound_vars: function(ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>)(param))}))))" .to_string(),
                                                                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                                                                    {
-                                                                                                                                       let ::types::ddlog_std::tuple4(ref class, ref file, ref params, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ClassId, ::types::ast::FileId, ::types::ddlog_std::Vec<::types::ast::FuncParam>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                       let ::types::ddlog_std::tuple4(ref class, ref file, ref params, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::ClassId, ::types::ast::FileId, ::types::ddlog_std::Vec<::types::ast::FuncParam>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                        let __flattened = ::types::vec::flatmap::<::types::ast::FuncParam, ::types::ddlog_std::tuple2<::types::ast::Spanned<::types::internment::Intern<String>>, bool>>(params, (&{
                                                                                                                                                                                                                                                                                                                       (Box::new(closure::ClosureImpl{
                                                                                                                                                                                                                                                                                                                           description: "(function(param: ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>{(ast::bound_vars(param))})",
@@ -4823,7 +4932,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                            description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=scope, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdClass{.class=class}: ast::AnyId), .implicit=implicit, .is_arg=true, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], var elem = FlatMap(elements), ((ddlog_std::Some{.x=((var params: ddlog_std::Vec<ast::FuncParam>), (var body: ast::StmtId))}: ddlog_std::Option<(ddlog_std::Vec<ast::FuncParam>, ast::StmtId)>) = ((ast::method_comps: function(ast::ClassElement):ddlog_std::Option<(ddlog_std::Vec<ast::FuncParam>, ast::StmtId)>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((vec::flatmap: function(ddlog_std::Vec<ast::FuncParam>, function(ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>)(params, (function(param: ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>{((ast::bound_vars: function(ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>)(param))})))), (((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>), (var implicit: bool)) = bound_var)." .to_string(),
                                                                                                                                                            fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                            {
-                                                                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref class, ref file, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ddlog_std::tuple2<::types::ast::Spanned<::types::internment::Intern<String>>, bool>, ::types::ast::ClassId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                               let ::types::ddlog_std::tuple4(ref bound_var, ref class, ref file, ref scope) = *<::types::ddlog_std::tuple4<::types::ddlog_std::tuple2<::types::ast::Spanned<::types::internment::Intern<String>>, bool>, ::types::ast::ClassId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                let (ref name, ref span, ref implicit): (::types::internment::Intern<String>, ::types::ast::Span, bool) = match (*bound_var).clone() {
                                                                                                                                                                    ::types::ddlog_std::tuple2(::types::ast::Spanned{data: name, span: span}, implicit) => (name, span, implicit),
                                                                                                                                                                    _ => return None
@@ -4846,7 +4955,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                 description: "arrange inputs::Property[(inputs::Property{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .key=(_: ddlog_std::Option<ast::PropertyKey>), .val=(ddlog_std::Some{.x=(val: ast::PropertyVal)}: ddlog_std::Option<ast::PropertyVal>)}: inputs::Property)] by (body, file)" .to_string(),
                                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                 {
-                                                                    let (ref expr, ref file, ref val) = match *unsafe {<::types::inputs::Property>::from_ddvalue_ref(&__v) } {
+                                                                    let (ref expr, ref file, ref val) = match *<::types::inputs::Property>::from_ddvalue_ref(&__v) {
                                                                         ::types::inputs::Property{expr_id: ref expr, file: ref file, key: _, val: ::types::ddlog_std::Option::Some{x: ref val}} => ((*expr).clone(), (*file).clone(), (*val).clone()),
                                                                         _ => return None
                                                                     };
@@ -4863,8 +4972,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                    arrangement: (Relations::inputs_Statement as RelId,0),
                                                                                    jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                    {
-                                                                                       let ::types::ddlog_std::tuple3(ref expr, ref file, ref params) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::ExprId, ::types::ast::FileId, ::types::ddlog_std::Vec<::types::ast::FuncParam>>>::from_ddvalue_ref( __v1 ) };
-                                                                                       let ref scope = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                                                       let ::types::ddlog_std::tuple3(ref expr, ref file, ref params) = *<::types::ddlog_std::tuple3<::types::ast::ExprId, ::types::ast::FileId, ::types::ddlog_std::Vec<::types::ast::FuncParam>>>::from_ddvalue_ref( __v1 );
+                                                                                       let ref scope = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                                            ::types::inputs::Statement{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                                            _ => return None
                                                                                        };
@@ -4875,7 +4984,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                            description: "inputs::Property[(inputs::Property{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .key=(_: ddlog_std::Option<ast::PropertyKey>), .val=(ddlog_std::Some{.x=(val: ast::PropertyVal)}: ddlog_std::Option<ast::PropertyVal>)}: inputs::Property)], ((ddlog_std::Some{.x=((var params: ddlog_std::Vec<ast::FuncParam>), (var body: ast::StmtId))}: ddlog_std::Option<(ddlog_std::Vec<ast::FuncParam>, ast::StmtId)>) = ((ast::method_comps: function(ast::PropertyVal):ddlog_std::Option<(ddlog_std::Vec<ast::FuncParam>, ast::StmtId)>)(val))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((vec::flatmap: function(ddlog_std::Vec<ast::FuncParam>, function(ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>)(params, (function(param: ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>{((ast::bound_vars: function(ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>)(param))}))))" .to_string(),
                                                                                                            fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                                            {
-                                                                                                               let ::types::ddlog_std::tuple4(ref expr, ref file, ref params, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::ast::FileId, ::types::ddlog_std::Vec<::types::ast::FuncParam>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                               let ::types::ddlog_std::tuple4(ref expr, ref file, ref params, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::ExprId, ::types::ast::FileId, ::types::ddlog_std::Vec<::types::ast::FuncParam>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                let __flattened = ::types::vec::flatmap::<::types::ast::FuncParam, ::types::ddlog_std::tuple2<::types::ast::Spanned<::types::internment::Intern<String>>, bool>>(params, (&{
                                                                                                                                                                                                                                                                                               (Box::new(closure::ClosureImpl{
                                                                                                                                                                                                                                                                                                   description: "(function(param: ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>{(ast::bound_vars(param))})",
@@ -4900,7 +5009,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                    description: "head of name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=file, .name=name, .scope=scope, .span=(ddlog_std::Some{.x=span}: ddlog_std::Option<ast::Span>), .declared_in=(ast::AnyIdExpr{.expr=expr}: ast::AnyId), .implicit=implicit, .is_arg=true, .origin=(name_in_scope::UserDefined{.scope=scope}: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] :- inputs::Property[(inputs::Property{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .key=(_: ddlog_std::Option<ast::PropertyKey>), .val=(ddlog_std::Some{.x=(val: ast::PropertyVal)}: ddlog_std::Option<ast::PropertyVal>)}: inputs::Property)], ((ddlog_std::Some{.x=((var params: ddlog_std::Vec<ast::FuncParam>), (var body: ast::StmtId))}: ddlog_std::Option<(ddlog_std::Vec<ast::FuncParam>, ast::StmtId)>) = ((ast::method_comps: function(ast::PropertyVal):ddlog_std::Option<(ddlog_std::Vec<ast::FuncParam>, ast::StmtId)>)(val))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)], var bound_var = FlatMap(((vec::flatmap: function(ddlog_std::Vec<ast::FuncParam>, function(ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>)(params, (function(param: ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>{((ast::bound_vars: function(ast::FuncParam):ddlog_std::Vec<(ast::Spanned<internment::Intern<string>>, bool)>)(param))})))), (((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>), (var implicit: bool)) = bound_var)." .to_string(),
                                                                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                    {
-                                                                                                                                       let ::types::ddlog_std::tuple4(ref bound_var, ref expr, ref file, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ddlog_std::tuple2<::types::ast::Spanned<::types::internment::Intern<String>>, bool>, ::types::ast::ExprId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                       let ::types::ddlog_std::tuple4(ref bound_var, ref expr, ref file, ref scope) = *<::types::ddlog_std::tuple4<::types::ddlog_std::tuple2<::types::ast::Spanned<::types::internment::Intern<String>>, bool>, ::types::ast::ExprId, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                        let (ref name, ref span, ref implicit): (::types::internment::Intern<String>, ::types::ast::Span, bool) = match (*bound_var).clone() {
                                                                                                                                            ::types::ddlog_std::tuple2(::types::ast::Spanned{data: name, span: span}, implicit) => (name, span, implicit),
                                                                                                                                            _ => return None
@@ -4924,11 +5033,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                            arrangement: (Relations::scopes_ChildScope as RelId,0),
                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                            {
-                                                               let (ref file, ref name, ref from, ref span, ref declared_in, ref implicit, ref is_arg, ref origin) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v1) } {
+                                                               let (ref file, ref name, ref from, ref span, ref declared_in, ref implicit, ref is_arg, ref origin) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v1) {
                                                                    ::types::name_in_scope::NameInScope{file: ref file, name: ref name, scope: ref from, span: ref span, declared_in: ref declared_in, implicit: ref implicit, is_arg: ref is_arg, origin: ref origin} => ((*file).clone(), (*name).clone(), (*from).clone(), (*span).clone(), (*declared_in).clone(), (*implicit).clone(), (*is_arg).clone(), (*origin).clone()),
                                                                    _ => return None
                                                                };
-                                                               let ref to = match *unsafe {<::types::scopes::ChildScope>::from_ddvalue_ref(__v2) } {
+                                                               let ref to = match *<::types::scopes::ChildScope>::from_ddvalue_ref(__v2) {
                                                                    ::types::scopes::ChildScope{parent: _, child: ref to, file: _} => (*to).clone(),
                                                                    _ => return None
                                                                };
@@ -4944,7 +5053,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: _, declared_in: _, implicit: _, is_arg: _, origin: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -4957,7 +5066,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _1, name: _, scope: ref _0, span: _, declared_in: _, implicit: _, is_arg: _, origin: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -4970,7 +5079,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: _, scope: _, span: ::types::ddlog_std::Option::Some{x: _}, declared_in: _, implicit: false, is_arg: _, origin: _} => Some(((*_0).clone()).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -4983,7 +5092,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: ::types::ddlog_std::Option::Some{x: _}, declared_in: _, implicit: false, is_arg: _, origin: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -4996,7 +5105,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: _, scope: _, span: ::types::ddlog_std::Option::Some{x: _}, declared_in: _, implicit: false, is_arg: false, origin: _} => Some(((*_0).clone()).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -5008,7 +5117,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 name: r###"(name_in_scope::NameInScope{.file=(_0: ast::FileId), .name=(_1: internment::Intern<string>), .scope=(_2: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope) /*antijoin*/"###.to_string(),
                                                 fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                 {
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: _, declared_in: _, implicit: _, is_arg: _, origin: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                         _ => None
                                                     }
@@ -5021,7 +5130,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: _, scope: _, span: ::types::ddlog_std::Option::Some{x: _}, declared_in: _, implicit: false, is_arg: true, origin: _} => Some(((*_0).clone()).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -5034,7 +5143,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: _, scope: _, span: ::types::ddlog_std::Option::Some{x: _}, declared_in: ::types::ast::AnyId::AnyIdGlobal{global: _}, implicit: false, is_arg: false, origin: _} => Some(((*_0).clone()).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -5047,7 +5156,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: _, scope: _, span: _, declared_in: _, implicit: _, is_arg: _, origin: _} => Some(((*_0).clone()).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -5060,7 +5169,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: _, declared_in: ::types::ast::AnyId::AnyIdStmt{stmt: _}, implicit: _, is_arg: _, origin: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -5073,7 +5182,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: _, declared_in: ::types::ast::AnyId::AnyIdClass{class: _}, implicit: _, is_arg: _, origin: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -5086,7 +5195,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: ref _1, scope: ref _2, span: _, declared_in: ::types::ast::AnyId::AnyIdFunc{func: _}, implicit: _, is_arg: _, origin: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -5099,7 +5208,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: ref _2, scope: ref _1, span: _, declared_in: _, implicit: _, is_arg: _, origin: _} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -5112,7 +5221,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                 {
                                                     let __cloned = __v.clone();
-                                                    match unsafe {< ::types::name_in_scope::NameInScope>::from_ddvalue(__v) } {
+                                                    match < ::types::name_in_scope::NameInScope>::from_ddvalue(__v) {
                                                         ::types::name_in_scope::NameInScope{file: ref _0, name: _, scope: ref _1, span: _, declared_in: _, implicit: _, is_arg: _, origin: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                         _ => None
                                                     }.map(|x|(x,__cloned))
@@ -5140,11 +5249,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                           arrangement: (Relations::inputs_NameRef as RelId,1),
                                                           jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                           {
-                                                              let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                              let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                   ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                   _ => return None
                                                               };
-                                                              let (ref expr, ref name) = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v2) } {
+                                                              let (ref expr, ref name) = match *<::types::inputs::NameRef>::from_ddvalue_ref(__v2) {
                                                                   ::types::inputs::NameRef{expr_id: ref expr, file: _, value: ref name} => ((*expr).clone(), (*name).clone()),
                                                                   _ => return None
                                                               };
@@ -5155,7 +5264,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                   description: "arrange __Prefix_5[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)] by (expr, file)" .to_string(),
                                                                                   afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                   {
-                                                                                      let ::types::ddlog_std::tuple3(ref file, ref expr, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v ) };
+                                                                                      let ::types::ddlog_std::tuple3(ref file, ref expr, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v );
                                                                                       Some(((::types::ddlog_std::tuple2((*expr).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*file).clone(), (*expr).clone(), (*name).clone())).into_ddvalue()))
                                                                                   }
                                                                                   __f},
@@ -5165,8 +5274,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                      arrangement: (Relations::inputs_Expression as RelId,1),
                                                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                      {
-                                                                                                         let ::types::ddlog_std::tuple3(ref file, ref expr, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                         let (ref scope, ref span) = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                                                                         let ::types::ddlog_std::tuple3(ref file, ref expr, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 );
+                                                                                                         let (ref scope, ref span) = match *<::types::inputs::Expression>::from_ddvalue_ref(__v2) {
                                                                                                              ::types::inputs::Expression{id: _, file: _, kind: ::types::ast::ExprKind::ExprNameRef{}, scope: ref scope, span: ref span} => ((*scope).clone(), (*span).clone()),
                                                                                                              _ => return None
                                                                                                          };
@@ -5177,7 +5286,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                              description: "arrange __Prefix_5[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)] by (file, name, scope)" .to_string(),
                                                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                              {
-                                                                                                                                 let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                 let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref scope, ref span) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                  Some(((::types::ddlog_std::tuple3((*file).clone(), (*name).clone(), (*scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple5((*file).clone(), (*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue()))
                                                                                                                              }
                                                                                                                              __f},
@@ -5189,7 +5298,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                         description: "arrange __Prefix_5[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (expr, file)" .to_string(),
                                                                                                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                         {
-                                                                                                                                                                            let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                            let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref scope, ref span) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                             Some(((::types::ddlog_std::tuple2((*expr).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple5((*file).clone(), (*expr).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue()))
                                                                                                                                                                         }
                                                                                                                                                                         __f},
@@ -5201,7 +5310,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                    description: "arrange __Prefix_5[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], not outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId), .file=(file: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr)] by (expr, file)" .to_string(),
                                                                                                                                                                                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                    {
-                                                                                                                                                                                                                       let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                       let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref scope, ref span) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                        Some(((::types::ddlog_std::tuple2((*expr).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*name).clone(), (*scope).clone(), (*span).clone())).into_ddvalue()))
                                                                                                                                                                                                                    }
                                                                                                                                                                                                                    __f},
@@ -5213,7 +5322,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                               description: "head of outputs::no_undef::NoUndef[(outputs::no_undef::NoUndef{.name=name, .scope=scope, .span=span, .file=file}: outputs::no_undef::NoUndef)] :- __Prefix_5[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], not outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(expr: ast::ExprId), .file=(file: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr)], not outputs::no_undef::ChainedWith[(outputs::no_undef::ChainedWith{.object=(_: ast::ExprId), .property=(expr: ast::ExprId), .file=(file: ast::FileId)}: outputs::no_undef::ChainedWith)]." .to_string(),
                                                                                                                                                                                                                                                               fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                                                                                                                               {
-                                                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple4(ref file, ref name, ref scope, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple4(ref file, ref name, ref scope, ref span) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                                                   Some(((::types::outputs::no_undef::NoUndef{name: (*name).clone(), scope: (*scope).clone(), span: (*span).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                                                                                               }
                                                                                                                                                                                                                                                               __f},
@@ -5239,11 +5348,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                           arrangement: (Relations::inputs_Assign as RelId,0),
                                                           jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                           {
-                                                              let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                              let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                   ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                   _ => return None
                                                               };
-                                                              let (ref expr, ref pat) = match *unsafe {<::types::inputs::Assign>::from_ddvalue_ref(__v2) } {
+                                                              let (ref expr, ref pat) = match *<::types::inputs::Assign>::from_ddvalue_ref(__v2) {
                                                                   ::types::inputs::Assign{expr_id: ref expr, file: _, lhs: ::types::ddlog_std::Option::Some{x: ::types::ddlog_std::Either::Left{l: ref pat}}, rhs: _, op: _} => ((*expr).clone(), (*pat).clone()),
                                                                   _ => return None
                                                               };
@@ -5254,7 +5363,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                   description: "arrange __Prefix_5[((file: ast::FileId), (config: config::Config))], inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)] by (expr, file)" .to_string(),
                                                                                   afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                   {
-                                                                                      let ::types::ddlog_std::tuple3(ref file, ref expr, ref pat) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<::types::ast::Pattern>>>::from_ddvalue_ref( &__v ) };
+                                                                                      let ::types::ddlog_std::tuple3(ref file, ref expr, ref pat) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<::types::ast::Pattern>>>::from_ddvalue_ref( &__v );
                                                                                       Some(((::types::ddlog_std::tuple2((*expr).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple2((*file).clone(), (*pat).clone())).into_ddvalue()))
                                                                                   }
                                                                                   __f},
@@ -5264,8 +5373,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                      arrangement: (Relations::inputs_Expression as RelId,0),
                                                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                      {
-                                                                                                         let ::types::ddlog_std::tuple2(ref file, ref pat) = *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                         let ref scope = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                                                                         let ::types::ddlog_std::tuple2(ref file, ref pat) = *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>>>::from_ddvalue_ref( __v1 );
+                                                                                                         let ref scope = match *<::types::inputs::Expression>::from_ddvalue_ref(__v2) {
                                                                                                              ::types::inputs::Expression{id: _, file: _, kind: _, scope: ref scope, span: _} => (*scope).clone(),
                                                                                                              _ => return None
                                                                                                          };
@@ -5276,7 +5385,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                              description: "__Prefix_5[((file: ast::FileId), (config: config::Config))], inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat)))" .to_string(),
                                                                                                                              fmfun: &{fn __f(__v: DDValue) -> Option<Box<dyn Iterator<Item=DDValue>>>
                                                                                                                              {
-                                                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref pat, ref scope) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref pat, ref scope) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::internment::Intern<::types::ast::Pattern>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                  let __flattened = ::types::ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval(pat);
                                                                                                                                  let file = (*file).clone();
                                                                                                                                  let scope = (*scope).clone();
@@ -5287,7 +5396,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                      description: "arrange __Prefix_5[((file: ast::FileId), (config: config::Config))], inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))) by (file, name, scope)" .to_string(),
                                                                                                                                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                      {
-                                                                                                                                                         let ::types::ddlog_std::tuple3(ref bound_var, ref file, ref scope) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                         let ::types::ddlog_std::tuple3(ref bound_var, ref file, ref scope) = *<::types::ddlog_std::tuple3<::types::ast::Spanned<::types::internment::Intern<String>>, ::types::ast::FileId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                          let (ref name, ref span): (::types::internment::Intern<String>, ::types::ast::Span) = match (*bound_var).clone() {
                                                                                                                                                              ::types::ast::Spanned{data: name, span: span} => (name, span),
                                                                                                                                                              _ => return None
@@ -5303,7 +5412,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                 description: "head of outputs::no_undef::NoUndef[(outputs::no_undef::NoUndef{.name=name, .scope=scope, .span=span, .file=file}: outputs::no_undef::NoUndef)] :- __Prefix_5[((file: ast::FileId), (config: config::Config))], inputs::Assign[(inputs::Assign{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pat: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<ast::IPattern,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var bound_var = FlatMap(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pat))), ((ast::Spanned{.data=(var name: internment::Intern<string>), .span=(var span: ast::Span)}: ast::Spanned<internment::Intern<string>>) = bound_var), not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)]." .to_string(),
                                                                                                                                                                                                 fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                                                                 {
-                                                                                                                                                                                                    let ::types::ddlog_std::tuple4(ref file, ref scope, ref name, ref span) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::ast::ScopeId, ::types::internment::Intern<String>, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                    let ::types::ddlog_std::tuple4(ref file, ref scope, ref name, ref span) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::ast::ScopeId, ::types::internment::Intern<String>, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                     Some(((::types::outputs::no_undef::NoUndef{name: (*name).clone(), scope: (*scope).clone(), span: (*span).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                                 }
                                                                                                                                                                                                 __f},
@@ -5338,11 +5447,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                   arrangement: (Relations::inputs_NameRef as RelId,1),
                                                                   jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                   {
-                                                                      let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                      let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                           ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                           _ => return None
                                                                       };
-                                                                      let (ref undefined_expr, ref name) = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v2) } {
+                                                                      let (ref undefined_expr, ref name) = match *<::types::inputs::NameRef>::from_ddvalue_ref(__v2) {
                                                                           ::types::inputs::NameRef{expr_id: ref undefined_expr, file: _, value: ref name} => ((*undefined_expr).clone(), (*name).clone()),
                                                                           _ => return None
                                                                       };
@@ -5353,7 +5462,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                           description: "arrange __Prefix_8[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(undefined_expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)] by (undefined_expr, file)" .to_string(),
                                                                                           afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                           {
-                                                                                              let ::types::ddlog_std::tuple3(ref file, ref undefined_expr, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v ) };
+                                                                                              let ::types::ddlog_std::tuple3(ref file, ref undefined_expr, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v );
                                                                                               Some(((::types::ddlog_std::tuple2((*undefined_expr).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*file).clone(), (*undefined_expr).clone(), (*name).clone())).into_ddvalue()))
                                                                                           }
                                                                                           __f},
@@ -5363,8 +5472,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                              arrangement: (Relations::inputs_Expression as RelId,1),
                                                                                                              jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                              {
-                                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref undefined_expr, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                 let (ref scope, ref span) = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref undefined_expr, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 );
+                                                                                                                 let (ref scope, ref span) = match *<::types::inputs::Expression>::from_ddvalue_ref(__v2) {
                                                                                                                      ::types::inputs::Expression{id: _, file: _, kind: ::types::ast::ExprKind::ExprNameRef{}, scope: ref scope, span: ref span} => ((*scope).clone(), (*span).clone()),
                                                                                                                      _ => return None
                                                                                                                  };
@@ -5375,7 +5484,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                      description: "arrange __Prefix_8[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(undefined_expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(undefined_expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)] by (file, name, scope)" .to_string(),
                                                                                                                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                      {
-                                                                                                                                         let ::types::ddlog_std::tuple4(ref file, ref undefined_expr, ref name, ref scope) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                         let ::types::ddlog_std::tuple4(ref file, ref undefined_expr, ref name, ref scope) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                          Some(((::types::ddlog_std::tuple3((*file).clone(), (*name).clone(), (*scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple2((*file).clone(), (*undefined_expr).clone())).into_ddvalue()))
                                                                                                                                      }
                                                                                                                                      __f},
@@ -5387,7 +5496,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                 description: "arrange __Prefix_8[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(undefined_expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(undefined_expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(_: ast::AnyId), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (undefined_expr, file)" .to_string(),
                                                                                                                                                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                 {
-                                                                                                                                                                                    let ::types::ddlog_std::tuple2(ref file, ref undefined_expr) = *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                    let ::types::ddlog_std::tuple2(ref file, ref undefined_expr) = *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                     Some(((::types::ddlog_std::tuple2((*undefined_expr).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple2((*file).clone(), (*undefined_expr).clone())).into_ddvalue()))
                                                                                                                                                                                 }
                                                                                                                                                                                 __f},
@@ -5397,8 +5506,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                    arrangement: (Relations::outputs_typeof_undef_WithinTypeofExpr as RelId,2),
                                                                                                                                                                                                    jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                                    {
-                                                                                                                                                                                                       let ::types::ddlog_std::tuple2(ref file, ref undefined_expr) = *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                                                                       let ref whole_expr = match *unsafe {<::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                                                                       let ::types::ddlog_std::tuple2(ref file, ref undefined_expr) = *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                                                                       let ref whole_expr = match *<::types::outputs::typeof_undef::WithinTypeofExpr>::from_ddvalue_ref(__v2) {
                                                                                                                                                                                                            ::types::outputs::typeof_undef::WithinTypeofExpr{type_of: ref whole_expr, expr: _, file: _} => (*whole_expr).clone(),
                                                                                                                                                                                                            _ => return None
                                                                                                                                                                                                        };
@@ -5436,11 +5545,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                     arrangement: (Relations::name_in_scope_NameInScope as RelId,8),
                                                                     jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                     {
-                                                                        let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                        let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                             ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                             _ => return None
                                                                         };
-                                                                        let (ref name, ref scope, ref declared) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                        let (ref name, ref scope, ref declared) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                             ::types::name_in_scope::NameInScope{file: _, name: ref name, scope: ref scope, span: _, declared_in: ref declared, implicit: _, is_arg: _, origin: _} => ((*name).clone(), (*scope).clone(), (*declared).clone()),
                                                                             _ => return None
                                                                         };
@@ -5451,7 +5560,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                             description: "arrange __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared: ast::AnyId), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (file, name)" .to_string(),
                                                                                             afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                             {
-                                                                                                let ::types::ddlog_std::tuple4(ref file, ref name, ref scope, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                let ::types::ddlog_std::tuple4(ref file, ref name, ref scope, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                 Some(((::types::ddlog_std::tuple2((*file).clone(), (*name).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*name).clone(), (*scope).clone(), (*declared).clone())).into_ddvalue()))
                                                                                             }
                                                                                             __f},
@@ -5461,8 +5570,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                arrangement: (Relations::inputs_NameRef as RelId,2),
                                                                                                                jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                {
-                                                                                                                   let ::types::ddlog_std::tuple4(ref file, ref name, ref scope, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                   let ref expr = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v2) } {
+                                                                                                                   let ::types::ddlog_std::tuple4(ref file, ref name, ref scope, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
+                                                                                                                   let ref expr = match *<::types::inputs::NameRef>::from_ddvalue_ref(__v2) {
                                                                                                                        ::types::inputs::NameRef{expr_id: ref expr, file: _, value: _} => (*expr).clone(),
                                                                                                                        _ => return None
                                                                                                                    };
@@ -5473,7 +5582,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                        description: "arrange __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared: ast::AnyId), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)] by (expr, file, scope)" .to_string(),
                                                                                                                                        afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                        {
-                                                                                                                                           let ::types::ddlog_std::tuple5(ref file, ref name, ref scope, ref declared, ref expr) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::AnyId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                           let ::types::ddlog_std::tuple5(ref file, ref name, ref scope, ref declared, ref expr) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::AnyId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v );
                                                                                                                                            Some(((::types::ddlog_std::tuple3((*expr).clone(), (*file).clone(), (*scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*name).clone(), (*scope).clone(), (*declared).clone())).into_ddvalue()))
                                                                                                                                        }
                                                                                                                                        __f},
@@ -5483,7 +5592,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                           arrangement: (Relations::inputs_Expression as RelId,4),
                                                                                                                                                           jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,___v2: &()) -> Option<DDValue>
                                                                                                                                                           {
-                                                                                                                                                              let ::types::ddlog_std::tuple4(ref file, ref name, ref scope, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
+                                                                                                                                                              let ::types::ddlog_std::tuple4(ref file, ref name, ref scope, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
                                                                                                                                                               Some(((::types::outputs::unused_vars::VariableUsages{file: (*file).clone(), name: (*name).clone(), scope: (*scope).clone(), declared_in: (*declared).clone()})).into_ddvalue())
                                                                                                                                                           }
                                                                                                                                                           __f},
@@ -5499,7 +5608,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                          name: r###"(outputs::unused_vars::VariableUsages{.file=(_0: ast::FileId), .name=(_1: internment::Intern<string>), .scope=(_: ast::ScopeId), .declared_in=(_2: ast::AnyId)}: outputs::unused_vars::VariableUsages) /*antijoin*/"###.to_string(),
                                                          fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                          {
-                                                             match unsafe {< ::types::outputs::unused_vars::VariableUsages>::from_ddvalue(__v) } {
+                                                             match < ::types::outputs::unused_vars::VariableUsages>::from_ddvalue(__v) {
                                                                  ::types::outputs::unused_vars::VariableUsages{file: ref _0, name: ref _1, scope: _, declared_in: ref _2} => Some((::types::ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
                                                                  _ => None
                                                              }
@@ -5525,7 +5634,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                              description: "head of is_exported::IsExported[(is_exported::IsExported{.file=file, .id=(ast::AnyIdFunc{.func=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=true}: inputs::Function)]." .to_string(),
                                                              fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                              {
-                                                                 let (ref id, ref file) = match *unsafe {<::types::inputs::Function>::from_ddvalue_ref(&__v) } {
+                                                                 let (ref id, ref file) = match *<::types::inputs::Function>::from_ddvalue_ref(&__v) {
                                                                      ::types::inputs::Function{id: ref id, file: ref file, name: _, scope: _, body: _, exported: true} => ((*id).clone(), (*file).clone()),
                                                                      _ => return None
                                                                  };
@@ -5543,7 +5652,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                              description: "head of is_exported::IsExported[(is_exported::IsExported{.file=file, .id=(ast::AnyIdClass{.class=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::Class[(inputs::Class{.id=(id: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=true}: inputs::Class)]." .to_string(),
                                                              fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                              {
-                                                                 let (ref id, ref file) = match *unsafe {<::types::inputs::Class>::from_ddvalue_ref(&__v) } {
+                                                                 let (ref id, ref file) = match *<::types::inputs::Class>::from_ddvalue_ref(&__v) {
                                                                      ::types::inputs::Class{id: ref id, file: ref file, name: _, parent: _, elements: _, scope: _, exported: true} => ((*id).clone(), (*file).clone()),
                                                                      _ => return None
                                                                  };
@@ -5561,7 +5670,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                              description: "head of is_exported::IsExported[(is_exported::IsExported{.file=file, .id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(id: ast::StmtId), .file=(file: ast::FileId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=true}: inputs::VarDecl)]." .to_string(),
                                                              fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                              {
-                                                                 let (ref id, ref file) = match *unsafe {<::types::inputs::VarDecl>::from_ddvalue_ref(&__v) } {
+                                                                 let (ref id, ref file) = match *<::types::inputs::VarDecl>::from_ddvalue_ref(&__v) {
                                                                      ::types::inputs::VarDecl{stmt_id: ref id, file: ref file, pattern: _, value: _, exported: true} => ((*id).clone(), (*file).clone()),
                                                                      _ => return None
                                                                  };
@@ -5579,7 +5688,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                              description: "head of is_exported::IsExported[(is_exported::IsExported{.file=file, .id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::LetDecl[(inputs::LetDecl{.stmt_id=(id: ast::StmtId), .file=(file: ast::FileId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=true}: inputs::LetDecl)]." .to_string(),
                                                              fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                              {
-                                                                 let (ref id, ref file) = match *unsafe {<::types::inputs::LetDecl>::from_ddvalue_ref(&__v) } {
+                                                                 let (ref id, ref file) = match *<::types::inputs::LetDecl>::from_ddvalue_ref(&__v) {
                                                                      ::types::inputs::LetDecl{stmt_id: ref id, file: ref file, pattern: _, value: _, exported: true} => ((*id).clone(), (*file).clone()),
                                                                      _ => return None
                                                                  };
@@ -5597,7 +5706,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                              description: "head of is_exported::IsExported[(is_exported::IsExported{.file=file, .id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::ConstDecl[(inputs::ConstDecl{.stmt_id=(id: ast::StmtId), .file=(file: ast::FileId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=true}: inputs::ConstDecl)]." .to_string(),
                                                              fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                              {
-                                                                 let (ref id, ref file) = match *unsafe {<::types::inputs::ConstDecl>::from_ddvalue_ref(&__v) } {
+                                                                 let (ref id, ref file) = match *<::types::inputs::ConstDecl>::from_ddvalue_ref(&__v) {
                                                                      ::types::inputs::ConstDecl{stmt_id: ref id, file: ref file, pattern: _, value: _, exported: true} => ((*id).clone(), (*file).clone()),
                                                                      _ => return None
                                                                  };
@@ -5615,7 +5724,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                              description: "arrange inputs::FileExport[(inputs::FileExport{.file=(file: ast::FileId), .export=(ast::NamedExport{.name=(export_name: ddlog_std::Option<ast::Spanned<ast::Name>>), .alias=(export_alias: ddlog_std::Option<ast::Spanned<ast::Name>>)}: ast::ExportKind), .scope=(export_scope: ast::ScopeId)}: inputs::FileExport)] by (file, name, export_scope)" .to_string(),
                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                              {
-                                                                 let (ref file, ref export_name, ref export_alias, ref export_scope) = match *unsafe {<::types::inputs::FileExport>::from_ddvalue_ref(&__v) } {
+                                                                 let (ref file, ref export_name, ref export_alias, ref export_scope) = match *<::types::inputs::FileExport>::from_ddvalue_ref(&__v) {
                                                                      ::types::inputs::FileExport{file: ref file, export: ::types::ast::ExportKind::NamedExport{name: ref export_name, alias: ref export_alias}, scope: ref export_scope} => ((*file).clone(), (*export_name).clone(), (*export_alias).clone(), (*export_scope).clone()),
                                                                      _ => return None
                                                                  };
@@ -5632,8 +5741,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                 arrangement: (Relations::name_in_scope_NameInScope as RelId,0),
                                                                                 jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                 {
-                                                                                    let ref file = *unsafe {<::types::ast::FileId>::from_ddvalue_ref( __v1 ) };
-                                                                                    let ref id = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                                    let ref file = *<::types::ast::FileId>::from_ddvalue_ref( __v1 );
+                                                                                    let ref id = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                                         ::types::name_in_scope::NameInScope{file: _, name: _, scope: _, span: _, declared_in: ref id, implicit: _, is_arg: _, origin: _} => (*id).clone(),
                                                                                         _ => return None
                                                                                     };
@@ -5649,7 +5758,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                              name: r###"(is_exported::IsExported{.file=(_0: ast::FileId), .id=(_1: ast::AnyId)}: is_exported::IsExported) /*antijoin*/"###.to_string(),
                                              fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                              {
-                                                 match unsafe {< ::types::is_exported::IsExported>::from_ddvalue(__v) } {
+                                                 match < ::types::is_exported::IsExported>::from_ddvalue(__v) {
                                                      ::types::is_exported::IsExported{file: ref _0, id: ref _1} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                      _ => None
                                                  }
@@ -5677,11 +5786,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::name_in_scope_NameInScope as RelId,4),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref name, ref span, ref declared) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref name, ref span, ref declared) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                              ::types::name_in_scope::NameInScope{file: _, name: ref name, scope: _, span: ::types::ddlog_std::Option::Some{x: ref span}, declared_in: ref declared, implicit: _, is_arg: _, origin: _} => ((*name).clone(), (*span).clone(), (*declared).clone()),
                                                                              _ => return None
                                                                          };
@@ -5693,7 +5802,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(declared: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], (not (ast::is_global(declared))) by (file, declared)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple2((*file).clone(), (*declared).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*name).clone(), (*span).clone(), (*declared).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -5705,7 +5814,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                         description: "arrange __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(declared: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], (not (ast::is_global(declared))), not is_exported::IsExported[(is_exported::IsExported{.file=(file: ast::FileId), .id=(declared: ast::AnyId)}: is_exported::IsExported)] by (file, name, declared)" .to_string(),
                                                                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                         {
-                                                                                                                                            let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                            let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                                                             Some(((::types::ddlog_std::tuple3((*file).clone(), (*name).clone(), (*declared).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*name).clone(), (*span).clone(), (*declared).clone())).into_ddvalue()))
                                                                                                                                         }
                                                                                                                                         __f},
@@ -5717,7 +5826,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                    description: "head of outputs::unused_vars::UnusedVariables[(outputs::unused_vars::UnusedVariables{.name=name, .declared=declared, .span=span, .file=file}: outputs::unused_vars::UnusedVariables)] :- __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(declared: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], (not (ast::is_global(declared))), not is_exported::IsExported[(is_exported::IsExported{.file=(file: ast::FileId), .id=(declared: ast::AnyId)}: is_exported::IsExported)], not outputs::unused_vars::VariableUsages[(outputs::unused_vars::VariableUsages{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .declared_in=(declared: ast::AnyId)}: outputs::unused_vars::VariableUsages)]." .to_string(),
                                                                                                                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                                                    {
-                                                                                                                                                                                       let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                       let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                        Some(((::types::outputs::unused_vars::UnusedVariables{name: (*name).clone(), declared: (*declared).clone(), span: (*span).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                    }
                                                                                                                                                                                    __f},
@@ -5739,11 +5848,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::name_in_scope_NameInScope as RelId,6),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref name, ref span, ref declared) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref name, ref span, ref declared) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                              ::types::name_in_scope::NameInScope{file: _, name: ref name, scope: _, span: ::types::ddlog_std::Option::Some{x: ref span}, declared_in: ref declared, implicit: _, is_arg: _, origin: _} => ((*name).clone(), (*span).clone(), (*declared).clone()),
                                                                              _ => return None
                                                                          };
@@ -5755,7 +5864,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(declared: ast::AnyId), .implicit=false, .is_arg=true, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], (not (ast::is_global(declared))) by (file, name, declared)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple3((*file).clone(), (*name).clone(), (*declared).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*name).clone(), (*span).clone(), (*declared).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -5767,7 +5876,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                         description: "head of outputs::unused_vars::UnusedVariables[(outputs::unused_vars::UnusedVariables{.name=name, .declared=declared, .span=span, .file=file}: outputs::unused_vars::UnusedVariables)] :- __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(declared: ast::AnyId), .implicit=false, .is_arg=true, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], (not (ast::is_global(declared))), not outputs::unused_vars::VariableUsages[(outputs::unused_vars::VariableUsages{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .declared_in=(declared: ast::AnyId)}: outputs::unused_vars::VariableUsages)]." .to_string(),
                                                                                                                                         fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                         {
-                                                                                                                                            let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                            let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                                                             Some(((::types::outputs::unused_vars::UnusedVariables{name: (*name).clone(), declared: (*declared).clone(), span: (*span).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                         }
                                                                                                                                         __f},
@@ -5787,11 +5896,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::name_in_scope_NameInScope as RelId,7),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref name, ref span, ref declared, ref global) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref name, ref span, ref declared, ref global) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                              ::types::name_in_scope::NameInScope{file: _, name: ref name, scope: _, span: ::types::ddlog_std::Option::Some{x: ref span}, declared_in: ref declared, implicit: _, is_arg: _, origin: _} => match declared {
                                                                                                                                                                                                                                                                               ::types::ast::AnyId::AnyIdGlobal{global: ref global} => ((*name).clone(), (*span).clone(), (*declared).clone(), (*global).clone()),
                                                                                                                                                                                                                                                                               _ => return None
@@ -5805,7 +5914,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdGlobal{.global=(global: ast::GlobalId)}: ast::AnyId)), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (file, declared)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple2((*file).clone(), (*declared).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*name).clone(), (*span).clone(), (*declared).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -5817,7 +5926,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                         description: "arrange __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdGlobal{.global=(global: ast::GlobalId)}: ast::AnyId)), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], not is_exported::IsExported[(is_exported::IsExported{.file=(file: ast::FileId), .id=(declared: ast::AnyId)}: is_exported::IsExported)] by (file, name, declared)" .to_string(),
                                                                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                         {
-                                                                                                                                            let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                            let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                                                             Some(((::types::ddlog_std::tuple3((*file).clone(), (*name).clone(), (*declared).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*name).clone(), (*span).clone(), (*declared).clone())).into_ddvalue()))
                                                                                                                                         }
                                                                                                                                         __f},
@@ -5829,7 +5938,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                    description: "head of outputs::unused_vars::UnusedVariables[(outputs::unused_vars::UnusedVariables{.name=name, .declared=declared, .span=span, .file=file}: outputs::unused_vars::UnusedVariables)] :- __Prefix_4[((file: ast::FileId), (config: config::Config))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdGlobal{.global=(global: ast::GlobalId)}: ast::AnyId)), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], not is_exported::IsExported[(is_exported::IsExported{.file=(file: ast::FileId), .id=(declared: ast::AnyId)}: is_exported::IsExported)], not outputs::unused_vars::VariableUsages[(outputs::unused_vars::VariableUsages{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: ast::ScopeId), .declared_in=(declared: ast::AnyId)}: outputs::unused_vars::VariableUsages)]." .to_string(),
                                                                                                                                                                                    fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                                                    {
-                                                                                                                                                                                       let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                       let ::types::ddlog_std::tuple4(ref file, ref name, ref span, ref declared) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                        Some(((::types::outputs::unused_vars::UnusedVariables{name: (*name).clone(), declared: (*declared).clone(), span: (*span).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                    }
                                                                                                                                                                                    __f},
@@ -5861,7 +5970,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                  description: "head of variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=stmt, .file=file, .kind=(variable_decl::VarDeclVar{}: variable_decl::VariableDeclKind), .pattern=pattern, .value=value, .exported=exported}: variable_decl::VariableDecl)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(pattern: ddlog_std::Option<ast::IPattern>), .value=(value: ddlog_std::Option<ast::ExprId>), .exported=(exported: bool)}: inputs::VarDecl)]." .to_string(),
                                                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                  {
-                                                                     let (ref stmt, ref file, ref pattern, ref value, ref exported) = match *unsafe {<::types::inputs::VarDecl>::from_ddvalue_ref(&__v) } {
+                                                                     let (ref stmt, ref file, ref pattern, ref value, ref exported) = match *<::types::inputs::VarDecl>::from_ddvalue_ref(&__v) {
                                                                          ::types::inputs::VarDecl{stmt_id: ref stmt, file: ref file, pattern: ref pattern, value: ref value, exported: ref exported} => ((*stmt).clone(), (*file).clone(), (*pattern).clone(), (*value).clone(), (*exported).clone()),
                                                                          _ => return None
                                                                      };
@@ -5879,7 +5988,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                  description: "head of variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=stmt, .file=file, .kind=(variable_decl::VarDeclLet{}: variable_decl::VariableDeclKind), .pattern=pattern, .value=value, .exported=exported}: variable_decl::VariableDecl)] :- inputs::LetDecl[(inputs::LetDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(pattern: ddlog_std::Option<ast::IPattern>), .value=(value: ddlog_std::Option<ast::ExprId>), .exported=(exported: bool)}: inputs::LetDecl)]." .to_string(),
                                                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                  {
-                                                                     let (ref stmt, ref file, ref pattern, ref value, ref exported) = match *unsafe {<::types::inputs::LetDecl>::from_ddvalue_ref(&__v) } {
+                                                                     let (ref stmt, ref file, ref pattern, ref value, ref exported) = match *<::types::inputs::LetDecl>::from_ddvalue_ref(&__v) {
                                                                          ::types::inputs::LetDecl{stmt_id: ref stmt, file: ref file, pattern: ref pattern, value: ref value, exported: ref exported} => ((*stmt).clone(), (*file).clone(), (*pattern).clone(), (*value).clone(), (*exported).clone()),
                                                                          _ => return None
                                                                      };
@@ -5897,7 +6006,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                  description: "head of variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=stmt, .file=file, .kind=(variable_decl::VarDeclConst{}: variable_decl::VariableDeclKind), .pattern=pattern, .value=value, .exported=exported}: variable_decl::VariableDecl)] :- inputs::ConstDecl[(inputs::ConstDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(pattern: ddlog_std::Option<ast::IPattern>), .value=(value: ddlog_std::Option<ast::ExprId>), .exported=(exported: bool)}: inputs::ConstDecl)]." .to_string(),
                                                                  fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                  {
-                                                                     let (ref stmt, ref file, ref pattern, ref value, ref exported) = match *unsafe {<::types::inputs::ConstDecl>::from_ddvalue_ref(&__v) } {
+                                                                     let (ref stmt, ref file, ref pattern, ref value, ref exported) = match *<::types::inputs::ConstDecl>::from_ddvalue_ref(&__v) {
                                                                          ::types::inputs::ConstDecl{stmt_id: ref stmt, file: ref file, pattern: ref pattern, value: ref value, exported: ref exported} => ((*stmt).clone(), (*file).clone(), (*pattern).clone(), (*value).clone(), (*exported).clone()),
                                                                          _ => return None
                                                                      };
@@ -5913,7 +6022,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                  afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                  {
                                                      let __cloned = __v.clone();
-                                                     match unsafe {< ::types::variable_decl::VariableDecl>::from_ddvalue(__v) } {
+                                                     match < ::types::variable_decl::VariableDecl>::from_ddvalue(__v) {
                                                          ::types::variable_decl::VariableDecl{stmt: ref _0, file: ref _1, kind: _, pattern: _, value: ::types::ddlog_std::Option::Some{x: _}, exported: _} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                          _ => None
                                                      }.map(|x|(x,__cloned))
@@ -5941,11 +6050,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::inputs_NameRef as RelId,1),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref expr, ref name) = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref expr, ref name) = match *<::types::inputs::NameRef>::from_ddvalue_ref(__v2) {
                                                                              ::types::inputs::NameRef{expr_id: ref expr, file: _, value: ref name} => ((*expr).clone(), (*name).clone()),
                                                                              _ => return None
                                                                          };
@@ -5956,7 +6065,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)] by (expr, file)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref expr, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref expr, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple2((*expr).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*file).clone(), (*expr).clone(), (*name).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -5966,8 +6075,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                 arrangement: (Relations::inputs_Expression as RelId,1),
                                                                                                                 jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                 {
-                                                                                                                    let ::types::ddlog_std::tuple3(ref file, ref expr, ref name) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                    let (ref used_scope, ref used_in) = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                                                                                    let ::types::ddlog_std::tuple3(ref file, ref expr, ref name) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 );
+                                                                                                                    let (ref used_scope, ref used_in) = match *<::types::inputs::Expression>::from_ddvalue_ref(__v2) {
                                                                                                                         ::types::inputs::Expression{id: _, file: _, kind: ::types::ast::ExprKind::ExprNameRef{}, scope: ref used_scope, span: ref used_in} => ((*used_scope).clone(), (*used_in).clone()),
                                                                                                                         _ => return None
                                                                                                                     };
@@ -5978,7 +6087,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                         description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)] by (file, expr)" .to_string(),
                                                                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                         {
-                                                                                                                                            let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref used_scope, ref used_in) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                            let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref used_scope, ref used_in) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                             Some(((::types::ddlog_std::tuple2((*file).clone(), (*expr).clone())).into_ddvalue(), (::types::ddlog_std::tuple5((*file).clone(), (*expr).clone(), (*name).clone(), (*used_scope).clone(), (*used_in).clone())).into_ddvalue()))
                                                                                                                                         }
                                                                                                                                         __f},
@@ -5990,7 +6099,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                    description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)], not inputs::New[(inputs::New{.expr_id=(_: ast::ExprId), .file=(file: ast::FileId), .object=(ddlog_std::Some{.x=(expr: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::New)] by (file, name, used_scope)" .to_string(),
                                                                                                                                                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                    {
-                                                                                                                                                                                       let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref used_scope, ref used_in) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                       let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref used_scope, ref used_in) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                        Some(((::types::ddlog_std::tuple3((*file).clone(), (*name).clone(), (*used_scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple5((*file).clone(), (*expr).clone(), (*name).clone(), (*used_scope).clone(), (*used_in).clone())).into_ddvalue()))
                                                                                                                                                                                    }
                                                                                                                                                                                    __f},
@@ -6000,8 +6109,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                       arrangement: (Relations::name_in_scope_NameInScope as RelId,9),
                                                                                                                                                                                                       jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                                       {
-                                                                                                                                                                                                          let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref used_scope, ref used_in) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                                                                          let (ref declared, ref stmt) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                                                                          let ::types::ddlog_std::tuple5(ref file, ref expr, ref name, ref used_scope, ref used_in) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                                                                          let (ref declared, ref stmt) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                                                                                                                                                               ::types::name_in_scope::NameInScope{file: _, name: _, scope: _, span: _, declared_in: ref declared, implicit: _, is_arg: _, origin: _} => match declared {
                                                                                                                                                                                                                                                                                                                                                             ::types::ast::AnyId::AnyIdStmt{stmt: ref stmt} => ((*declared).clone(), (*stmt).clone()),
                                                                                                                                                                                                                                                                                                                                                             _ => return None
@@ -6015,7 +6124,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                               description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)], not inputs::New[(inputs::New{.expr_id=(_: ast::ExprId), .file=(file: ast::FileId), .object=(ddlog_std::Some{.x=(expr: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::New)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdStmt{.stmt=(stmt: ast::StmtId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (stmt, file)" .to_string(),
                                                                                                                                                                                                                               afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                               {
-                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple7(ref file, ref expr, ref name, ref used_scope, ref used_in, ref declared, ref stmt) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::StmtId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple7(ref file, ref expr, ref name, ref used_scope, ref used_in, ref declared, ref stmt) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::StmtId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                   Some(((::types::ddlog_std::tuple2((*stmt).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*name).clone(), (*used_scope).clone(), (*used_in).clone(), (*declared).clone())).into_ddvalue()))
                                                                                                                                                                                                                               }
                                                                                                                                                                                                                               __f},
@@ -6025,8 +6134,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                  arrangement: (Relations::inputs_Statement as RelId,2),
                                                                                                                                                                                                                                                  jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                                                                                  {
-                                                                                                                                                                                                                                                     let ::types::ddlog_std::tuple6(ref file, ref expr, ref name, ref used_scope, ref used_in, ref declared) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                                                                                                                     let (ref declared_scope, ref declared_in) = match *unsafe {<::types::inputs::Statement>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                                                                                                                     let ::types::ddlog_std::tuple6(ref file, ref expr, ref name, ref used_scope, ref used_in, ref declared) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                                                                                                                     let (ref declared_scope, ref declared_in) = match *<::types::inputs::Statement>::from_ddvalue_ref(__v2) {
                                                                                                                                                                                                                                                          ::types::inputs::Statement{id: _, file: _, kind: ::types::ast::StmtKind::StmtVarDecl{}, scope: ref declared_scope, span: ref declared_in} => ((*declared_scope).clone(), (*declared_in).clone()),
                                                                                                                                                                                                                                                          _ => return None
                                                                                                                                                                                                                                                      };
@@ -6038,7 +6147,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                                          description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)], not inputs::New[(inputs::New{.expr_id=(_: ast::ExprId), .file=(file: ast::FileId), .object=(ddlog_std::Some{.x=(expr: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::New)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdStmt{.stmt=(stmt: ast::StmtId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], inputs::Statement[(inputs::Statement{.id=(stmt: ast::StmtId), .file=(file: ast::FileId), .kind=(ast::StmtVarDecl{}: ast::StmtKind), .scope=(declared_scope: ast::ScopeId), .span=(declared_in: ast::Span)}: inputs::Statement)], ((declared_scope != used_scope) and (used_in < declared_in)) by (declared_scope, used_scope, file)" .to_string(),
                                                                                                                                                                                                                                                                          afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                                                                          {
-                                                                                                                                                                                                                                                                             let ::types::ddlog_std::tuple8(ref file, ref expr, ref name, ref used_scope, ref used_in, ref declared, ref declared_scope, ref declared_in) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                                                             let ::types::ddlog_std::tuple8(ref file, ref expr, ref name, ref used_scope, ref used_in, ref declared, ref declared_scope, ref declared_in) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                                                              Some(((::types::ddlog_std::tuple3((*declared_scope).clone(), (*used_scope).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*name).clone(), (*used_in).clone(), (*declared).clone(), (*declared_in).clone())).into_ddvalue()))
                                                                                                                                                                                                                                                                          }
                                                                                                                                                                                                                                                                          __f},
@@ -6050,7 +6159,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                                                                                     description: "head of outputs::use_before_def::UseBeforeDef[(outputs::use_before_def::UseBeforeDef{.name=name, .used=expr, .used_in=used_in, .declared=declared, .declared_in=declared_in, .file=file}: outputs::use_before_def::UseBeforeDef)] :- __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)], not inputs::New[(inputs::New{.expr_id=(_: ast::ExprId), .file=(file: ast::FileId), .object=(ddlog_std::Some{.x=(expr: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::New)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdStmt{.stmt=(stmt: ast::StmtId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], inputs::Statement[(inputs::Statement{.id=(stmt: ast::StmtId), .file=(file: ast::FileId), .kind=(ast::StmtVarDecl{}: ast::StmtKind), .scope=(declared_scope: ast::ScopeId), .span=(declared_in: ast::Span)}: inputs::Statement)], ((declared_scope != used_scope) and (used_in < declared_in)), not scopes::ChildScope[(scopes::ChildScope{.parent=(declared_scope: ast::ScopeId), .child=(used_scope: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ChildScope)]." .to_string(),
                                                                                                                                                                                                                                                                                                                     fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                                                                                                                                                                                     {
-                                                                                                                                                                                                                                                                                                                        let ::types::ddlog_std::tuple6(ref file, ref expr, ref name, ref used_in, ref declared, ref declared_in) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                                                                                                        let ::types::ddlog_std::tuple6(ref file, ref expr, ref name, ref used_in, ref declared, ref declared_in) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                                                                                                         Some(((::types::outputs::use_before_def::UseBeforeDef{name: (*name).clone(), used: (*expr).clone(), used_in: (*used_in).clone(), declared: (*declared).clone(), declared_in: (*declared_in).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                                                                                                                                                     }
                                                                                                                                                                                                                                                                                                                     __f},
@@ -6078,11 +6187,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::inputs_NameRef as RelId,1),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config, ref expr, ref object, ref used_scope, ref used_in) = match *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config, ref expr, ref object, ref used_scope, ref used_in) = match *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple6(ref file, ref config, ref expr, ref object, ref used_scope, ref used_in) => ((*file).clone(), (*config).clone(), (*expr).clone(), (*object).clone(), (*used_scope).clone(), (*used_in).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref callee, ref name) = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref callee, ref name) = match *<::types::inputs::NameRef>::from_ddvalue_ref(__v2) {
                                                                              ::types::inputs::NameRef{expr_id: ref callee, file: _, value: ref name} => ((*callee).clone(), (*name).clone()),
                                                                              _ => return None
                                                                          };
@@ -6093,7 +6202,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_1[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span))], inputs::NameRef[(inputs::NameRef{.expr_id=(callee: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)] by (file, name, used_scope)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple5(ref file, ref expr, ref used_scope, ref used_in, ref name) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple5(ref file, ref expr, ref used_scope, ref used_in, ref name) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple3((*file).clone(), (*name).clone(), (*used_scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple5((*file).clone(), (*expr).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -6103,8 +6212,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                 arrangement: (Relations::name_in_scope_NameInScope as RelId,10),
                                                                                                                 jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                 {
-                                                                                                                    let ::types::ddlog_std::tuple5(ref file, ref expr, ref used_scope, ref used_in, ref name) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                    let (ref declared, ref class) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                                                                    let ::types::ddlog_std::tuple5(ref file, ref expr, ref used_scope, ref used_in, ref name) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 );
+                                                                                                                    let (ref declared, ref class) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                                                                         ::types::name_in_scope::NameInScope{file: _, name: _, scope: _, span: _, declared_in: ref declared, implicit: _, is_arg: _, origin: _} => match declared {
                                                                                                                                                                                                                                                                       ::types::ast::AnyId::AnyIdClass{class: ref class} => ((*declared).clone(), (*class).clone()),
                                                                                                                                                                                                                                                                       _ => return None
@@ -6118,7 +6227,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                         description: "arrange __Prefix_1[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span))], inputs::NameRef[(inputs::NameRef{.expr_id=(callee: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdClass{.class=(class: ast::ClassId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (class, file)" .to_string(),
                                                                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                         {
-                                                                                                                                            let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref class) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ClassId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                            let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref class) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ClassId>>::from_ddvalue_ref( &__v );
                                                                                                                                             Some(((::types::ddlog_std::tuple2((*class).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone(), (*declared).clone())).into_ddvalue()))
                                                                                                                                         }
                                                                                                                                         __f},
@@ -6128,8 +6237,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                            arrangement: (Relations::inputs_Class as RelId,0),
                                                                                                                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                            {
-                                                                                                                                                               let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                               let (ref declared_in, ref decl_scope) = match *unsafe {<::types::inputs::Class>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                               let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                               let (ref declared_in, ref decl_scope) = match *<::types::inputs::Class>::from_ddvalue_ref(__v2) {
                                                                                                                                                                    ::types::inputs::Class{id: _, file: _, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: ref declared_in}}, parent: _, elements: _, scope: ref decl_scope, exported: _} => ((*declared_in).clone(), (*decl_scope).clone()),
                                                                                                                                                                    _ => return None
                                                                                                                                                                };
@@ -6141,7 +6250,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                    description: "arrange __Prefix_1[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span))], inputs::NameRef[(inputs::NameRef{.expr_id=(callee: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdClass{.class=(class: ast::ClassId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(_: internment::Intern<string>), .span=(declared_in: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(decl_scope: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], ((decl_scope != used_scope) and (used_in < declared_in)) by (decl_scope, used_scope, file)" .to_string(),
                                                                                                                                                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                    {
-                                                                                                                                                                                       let ::types::ddlog_std::tuple8(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref declared_in, ref decl_scope) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                       let ::types::ddlog_std::tuple8(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref declared_in, ref decl_scope) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                        Some(((::types::ddlog_std::tuple3((*decl_scope).clone(), (*used_scope).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*used_in).clone(), (*name).clone(), (*declared).clone(), (*declared_in).clone())).into_ddvalue()))
                                                                                                                                                                                    }
                                                                                                                                                                                    __f},
@@ -6153,7 +6262,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                               description: "head of outputs::use_before_def::UseBeforeDef[(outputs::use_before_def::UseBeforeDef{.name=name, .used=expr, .used_in=used_in, .declared=declared, .declared_in=declared_in, .file=file}: outputs::use_before_def::UseBeforeDef)] :- __Prefix_1[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span))], inputs::NameRef[(inputs::NameRef{.expr_id=(callee: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdClass{.class=(class: ast::ClassId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(_: internment::Intern<string>), .span=(declared_in: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(decl_scope: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], ((decl_scope != used_scope) and (used_in < declared_in)), not scopes::ChildScope[(scopes::ChildScope{.parent=(decl_scope: ast::ScopeId), .child=(used_scope: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ChildScope)]." .to_string(),
                                                                                                                                                                                                                               fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                                                                                               {
-                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_in, ref name, ref declared, ref declared_in) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_in, ref name, ref declared, ref declared_in) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                   Some(((::types::outputs::use_before_def::UseBeforeDef{name: (*name).clone(), used: (*expr).clone(), used_in: (*used_in).clone(), declared: (*declared).clone(), declared_in: (*declared_in).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                                                               }
                                                                                                                                                                                                                               __f},
@@ -6177,11 +6286,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::inputs_Call as RelId,0),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config) = match *unsafe {<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config) = match *<::types::ddlog_std::tuple2<::types::ast::FileId, ::types::config::Config>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple2(ref file, ref config) => ((*file).clone(), (*config).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref expr, ref callee) = match *unsafe {<::types::inputs::Call>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref expr, ref callee) = match *<::types::inputs::Call>::from_ddvalue_ref(__v2) {
                                                                              ::types::inputs::Call{expr_id: ref expr, file: _, callee: ::types::ddlog_std::Option::Some{x: ref callee}, args: _} => ((*expr).clone(), (*callee).clone()),
                                                                              _ => return None
                                                                          };
@@ -6192,7 +6301,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::Call[(inputs::Call{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .callee=(ddlog_std::Some{.x=(callee: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::Call)] by (expr, file)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref expr, ref callee) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple3(ref file, ref expr, ref callee) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple2((*expr).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple3((*file).clone(), (*expr).clone(), (*callee).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -6202,8 +6311,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                 arrangement: (Relations::inputs_Expression as RelId,0),
                                                                                                                 jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                 {
-                                                                                                                    let ::types::ddlog_std::tuple3(ref file, ref expr, ref callee) = *unsafe {<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                    let (ref used_scope, ref used_in) = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                                                                                    let ::types::ddlog_std::tuple3(ref file, ref expr, ref callee) = *<::types::ddlog_std::tuple3<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 );
+                                                                                                                    let (ref used_scope, ref used_in) = match *<::types::inputs::Expression>::from_ddvalue_ref(__v2) {
                                                                                                                         ::types::inputs::Expression{id: _, file: _, kind: _, scope: ref used_scope, span: ref used_in} => ((*used_scope).clone(), (*used_in).clone()),
                                                                                                                         _ => return None
                                                                                                                     };
@@ -6214,7 +6323,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                         description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::Call[(inputs::Call{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .callee=(ddlog_std::Some{.x=(callee: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::Call)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)] by (callee, file)" .to_string(),
                                                                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                         {
-                                                                                                                                            let ::types::ddlog_std::tuple5(ref file, ref expr, ref callee, ref used_scope, ref used_in) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                            let ::types::ddlog_std::tuple5(ref file, ref expr, ref callee, ref used_scope, ref used_in) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                             Some(((::types::ddlog_std::tuple2((*callee).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple4((*file).clone(), (*expr).clone(), (*used_scope).clone(), (*used_in).clone())).into_ddvalue()))
                                                                                                                                         }
                                                                                                                                         __f},
@@ -6224,8 +6333,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                            arrangement: (Relations::inputs_NameRef as RelId,0),
                                                                                                                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                            {
-                                                                                                                                                               let ::types::ddlog_std::tuple4(ref file, ref expr, ref used_scope, ref used_in) = *unsafe {<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                               let ref name = match *unsafe {<::types::inputs::NameRef>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                               let ::types::ddlog_std::tuple4(ref file, ref expr, ref used_scope, ref used_in) = *<::types::ddlog_std::tuple4<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                               let ref name = match *<::types::inputs::NameRef>::from_ddvalue_ref(__v2) {
                                                                                                                                                                    ::types::inputs::NameRef{expr_id: _, file: _, value: ref name} => (*name).clone(),
                                                                                                                                                                    _ => return None
                                                                                                                                                                };
@@ -6236,7 +6345,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                    description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::Call[(inputs::Call{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .callee=(ddlog_std::Some{.x=(callee: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::Call)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)], inputs::NameRef[(inputs::NameRef{.expr_id=(callee: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)] by (file, name, used_scope)" .to_string(),
                                                                                                                                                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                    {
-                                                                                                                                                                                       let ::types::ddlog_std::tuple5(ref file, ref expr, ref used_scope, ref used_in, ref name) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                       let ::types::ddlog_std::tuple5(ref file, ref expr, ref used_scope, ref used_in, ref name) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                        Some(((::types::ddlog_std::tuple3((*file).clone(), (*name).clone(), (*used_scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple5((*file).clone(), (*expr).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone())).into_ddvalue()))
                                                                                                                                                                                    }
                                                                                                                                                                                    __f},
@@ -6246,8 +6355,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                       arrangement: (Relations::name_in_scope_NameInScope as RelId,11),
                                                                                                                                                                                                       jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                                       {
-                                                                                                                                                                                                          let ::types::ddlog_std::tuple5(ref file, ref expr, ref used_scope, ref used_in, ref name) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                                                                          let (ref declared, ref func) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                                                                          let ::types::ddlog_std::tuple5(ref file, ref expr, ref used_scope, ref used_in, ref name) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                                                                          let (ref declared, ref func) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                                                                                                                                                               ::types::name_in_scope::NameInScope{file: _, name: _, scope: _, span: _, declared_in: ref declared, implicit: _, is_arg: _, origin: _} => match declared {
                                                                                                                                                                                                                                                                                                                                                             ::types::ast::AnyId::AnyIdFunc{func: ref func} => ((*declared).clone(), (*func).clone()),
                                                                                                                                                                                                                                                                                                                                                             _ => return None
@@ -6261,7 +6370,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                               description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::Call[(inputs::Call{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .callee=(ddlog_std::Some{.x=(callee: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::Call)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)], inputs::NameRef[(inputs::NameRef{.expr_id=(callee: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdFunc{.func=(func: ast::FuncId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (func, file)" .to_string(),
                                                                                                                                                                                                                               afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                               {
-                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref func) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::FuncId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref func) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::FuncId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                   Some(((::types::ddlog_std::tuple2((*func).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone(), (*declared).clone())).into_ddvalue()))
                                                                                                                                                                                                                               }
                                                                                                                                                                                                                               __f},
@@ -6271,8 +6380,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                  arrangement: (Relations::inputs_Function as RelId,2),
                                                                                                                                                                                                                                                  jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                                                                                  {
-                                                                                                                                                                                                                                                     let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                                                                                                                     let (ref declared_in, ref decl_scope) = match *unsafe {<::types::inputs::Function>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                                                                                                                     let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                                                                                                                     let (ref declared_in, ref decl_scope) = match *<::types::inputs::Function>::from_ddvalue_ref(__v2) {
                                                                                                                                                                                                                                                          ::types::inputs::Function{id: _, file: _, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: ref declared_in}}, scope: ref decl_scope, body: _, exported: _} => ((*declared_in).clone(), (*decl_scope).clone()),
                                                                                                                                                                                                                                                          _ => return None
                                                                                                                                                                                                                                                      };
@@ -6284,7 +6393,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                                          description: "arrange __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::Call[(inputs::Call{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .callee=(ddlog_std::Some{.x=(callee: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::Call)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)], inputs::NameRef[(inputs::NameRef{.expr_id=(callee: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdFunc{.func=(func: ast::FuncId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], inputs::Function[(inputs::Function{.id=(func: ast::FuncId), .file=(file: ast::FileId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(_: internment::Intern<string>), .span=(declared_in: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(decl_scope: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function)], ((decl_scope != used_scope) and (used_in < declared_in)) by (decl_scope, used_scope, file)" .to_string(),
                                                                                                                                                                                                                                                                          afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                                                                          {
-                                                                                                                                                                                                                                                                             let ::types::ddlog_std::tuple8(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref declared_in, ref decl_scope) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                                                             let ::types::ddlog_std::tuple8(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref declared_in, ref decl_scope) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                                                              Some(((::types::ddlog_std::tuple3((*decl_scope).clone(), (*used_scope).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*used_in).clone(), (*name).clone(), (*declared).clone(), (*declared_in).clone())).into_ddvalue()))
                                                                                                                                                                                                                                                                          }
                                                                                                                                                                                                                                                                          __f},
@@ -6296,7 +6405,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                                                                                     description: "head of outputs::use_before_def::UseBeforeDef[(outputs::use_before_def::UseBeforeDef{.name=name, .used=expr, .used_in=used_in, .declared=declared, .declared_in=declared_in, .file=file}: outputs::use_before_def::UseBeforeDef)] :- __Prefix_6[((file: ast::FileId), (config: config::Config))], inputs::Call[(inputs::Call{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .callee=(ddlog_std::Some{.x=(callee: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::Call)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)], inputs::NameRef[(inputs::NameRef{.expr_id=(callee: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdFunc{.func=(func: ast::FuncId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], inputs::Function[(inputs::Function{.id=(func: ast::FuncId), .file=(file: ast::FileId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(_: internment::Intern<string>), .span=(declared_in: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(decl_scope: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function)], ((decl_scope != used_scope) and (used_in < declared_in)), not scopes::ChildScope[(scopes::ChildScope{.parent=(decl_scope: ast::ScopeId), .child=(used_scope: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ChildScope)]." .to_string(),
                                                                                                                                                                                                                                                                                                                     fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                                                                                                                                                                                     {
-                                                                                                                                                                                                                                                                                                                        let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_in, ref name, ref declared, ref declared_in) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                                                                                                        let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_in, ref name, ref declared, ref declared_in) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                                                                                                         Some(((::types::outputs::use_before_def::UseBeforeDef{name: (*name).clone(), used: (*expr).clone(), used_in: (*used_in).clone(), declared: (*declared).clone(), declared_in: (*declared_in).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                                                                                                                                                     }
                                                                                                                                                                                                                                                                                                                     __f},
@@ -6324,11 +6433,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::name_in_scope_NameInScope as RelId,9),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config, ref expr, ref object, ref used_scope, ref used_in, ref name) = match *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config, ref expr, ref object, ref used_scope, ref used_in, ref name) = match *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple7(ref file, ref config, ref expr, ref object, ref used_scope, ref used_in, ref name) => ((*file).clone(), (*config).clone(), (*expr).clone(), (*object).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref declared, ref decl) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref declared, ref decl) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                              ::types::name_in_scope::NameInScope{file: _, name: _, scope: _, span: _, declared_in: ref declared, implicit: _, is_arg: _, origin: _} => match declared {
                                                                                                                                                                                                                            ::types::ast::AnyId::AnyIdStmt{stmt: ref decl} => ((*declared).clone(), (*decl).clone()),
                                                                                                                                                                                                                            _ => return None
@@ -6342,7 +6451,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_0[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span), (name: internment::Intern<string>))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdStmt{.stmt=(decl: ast::StmtId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (decl, file)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref decl) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::StmtId>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref decl) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::StmtId>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple2((*decl).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone(), (*declared).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -6352,8 +6461,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                 arrangement: (Relations::variable_decl_VariableDecl as RelId,0),
                                                                                                                 jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                 {
-                                                                                                                    let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                    let ref class = match *unsafe {<::types::variable_decl::VariableDecl>::from_ddvalue_ref(__v2) } {
+                                                                                                                    let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
+                                                                                                                    let ref class = match *<::types::variable_decl::VariableDecl>::from_ddvalue_ref(__v2) {
                                                                                                                         ::types::variable_decl::VariableDecl{stmt: _, file: _, kind: _, pattern: _, value: ::types::ddlog_std::Option::Some{x: ref class}, exported: _} => (*class).clone(),
                                                                                                                         _ => return None
                                                                                                                     };
@@ -6364,7 +6473,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                         description: "arrange __Prefix_0[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span), (name: internment::Intern<string>))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdStmt{.stmt=(decl: ast::StmtId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=(decl: ast::StmtId), .file=(file: ast::FileId), .kind=(_: variable_decl::VariableDeclKind), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(ddlog_std::Some{.x=(class: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: variable_decl::VariableDecl)] by (class, file)" .to_string(),
                                                                                                                                         afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                         {
-                                                                                                                                            let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref class) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                            let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref class) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v );
                                                                                                                                             Some(((::types::ddlog_std::tuple2((*class).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple7((*file).clone(), (*expr).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone(), (*declared).clone(), (*class).clone())).into_ddvalue()))
                                                                                                                                         }
                                                                                                                                         __f},
@@ -6374,7 +6483,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                            arrangement: (Relations::inputs_ClassExpr as RelId,0),
                                                                                                                                                            jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,___v2: &()) -> Option<DDValue>
                                                                                                                                                            {
-                                                                                                                                                               let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref class) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 ) };
+                                                                                                                                                               let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref class) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ExprId>>::from_ddvalue_ref( __v1 );
                                                                                                                                                                Some((::types::ddlog_std::tuple7((*file).clone(), (*expr).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone(), (*declared).clone(), (*class).clone())).into_ddvalue())
                                                                                                                                                            }
                                                                                                                                                            __f},
@@ -6382,7 +6491,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                    description: "arrange __Prefix_0[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span), (name: internment::Intern<string>))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdStmt{.stmt=(decl: ast::StmtId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=(decl: ast::StmtId), .file=(file: ast::FileId), .kind=(_: variable_decl::VariableDeclKind), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(ddlog_std::Some{.x=(class: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: variable_decl::VariableDecl)], inputs::ClassExpr[(inputs::ClassExpr{.expr_id=(class: ast::ExprId), .file=(file: ast::FileId), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>)}: inputs::ClassExpr)] by (class, file)" .to_string(),
                                                                                                                                                                                    afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                    {
-                                                                                                                                                                                       let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref class) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                       let ::types::ddlog_std::tuple7(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref class) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ExprId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                        Some(((::types::ddlog_std::tuple2((*class).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone(), (*declared).clone())).into_ddvalue()))
                                                                                                                                                                                    }
                                                                                                                                                                                    __f},
@@ -6392,8 +6501,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                       arrangement: (Relations::inputs_Expression as RelId,0),
                                                                                                                                                                                                       jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                                       {
-                                                                                                                                                                                                          let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                                                                          let (ref decl_scope, ref declared_in) = match *unsafe {<::types::inputs::Expression>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                                                                          let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                                                                          let (ref decl_scope, ref declared_in) = match *<::types::inputs::Expression>::from_ddvalue_ref(__v2) {
                                                                                                                                                                                                               ::types::inputs::Expression{id: _, file: _, kind: _, scope: ref decl_scope, span: ref declared_in} => ((*decl_scope).clone(), (*declared_in).clone()),
                                                                                                                                                                                                               _ => return None
                                                                                                                                                                                                           };
@@ -6405,7 +6514,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                               description: "arrange __Prefix_0[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span), (name: internment::Intern<string>))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdStmt{.stmt=(decl: ast::StmtId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=(decl: ast::StmtId), .file=(file: ast::FileId), .kind=(_: variable_decl::VariableDeclKind), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(ddlog_std::Some{.x=(class: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: variable_decl::VariableDecl)], inputs::ClassExpr[(inputs::ClassExpr{.expr_id=(class: ast::ExprId), .file=(file: ast::FileId), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>)}: inputs::ClassExpr)], inputs::Expression[(inputs::Expression{.id=(class: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(decl_scope: ast::ScopeId), .span=(declared_in: ast::Span)}: inputs::Expression)], ((decl_scope != used_scope) and (used_in < declared_in)) by (decl_scope, used_scope, file)" .to_string(),
                                                                                                                                                                                                                               afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                               {
-                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple8(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref decl_scope, ref declared_in) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple8(ref file, ref expr, ref used_scope, ref used_in, ref name, ref declared, ref decl_scope, ref declared_in) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                   Some(((::types::ddlog_std::tuple3((*decl_scope).clone(), (*used_scope).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*used_in).clone(), (*name).clone(), (*declared).clone(), (*declared_in).clone())).into_ddvalue()))
                                                                                                                                                                                                                               }
                                                                                                                                                                                                                               __f},
@@ -6417,7 +6526,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                                          description: "head of outputs::use_before_def::UseBeforeDef[(outputs::use_before_def::UseBeforeDef{.name=name, .used=expr, .used_in=used_in, .declared=declared, .declared_in=declared_in, .file=file}: outputs::use_before_def::UseBeforeDef)] :- __Prefix_0[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span), (name: internment::Intern<string>))], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(used_scope: ast::ScopeId), .span=(_: ddlog_std::Option<ast::Span>), .declared_in=(declared@ (ast::AnyIdStmt{.stmt=(decl: ast::StmtId)}: ast::AnyId)), .implicit=(_: bool), .is_arg=(_: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=(decl: ast::StmtId), .file=(file: ast::FileId), .kind=(_: variable_decl::VariableDeclKind), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(ddlog_std::Some{.x=(class: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: variable_decl::VariableDecl)], inputs::ClassExpr[(inputs::ClassExpr{.expr_id=(class: ast::ExprId), .file=(file: ast::FileId), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>)}: inputs::ClassExpr)], inputs::Expression[(inputs::Expression{.id=(class: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(decl_scope: ast::ScopeId), .span=(declared_in: ast::Span)}: inputs::Expression)], ((decl_scope != used_scope) and (used_in < declared_in)), not scopes::ChildScope[(scopes::ChildScope{.parent=(decl_scope: ast::ScopeId), .child=(used_scope: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ChildScope)]." .to_string(),
                                                                                                                                                                                                                                                                          fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                                                                                                                                                          {
-                                                                                                                                                                                                                                                                             let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_in, ref name, ref declared, ref declared_in) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                                                             let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_in, ref name, ref declared, ref declared_in) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::AnyId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                                                              Some(((::types::outputs::use_before_def::UseBeforeDef{name: (*name).clone(), used: (*expr).clone(), used_in: (*used_in).clone(), declared: (*declared).clone(), declared_in: (*declared_in).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                                                                                                          }
                                                                                                                                                                                                                                                                          __f},
@@ -6443,11 +6552,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                      arrangement: (Relations::inputs_Class as RelId,1),
                                                                      jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                      {
-                                                                         let (ref file, ref config, ref expr, ref object, ref used_scope, ref used_in, ref name) = match *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref(__v1) } {
+                                                                         let (ref file, ref config, ref expr, ref object, ref used_scope, ref used_in, ref name) = match *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::config::Config, ::types::ast::ExprId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>>>::from_ddvalue_ref(__v1) {
                                                                              ::types::ddlog_std::tuple7(ref file, ref config, ref expr, ref object, ref used_scope, ref used_in, ref name) => ((*file).clone(), (*config).clone(), (*expr).clone(), (*object).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone()),
                                                                              _ => return None
                                                                          };
-                                                                         let (ref class, ref declared_in, ref declared_scope) = match *unsafe {<::types::inputs::Class>::from_ddvalue_ref(__v2) } {
+                                                                         let (ref class, ref declared_in, ref declared_scope) = match *<::types::inputs::Class>::from_ddvalue_ref(__v2) {
                                                                              ::types::inputs::Class{id: ref class, file: _, name: ::types::ddlog_std::Option::Some{x: ::types::ast::Spanned{data: _, span: ref declared_in}}, parent: _, elements: _, scope: ref declared_scope, exported: _} => ((*class).clone(), (*declared_in).clone(), (*declared_scope).clone()),
                                                                              _ => return None
                                                                          };
@@ -6459,7 +6568,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                              description: "arrange __Prefix_0[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span), (name: internment::Intern<string>))], inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(name: internment::Intern<string>), .span=(declared_in: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(declared_scope: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], ((declared_scope != used_scope) and (used_in < declared_in)) by (declared_scope, used_scope, file)" .to_string(),
                                                                                              afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                              {
-                                                                                                 let ::types::ddlog_std::tuple8(ref file, ref expr, ref used_scope, ref used_in, ref name, ref class, ref declared_in, ref declared_scope) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::ClassId, ::types::ast::Span, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                 let ::types::ddlog_std::tuple8(ref file, ref expr, ref used_scope, ref used_in, ref name, ref class, ref declared_in, ref declared_scope) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::ScopeId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::ClassId, ::types::ast::Span, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                  Some(((::types::ddlog_std::tuple3((*declared_scope).clone(), (*used_scope).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*used_in).clone(), (*name).clone(), (*class).clone(), (*declared_in).clone())).into_ddvalue()))
                                                                                              }
                                                                                              __f},
@@ -6471,7 +6580,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                         description: "head of outputs::use_before_def::UseBeforeDef[(outputs::use_before_def::UseBeforeDef{.name=name, .used=expr, .used_in=used_in, .declared=(ast::AnyIdClass{.class=class}: ast::AnyId), .declared_in=declared_in, .file=file}: outputs::use_before_def::UseBeforeDef)] :- __Prefix_0[((file: ast::FileId), (config: config::Config), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span), (name: internment::Intern<string>))], inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(name: internment::Intern<string>), .span=(declared_in: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(declared_scope: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], ((declared_scope != used_scope) and (used_in < declared_in)), not scopes::ChildScope[(scopes::ChildScope{.parent=(declared_scope: ast::ScopeId), .child=(used_scope: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ChildScope)]." .to_string(),
                                                                                                                                         fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                         {
-                                                                                                                                            let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_in, ref name, ref class, ref declared_in) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::ClassId, ::types::ast::Span>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                            let ::types::ddlog_std::tuple6(ref file, ref expr, ref used_in, ref name, ref class, ref declared_in) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::ast::ExprId, ::types::ast::Span, ::types::internment::Intern<String>, ::types::ast::ClassId, ::types::ast::Span>>::from_ddvalue_ref( &__v );
                                                                                                                                             Some(((::types::outputs::use_before_def::UseBeforeDef{name: (*name).clone(), used: (*expr).clone(), used_in: (*used_in).clone(), declared: (::types::ast::AnyId::AnyIdClass{class: (*class).clone()}), declared_in: (*declared_in).clone(), file: (*file).clone()})).into_ddvalue())
                                                                                                                                         }
                                                                                                                                         __f},
@@ -6501,7 +6610,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                          description: "head of scopes::IsHoistable[(scopes::IsHoistable{.id=(ast::AnyIdFunc{.func=id}: ast::AnyId), .file=file, .hoistable=true}: scopes::IsHoistable)] :- inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]." .to_string(),
                                                          fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                          {
-                                                             let (ref id, ref file) = match *unsafe {<::types::inputs::Function>::from_ddvalue_ref(&__v) } {
+                                                             let (ref id, ref file) = match *<::types::inputs::Function>::from_ddvalue_ref(&__v) {
                                                                  ::types::inputs::Function{id: ref id, file: ref file, name: _, scope: _, body: _, exported: _} => ((*id).clone(), (*file).clone()),
                                                                  _ => return None
                                                              };
@@ -6519,7 +6628,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                          description: "head of scopes::IsHoistable[(scopes::IsHoistable{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId), .file=file, .hoistable=true}: scopes::IsHoistable)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(id: ast::StmtId), .file=(file: ast::FileId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::VarDecl)]." .to_string(),
                                                          fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                                          {
-                                                             let (ref id, ref file) = match *unsafe {<::types::inputs::VarDecl>::from_ddvalue_ref(&__v) } {
+                                                             let (ref id, ref file) = match *<::types::inputs::VarDecl>::from_ddvalue_ref(&__v) {
                                                                  ::types::inputs::VarDecl{stmt_id: ref id, file: ref file, pattern: _, value: _, exported: _} => ((*id).clone(), (*file).clone()),
                                                                  _ => return None
                                                              };
@@ -6534,7 +6643,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                          name: r###"(scopes::IsHoistable{.id=(_0: ast::AnyId), .file=(_1: ast::FileId), .hoistable=true}: scopes::IsHoistable) /*semijoin*/"###.to_string(),
                                          fmfun: &{fn __f(__v: DDValue) -> Option<DDValue>
                                          {
-                                             match unsafe {< ::types::scopes::IsHoistable>::from_ddvalue(__v) } {
+                                             match < ::types::scopes::IsHoistable>::from_ddvalue(__v) {
                                                  ::types::scopes::IsHoistable{id: ref _0, file: ref _1, hoistable: true} => Some((::types::ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                  _ => None
                                              }
@@ -6568,7 +6677,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                             description: "inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_shadow_enabled(config)), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=(inital_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)]".to_string(),
                                                             ffun: Some(&{fn __f(__v: &DDValue) -> bool
                                                                   {
-                                                                      let (ref file, ref config) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(__v) } {
+                                                                      let (ref file, ref config) = match *<::types::inputs::File>::from_ddvalue_ref(__v) {
                                                                           ::types::inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
                                                                           _ => return false
                                                                       };
@@ -6579,11 +6688,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                             arrangement: (Relations::name_in_scope_NameInScope as RelId,2),
                                                             jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                             {
-                                                                let (ref file, ref config) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(__v1) } {
+                                                                let (ref file, ref config) = match *<::types::inputs::File>::from_ddvalue_ref(__v1) {
                                                                     ::types::inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
                                                                     _ => return None
                                                                 };
-                                                                let (ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref inital_is_arg) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                let (ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref inital_is_arg) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                     ::types::name_in_scope::NameInScope{file: _, name: ref variable_name, scope: ref name_scope, span: ::types::ddlog_std::Option::Some{x: ref initial_span}, declared_in: ref initial_id, implicit: _, is_arg: ref inital_is_arg, origin: _} => ((*variable_name).clone(), (*name_scope).clone(), (*initial_span).clone(), (*initial_id).clone(), (*inital_is_arg).clone()),
                                                                     _ => return None
                                                                 };
@@ -6594,7 +6703,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                     description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_shadow_enabled(config)), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=(inital_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (initial_id, file)" .to_string(),
                                                                                     afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                     {
-                                                                                        let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref inital_is_arg) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, bool>>::from_ddvalue_ref( &__v ) };
+                                                                                        let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref inital_is_arg) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, bool>>::from_ddvalue_ref( &__v );
                                                                                         Some(((::types::ddlog_std::tuple2((*initial_id).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*variable_name).clone(), (*name_scope).clone(), (*initial_span).clone(), (*initial_id).clone(), (*inital_is_arg).clone())).into_ddvalue()))
                                                                                     }
                                                                                     __f},
@@ -6604,8 +6713,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                        arrangement: (Relations::scopes_ScopeOfId as RelId,0),
                                                                                                        jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                        {
-                                                                                                           let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref inital_is_arg) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, bool>>::from_ddvalue_ref( __v1 ) };
-                                                                                                           let ref initial_id_scope = match *unsafe {<::types::scopes::ScopeOfId>::from_ddvalue_ref(__v2) } {
+                                                                                                           let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref inital_is_arg) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, bool>>::from_ddvalue_ref( __v1 );
+                                                                                                           let ref initial_id_scope = match *<::types::scopes::ScopeOfId>::from_ddvalue_ref(__v2) {
                                                                                                                ::types::scopes::ScopeOfId{id: _, file: _, scope: ref initial_id_scope} => (*initial_id_scope).clone(),
                                                                                                                _ => return None
                                                                                                            };
@@ -6624,7 +6733,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_shadow_enabled(config)), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=(inital_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], scopes::ScopeOfId[(scopes::ScopeOfId{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .scope=(initial_id_scope: ast::ScopeId)}: scopes::ScopeOfId)], ((var initial_scope: ast::ScopeId) = if inital_is_arg {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   name_scope\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     initial_id_scope\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }) by (file, variable_name, name_scope)" .to_string(),
                                                                                                                                afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                {
-                                                                                                                                   let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                   let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                    Some(((::types::ddlog_std::tuple3((*file).clone(), (*variable_name).clone(), (*name_scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*variable_name).clone(), (*name_scope).clone(), (*initial_span).clone(), (*initial_id).clone(), (*initial_scope).clone())).into_ddvalue()))
                                                                                                                                }
                                                                                                                                __f},
@@ -6634,8 +6743,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                   arrangement: (Relations::name_in_scope_NameInScope as RelId,3),
                                                                                                                                                   jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                   {
-                                                                                                                                                      let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                      let (ref shadower_span, ref shadower_id, ref shadower_is_arg) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                      let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                      let (ref shadower_span, ref shadower_id, ref shadower_is_arg) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                                                                                                           ::types::name_in_scope::NameInScope{file: _, name: _, scope: _, span: ::types::ddlog_std::Option::Some{x: ref shadower_span}, declared_in: ref shadower_id, implicit: _, is_arg: ref shadower_is_arg, origin: _} => ((*shadower_span).clone(), (*shadower_id).clone(), (*shadower_is_arg).clone()),
                                                                                                                                                           _ => return None
                                                                                                                                                       };
@@ -6646,7 +6755,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                           description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_shadow_enabled(config)), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=(inital_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], scopes::ScopeOfId[(scopes::ScopeOfId{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .scope=(initial_id_scope: ast::ScopeId)}: scopes::ScopeOfId)], ((var initial_scope: ast::ScopeId) = if inital_is_arg {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   name_scope\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     initial_id_scope\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(shadower_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(shadower_id: ast::AnyId), .implicit=false, .is_arg=(shadower_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (shadower_id, file)" .to_string(),
                                                                                                                                                                           afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                           {
-                                                                                                                                                                              let ::types::ddlog_std::tuple9(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_is_arg) = *unsafe {<::types::ddlog_std::tuple9<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, bool>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                              let ::types::ddlog_std::tuple9(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_is_arg) = *<::types::ddlog_std::tuple9<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, bool>>::from_ddvalue_ref( &__v );
                                                                                                                                                                               Some(((::types::ddlog_std::tuple2((*shadower_id).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple9((*file).clone(), (*variable_name).clone(), (*name_scope).clone(), (*initial_span).clone(), (*initial_id).clone(), (*initial_scope).clone(), (*shadower_span).clone(), (*shadower_id).clone(), (*shadower_is_arg).clone())).into_ddvalue()))
                                                                                                                                                                           }
                                                                                                                                                                           __f},
@@ -6656,8 +6765,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                              arrangement: (Relations::scopes_ScopeOfId as RelId,0),
                                                                                                                                                                                              jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                              {
-                                                                                                                                                                                                 let ::types::ddlog_std::tuple9(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_is_arg) = *unsafe {<::types::ddlog_std::tuple9<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, bool>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                                                                 let ref shadower_id_scope = match *unsafe {<::types::scopes::ScopeOfId>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                                                                 let ::types::ddlog_std::tuple9(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_is_arg) = *<::types::ddlog_std::tuple9<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, bool>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                                                                 let ref shadower_id_scope = match *<::types::scopes::ScopeOfId>::from_ddvalue_ref(__v2) {
                                                                                                                                                                                                      ::types::scopes::ScopeOfId{id: _, file: _, scope: ref shadower_id_scope} => (*shadower_id_scope).clone(),
                                                                                                                                                                                                      _ => return None
                                                                                                                                                                                                  };
@@ -6677,7 +6786,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                      description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_shadow_enabled(config)), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=(inital_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], scopes::ScopeOfId[(scopes::ScopeOfId{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .scope=(initial_id_scope: ast::ScopeId)}: scopes::ScopeOfId)], ((var initial_scope: ast::ScopeId) = if inital_is_arg {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   name_scope\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     initial_id_scope\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 }), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(shadower_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(shadower_id: ast::AnyId), .implicit=false, .is_arg=(shadower_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], scopes::ScopeOfId[(scopes::ScopeOfId{.id=(shadower_id: ast::AnyId), .file=(file: ast::FileId), .scope=(shadower_id_scope: ast::ScopeId)}: scopes::ScopeOfId)], ((var shadower_scope: ast::ScopeId) = if shadower_is_arg {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             name_scope\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               shadower_id_scope\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           }), ((initial_span != shadower_span) and (initial_span < shadower_span)) by (initial_scope, shadower_scope, file)" .to_string(),
                                                                                                                                                                                                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                      {
-                                                                                                                                                                                                                         let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_scope) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                         let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_scope) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                          Some(((::types::ddlog_std::tuple3((*initial_scope).clone(), (*shadower_scope).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*variable_name).clone(), (*initial_span).clone(), (*initial_id).clone(), (*shadower_span).clone(), (*shadower_id).clone())).into_ddvalue()))
                                                                                                                                                                                                                      }
                                                                                                                                                                                                                      __f},
@@ -6687,7 +6796,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                         arrangement: (Relations::scopes_ChildScope as RelId,1),
                                                                                                                                                                                                                                         jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,___v2: &()) -> Option<DDValue>
                                                                                                                                                                                                                                         {
-                                                                                                                                                                                                                                            let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref initial_span, ref initial_id, ref shadower_span, ref shadower_id) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
+                                                                                                                                                                                                                                            let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref initial_span, ref initial_id, ref shadower_span, ref shadower_id) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
                                                                                                                                                                                                                                             Some(((::types::outputs::no_shadow::NoShadow{variable: (*variable_name).clone(), original: ::types::ddlog_std::tuple2((*initial_id).clone(), (*initial_span).clone()), shadower: ::types::ddlog_std::tuple2((*shadower_id).clone(), (*shadower_span).clone()), implicit: false, file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                                                                         }
                                                                                                                                                                                                                                         __f},
@@ -6714,7 +6823,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                             description: "inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], ((config::no_shadow_enabled(config)) and (config::no_shadow_hoisting(config))), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)]".to_string(),
                                                             ffun: Some(&{fn __f(__v: &DDValue) -> bool
                                                                   {
-                                                                      let (ref file, ref config) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(__v) } {
+                                                                      let (ref file, ref config) = match *<::types::inputs::File>::from_ddvalue_ref(__v) {
                                                                           ::types::inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
                                                                           _ => return false
                                                                       };
@@ -6725,11 +6834,11 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                             arrangement: (Relations::name_in_scope_NameInScope as RelId,4),
                                                             jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                             {
-                                                                let (ref file, ref config) = match *unsafe {<::types::inputs::File>::from_ddvalue_ref(__v1) } {
+                                                                let (ref file, ref config) = match *<::types::inputs::File>::from_ddvalue_ref(__v1) {
                                                                     ::types::inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
                                                                     _ => return None
                                                                 };
-                                                                let (ref variable_name, ref name_scope, ref initial_span, ref initial_id) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                let (ref variable_name, ref name_scope, ref initial_span, ref initial_id) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                     ::types::name_in_scope::NameInScope{file: _, name: ref variable_name, scope: ref name_scope, span: ::types::ddlog_std::Option::Some{x: ref initial_span}, declared_in: ref initial_id, implicit: _, is_arg: _, origin: _} => ((*variable_name).clone(), (*name_scope).clone(), (*initial_span).clone(), (*initial_id).clone()),
                                                                     _ => return None
                                                                 };
@@ -6745,7 +6854,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                     description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], ((config::no_shadow_enabled(config)) and (config::no_shadow_hoisting(config))), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], if (config::no_shadow_hoist_functions(config)) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            (ast::is_function(initial_id))\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              true\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          } by (initial_id, file)" .to_string(),
                                                                                     afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                     {
-                                                                                        let ::types::ddlog_std::tuple5(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                        let ::types::ddlog_std::tuple5(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                         Some(((::types::ddlog_std::tuple2((*initial_id).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple5((*file).clone(), (*variable_name).clone(), (*name_scope).clone(), (*initial_span).clone(), (*initial_id).clone())).into_ddvalue()))
                                                                                     }
                                                                                     __f},
@@ -6755,8 +6864,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                        arrangement: (Relations::scopes_ScopeOfId as RelId,0),
                                                                                                        jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                        {
-                                                                                                           let ::types::ddlog_std::tuple5(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                           let ref initial_scope = match *unsafe {<::types::scopes::ScopeOfId>::from_ddvalue_ref(__v2) } {
+                                                                                                           let ::types::ddlog_std::tuple5(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
+                                                                                                           let ref initial_scope = match *<::types::scopes::ScopeOfId>::from_ddvalue_ref(__v2) {
                                                                                                                ::types::scopes::ScopeOfId{id: _, file: _, scope: ref initial_scope} => (*initial_scope).clone(),
                                                                                                                _ => return None
                                                                                                            };
@@ -6767,7 +6876,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], ((config::no_shadow_enabled(config)) and (config::no_shadow_hoisting(config))), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], if (config::no_shadow_hoist_functions(config)) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            (ast::is_function(initial_id))\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              true\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }, scopes::ScopeOfId[(scopes::ScopeOfId{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .scope=(initial_scope: ast::ScopeId)}: scopes::ScopeOfId)] by (file, variable_name, name_scope)" .to_string(),
                                                                                                                                afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                {
-                                                                                                                                   let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                   let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref name_scope, ref initial_span, ref initial_id, ref initial_scope) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                    Some(((::types::ddlog_std::tuple3((*file).clone(), (*variable_name).clone(), (*name_scope).clone())).into_ddvalue(), (::types::ddlog_std::tuple5((*file).clone(), (*variable_name).clone(), (*initial_span).clone(), (*initial_id).clone(), (*initial_scope).clone())).into_ddvalue()))
                                                                                                                                }
                                                                                                                                __f},
@@ -6777,8 +6886,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                   arrangement: (Relations::name_in_scope_NameInScope as RelId,3),
                                                                                                                                                   jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                   {
-                                                                                                                                                      let ::types::ddlog_std::tuple5(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope) = *unsafe {<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                      let (ref shadower_span, ref shadower_id, ref shadower_is_arg) = match *unsafe {<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                      let ::types::ddlog_std::tuple5(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope) = *<::types::ddlog_std::tuple5<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                      let (ref shadower_span, ref shadower_id, ref shadower_is_arg) = match *<::types::name_in_scope::NameInScope>::from_ddvalue_ref(__v2) {
                                                                                                                                                           ::types::name_in_scope::NameInScope{file: _, name: _, scope: _, span: ::types::ddlog_std::Option::Some{x: ref shadower_span}, declared_in: ref shadower_id, implicit: _, is_arg: ref shadower_is_arg, origin: _} => ((*shadower_span).clone(), (*shadower_id).clone(), (*shadower_is_arg).clone()),
                                                                                                                                                           _ => return None
                                                                                                                                                       };
@@ -6789,7 +6898,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                           description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], ((config::no_shadow_enabled(config)) and (config::no_shadow_hoisting(config))), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], if (config::no_shadow_hoist_functions(config)) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            (ast::is_function(initial_id))\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              true\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }, scopes::ScopeOfId[(scopes::ScopeOfId{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .scope=(initial_scope: ast::ScopeId)}: scopes::ScopeOfId)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(shadower_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(shadower_id: ast::AnyId), .implicit=false, .is_arg=(shadower_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)] by (shadower_id, file)" .to_string(),
                                                                                                                                                                           afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                           {
-                                                                                                                                                                              let ::types::ddlog_std::tuple7(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                              let ::types::ddlog_std::tuple7(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                               Some(((::types::ddlog_std::tuple2((*shadower_id).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple7((*file).clone(), (*variable_name).clone(), (*initial_span).clone(), (*initial_id).clone(), (*initial_scope).clone(), (*shadower_span).clone(), (*shadower_id).clone())).into_ddvalue()))
                                                                                                                                                                           }
                                                                                                                                                                           __f},
@@ -6799,8 +6908,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                              arrangement: (Relations::scopes_ScopeOfId as RelId,0),
                                                                                                                                                                                              jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                              {
-                                                                                                                                                                                                 let ::types::ddlog_std::tuple7(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                                                                 let ref shadower_scope = match *unsafe {<::types::scopes::ScopeOfId>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                                                                 let ::types::ddlog_std::tuple7(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                                                                 let ref shadower_scope = match *<::types::scopes::ScopeOfId>::from_ddvalue_ref(__v2) {
                                                                                                                                                                                                      ::types::scopes::ScopeOfId{id: _, file: _, scope: ref shadower_scope} => (*shadower_scope).clone(),
                                                                                                                                                                                                      _ => return None
                                                                                                                                                                                                  };
@@ -6812,7 +6921,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                      description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], ((config::no_shadow_enabled(config)) and (config::no_shadow_hoisting(config))), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], if (config::no_shadow_hoist_functions(config)) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            (ast::is_function(initial_id))\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              true\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }, scopes::ScopeOfId[(scopes::ScopeOfId{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .scope=(initial_scope: ast::ScopeId)}: scopes::ScopeOfId)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(shadower_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(shadower_id: ast::AnyId), .implicit=false, .is_arg=(shadower_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], scopes::ScopeOfId[(scopes::ScopeOfId{.id=(shadower_id: ast::AnyId), .file=(file: ast::FileId), .scope=(shadower_scope: ast::ScopeId)}: scopes::ScopeOfId)], ((initial_span != shadower_span) and (initial_span > shadower_span)) by (initial_id, file)" .to_string(),
                                                                                                                                                                                                                      afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                      {
-                                                                                                                                                                                                                         let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_scope) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                         let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_scope) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                          Some(((::types::ddlog_std::tuple2((*initial_id).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple8((*file).clone(), (*variable_name).clone(), (*initial_span).clone(), (*initial_id).clone(), (*initial_scope).clone(), (*shadower_span).clone(), (*shadower_id).clone(), (*shadower_scope).clone())).into_ddvalue()))
                                                                                                                                                                                                                      }
                                                                                                                                                                                                                      __f},
@@ -6822,7 +6931,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                         arrangement: (Relations::scopes_IsHoistable as RelId,0),
                                                                                                                                                                                                                                         jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,___v2: &()) -> Option<DDValue>
                                                                                                                                                                                                                                         {
-                                                                                                                                                                                                                                            let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_scope) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 ) };
+                                                                                                                                                                                                                                            let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_scope) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 );
                                                                                                                                                                                                                                             Some((::types::ddlog_std::tuple8((*file).clone(), (*variable_name).clone(), (*initial_span).clone(), (*initial_id).clone(), (*initial_scope).clone(), (*shadower_span).clone(), (*shadower_id).clone(), (*shadower_scope).clone())).into_ddvalue())
                                                                                                                                                                                                                                         }
                                                                                                                                                                                                                                         __f},
@@ -6830,7 +6939,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                                 description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], ((config::no_shadow_enabled(config)) and (config::no_shadow_hoisting(config))), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], if (config::no_shadow_hoist_functions(config)) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            (ast::is_function(initial_id))\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              true\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }, scopes::ScopeOfId[(scopes::ScopeOfId{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .scope=(initial_scope: ast::ScopeId)}: scopes::ScopeOfId)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(shadower_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(shadower_id: ast::AnyId), .implicit=false, .is_arg=(shadower_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], scopes::ScopeOfId[(scopes::ScopeOfId{.id=(shadower_id: ast::AnyId), .file=(file: ast::FileId), .scope=(shadower_scope: ast::ScopeId)}: scopes::ScopeOfId)], ((initial_span != shadower_span) and (initial_span > shadower_span)), scopes::IsHoistable[(scopes::IsHoistable{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .hoistable=true}: scopes::IsHoistable)] by (initial_scope, file)" .to_string(),
                                                                                                                                                                                                                                                                 afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                                                                 {
-                                                                                                                                                                                                                                                                    let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_scope) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                                                    let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref initial_scope, ref shadower_span, ref shadower_id, ref shadower_scope) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                                                     Some(((::types::ddlog_std::tuple2((*initial_scope).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple7((*file).clone(), (*variable_name).clone(), (*initial_span).clone(), (*initial_id).clone(), (*shadower_span).clone(), (*shadower_id).clone(), (*shadower_scope).clone())).into_ddvalue()))
                                                                                                                                                                                                                                                                 }
                                                                                                                                                                                                                                                                 __f},
@@ -6840,8 +6949,8 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                                                    arrangement: (Relations::scopes_FunctionLevelScope as RelId,0),
                                                                                                                                                                                                                                                                                    jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                                                                                                                    {
-                                                                                                                                                                                                                                                                                       let ::types::ddlog_std::tuple7(ref file, ref variable_name, ref initial_span, ref initial_id, ref shadower_span, ref shadower_id, ref shadower_scope) = *unsafe {<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 ) };
-                                                                                                                                                                                                                                                                                       let ref hoisted_scope = match *unsafe {<::types::scopes::FunctionLevelScope>::from_ddvalue_ref(__v2) } {
+                                                                                                                                                                                                                                                                                       let ::types::ddlog_std::tuple7(ref file, ref variable_name, ref initial_span, ref initial_id, ref shadower_span, ref shadower_id, ref shadower_scope) = *<::types::ddlog_std::tuple7<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId>>::from_ddvalue_ref( __v1 );
+                                                                                                                                                                                                                                                                                       let ref hoisted_scope = match *<::types::scopes::FunctionLevelScope>::from_ddvalue_ref(__v2) {
                                                                                                                                                                                                                                                                                            ::types::scopes::FunctionLevelScope{scope: _, nearest: ref hoisted_scope, file: _, id: _} => (*hoisted_scope).clone(),
                                                                                                                                                                                                                                                                                            _ => return None
                                                                                                                                                                                                                                                                                        };
@@ -6852,7 +6961,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                                                                            description: "arrange inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], ((config::no_shadow_enabled(config)) and (config::no_shadow_hoisting(config))), name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(initial_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(initial_id: ast::AnyId), .implicit=false, .is_arg=false, .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], if (config::no_shadow_hoist_functions(config)) {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            (ast::is_function(initial_id))\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        } else {\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              true\n                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          }, scopes::ScopeOfId[(scopes::ScopeOfId{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .scope=(initial_scope: ast::ScopeId)}: scopes::ScopeOfId)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(variable_name: internment::Intern<string>), .scope=(name_scope: ast::ScopeId), .span=(ddlog_std::Some{.x=(shadower_span: ast::Span)}: ddlog_std::Option<ast::Span>), .declared_in=(shadower_id: ast::AnyId), .implicit=false, .is_arg=(shadower_is_arg: bool), .origin=(_: name_in_scope::NameOrigin)}: name_in_scope::NameInScope)], scopes::ScopeOfId[(scopes::ScopeOfId{.id=(shadower_id: ast::AnyId), .file=(file: ast::FileId), .scope=(shadower_scope: ast::ScopeId)}: scopes::ScopeOfId)], ((initial_span != shadower_span) and (initial_span > shadower_span)), scopes::IsHoistable[(scopes::IsHoistable{.id=(initial_id: ast::AnyId), .file=(file: ast::FileId), .hoistable=true}: scopes::IsHoistable)], scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=(initial_scope: ast::ScopeId), .nearest=(hoisted_scope: ast::ScopeId), .file=(file: ast::FileId), .id=(_: ast::AnyId)}: scopes::FunctionLevelScope)] by (hoisted_scope, shadower_scope, file)" .to_string(),
                                                                                                                                                                                                                                                                                                            afun: &{fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                                                                                                                                                                            {
-                                                                                                                                                                                                                                                                                                               let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref shadower_span, ref shadower_id, ref shadower_scope, ref hoisted_scope) = *unsafe {<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v ) };
+                                                                                                                                                                                                                                                                                                               let ::types::ddlog_std::tuple8(ref file, ref variable_name, ref initial_span, ref initial_id, ref shadower_span, ref shadower_id, ref shadower_scope, ref hoisted_scope) = *<::types::ddlog_std::tuple8<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::ScopeId, ::types::ast::ScopeId>>::from_ddvalue_ref( &__v );
                                                                                                                                                                                                                                                                                                                Some(((::types::ddlog_std::tuple3((*hoisted_scope).clone(), (*shadower_scope).clone(), (*file).clone())).into_ddvalue(), (::types::ddlog_std::tuple6((*file).clone(), (*variable_name).clone(), (*initial_span).clone(), (*initial_id).clone(), (*shadower_span).clone(), (*shadower_id).clone())).into_ddvalue()))
                                                                                                                                                                                                                                                                                                            }
                                                                                                                                                                                                                                                                                                            __f},
@@ -6862,7 +6971,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
                                                                                                                                                                                                                                                                                                                               arrangement: (Relations::scopes_ChildScope as RelId,1),
                                                                                                                                                                                                                                                                                                                               jfun: &{fn __f(_: &DDValue ,__v1: &DDValue,___v2: &()) -> Option<DDValue>
                                                                                                                                                                                                                                                                                                                               {
-                                                                                                                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref initial_span, ref initial_id, ref shadower_span, ref shadower_id) = *unsafe {<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 ) };
+                                                                                                                                                                                                                                                                                                                                  let ::types::ddlog_std::tuple6(ref file, ref variable_name, ref initial_span, ref initial_id, ref shadower_span, ref shadower_id) = *<::types::ddlog_std::tuple6<::types::ast::FileId, ::types::internment::Intern<String>, ::types::ast::Span, ::types::ast::AnyId, ::types::ast::Span, ::types::ast::AnyId>>::from_ddvalue_ref( __v1 );
                                                                                                                                                                                                                                                                                                                                   Some(((::types::outputs::no_shadow::NoShadow{variable: (*variable_name).clone(), original: ::types::ddlog_std::tuple2((*initial_id).clone(), (*initial_span).clone()), shadower: ::types::ddlog_std::tuple2((*shadower_id).clone(), (*shadower_span).clone()), implicit: false, file: (*file).clone()})).into_ddvalue())
                                                                                                                                                                                                                                                                                                                               }
                                                                                                                                                                                                                                                                                                                               __f},
@@ -6957,6 +7066,7 @@ pub fn prog(__update_cb: Box<dyn CBFn>) -> Program {
             ProgNode::Rel{rel: inputs_FileExport},
             ProgNode::Rel{rel: inputs_For},
             ProgNode::Rel{rel: inputs_ForIn},
+            ProgNode::Rel{rel: inputs_ForOf},
             ProgNode::Rel{rel: inputs_Function},
             ProgNode::Rel{rel: inputs_FunctionArg},
             ProgNode::Rel{rel: inputs_If},

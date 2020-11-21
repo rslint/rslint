@@ -127,6 +127,16 @@ impl<V> Update<V> {
             _ => panic!("Update::key: not a DeleteKey command"),
         }
     }
+
+    /// Attempts to get the value of the current update
+    pub fn get_value(&self) -> Option<&V> {
+        match self {
+            Update::Insert { v, .. } => Some(v),
+            Update::InsertOrUpdate { v, .. } => Some(v),
+            Update::DeleteValue { v, .. } => Some(v),
+            _ => None,
+        }
+    }
 }
 
 // Manual implementation of `Debug` for `Update` because the latter

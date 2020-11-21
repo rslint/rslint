@@ -40,7 +40,7 @@ macro_rules! derived_facts {
 
                     let result = query
                         .into_iter()
-                        .map(|value| unsafe { $relation_type::from_ddvalue(value) })
+                        .map($relation_type::from_ddvalue)
                         .collect();
 
                     Ok(result)
@@ -105,9 +105,7 @@ macro_rules! outputs {
                 match relation {
                     $(
                         rel if rel == Relations::$output_rel as RelId => {
-                            let value: $output_type = unsafe {
-                                <$output_type as DDValConvert>::from_ddvalue(value)
-                            };
+                            let value: $output_type = <$output_type as DDValConvert>::from_ddvalue(value);
 
                             match self.$output_field.entry(value) {
                                 Entry::Occupied(mut occupied) => {

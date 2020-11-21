@@ -33,8 +33,6 @@ impl Mutator<Empty> for Record {
     }
 }
 
-decl_ddval_convert! {Empty}
-
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct Bool(pub bool);
 impl Abomonation for Bool {}
@@ -53,8 +51,6 @@ impl Mutator<Bool> for Record {
         unimplemented!("Bool::Mutator");
     }
 }
-
-decl_ddval_convert! {Bool}
 
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct Uint(pub uint::Uint);
@@ -75,8 +71,6 @@ impl Mutator<Uint> for Record {
     }
 }
 
-decl_ddval_convert! {Uint}
-
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct String(pub std::string::String);
 impl Abomonation for String {}
@@ -95,8 +89,6 @@ impl Mutator<String> for Record {
         unimplemented!("String::Mutator");
     }
 }
-
-decl_ddval_convert! {String}
 
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct U8(pub u8);
@@ -117,8 +109,6 @@ impl Mutator<U8> for Record {
     }
 }
 
-decl_ddval_convert! {U8}
-
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct U16(pub u16);
 impl Abomonation for U16 {}
@@ -137,8 +127,6 @@ impl Mutator<U16> for Record {
         unimplemented!("U16::Mutator");
     }
 }
-
-decl_ddval_convert! {U16}
 
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct U32(pub u32);
@@ -159,8 +147,6 @@ impl Mutator<U32> for Record {
     }
 }
 
-decl_ddval_convert! {U32}
-
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct U64(pub u64);
 impl Abomonation for U64 {}
@@ -179,8 +165,6 @@ impl Mutator<U64> for Record {
         unimplemented!("U64::Mutator");
     }
 }
-
-decl_ddval_convert! {U64}
 
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct I64(pub i64);
@@ -201,8 +185,6 @@ impl Mutator<I64> for Record {
     }
 }
 
-decl_ddval_convert! {I64}
-
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct BoolTuple(pub (bool, bool));
 impl Abomonation for BoolTuple {}
@@ -222,8 +204,6 @@ impl Mutator<BoolTuple> for Record {
     }
 }
 
-decl_ddval_convert! {BoolTuple}
-
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct Tuple2<T>(pub Box<T>, pub Box<T>);
 impl<T: Abomonation> Abomonation for Tuple2<T> {}
@@ -242,10 +222,6 @@ impl<T> Mutator<Tuple2<T>> for Record {
         unimplemented!("Tuple2::Mutator");
     }
 }
-
-decl_ddval_convert! {Tuple2<U64>}
-
-decl_ddval_convert! {Tuple2<String>}
 
 #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct Q {
@@ -268,8 +244,6 @@ impl Mutator<Q> for Record {
         unimplemented!("Q::Mutator");
     }
 }
-
-decl_ddval_convert! {Q}
 
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub enum S {
@@ -321,8 +295,6 @@ impl Mutator<S> for Record {
         unimplemented!("S::Mutator");
     }
 }
-
-decl_ddval_convert! {S}
 
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
 pub struct P {

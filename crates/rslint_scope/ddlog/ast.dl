@@ -123,6 +123,7 @@ typedef StmtKind =
     | StmtWhile
     | StmtFor
     | StmtForIn
+    | StmtForOf
     | StmtContinue
     | StmtWith
     | StmtLabel

@@ -35,7 +35,7 @@ impl ProgramInfo {
             .ok()
             // TODO: Log error if there's more than one value
             .and_then(|query| query.into_iter().next())
-            .map(|stmt| unsafe { Statement::from_ddvalue(stmt) })
+            .map(Statement::from_ddvalue)
             .map(|stmt| StmtInfo {
                 id: stmt.id,
                 file: stmt.file,
@@ -54,7 +54,7 @@ impl ProgramInfo {
             .ok()
             // TODO: Log error if there's more than one value
             .and_then(|query| query.into_iter().next())
-            .map(|expr| unsafe { Expression::from_ddvalue(expr) })
+            .map(Expression::from_ddvalue)
             .map(|expr| ExprInfo {
                 id: expr.id,
                 file: expr.file,
@@ -89,7 +89,7 @@ impl<'a> ScopeInfo<'a> {
             .ok()
             // TODO: Log error if there's more than one value
             .and_then(|query| query.into_iter().next())
-            .map(|scope| unsafe { InputScope::from_ddvalue(scope).parent })
+            .map(|scope| InputScope::from_ddvalue(scope).parent)
     }
 
     pub fn children(&self) -> Option<Vec<ScopeId>> {
@@ -102,7 +102,7 @@ impl<'a> ScopeInfo<'a> {
         query.ok().map(|query| {
             query
                 .into_iter()
-                .map(|scope| unsafe { ChildScope::from_ddvalue(scope).child })
+                .map(|scope| ChildScope::from_ddvalue(scope).child)
                 .collect()
         })
     }
@@ -127,7 +127,7 @@ impl<'a> ScopeInfo<'a> {
         query
             .ok()
             .and_then(|vars| vars.into_iter().next())
-            .map(|var| unsafe { NameInScope::from_ddvalue(var) })
+            .map(NameInScope::from_ddvalue)
     }
 }
 
