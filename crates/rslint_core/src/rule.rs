@@ -135,6 +135,10 @@ impl RuleCtx {
         Diagnostic::error(self.file_id, code.into(), message.into())
     }
 
+    pub fn extend_err<I: IntoIterator<Item = Diagnostic>>(&mut self, diagnostics: I) {
+        self.diagnostics.extend(diagnostics);
+    }
+
     pub fn add_err(&mut self, diagnostic: Diagnostic) {
         self.diagnostics.push(diagnostic)
     }

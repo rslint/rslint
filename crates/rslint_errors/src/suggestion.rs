@@ -7,8 +7,6 @@ use std::ops::Range;
 /// applied if it has the right [`Applicability`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CodeSuggestion {
-    /// If the `FileId` is `None`, it's in the same file as
-    /// his parent.
     pub substitution: SuggestionChange,
     pub span: FileSpan,
     pub applicability: Applicability,

@@ -29,7 +29,7 @@ impl Fixer {
 
     /// Apply this fixer to its source code
     pub fn apply(&self) -> String {
-        let mut new = (&*self.src).to_string();
+        let mut new = (&*self.src).to_owned();
         apply_indels(&self.indels, &mut new);
         new
     }

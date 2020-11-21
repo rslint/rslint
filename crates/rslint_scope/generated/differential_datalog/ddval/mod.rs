@@ -94,5 +94,4 @@ pub struct DDValMethods {
     pub drop: fn(this: &mut DDVal),
     pub ddval_serialize: fn(this: &DDVal) -> &dyn erased_serde::Serialize,
     pub type_id: fn(this: &DDVal) -> TypeId,
-    pub type_name: fn(this: &DDVal) -> &'static str,
 }

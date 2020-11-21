@@ -55,11 +55,11 @@ pub use rslint_scope::ScopeAnalyzer;
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
-use rslint_scope::{
-    globals::{BUILTIN, ES2021, NODE},
-    FileId, NoShadowHoisting,
+use rslint_scope::{FileId, NoShadowHoisting};
+use std::{
+    collections::HashMap,
+    sync::{mpsc::Sender, Arc},
 };
-use std::{collections::HashMap, sync::Arc, thread};
 use tracing::*;
 
 /// The result of linting a file.
@@ -122,7 +122,8 @@ pub fn lint_file<'a>(
     file: &File,
     store: &'a CstRuleStore,
     verbose: bool,
-    analyzer: ScopeAnalyzer,
+    analyzer: Option<ScopeAnalyzer>,
+    ddlog_send: Option<&mut Sender<(rslint_scope::FileId, SyntaxNode, rslint_scope::Config)>>,
 ) -> Result<LintResult<'a>, Diagnostic> {
     let (parser_diagnostics, green) = {
         let span = tracing::info_span!("parsing file");
@@ -137,40 +138,25 @@ pub fn lint_file<'a>(
     };
     let node = SyntaxNode::new_root(green);
 
-    let file = FileId::new(file_id as u32);
-    analyzer.inject_globals(file, BUILTIN).unwrap();
-    analyzer.inject_globals(file, ES2021).unwrap();
-    analyzer.inject_globals(file, NODE).unwrap();
-    analyzer
-        .analyze(
-            file,
-            &node,
-            rslint_scope::Config {
-                no_shadow: store.contains("no-shadow"),
-                no_shadow_hoisting: NoShadowHoisting::Always,
-                no_undef: store.contains("no-undef"),
-                no_unused_labels: store.contains("no-unused-labels"),
-                no_typeof_undef: store.contains("no-typeof-undef"),
-                no_unused_vars: store.contains("no-unused-vars"),
-                no_use_before_def: store.contains("no-use-before-def"),
-            },
-        )
-        .unwrap();
+    if let Some(sender) = ddlog_send {
+        sender
+            .send((
+                FileId::new(file_id as u32),
+                node.clone(),
+                rslint_scope::Config {
+                    no_shadow: store.contains("no_shadow"),
+                    no_shadow_hoisting: NoShadowHoisting::Always,
+                    no_undef: store.contains("no_undef"),
+                    no_unused_labels: store.contains("no_unused_labels"),
+                    no_typeof_undef: store.contains("no_unused_labels"),
+                    no_unused_vars: store.contains("no_unused_vars"),
+                    no_use_before_def: store.contains("no_use_before_def"),
+                },
+            ))
+            .unwrap();
+    }
 
-    let res = lint_file_inner(
-        node,
-        parser_diagnostics,
-        file_id,
-        store,
-        verbose,
-        Some(analyzer.clone()),
-    );
-
-    thread::spawn(move || {
-        let _ = analyzer.purge_file(file);
-    });
-
-    res
+    lint_file_inner(node, parser_diagnostics, file_id, store, verbose, analyzer)
 }
 
 /// used by lint_file and incrementally_relint to not duplicate code

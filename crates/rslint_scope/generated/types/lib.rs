@@ -137,13 +137,14 @@ pub mod ddlog_std;
 pub mod internment;
 pub mod debug;
 pub mod log;
-pub mod vec;
 pub mod ast;
+pub mod vec;
 pub mod utils;
+pub mod tdz;
 pub mod group;
+pub mod scopes;
 pub mod inputs;
 pub mod config;
-pub mod scopes;
 pub mod is_exported;
 pub mod name_in_scope;
 pub mod variable_decl;
@@ -163,6 +164,13 @@ pub static IMPLICIT_ARGUMENTS: Lazy<Intern<Pattern>> = Lazy::new(|| {
         .into(),
     })
 });
+
+
+
+
+
+
+
 
 
 

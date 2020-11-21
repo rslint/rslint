@@ -1293,6 +1293,7 @@ pub trait DatalogBuilder<'ddlog> {
         expr_id
     }
 
+    #[allow(clippy::new_ret_no_self)]
     fn new(&self, object: Option<ExprId>, args: Option<Vec<ExprId>>, span: TextRange) -> ExprId {
         let datalog = self.datalog();
         let expr_id = datalog.inc_expression();

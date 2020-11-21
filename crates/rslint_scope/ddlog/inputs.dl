@@ -30,7 +30,11 @@ index InputScopeByParent(parent: ScopeId, file: FileId) on InputScope(parent, _,
 index InputScopeByChild(child: ScopeId, file: FileId) on InputScope(_, child, file)
 index InputScopeByFile(file: FileId) on InputScope(_, _, file)
 
-input relation EveryScope(scope: ScopeId, file: FileId)
+// TODO: Give scopes a span and a kind
+input relation EveryScope(
+    scope: ScopeId,
+    file: FileId,
+)
 
 index EveryScopeByFile(file: FileId) on EveryScope(_, file)
 

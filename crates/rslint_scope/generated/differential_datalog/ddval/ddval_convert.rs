@@ -251,7 +251,6 @@ where
             |this| unsafe { <Self>::from_ddval_ref(this) as &dyn erased_serde::Serialize };
 
         let type_id = |_this: &DDVal| -> TypeId { TypeId::of::<Self>() };
-        let type_name = |_this: &DDVal| -> &'static str { std::any::type_name::<Self>() };
 
         DDValMethods {
             clone,
@@ -266,7 +265,6 @@ where
             drop,
             ddval_serialize,
             type_id,
-            type_name,
         }
     };
 }

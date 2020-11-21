@@ -1,5 +1,6 @@
 mod builder;
 mod derived_facts;
+mod graphing;
 
 pub use builder::DatalogBuilder;
 pub use derived_facts::{DatalogLint, Outputs};
@@ -7,7 +8,7 @@ pub use derived_facts::{DatalogLint, Outputs};
 use crate::globals::JsGlobal;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
-    program::{IdxId, RelId, Update},
+    program::{IdxId, RelId, TransactionHandle, Update},
     record::Record,
     DDlog, DeltaMap,
 };
@@ -15,6 +16,7 @@ use rslint_scoping_ddlog::{api::HDDlog, Indexes, Relations, INPUT_RELIDMAP};
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeSet,
+    io::{self, Write},
     sync::{Mutex, MutexGuard},
 };
 use types::{
@@ -24,12 +26,13 @@ use types::{
     },
     config::Config,
     ddlog_std::tuple2,
+    inputs::Statement,
     inputs::{EveryScope, Expression, File as InputFile, FunctionArg, ImplicitGlobal, InputScope},
     internment::Intern,
 };
 
 // TODO: Make this runtime configurable
-const DATALOG_WORKERS: usize = 6;
+const DATALOG_WORKERS: usize = 1;
 
 // TODO: Work on the internment situation, I don't like
 //       having to allocate strings for idents
@@ -56,19 +59,25 @@ impl Datalog {
         Ok(this)
     }
 
+    pub fn enable_profiling(&self, enable: bool) {
+        self.hddlog.enable_timely_profiling(enable);
+        self.hddlog.enable_cpu_profiling(enable);
+    }
+
     pub fn outputs(&self) -> &Outputs {
         &self.outputs
     }
 
     pub fn reset(&self) -> DatalogResult<()> {
-        self.transaction(|_trans| {
+        {
+            let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
+            let handle = guard.handle.as_ref().unwrap();
             for relation in INPUT_RELIDMAP.keys().copied() {
-                self.hddlog.clear_relation(relation as RelId)?;
+                self.hddlog.clear_relation(relation as RelId, handle)?;
             }
 
-            Ok(())
-        })?;
-
+            guard.commit_dump_changes()?;
+        }
         self.outputs.clear();
 
         Ok(())
@@ -85,17 +94,18 @@ impl Datalog {
         })
     }
 
-    pub fn dump_inputs(&self) -> DatalogResult<String> {
-        let mut inputs = Vec::new();
-        self.hddlog.dump_input_snapshot(&mut inputs).unwrap();
-
-        Ok(String::from_utf8(inputs).unwrap())
+    pub fn dump_inputs<W>(&self, mut output: W) -> io::Result<()>
+    where
+        W: Write,
+    {
+        self.hddlog.dump_input_snapshot(&mut output)
     }
 
     // Note: Ddlog only allows one concurrent transaction, so all calls to this function
     //       will block until the previous completes
     // TODO: We can actually add to the transaction batch concurrently, but transactions
     //       themselves have to be synchronized in some fashion (barrier?)
+    // TODO: This is a huge bottleneck, transactions need to be fixed somehow
     pub fn transaction<T, F>(&self, transaction: F) -> DatalogResult<T>
     where
         F: for<'trans> FnOnce(&mut DatalogTransaction<'trans>) -> DatalogResult<T>,
@@ -106,8 +116,10 @@ impl Datalog {
 
         let delta = {
             let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
-            self.hddlog
-                .apply_valupdates(inner.updates.borrow_mut().drain(..))?;
+            self.hddlog.apply_valupdates(
+                inner.updates.borrow_mut().drain(..),
+                guard.handle.as_ref().unwrap(),
+            )?;
 
             guard.commit_dump_changes()?
         };
@@ -127,6 +139,19 @@ impl Datalog {
             // TODO: Log error if there's more than one value
             .and_then(|query| query.into_iter().next())
             .map(Expression::from_ddvalue)
+    }
+
+    pub fn get_stmt(&self, stmt: StmtId, file: FileId) -> Option<Statement> {
+        let query = self.query(
+            Indexes::inputs_StatementById,
+            Some(tuple2(stmt, file).into_ddvalue()),
+        );
+
+        query
+            .ok()
+            // TODO: Log error if there's more than one value
+            .and_then(|query| query.into_iter().next())
+            .map(Statement::from_ddvalue)
     }
 
     pub(crate) fn query(
@@ -179,7 +204,8 @@ impl Datalog {
 
         let delta = {
             let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
-            self.hddlog.apply_valupdates(updates)?;
+            self.hddlog
+                .apply_valupdates(updates, guard.handle.as_ref().unwrap())?;
 
             guard.commit_dump_changes()?
         };
@@ -550,26 +576,25 @@ fn dump_delta(delta: &differential_datalog::DeltaMap<DDValue>) {
 }
 
 struct TransactionGuard<'a> {
-    committed: bool,
     hddlog: &'a HDDlog,
+    handle: Option<TransactionHandle>,
     _lock: MutexGuard<'a, ()>,
 }
 
 impl<'a> TransactionGuard<'a> {
     pub fn new(hddlog: &'a HDDlog, lock: &'a Mutex<()>) -> DatalogResult<Self> {
-        let this = Self {
-            committed: false,
+        let _lock = lock.lock().expect("failed to lock transaction");
+        Ok(Self {
+            handle: Some(hddlog.transaction_start()?),
             hddlog,
-            _lock: lock.lock().expect("failed to lock transaction"),
-        };
-        this.hddlog.transaction_start()?;
-
-        Ok(this)
+            _lock,
+        })
     }
 
     pub fn commit_dump_changes(mut self) -> DatalogResult<DeltaMap<DDValue>> {
-        let delta = self.hddlog.transaction_commit_dump_changes()?;
-        self.committed = true;
+        let delta = self
+            .hddlog
+            .transaction_commit_dump_changes(self.handle.take().unwrap())?;
 
         Ok(delta)
     }
@@ -577,8 +602,8 @@ impl<'a> TransactionGuard<'a> {
 
 impl Drop for TransactionGuard<'_> {
     fn drop(&mut self) {
-        if !self.committed {
-            if let Err(err) = self.hddlog.transaction_rollback() {
+        if let Some(handle) = self.handle.take() {
+            if let Err(err) = self.hddlog.transaction_rollback(handle) {
                 eprintln!("failed to rollback transaction: {}", err);
             }
         }

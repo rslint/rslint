@@ -3,14 +3,13 @@ use std::fmt::Debug;
 use std::iter::Iterator;
 use std::ops::Deref;
 
-use crate::callback::Callback;
-use crate::ddval::DDValue;
-use crate::program::IdxId;
-use crate::program::RelId;
-use crate::program::Update;
-use crate::record::Record;
-use crate::record::UpdCmd;
-use crate::valmap::DeltaMap;
+use crate::{
+    callback::Callback,
+    ddval::DDValue,
+    program::{IdxId, RelId, TransactionHandle, Update},
+    record::{Record, UpdCmd},
+    valmap::DeltaMap,
+};
 
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -47,35 +46,42 @@ pub trait DDlog: Debug {
         F: Callback;
 
     /// Start a transaction.
-    fn transaction_start(&self) -> Result<(), String>;
+    fn transaction_start(&self) -> Result<TransactionHandle, String>;
 
     /// Commit a transaction previously started using
     /// `transaction_start`, producing a map of deltas.
-    fn transaction_commit_dump_changes(&self) -> Result<DeltaMap<DDValue>, String>;
+    fn transaction_commit_dump_changes(
+        &self,
+        transaction: TransactionHandle,
+    ) -> Result<DeltaMap<DDValue>, String>;
 
     /// Commit a transaction previously started using
     /// `transaction_start`.
-    fn transaction_commit(&self) -> Result<(), String>;
+    fn transaction_commit(&self, transaction: TransactionHandle) -> Result<(), String>;
 
     /// Roll back a transaction previously started using
     /// `transaction_start`.
-    fn transaction_rollback(&self) -> Result<(), String>;
+    fn transaction_rollback(&self, transaction: TransactionHandle) -> Result<(), String>;
 
     /// Apply a set of updates.
-    fn apply_updates<V, I>(&self, upds: I) -> Result<(), String>
+    fn apply_updates<V, I>(&self, upds: I, transaction: &TransactionHandle) -> Result<(), String>
     where
         V: Deref<Target = UpdCmd>,
         I: Iterator<Item = V>;
 
     /// Apply a set of updates.
-    fn apply_valupdates<I>(&self, upds: I) -> Result<(), String>
+    fn apply_valupdates<I>(&self, upds: I, transaction: &TransactionHandle) -> Result<(), String>
     where
         I: Iterator<Item = Update<DDValue>>;
 
     /// Apply a set of updates directly from the flatbuffer
     /// representation
     #[cfg(feature = "flatbuf")]
-    fn apply_updates_from_flatbuf(&self, buf: &[u8]) -> Result<(), String>;
+    fn apply_updates_from_flatbuf(
+        &self,
+        buf: &[u8],
+        transaction: &TransactionHandle,
+    ) -> Result<(), String>;
 
     /// Query index.  Returns all values associated with the given key in the index.
     fn query_index(&self, index: IdxId, key: DDValue) -> Result<BTreeSet<DDValue>, String>;

@@ -21,6 +21,12 @@ impl CstRuleStore {
         self
     }
 
+    pub fn ddlog() -> Self {
+        let mut this = Self::new();
+        this.rules.extend(ddlog());
+        this
+    }
+
     /// Load a single rule into this store.
     pub fn load_rule(&mut self, rule: Box<dyn CstRule>) {
         self.rules.push(rule);

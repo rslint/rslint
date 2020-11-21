@@ -6,8 +6,10 @@ mod tests;
 
 pub use datalog::{Datalog, DatalogLint, DatalogResult};
 pub use types::{
+    ast,
     ast::FileId,
     config::{Config, NoShadowHoisting},
+    ddlog_std,
 };
 
 use analyzer::{AnalyzerInner, Visit};

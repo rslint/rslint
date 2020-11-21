@@ -113,7 +113,7 @@ rule_test! {
         "            for (const key of obj) {",
         "                if (true) {",
         "                    cache.push(",
-        "                        bareKeyRe.test(key.stringValue()) ? key.stringValue() : i(key)",
+        "                        bareKeyRe.test(key.stringValue()) ? key.stringValue() : key",
         "                    );",
         "                }",
         "            }",

@@ -113,13 +113,13 @@ fn test_insert_non_existent_relation() {
     };
 
     let mut running = prog.run(3).unwrap();
-    running.transaction_start().unwrap();
-    let result = running.insert(1, U64(42).into_ddvalue());
+    let trans = running.transaction_start().unwrap();
+    let result = running.insert(1, U64(42).into_ddvalue(), &trans);
     assert_eq!(
         &result.unwrap_err(),
         "apply_update: unknown input relation 1"
     );
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
 }
 
 #[test]
@@ -198,52 +198,58 @@ fn test_one_relation(nthreads: usize) {
     let vals: Vec<u64> = (0..TEST_SIZE).collect();
     let set = BTreeMap::from_iter(vals.iter().map(|x| (U64(*x), 1)));
 
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue()).unwrap();
+        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(*relset.lock().unwrap(), set);
 
     /* 2. Deletion */
     let mut set2 = set.clone();
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
         set2.remove(x);
-        running.delete_value(1, x.clone().into_ddvalue()).unwrap();
+        running
+            .delete_value(1, x.clone().into_ddvalue(), &trans)
+            .unwrap();
         //assert_eq!(running.relation_clone_content(1).unwrap(), set2);
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
     assert_eq!(relset.lock().unwrap().len(), 0);
 
     /* 3. Test set semantics: insert twice, delete once */
-    running.transaction_start().unwrap();
-    running.insert(1, U64(1).into_ddvalue()).unwrap();
-    running.insert(1, U64(1).into_ddvalue()).unwrap();
-    running.delete_value(1, U64(1).into_ddvalue()).unwrap();
-    running.transaction_commit().unwrap();
+    let trans = running.transaction_start().unwrap();
+    running.insert(1, U64(1).into_ddvalue(), &trans).unwrap();
+    running.insert(1, U64(1).into_ddvalue(), &trans).unwrap();
+    running
+        .delete_value(1, U64(1).into_ddvalue(), &trans)
+        .unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(relset.lock().unwrap().len(), 0);
 
     /* 4. Set semantics: delete before insert */
-    running.transaction_start().unwrap();
-    running.delete_value(1, U64(1).into_ddvalue()).unwrap();
-    running.insert(1, U64(1).into_ddvalue()).unwrap();
-    running.transaction_commit().unwrap();
+    let trans = running.transaction_start().unwrap();
+    running
+        .delete_value(1, U64(1).into_ddvalue(), &trans)
+        .unwrap();
+    running.insert(1, U64(1).into_ddvalue(), &trans).unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(relset.lock().unwrap().len(), 1);
 
     /* 5. Rollback */
     let before = relset.lock().unwrap().clone();
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue()).unwrap();
+        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
     }
     //println!("delta: {:?}", *running.relation_delta(1).unwrap().lock().unwrap());
     //    assert_eq!(*relset.lock().unwrap(), set);
     //     assert_eq!(running.relation_clone_delta(1).unwrap().len(), set.len() - 1);
-    running.transaction_rollback().unwrap();
+    running.transaction_rollback(trans).unwrap();
 
     assert_eq!(*relset.lock().unwrap(), before);
 
@@ -320,37 +326,39 @@ fn test_two_relations(nthreads: usize) {
     let vals: Vec<u64> = (0..TEST_SIZE).collect();
     let set = BTreeMap::from_iter(vals.iter().map(|x| (U64(*x), 1)));
 
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue()).unwrap();
+        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
         //assert_eq!(running.relation_clone_content(1).unwrap(),
         //           running.relation_clone_content(2).unwrap());
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(*relset1.lock().unwrap(), set);
     assert_eq!(*relset1.lock().unwrap(), *relset2.lock().unwrap());
 
     /* 2. Clear T1 */
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.delete_value(1, x.clone().into_ddvalue()).unwrap();
+        running
+            .delete_value(1, x.clone().into_ddvalue(), &trans)
+            .unwrap();
         //        assert_eq!(running.relation_clone_content(1).unwrap(),
         //                   running.relation_clone_content(2).unwrap());
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(relset2.lock().unwrap().len(), 0);
     assert_eq!(*relset1.lock().unwrap(), *relset2.lock().unwrap());
 
     /* 3. Rollback */
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue()).unwrap();
+        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
         //assert_eq!(running.relation_clone_content(1).unwrap(),
         //           running.relation_clone_content(2).unwrap());
     }
-    running.transaction_rollback().unwrap();
+    running.transaction_rollback(trans).unwrap();
 
     assert_eq!(relset1.lock().unwrap().len(), 0);
     assert_eq!(*relset1.lock().unwrap(), *relset2.lock().unwrap());
@@ -475,12 +483,12 @@ fn test_semijoin(nthreads: usize) {
             .map(|x| (Tuple2(Box::new(U64(*x)), Box::new(U64(*x))), 1)),
     );
 
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue()).unwrap();
-        running.insert(2, x.clone().into_ddvalue()).unwrap();
+        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(2, x.clone().into_ddvalue(), &trans).unwrap();
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(*relset3.lock().unwrap(), set);
 
@@ -644,12 +652,12 @@ fn test_join(nthreads: usize) {
             .map(|x| (Tuple2(Box::new(U64(*x)), Box::new(U64(*x))), 1)),
     );
 
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue()).unwrap();
-        running.insert(2, x.clone().into_ddvalue()).unwrap();
+        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(2, x.clone().into_ddvalue(), &trans).unwrap();
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(*relset3.lock().unwrap(), set);
     assert_eq!(*relset4.lock().unwrap(), set);
@@ -811,21 +819,23 @@ fn test_antijoin(nthreads: usize) {
     );
 
     /* 1. T2 and T1 contain identical keys; antijoin is empty */
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue()).unwrap();
-        running.insert(2, x.clone().into_ddvalue()).unwrap();
+        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(2, x.clone().into_ddvalue(), &trans).unwrap();
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(relset3.lock().unwrap().len(), 0);
 
     /* 1. T2 is empty; antijoin is identical to T1 */
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.delete_value(2, x.clone().into_ddvalue()).unwrap();
+        running
+            .delete_value(2, x.clone().into_ddvalue(), &trans)
+            .unwrap();
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
     assert_eq!(*relset3.lock().unwrap(), set);
 
     running.stop().unwrap();
@@ -1040,11 +1050,11 @@ fn test_map(nthreads: usize) {
     let mut expected3 = BTreeMap::default();
     expected3.insert(U64(expected2.len() as u64), 1);
 
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue()).unwrap();
+        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(*relset1.lock().unwrap(), set);
     assert_eq!(*relset2.lock().unwrap(), expected2);
@@ -1354,11 +1364,11 @@ fn test_recursion(nthreads: usize) {
     ];
     let expect_set2 = BTreeMap::from_iter(expect_vals2.iter().map(|x| (x.clone(), 1)));
 
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue()).unwrap();
+        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
     }
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
     //println!("commit done");
 
     assert_eq!(*parentset.lock().unwrap(), set);
@@ -1366,11 +1376,11 @@ fn test_recursion(nthreads: usize) {
     assert_eq!(*common_ancestorset.lock().unwrap(), expect_set2);
 
     /* 2. Remove record from "parent" relation */
-    running.transaction_start().unwrap();
+    let trans = running.transaction_start().unwrap();
     running
-        .delete_value(1, vals[0].clone().into_ddvalue())
+        .delete_value(1, vals[0].clone().into_ddvalue(), &trans)
         .unwrap();
-    running.transaction_commit().unwrap();
+    running.transaction_commit(trans).unwrap();
 
     let expect_vals3 = vec![
         Tuple2(
@@ -1405,9 +1415,9 @@ fn test_recursion(nthreads: usize) {
     assert_eq!(*common_ancestorset.lock().unwrap(), expect_set4);
 
     /* 3. Test clear_relation() */
-    running.transaction_start().unwrap();
-    running.clear_relation(1).unwrap();
-    running.transaction_commit().unwrap();
+    let trans = running.transaction_start().unwrap();
+    running.clear_relation(1, &trans).unwrap();
+    running.transaction_commit(trans).unwrap();
 
     assert_eq!(*parentset.lock().unwrap(), BTreeMap::default());
     assert_eq!(*ancestorset.lock().unwrap(), BTreeMap::default());

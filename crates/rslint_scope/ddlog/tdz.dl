@@ -1,0 +1,123 @@
+//! This module implements JavaScript's Temporal Dead Zone (TDZ) scoping rules,
+//! see https://snek.dev/blag/2019-07_js_hoisting#and-then-2015-rolled-around
+/*
+import ast
+import vec
+import group
+import scopes
+import inputs
+
+/// Holds all items that will have tdz applied to them: classes,
+/// let bindings and const bindings
+relation TdzTarget(
+    /// The id of the target
+    id: AnyId,
+    /// The file the target was declared in
+    file: FileId,
+    /// The scope the target was declared in
+    declaration_scope: ScopeId,
+)
+
+/// Add class declarations to the tdz targets
+TdzTarget(AnyIdClass { id }, file, declaration_scope) :-
+    Class(id, file, _, _, _, declaration_scope, _).
+
+/// Add let declarations to the tdz targets
+TdzTarget(AnyIdStmt { id }, file, declaration_scope) :-
+    LetDecl(id, file, _, _, _),
+    Statement(id, file, _, declaration_scope, _).
+
+/// Add const declarations to the tdz targets
+TdzTarget(AnyIdStmt { id }, file, declaration_scope) :-
+    ConstDecl(id, file, _, _, _),
+    Statement(id, file, _, declaration_scope, _).
+
+/// Lexically defined scopes such as blocks, function bodies, etc.
+// TODO: These aren't the greatest methods for finding lexical scopes,
+//       a much more efficent method would be attaching scope kinds to
+//       `EveryScope`
+relation LexicalScope(
+    /// The id of the scope
+    scope: ScopeId,
+    /// The file the scope belongs to
+    file: FileId,
+)
+
+/// Add function bodies
+LexicalScope(body, file) :- Function(_, file, _, _, body, _).
+
+/// Add class method bodies
+LexicalScope(scope, file) :-
+    Class(_, file, _, _, Some { elements }, _, _),
+    var body = FlatMap(elements.filter_map(|e| e.ival().body())),
+    Statement(body, file, _, scope, _).
+
+/// Add try bodies
+LexicalScope(scope, file) :-
+    Try(_, file, Some { body }, _, _),
+    Statement(body, file, _, scope, _).
+
+/// Add try handlers
+LexicalScope(scope, file) :-
+    Try(_, file, _, TryHandler { _, Some { body }}, _),
+    Statement(body, file, _, scope, _).
+
+/// Add try finalizers
+LexicalScope(scope, file) :-
+    Try(_, file, _, _, Some { body }),
+    Statement(body, file, _, scope, _).
+
+// TODO: while, do-while, for, for-in, for-of, if, if-else, arrow funcs,
+//       switches, function expressions, class expressions, with
+// TODO: Make blocks their own relation (Maybe scope kinds would work
+//       just as well?)
+
+/// The closest lexical scope that an item is inside of
+relation ClosestLexicalScope(
+    /// The id of the item
+    id: AnyId,
+    /// The file the scope and item belong to
+    file: FileId,
+    /// The closest lexical scope for the given item
+    lexical_scope: ScopeId,
+)
+
+// Get the scope with the highest id (the one deepest in the
+// scope tree) that's a parent of the given tdz target. This
+// should be the scope that the target is directly inside of
+ClosestLexicalScope(id, file, lexical_scope) :-
+    TdzTarget(id, file, declaration_scope),
+    ChildScope(parent_scope, declaration_scope, file),
+    (var lexical_scope, var id) = (parent_scope, id)
+        .group_by((declaration_scope, file))
+        .arg_max(|scope| scope.0).
+
+/// The status of a tdz scoped item
+typedef TdzStatus =
+    /// The item is initalized
+    TdzInitalized
+    /// The item is uninitialized
+    | TdzUninitialized
+
+/// The current tdz status of an item for any given scope
+output relation CurrentTdzStatus(
+    /// The id of the item
+    id: AnyId,
+    /// The file the item belongs to
+    file: FileId,
+    /// The scope the status applies to
+    scope: ScopeId,
+    /// The tdz status of the item
+    status: TdzStatus,
+)
+
+/// Assign tdz statuses to each tdz target based on lexical scoping
+CurrentTdzStatus(id, file, scope, status) :-
+    TdzTarget(id, file, declaration_scope),
+    ClosestLexicalScope(id, file, lexical_scope),
+    ChildScope(lexical_scope, scope, file),
+    // If the scope is before the declaration scope (less), the variable is
+    // uninitalized. Otherwise, it's initalized
+    var status =
+        if (scope < declaration_scope) { TdzUninitialized } else { TdzInitalized }.
+*/

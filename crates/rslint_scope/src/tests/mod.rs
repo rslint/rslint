@@ -366,21 +366,20 @@ impl<'a> TestCase<'a> {
                 => AST:\n{:#?}\n\n\
                 => Expected:\n{:#?}\n\n\
                 => Got:\n{:#?}\n\n\
-                => Inputs:\n{}\n\n\
                 => Outputs:\n{:#?}\n\n\
                 ============ END FAILURE ============\n\n",
                 ast.text(),
                 &ast,
                 self.errors,
                 self.harness.datalog.get_lints(file_id).unwrap(),
-                self.harness
-                    .datalog
-                    .dump_inputs()
-                    .unwrap()
-                    .lines()
-                    .filter(|line| line.contains(&format!("ast::FileId{{.id = {}}}", file_id.id)))
-                    .collect::<Vec<_>>()
-                    .join("\n"),
+                // self.harness
+                //     .datalog
+                //     .dump_inputs()
+                //     .unwrap()
+                //     .lines()
+                //     .filter(|line| line.contains(&format!("ast::FileId{{.id = {}}}", file_id.id)))
+                //     .collect::<Vec<_>>()
+                //     .join("\n"),
                 self.harness.datalog.outputs(),
             )
             .unwrap();

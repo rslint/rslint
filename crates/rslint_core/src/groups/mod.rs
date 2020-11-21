@@ -1,8 +1,10 @@
 //! All of the groups of built in rules in the linter.
 
+pub mod ddlog;
 pub mod errors;
 pub mod style;
 
+pub use ddlog::ddlog;
 pub use errors::errors;
 pub use style::style;
 

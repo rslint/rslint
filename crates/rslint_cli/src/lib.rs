@@ -14,15 +14,19 @@ pub use rslint_core::Outcome;
 pub use rslint_errors::{
     file, file::Files, Diagnostic, Emitter, Formatter, LongFormatter, Severity, ShortFormatter,
 };
-use rslint_scope::ScopeAnalyzer;
 
 use colored::*;
 use rayon::prelude::*;
 use rslint_core::{autofix::recursively_apply_fixes, File};
 use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
+use rslint_parser::SyntaxNode;
+use rslint_scope::{
+    globals::{BUILTIN, ES2021, NODE},
+    Config as ScopeConfig, FileId, ScopeAnalyzer,
+};
 #[allow(unused_imports)]
-use std::{fs::write, path::PathBuf, process};
+use std::{fs::write, path::PathBuf, process, sync::mpsc, thread};
 use tracing::*;
 
 #[allow(unused_must_use, unused_variables)]
@@ -48,11 +52,17 @@ fn run_inner(
     formatter: Option<String>,
     no_global_config: bool,
 ) -> i32 {
+    let span = span!(Level::INFO, "I/O and Config");
+    let guard = span.enter();
+
     let handle =
         config::Config::new_threaded(no_global_config, |file, d| emit_diagnostic(&d, &file));
     let mut walker = FileWalker::from_glob(collect_globs(globs));
+
     let joined = handle.join();
     let mut config = joined.expect("config thread paniced");
+
+    drop(guard);
     emit_diagnostics("short", &config.warnings(), &walker);
 
     let mut formatter = formatter.unwrap_or_else(|| config.formatter());
@@ -68,11 +78,38 @@ fn run_inner(
     let span = tracing::info_span!("lint files");
     let analyzer = ScopeAnalyzer::new().unwrap();
 
+    let span = info_span!("ddlog startup");
+    let (ddlog_send, ddlog_thread) = span.in_scope(|| {
+        let (ddlog_send, ddlog_recv) = mpsc::channel::<(FileId, SyntaxNode, ScopeConfig)>();
+
+        let ddlog_thread = thread::spawn(move || {
+            let span = info_span!("analyzer init");
+            let analyzer = span.in_scope(|| ScopeAnalyzer::new().unwrap());
+
+            let span = info_span!("ddlog analysis");
+            span.in_scope(|| {
+                while let Ok((file_id, syntax, config)) = ddlog_recv.recv() {
+                    let span = info_span!("ddlog analysis on file {}", file_id.id);
+                    let _guard = span.enter();
+
+                    analyzer.inject_globals(file_id, BUILTIN).unwrap();
+                    analyzer.inject_globals(file_id, ES2021).unwrap();
+                    analyzer.inject_globals(file_id, NODE).unwrap();
+                    analyzer.analyze(file_id, &syntax, config).unwrap();
+                }
+            });
+
+            analyzer
+        });
+
+        (ddlog_send, ddlog_thread)
+    });
+
     let guard = span.enter();
     let mut results = walker
         .files
         .par_values()
-        .map(|file| lint_file(file, &store, verbose, analyzer.clone()))
+        .map(|file| lint_file(file, &store, verbose, None, Some(ddlog_send)))
         .filter_map(|res| {
             if let Err(diagnostic) = res {
                 emit_diagnostic(&diagnostic, &walker);
@@ -83,6 +120,40 @@ fn run_inner(
         })
         .collect::<Vec<_>>();
     drop(guard);
+
+    {
+        let span = info_span!("join ddlog thread");
+        let analyzer = span.in_scope(|| ddlog_thread.join().unwrap());
+
+        let span = info_span!("run ddlog rules");
+        span.in_scope(|| {
+            results.par_extend(
+                walker
+                    .files
+                    .par_keys()
+                    .map(|id| {
+                        let file = walker.files.get(id).unwrap();
+                        lint_file(
+                            *id,
+                            &file.source.clone(),
+                            file.kind == JsFileKind::Module,
+                            &store,
+                            verbose,
+                            Some(analyzer.clone()),
+                            None,
+                        )
+                    })
+                    .filter_map(|res| {
+                        if let Err(diagnostic) = res {
+                            emit_diagnostic(&diagnostic, &walker);
+                            None
+                        } else {
+                            res.ok()
+                        }
+                    }),
+            );
+        });
+    }
 
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)

@@ -14,10 +14,12 @@
 
 mod arrange;
 mod timestamp;
+mod transaction;
 mod update;
 
 pub use arrange::concatenate_collections;
 pub use timestamp::{TSNested, TupleTS, TS, TS16};
+pub use transaction::TransactionHandle;
 pub use update::Update;
 
 use crate::{ddval::*, profile::*, record::Mutator, variable::*};
@@ -27,15 +29,17 @@ use std::{
     collections::{hash_map, BTreeMap, BTreeSet, HashMap},
     fmt::{self, Debug, Formatter},
     iter,
+    num::NonZeroU64,
     ops::Deref,
     sync::{
         atomic::{AtomicBool, Ordering},
         mpsc, Arc, Barrier, Mutex,
     },
-    thread,
+    thread::{self, JoinHandle, Thread},
     time::Duration,
 };
 use timestamp::{TSAtomic, ToTupleTS};
+use transaction::TransactionId;
 
 use differential_dataflow::difference::Semigroup;
 use differential_dataflow::input::{Input, InputSession};
@@ -579,7 +583,7 @@ impl Arrangement {
                         filtered
                             .threshold_total(|_, c| if c.is_zero() { 0 } else { 1 })
                             .map(|k| (k, ()))
-                            .arrange(), /* arrange_by_self() */
+                            .arrange(), // arrange_by_self()
                     )
                 } else {
                     ArrangedCollection::Set(filtered.map(|k| (k, ())).arrange())
@@ -648,17 +652,18 @@ pub struct RunningProgram {
     reply_recv: Vec<mpsc::Receiver<Reply>>,
     relations: FnvHashMap<RelId, RelationInstance>,
     /// Join handle of the thread running timely computation.
-    thread_handle: Option<thread::JoinHandle<Result<(), String>>>,
+    thread_handle: Option<JoinHandle<Result<(), String>>>,
     /// Timely worker threads.
-    worker_threads: Vec<thread::Thread>,
-    transaction_in_progress: bool,
+    worker_threads: Vec<Thread>,
+    transaction_in_progress: Option<TransactionId>,
+    transaction_counter: NonZeroU64,
     need_to_flush: bool,
     /// CPU profiling enabled (can be expensive).
     profile_cpu: Arc<AtomicBool>,
     /// Consume timely_events and output them to CSV file. Can be expensive.
     profile_timely: Arc<AtomicBool>,
     /// Profiling thread.
-    prof_thread_handle: Option<thread::JoinHandle<()>>,
+    prof_thread_handle: Option<JoinHandle<()>>,
     /// Profiling statistics.
     pub profile: Arc<Mutex<Profile>>,
 }
@@ -786,11 +791,11 @@ impl Program {
         let (prof_send, prof_recv) = mpsc::sync_channel::<ProfMsg>(PROF_MSG_BUF_SIZE);
 
         // Channel used by workers 1..n to send their thread handles to worker 0.
-        let (thandle_send, thandle_recv) = mpsc::sync_channel::<(usize, thread::Thread)>(0);
+        let (thandle_send, thandle_recv) = mpsc::sync_channel::<(usize, Thread)>(0);
         let thandle_recv = Arc::new(Mutex::new(thandle_recv));
 
         // Channel used by the main timely thread to send worker 0 handle to the caller.
-        let (wsend, wrecv) = mpsc::sync_channel::<Vec<thread::Thread>>(0);
+        let (wsend, wrecv) = mpsc::sync_channel::<Vec<Thread>>(0);
 
         // Profile data structure
         let profile = Arc::new(Mutex::new(Profile::new()));
@@ -819,7 +824,7 @@ impl Program {
                 let worker_index = worker.index();
 
                 // Peer workers thread handles; only used by worker 0.
-                let mut peers: FnvHashMap<usize, thread::Thread> = FnvHashMap::default();
+                let mut peers: FnvHashMap<usize, Thread> = FnvHashMap::default();
                 if worker_index != 0 {
                     // Send worker's thread handle to worker 0.
                     thandle_send.send((worker_index, thread::current())).unwrap();
@@ -1376,7 +1381,8 @@ impl Program {
             relations: rels,
             thread_handle: Some(h),
             worker_threads,
-            transaction_in_progress: false,
+            transaction_in_progress: None,
+            transaction_counter: NonZeroU64::new(1).expect("one is not zero"),
             need_to_flush: false,
             profile_cpu,
             profile_timely,
@@ -1423,7 +1429,7 @@ impl Program {
         sessions: &mut FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
         probe: &ProbeHandle<TS>,
         worker: &mut Worker<Allocator>,
-        peers: &FnvHashMap<usize, thread::Thread>,
+        peers: &FnvHashMap<usize, Thread>,
         frontier_ts: &TSAtomic,
         progress_barrier: &Barrier,
     ) {
@@ -1448,7 +1454,7 @@ impl Program {
     }
 
     fn stop_workers(
-        peers: &FnvHashMap<usize, thread::Thread>,
+        peers: &FnvHashMap<usize, Thread>,
         frontier_ts: &TSAtomic,
         progress_barrier: &Barrier,
     ) {
@@ -1531,7 +1537,7 @@ impl Program {
         Ok(())
     }
 
-    fn unpark_peers(peers: &FnvHashMap<usize, thread::Thread>) {
+    fn unpark_peers(peers: &FnvHashMap<usize, Thread>) {
         for (_, t) in peers.iter() {
             t.unpark();
         }
@@ -1967,59 +1973,45 @@ impl RunningProgram {
         Ok(())
     }
 
-    /// Start a transaction. Does not return a transaction handle, as there
-    /// can be at most one transaction in progress at any given time. Fails
-    /// if there is already a transaction in progress.
-    pub fn transaction_start(&mut self) -> Response<()> {
-        if self.transaction_in_progress {
-            return Err("transaction already in progress".to_string());
-        }
-
-        self.transaction_in_progress = true;
-        Result::Ok(())
-    }
-
-    /// Commit a transaction.
-    pub fn transaction_commit(&mut self) -> Response<()> {
-        if !self.transaction_in_progress {
-            return Err("transaction_commit: no transaction in progress".to_string());
-        }
-
-        self.flush().and_then(|_| self.delta_cleanup()).map(|_| {
-            self.transaction_in_progress = false;
-        })
-    }
-
-    /// Rollback the transaction, undoing all changes.
-    pub fn transaction_rollback(&mut self) -> Response<()> {
-        if !self.transaction_in_progress {
-            return Err("transaction_rollback: no transaction in progress".to_string());
-        }
-
-        self.flush().and_then(|_| self.delta_undo()).map(|_| {
-            self.transaction_in_progress = false;
-        })
-    }
-
     /// Insert one record into input relation. Relations have set semantics, i.e.,
     /// adding an existing record is a no-op.
-    pub fn insert(&mut self, relid: RelId, v: DDValue) -> Response<()> {
-        self.apply_updates(iter::once(Update::Insert { relid, v }), |_| Ok(()))
+    pub fn insert(
+        &mut self,
+        relid: RelId,
+        v: DDValue,
+        transaction: &TransactionHandle,
+    ) -> Response<()> {
+        self.apply_updates(iter::once(Update::Insert { relid, v }), transaction, |_| Ok(()))
     }
 
     /// Insert one record into input relation or replace existing record with the same key.
-    pub fn insert_or_update(&mut self, relid: RelId, v: DDValue) -> Response<()> {
-        self.apply_updates(iter::once(Update::InsertOrUpdate { relid, v }), |_| Ok(()))
+    pub fn insert_or_update(
+        &mut self,
+        relid: RelId,
+        v: DDValue,
+        transaction: &TransactionHandle,
+    ) -> Response<()> {
+        self.apply_updates(iter::once(Update::InsertOrUpdate { relid, v }), transaction, |_| Ok(()))
     }
 
     /// Remove a record if it exists in the relation.
-    pub fn delete_value(&mut self, relid: RelId, v: DDValue) -> Response<()> {
-        self.apply_updates(iter::once(Update::DeleteValue { relid, v }), |_| Ok(()))
+    pub fn delete_value(
+        &mut self,
+        relid: RelId,
+        v: DDValue,
+        transaction: &TransactionHandle,
+    ) -> Response<()> {
+        self.apply_updates(iter::once(Update::DeleteValue { relid, v }), transaction, |_| Ok(()))
     }
 
     /// Remove a key if it exists in the relation.
-    pub fn delete_key(&mut self, relid: RelId, k: DDValue) -> Response<()> {
-        self.apply_updates(iter::once(Update::DeleteKey { relid, k }), |_| Ok(()))
+    pub fn delete_key(
+        &mut self,
+        relid: RelId,
+        k: DDValue,
+        transaction: &TransactionHandle,
+    ) -> Response<()> {
+        self.apply_updates(iter::once(Update::DeleteKey { relid, k }), transaction, |_| Ok(()))
     }
 
     /// Modify a key if it exists in the relation.
@@ -2028,8 +2020,9 @@ impl RunningProgram {
         relid: RelId,
         k: DDValue,
         m: Arc<dyn Mutator<DDValue> + Send + Sync>,
+        transaction: &TransactionHandle,
     ) -> Response<()> {
-        self.apply_updates(iter::once(Update::Modify { relid, k, m }), |_| Ok(()))
+        self.apply_updates(iter::once(Update::Modify { relid, k, m }), transaction, |_| Ok(()))
     }
 
     /// Applies a single update.
@@ -2063,12 +2056,14 @@ impl RunningProgram {
 
     /// Apply multiple insert and delete operations in one batch.
     /// Updates can only be applied to input relations (see `struct Relation`).
-    pub fn apply_updates<I, F>(&mut self, updates: I, inspect: F) -> Response<()>
+    pub fn apply_updates<I, F>(&mut self, updates: I,
+        transaction: &TransactionHandle, inspect: F) -> Response<()>
     where
         I: Iterator<Item = Update<DDValue>>,
         F: Fn(&Update<DDValue>) -> Response<()>,
     {
-        if !self.transaction_in_progress {
+        // FIXME: Use `Option::contains()` https://github.com/rust-lang/rust/issues/62358
+        if self.transaction_in_progress.as_ref() != Some(transaction.id()) {
             return Err("apply_updates: no transaction in progress".to_string());
         }
 
@@ -2085,8 +2080,13 @@ impl RunningProgram {
     }
 
     /// Deletes all values in an input table
-    pub fn clear_relation(&mut self, relid: RelId) -> Response<()> {
-        if !self.transaction_in_progress {
+    pub fn clear_relation(
+        &mut self,
+        relid: RelId,
+        transaction: &TransactionHandle,
+    ) -> Response<()> {
+        // FIXME: Use `Option::contains()` https://github.com/rust-lang/rust/issues/62358
+        if self.transaction_in_progress.as_ref() != Some(transaction.id()) {
             return Err("clear_relation: no transaction in progress".to_string());
         }
 
@@ -2131,7 +2131,7 @@ impl RunningProgram {
             }
         };
 
-        self.apply_updates(updates.into_iter(), |_| Ok(()))
+        self.apply_updates(updates.into_iter(), transaction, |_| Ok(()))
     }
 
     /// Returns all values in the arrangement with the specified key.
@@ -2537,8 +2537,8 @@ impl RunningProgram {
     fn send(&self, worker_index: usize, msg: Msg) -> Response<()> {
         match self.senders[worker_index].send(msg) {
             Ok(()) => {
-                /* Worker 0 may be blocked in `step_or_park`.  Unpark to ensure receipt of the
-                 * message. */
+                // Worker 0 may be blocked in `step_or_park`. Unpark to ensure receipt of the
+                // message.
                 self.worker_threads[worker_index].unpark();
                 Ok(())
             }
@@ -2592,14 +2592,14 @@ impl RunningProgram {
     }
 
     /// Reverse all changes recorded in delta sets to rollback the transaction.
-    fn delta_undo(&mut self) -> Response<()> {
+    fn delta_undo(&mut self, transaction: &TransactionHandle) -> Response<()> {
         let mut updates = Vec::with_capacity(self.relations.len());
         for (relid, rel) in &self.relations {
             Self::delta_undo_updates(*relid, rel.delta(), &mut updates);
         }
 
         // println!("updates: {:?}", updates);
-        self.apply_updates(updates.into_iter(), |_| Ok(()))
+        self.apply_updates(updates.into_iter(), transaction, |_| Ok(()))
             .and_then(|_| self.flush())
             .map(|_| {
                 /* validation: all deltas must be empty */

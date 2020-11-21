@@ -39,10 +39,6 @@ impl DDValue {
     pub fn type_id(&self) -> TypeId {
         (self.vtable.type_id)(&self.val)
     }
-
-    pub fn type_name(&self) -> &'static str {
-        (self.vtable.type_name)(&self.val)
-    }
 }
 
 impl Mutator<DDValue> for Record {
