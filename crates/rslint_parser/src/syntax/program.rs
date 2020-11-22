@@ -5,13 +5,11 @@ use super::expr::assign_expr;
 use super::pat::binding_identifier;
 use super::stmt::{block_items, semi, var_decl, STMT_RECOVERY_SET};
 use crate::{SyntaxKind::*, *};
-use tracing::instrument;
 
 /// Parse an ECMAScript script.
 ///
 /// # Panics
 /// Panics if the parser is configured to parse a module.
-#[instrument(name = "parse script (event creation)", skip(p))]
 pub fn script(p: &mut Parser) -> CompletedMarker {
     assert!(
         !p.state.is_module,
@@ -27,7 +25,6 @@ pub fn script(p: &mut Parser) -> CompletedMarker {
 ///
 /// # Panics
 /// Panics if the parser is configured to parse a script.
-#[instrument(name = "parse module (event creation)", skip(p))]
 pub fn module(p: &mut Parser) -> CompletedMarker {
     assert!(
         p.state.is_module,

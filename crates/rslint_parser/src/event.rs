@@ -7,7 +7,6 @@ use crate::{
     SyntaxKind::{self, *},
     TreeSink,
 };
-use tracing::{span, Level};
 
 /// Events emitted by the Parser, these events are later
 /// made into a syntax tree with `process` into TreeSink.
@@ -56,13 +55,7 @@ impl Event {
 
 /// Generate the syntax tree with the control of events.
 #[inline]
-pub fn process(sink: &mut impl TreeSink, mut events: Vec<Event>) {
-    let span = span!(
-        Level::INFO,
-        "processing events",
-        event_amount = events.len()
-    );
-    let _guard = span.enter();
+pub fn process(sink: &mut dyn TreeSink, mut events: Vec<Event>) {
     let mut forward_parents = Vec::new();
 
     for i in 0..events.len() {

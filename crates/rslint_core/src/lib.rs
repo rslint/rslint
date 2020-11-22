@@ -52,7 +52,6 @@ use rayon::prelude::*;
 use rslint_parser::{parse_module, parse_text, util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::*;
 
 /// The result of linting a file.
 // TODO: A lot of this stuff can be shoved behind a "linter options" struct
@@ -117,8 +116,6 @@ pub fn lint_file(
     store: &CstRuleStore,
     verbose: bool,
 ) -> Result<LintResult, Diagnostic> {
-    let span = span!(Level::INFO, "linting file", id = file_id);
-    let _guard = span.enter();
     let (parser_diagnostics, green) = if module {
         let parse = parse_module(file_source.as_ref(), file_id);
         (parse.errors().to_owned(), parse.green())
@@ -144,13 +141,10 @@ pub(crate) fn lint_file_inner(
     verbose: bool,
 ) -> Result<LintResult, Diagnostic> {
     let mut new_store = store.clone();
-    let span = span!(Level::INFO, "parsing directives");
-    let guard = span.enter();
     let directives::DirectiveResult {
         directives,
         diagnostics: mut directive_diagnostics,
     } = DirectiveParser::new_with_store(node.clone(), file_id, store).get_file_directives();
-    drop(guard);
 
     apply_top_level_directives(
         directives.as_slice(),
@@ -160,8 +154,6 @@ pub(crate) fn lint_file_inner(
     );
 
     let src: Arc<str> = Arc::from(node.to_string());
-    let span = span!(Level::INFO, "running rules");
-    let _guard = span.enter();
     let results = new_store
         .rules
         .par_iter()
@@ -204,8 +196,6 @@ pub fn run_rule(
     directives: &[Directive],
     src: Arc<str>,
 ) -> RuleResult {
-    let span = span!(Level::INFO, "running rule", rule = rule.name());
-    let _guard = span.enter();
     assert!(root.kind() == SyntaxKind::SCRIPT || root.kind() == SyntaxKind::MODULE);
     let line_starts = rslint_errors::file::line_starts(&src).collect::<Vec<_>>();
     let mut ctx = RuleCtx {

@@ -20,11 +20,9 @@ use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
 use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
-use std::fs::write;
-use std::path::PathBuf;
 #[allow(unused_imports)]
 use std::process;
-use tracing::*;
+use std::{fs::write, path::PathBuf};
 
 #[allow(unused_must_use, unused_variables)]
 pub fn run(
@@ -35,7 +33,6 @@ pub fn run(
     formatter: Option<String>,
     no_global_config: bool,
 ) {
-    // setup_global_subscriber();
     let exit_code = run_inner(globs, verbose, fix, dirty, formatter, no_global_config);
     #[cfg(not(debug_assertions))]
     process::exit(exit_code);
@@ -50,14 +47,11 @@ fn run_inner(
     formatter: Option<String>,
     no_global_config: bool,
 ) -> i32 {
-    let span = span!(Level::INFO, "I/O and Config");
-    let guard = span.enter();
     let handle =
         config::Config::new_threaded(no_global_config, |file, d| emit_diagnostic(&d, &file));
     let mut walker = FileWalker::from_glob(collect_globs(globs));
     let joined = handle.join();
     let mut config = joined.expect("config thread paniced");
-    drop(guard);
     emit_diagnostics("short", &config.warnings(), &walker);
 
     let mut formatter = formatter.unwrap_or_else(|| config.formatter());
@@ -69,8 +63,6 @@ fn run_inner(
         return 2;
     }
 
-    let span = span!(Level::INFO, "lint files");
-    let guard = span.enter();
     let mut results = walker
         .files
         .par_keys()
@@ -94,8 +86,6 @@ fn run_inner(
         })
         .collect::<Vec<_>>();
 
-    drop(guard);
-
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)
     } else {
@@ -116,7 +106,6 @@ fn run_inner(
     }
 }
 
-#[instrument(skip(results, walker))]
 pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty: bool) -> usize {
     let mut fix_count = 0;
     // TODO: should we aquire a file lock if we know we need to run autofix?
@@ -231,7 +220,6 @@ fn for_each_file(globs: Vec<String>, action: impl Fn(&FileWalker, &JsFile)) {
     walker.files.values().for_each(|file| action(&walker, file))
 }
 
-#[instrument(skip(results, walker, config))]
 pub(crate) fn print_results(
     results: &mut Vec<LintResult>,
     walker: &FileWalker,
