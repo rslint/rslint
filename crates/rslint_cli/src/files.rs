@@ -9,6 +9,7 @@ use std::fs::read_to_string;
 use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use tracing::instrument;
 use walkdir::WalkDir;
 
 // 0 is reserved for "no file id" (virtual files)
@@ -67,6 +68,7 @@ impl FileWalker {
         base
     }
 
+    #[instrument(skip(self, paths))]
     pub fn load_files(&mut self, paths: impl ParallelIterator<Item = PathBuf>) {
         let jsfiles: HashMap<usize, JsFile> = paths
             .filter(|p| {

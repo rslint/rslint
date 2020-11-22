@@ -14,6 +14,7 @@ rslint_lexer = { path = "../rslint_lexer", version = "0.1", features = ["highlig
 rslint_rowan = { path = "../rslint_rowan", version = "0.10.0" }
 num-bigint = "0.3.0"
 lexical = { version = "5.2.0", features = ["radix"] }
+tracing = { version = "0.1.21", features = ["attributes"] }
 
 [dev-dependencies]
 walkdir = "2.3.1"

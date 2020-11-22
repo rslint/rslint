@@ -1491,6 +1491,7 @@ dependencies = [
  "structopt",
  "termcolor",
  "toml",
+ "tracing",
  "walkdir",
 ]
 
@@ -1524,6 +1525,7 @@ dependencies = [
  "schemars",
  "serde",
  "text-diff",
+ "tracing",
  "typetag",
  "ureq",
 ]
@@ -1601,6 +1603,7 @@ dependencies = [
  "rslint_lexer",
  "rslint_rowan",
  "rslint_syntax",
+ "tracing",
  "walkdir",
 ]
 
@@ -2218,6 +2221,38 @@ name = "tower-service"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e987b6bf443f4b5b3b6f38704195592cca41c5bb7aedd3c3693c7081f8289860"
+
+[[package]]
+name = "tracing"
+version = "0.1.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0987850db3733619253fe60e17cb59b82d37c7e6c0236bb81e4d6b87c879f27"
+dependencies = [
+ "cfg-if 0.1.10",
+ "pin-project-lite",
+ "tracing-attributes",
+ "tracing-core",
+]
+
+[[package]]
+name = "tracing-attributes"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80e0ccfc3378da0cce270c946b676a376943f5cd16aeba64568e7939806f4ada"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "tracing-core"
+version = "0.1.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f50de3927f93d202783f4513cda820ab47ef17f624b03c096e86ef00c67e6b5f"
+dependencies = [
+ "lazy_static",
+]
 
 [[package]]
 name = "typetag"
