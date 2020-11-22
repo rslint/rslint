@@ -159,7 +159,7 @@ pub(crate) fn lint_file_inner(
         file_id,
     );
 
-    let src = Arc::new(node.to_string());
+    let src: Arc<str> = Arc::from(node.to_string());
     let span = span!(Level::INFO, "running rules");
     let _guard = span.enter();
     let results = new_store
@@ -202,7 +202,7 @@ pub fn run_rule(
     root: SyntaxNode,
     verbose: bool,
     directives: &[Directive],
-    src: Arc<String>,
+    src: Arc<str>,
 ) -> RuleResult {
     let span = span!(Level::INFO, "running rule", rule = rule.name());
     let _guard = span.enter();

@@ -58,7 +58,7 @@ pub async fn publish_diagnostics(session: &Session, uri: Url) -> anyhow::Result<
     );
 
     let verbose = false;
-    let src = Arc::new(document.text.clone());
+    let src = Arc::from(document.text.clone());
     let rule_results: HashMap<&str, rslint_core::RuleResult> = new_store
         .rules
         .par_iter()
@@ -66,7 +66,14 @@ pub async fn publish_diagnostics(session: &Session, uri: Url) -> anyhow::Result<
             let root = SyntaxNode::new_root(document.parse.green());
             (
                 rule.name(),
-                run_rule(&**rule, file_id, root, verbose, &directives, src.clone()),
+                run_rule(
+                    &**rule,
+                    file_id,
+                    root,
+                    verbose,
+                    &directives,
+                    Arc::clone(&src),
+                ),
             )
         })
         .collect();

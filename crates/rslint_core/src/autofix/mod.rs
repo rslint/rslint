@@ -16,11 +16,11 @@ pub use apply::{recursively_apply_fixes, MAX_FIX_ITERATIONS};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Fixer {
     pub indels: Vec<Indel>,
-    pub src: Arc<String>,
+    pub src: Arc<str>,
 }
 
 impl Fixer {
-    pub fn new(src: Arc<String>) -> Fixer {
+    pub fn new(src: Arc<str>) -> Fixer {
         Self {
             indels: vec![],
             src,
@@ -29,7 +29,7 @@ impl Fixer {
 
     /// Apply this fixer to its source code
     pub fn apply(&self) -> String {
-        let mut new = (*self.src).clone();
+        let mut new = (&*self.src).to_string();
         apply_indels(&self.indels, &mut new);
         new
     }

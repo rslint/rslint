@@ -124,7 +124,7 @@ pub struct RuleCtx {
     /// An empty vector of diagnostics which the rule adds to.
     pub diagnostics: Vec<Diagnostic>,
     pub fixer: Option<Fixer>,
-    pub src: Arc<String>,
+    pub src: Arc<str>,
 }
 
 impl RuleCtx {
@@ -152,7 +152,7 @@ impl RuleCtx {
             verbose: false,
             diagnostics: vec![],
             fixer: None,
-            src: Arc::new(String::new()),
+            src: Arc::from(String::new()),
         }
     }
 }
