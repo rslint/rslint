@@ -20,8 +20,11 @@ use rayon::prelude::*;
 use rslint_core::autofix::recursively_apply_fixes;
 use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
+use std::fs::write;
+use std::path::PathBuf;
 #[allow(unused_imports)]
 use std::process;
+use tracing::*;
 
 #[allow(unused_must_use, unused_variables)]
 pub fn run(
@@ -72,7 +75,6 @@ fn run_inner(
         .files
         .par_keys()
         .map(|id| {
-            let now = Instant::now();
             let file = walker.files.get(id).unwrap();
             lint_file(
                 *id,
