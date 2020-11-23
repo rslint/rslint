@@ -27,8 +27,7 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           rust-version: ${{ matrix.rust }}
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo test --verbose --workspace --all-features
+      - run: ./ci.sh test --verbose --all-features
 
   clippy:
     name: Clippy
@@ -42,8 +41,7 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo clippy --workspace --all-targets --verbose --all-features
+      - run: ./ci.sh clippy --all-targets --verbose --all-features
 
   rustfmt:
     name: Formatting
@@ -54,7 +52,7 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           components: rustfmt
-      - run: cargo fmt --all -- --check
+      - run: ./ci.sh fmt -- --check
 
   check-rustdoc-links:
     name: Check doc links
