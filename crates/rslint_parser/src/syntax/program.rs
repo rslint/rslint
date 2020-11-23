@@ -10,6 +10,7 @@ use crate::{SyntaxKind::*, *};
 ///
 /// # Panics
 /// Panics if the parser is configured to parse a module.
+#[tracing::instrument(name = "parse script", skip(p))]
 pub fn script(p: &mut Parser) -> CompletedMarker {
     assert!(
         !p.state.is_module,
@@ -25,6 +26,7 @@ pub fn script(p: &mut Parser) -> CompletedMarker {
 ///
 /// # Panics
 /// Panics if the parser is configured to parse a script.
+#[tracing::instrument(name = "parse module", skip(p))]
 pub fn module(p: &mut Parser) -> CompletedMarker {
     assert!(
         p.state.is_module,

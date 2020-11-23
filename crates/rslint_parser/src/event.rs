@@ -56,6 +56,9 @@ impl Event {
 /// Generate the syntax tree with the control of events.
 #[inline]
 pub fn process(sink: &mut dyn TreeSink, mut events: Vec<Event>) {
+    let span = tracing::info_span!("processing parse events", count = events.len());
+    let _guard = span.enter();
+
     let mut forward_parents = Vec::new();
 
     for i in 0..events.len() {

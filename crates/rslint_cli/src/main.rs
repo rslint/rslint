@@ -1,5 +1,9 @@
+mod flame;
+
 use rslint_cli::ExplanationRunner;
 use structopt::{clap::arg_enum, StructOpt};
+use tracing::Subscriber;
+use tracing_subscriber::{prelude::*, Registry};
 
 const DEV_FLAGS_HELP: &str = "
 Developer flags that are used by RSLint developers to debug RSLint.
@@ -7,6 +11,8 @@ Developer flags that are used by RSLint developers to debug RSLint.
     -Z help     -- Shows this message
     -Z tokenize -- Tokenizes the input files and dumps the tokens
     -Z dumpast  -- Parses the input files and prints the parsed AST
+    -Z flame    -- Generates a flamegraph from all the tracing spans
+    -Z log      -- Log all tracing events
 
 Run with 'rslint -Z <FLAG> <FILES>'.";
 
@@ -45,11 +51,13 @@ pub(crate) struct Options {
 }
 
 arg_enum! {
-    #[derive(Debug, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     enum DevFlag {
         Help,
         Tokenize,
         DumpAst,
+        Flame,
+        Log,
     }
 }
 
@@ -76,6 +84,18 @@ fn main() {
         .build_global()
         .expect("failed to build thread pool");
 
+    if let (Some(subscriber), guard) = setup_tracing(opt.dev_flag) {
+        tracing::subscriber::with_default(subscriber, || execute(opt));
+
+        // We explicitly drop the guard here so we can make sure it will write
+        // the flamegraph file if its not `None`
+        drop(guard);
+    } else {
+        execute(opt);
+    }
+}
+
+fn execute(opt: Options) {
     match (opt.dev_flag, opt.cmd) {
         (Some(DevFlag::Help), _) => println!("{}", DEV_FLAGS_HELP),
         (Some(DevFlag::Tokenize), _) => rslint_cli::tokenize(opt.files),
@@ -93,4 +113,20 @@ fn main() {
             opt.no_global_config,
         ),
     }
+}
+
+fn setup_tracing(mode: Option<DevFlag>) -> (Option<impl Subscriber>, Option<flame::FlameGuard>) {
+    let mode = match mode {
+        Some(mode) => mode,
+        None => return (None, None),
+    };
+
+    let (guard, layer) = if let DevFlag::Flame = mode {
+        flame::flame()
+    } else {
+        return (None, None);
+    };
+
+    let registry = Registry::default().with(layer);
+    (Some(registry), Some(guard))
 }

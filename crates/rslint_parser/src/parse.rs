@@ -108,6 +108,7 @@ impl<T: AstNode> Parse<T> {
 }
 
 /// Run the rslint_lexer lexer to turn source code into tokens and errors produced by the lexer
+#[tracing::instrument(skip(text))]
 pub fn tokenize(text: &str, file_id: usize) -> (Vec<rslint_lexer::Token>, Vec<ParserError>) {
     let mut tokens = Vec::new();
     let mut errors = Vec::new();

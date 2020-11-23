@@ -109,6 +109,7 @@ impl LintResult<'_> {
 }
 
 /// Lint a file with a specific rule store.
+#[tracing::instrument(skip(file_source, store, verbose))]
 pub fn lint_file(
     file_id: usize,
     file_source: impl AsRef<str>,
@@ -116,13 +117,18 @@ pub fn lint_file(
     store: &CstRuleStore,
     verbose: bool,
 ) -> Result<LintResult, Diagnostic> {
-    let (parser_diagnostics, green) = if module {
-        let parse = parse_module(file_source.as_ref(), file_id);
-        (parse.errors().to_owned(), parse.green())
-    } else {
-        let parse = parse_text(file_source.as_ref(), file_id);
-        (parse.errors().to_owned(), parse.green())
+    let (parser_diagnostics, green) = {
+        let span = tracing::info_span!("parsing file");
+        let _guard = span.enter();
+        if module {
+            let parse = parse_module(file_source.as_ref(), file_id);
+            (parse.errors().to_owned(), parse.green())
+        } else {
+            let parse = parse_text(file_source.as_ref(), file_id);
+            (parse.errors().to_owned(), parse.green())
+        }
     };
+
     lint_file_inner(
         SyntaxNode::new_root(green),
         parser_diagnostics,
@@ -144,7 +150,11 @@ pub(crate) fn lint_file_inner(
     let directives::DirectiveResult {
         directives,
         diagnostics: mut directive_diagnostics,
-    } = DirectiveParser::new_with_store(node.clone(), file_id, store).get_file_directives();
+    } = {
+        let span = tracing::info_span!("parsing directives");
+        let _gaurd = span.enter();
+        DirectiveParser::new_with_store(node.clone(), file_id, store).get_file_directives()
+    };
 
     apply_top_level_directives(
         directives.as_slice(),
@@ -154,6 +164,10 @@ pub(crate) fn lint_file_inner(
     );
 
     let src: Arc<str> = Arc::from(node.to_string());
+
+    let span = tracing::info_span!("running rules");
+    let _gaurd = span.enter();
+
     let results = new_store
         .rules
         .par_iter()
@@ -196,6 +210,9 @@ pub fn run_rule(
     directives: &[Directive],
     src: Arc<str>,
 ) -> RuleResult {
+    let span = tracing::info_span!("run rule", rule = rule.name());
+    let _gaurd = span.enter();
+
     assert!(root.kind() == SyntaxKind::SCRIPT || root.kind() == SyntaxKind::MODULE);
     let line_starts = rslint_errors::file::line_starts(&src).collect::<Vec<_>>();
     let mut ctx = RuleCtx {
