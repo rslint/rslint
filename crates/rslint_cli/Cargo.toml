@@ -38,4 +38,4 @@ inferno = "0.10.1"
 [dependencies.tracing-subscriber]
 version = "0.2.15"
 default-features = false
-features = ["fmt", "registry"]
+features = ["fmt", "registry", "ansi"]

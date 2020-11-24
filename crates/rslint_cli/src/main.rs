@@ -2,7 +2,6 @@ mod flame;
 
 use rslint_cli::ExplanationRunner;
 use structopt::{clap::arg_enum, StructOpt};
-use tracing::Subscriber;
 use tracing_subscriber::{prelude::*, Registry};
 
 const DEV_FLAGS_HELP: &str = "
@@ -51,7 +50,7 @@ pub(crate) struct Options {
 }
 
 arg_enum! {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, PartialEq, Eq)]
     enum DevFlag {
         Help,
         Tokenize,
@@ -84,13 +83,19 @@ fn main() {
         .build_global()
         .expect("failed to build thread pool");
 
-    if let (Some(subscriber), guard) = setup_tracing(opt.dev_flag) {
-        tracing::subscriber::with_default(subscriber, || execute(opt));
+    let mode = match opt.dev_flag {
+        Some(DevFlag::Flame) => DevFlag::Flame,
+        Some(DevFlag::Log) => DevFlag::Log,
+        _ => return execute(opt),
+    };
 
-        // We explicitly drop the guard here so we can make sure it will write
-        // the flamegraph file if its not `None`
+    if let DevFlag::Flame = mode {
+        let (guard, layer) = flame::flame();
+        let subscriber = Registry::default().with(layer);
+        tracing::subscriber::with_default(subscriber, || execute(opt));
         drop(guard);
-    } else {
+    } else if let DevFlag::Log = mode {
+        tracing_subscriber::fmt::init();
         execute(opt);
     }
 }
@@ -113,20 +118,4 @@ fn execute(opt: Options) {
             opt.no_global_config,
         ),
     }
-}
-
-fn setup_tracing(mode: Option<DevFlag>) -> (Option<impl Subscriber>, Option<flame::FlameGuard>) {
-    let mode = match mode {
-        Some(mode) => mode,
-        None => return (None, None),
-    };
-
-    let (guard, layer) = if let DevFlag::Flame = mode {
-        flame::flame()
-    } else {
-        return (None, None);
-    };
-
-    let registry = Registry::default().with(layer);
-    (Some(registry), Some(guard))
 }
