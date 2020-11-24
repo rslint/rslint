@@ -9,7 +9,6 @@ use std::fs::read_to_string;
 use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use tracing::instrument;
 use walkdir::WalkDir;
 
 // 0 is reserved for "no file id" (virtual files)
@@ -62,13 +61,13 @@ impl FileWalker {
 
     /// Make a new file walker from a compiled glob pattern. This also
     /// skips any unreadable files/dirs
+    #[tracing::instrument(name = "load_files", skip(paths))]
     pub fn from_glob(paths: Vec<PathBuf>) -> Self {
         let mut base = Self::default();
         base.load_files(paths.into_par_iter());
         base
     }
 
-    #[instrument(skip(self, paths))]
     pub fn load_files(&mut self, paths: impl ParallelIterator<Item = PathBuf>) {
         let jsfiles: HashMap<usize, JsFile> = paths
             .filter(|p| {

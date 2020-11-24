@@ -7,7 +7,6 @@ use crate::{
 };
 use rslint_errors::Severity;
 use std::marker::PhantomData;
-use tracing::instrument;
 
 /// A utility struct for managing the result of a parser job
 #[derive(Debug)]
@@ -109,7 +108,7 @@ impl<T: AstNode> Parse<T> {
 }
 
 /// Run the rslint_lexer lexer to turn source code into tokens and errors produced by the lexer
-#[instrument(skip(text))]
+#[tracing::instrument(skip(text))]
 pub fn tokenize(text: &str, file_id: usize) -> (Vec<rslint_lexer::Token>, Vec<ParserError>) {
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
