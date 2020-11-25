@@ -61,6 +61,11 @@ features = ["serde"]
 optional = false
 version = "0.2"
 
+[dependencies.tracing]
+features = []
+optional = false
+version = "0.1.22"
+
 [dev-dependencies]
 
 [features]

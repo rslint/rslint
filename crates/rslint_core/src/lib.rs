@@ -60,7 +60,6 @@ use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
 };
-use tracing::*;
 
 /// The result of linting a file.
 // TODO: A lot of this stuff can be shoved behind a "linter options" struct
@@ -128,6 +127,7 @@ pub fn lint_file<'a>(
     let (parser_diagnostics, green) = {
         let span = tracing::info_span!("parsing file");
         let _guard = span.enter();
+
         if module {
             let parse = parse_module(file_source.as_ref(), file_id);
             (parse.errors().to_owned(), parse.green())

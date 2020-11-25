@@ -1,0 +1,212 @@
+import ast
+import vec
+import inputs
+import scopes
+import name_in_scope
+
+/// All declarations of variables
+relation VariableDeclarations(
+    file: FileId,
+    name: Name,
+    scope: ScopeId,
+    span: Option<Span>,
+    declared_in: AnyId,
+    implicit: bool,
+    is_arg: bool,
+    origin: NameOrigin,
+)
+
+// Add implicit globals to every scope
+VariableDeclarations(file, name, scope, None, AnyIdGlobal { global }, true, false, AutoGlobal) :-
+    File(file, _, scope, _),
+    ImplicitGlobal(global, name, _).
+
+// Import declarations
+//
+// ```js
+// // Scope: { Foo, Bar, .. }
+// import { Foo, Bar } from "./somewhere.js";
+// // Scope: { Foo, Bar, .. }
+// ```
+VariableDeclarations(file, name, scope, Some { span }, AnyIdImport { id }, false, false, Imported) :-
+    ImportDecl(id, file, clause),
+    File(file, _, scope, _),
+    var imported = FlatMap(clause.free_variables()),
+    Spanned { var name, var span } = imported.
+
+// Class declarations
+//
+// Class declarations create a new scope when they're declared,
+// so we add the class's name within that scope
+//
+// ```js
+// // Scope: { ... }
+// class Baz { }
+// // Scope: { Baz, ... }
+// ```
+//
+VariableDeclarations(file, name, scope, Some { span }, AnyIdClass { class }, false, false, UserDefined { scope }) :-
+    Class(class, file, Some { Spanned { name, span }}, _, _, scope, _).
+
+// `let` declarations
+//
+// Let declarations create a new scope when they're declared,
+// so we add the variable's name within that scope
+//
+// ```js
+// // Scope: { ... }
+// let foo = 10;
+// // Scope: { foo, ... }
+// ```
+//
+VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
+    LetDecl(stmt, file, Some { pat }, _, _),
+    Statement(stmt, file, _, scope, _),
+    var bound = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound.
+
+// `const` declarations
+//
+// Const declarations create a new scope when they're declared,
+// so we add the variable's name within that scope
+//
+// ```js
+// // Scope: { ... }
+// const foo = 10;
+// // Scope: { foo, ... }
+// ```
+//
+VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
+    ConstDecl(stmt, file, Some { pat }, _, _),
+    Statement(stmt, file, _, scope, _),
+    var bound = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound.
+
+// `var` declarations
+//
+// Var declarations bubble up to the nearest function-level block
+//
+// ```js
+// // Scope: { ... }
+// function foo() {
+//     // Scope: { baz, ... }
+//     var baz = 10;
+//     // Scope: { baz, ... }
+// }
+// // Scope: { ... }
+// ```
+//
+VariableDeclarations(file, name, nearest, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
+    VarDecl(stmt, file, Some { pat }, _, _),
+    Statement(stmt, file, _, scope, _),
+    // Bubble `var` up to the nearest function-level scope
+    FunctionLevelScope(scope, nearest, file, _),
+    var bound = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound.
+
+// Function declarations
+//
+// ```js
+// // Scope: { foo, ... }
+// function foo() {
+//     // Scope: { foo, ... }
+// }
+// // Scope: { foo, ... }
+// ```
+//
+VariableDeclarations(file, name, nearest, Some { span }, AnyIdFunc { func }, false, false, UserDefined { scope }) :-
+    Function(func, file, Some { Spanned { name, span }}, scope, _, _),
+    // Bubble functions up to the nearest function-level scope
+    FunctionLevelScope(scope, nearest, file, _).
+
+// Introduce function arguments within the body of their enclosing function
+//
+// ```js
+// // Scope: { ... }
+// function foo(bar, baz) {
+//     // Scope: { bar, baz, ... }
+// }
+// // Scope: { ... }
+// ```
+//
+VariableDeclarations(file, name, body, Some { span }, AnyIdFunc { func }, implicit, true, UserDefined { scope }) :-
+    FunctionArg(func, file, pat, implicit),
+    Function(func, file, _, scope, body, _),
+    var bound = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound.
+
+// Introduce closure arguments within the body of their enclosing closure
+//
+// ```js
+// // Scope: { ... }
+// ((bar, baz) => {
+//     // Scope: { bar, baz, ... }
+// });
+// // Scope: { ... }
+// ```
+//
+VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, false, true, UserDefined { scope }) :-
+    ArrowParam(expr, file, pat),
+    Arrow(expr, file, Some { (_, scope) }),
+    var bound = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound.
+
+// Inline function names
+//
+// Inline functions that are named only have their names added inside their bodies.
+// The function names are marked as implict, since their name matters for weird
+// meta-programming stuff.
+//
+// ```js
+// // Scope: { ... }
+// let _ = function foo() {
+//     // Scope: { foo, ... }
+// }
+// // Scope: { ... }
+// ```
+//
+// TODO: Make the implicit be configured by directives
+VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, true, false, UserDefined { scope }) :-
+    InlineFunc(expr, file, Some { Spanned { name, span }}, Some { body }),
+    Statement(body, file, _, scope, _).
+
+// Introduce inline function arguments within the body of their enclosing closure
+//
+// ```js
+// // Scope: { ... }
+// let _ = function(bar, baz) {
+//     // Scope: { bar, baz, ... }
+// };
+// // Scope: { ... }
+// ```
+//
+VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, false, true, UserDefined { scope }) :-
+    InlineFuncParam(expr, file, pat),
+    InlineFunc(expr, file, _, Some { body }),
+    Statement(body, file, _, scope, _),
+    var bound = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound.
+
+// `catch` statement patterns
+VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { catcher }, false, false, UserDefined { scope }) :-
+    Try(stmt, file, _, TryHandler { Some { error }, Some { catcher } }, _),
+    Statement(expr, file, _, scope, _),
+    var bound = FlatMap(error.bound_vars()),
+    Spanned { var name, var span } = bound.
+
+// Class methods and static class methods
+VariableDeclarations(file, name, scope, Some { span }, AnyIdClass { class }, implicit, true, UserDefined { scope }) :-
+    Class(class, file, _, _, Some { elements }, _, _),
+    var elem = FlatMap(elements),
+    Some { (var params, var body) } = elem.ival().method_comps(),
+    Statement(body, file, _, scope, _),
+    var bound = FlatMap(params.flatmap(|param| param.bound_vars())),
+    (Spanned { var name, var span }, var implicit) = bound.
+
+// Method properties, getters and setters
+VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, implicit, false, UserDefined { scope }) :-
+    Property(expr, file, _, Some { val }),
+    Some { (var params, var body) } = val.method_comps(),
+    Statement(body, file, _, scope, _),
+    var bound = FlatMap(params.flatmap(|param| param.bound_vars())),
+    (Spanned { var name, var span }, var implicit) = bound.

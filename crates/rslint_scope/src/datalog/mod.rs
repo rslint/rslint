@@ -60,8 +60,16 @@ impl Datalog {
     }
 
     pub fn enable_profiling(&self, enable: bool) {
-        self.hddlog.enable_timely_profiling(enable);
+        tracing::info!(
+            "{} ddlog profiling",
+            if enable { "enabled" } else { "disabled" },
+        );
+        // self.hddlog.enable_timely_profiling(enable);
         self.hddlog.enable_cpu_profiling(enable);
+    }
+
+    pub fn ddlog_profile(&self) -> String {
+        self.hddlog.profile()
     }
 
     pub fn outputs(&self) -> &Outputs {
@@ -69,6 +77,8 @@ impl Datalog {
     }
 
     pub fn reset(&self) -> DatalogResult<()> {
+        tracing::info!("resetting ddlog instance");
+
         {
             let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
             let handle = guard.handle.as_ref().unwrap();
@@ -84,10 +94,12 @@ impl Datalog {
     }
 
     // TODO: Make this take an iterator
-    pub fn inject_globals(&self, file: FileId, globals: &[JsGlobal]) -> DatalogResult<()> {
+    pub fn inject_globals(&self, globals: &[JsGlobal]) -> DatalogResult<()> {
         self.transaction(|trans| {
+            tracing::trace!("injecting {} global variables", globals.len());
+
             for global in globals {
-                trans.implicit_global(file, global);
+                trans.implicit_global(global);
             }
 
             Ok(())
@@ -110,11 +122,17 @@ impl Datalog {
     where
         F: for<'trans> FnOnce(&mut DatalogTransaction<'trans>) -> DatalogResult<T>,
     {
+        let span = tracing::info_span!("ddlog transaction");
+        let _guard = span.enter();
+
         let inner = DatalogInner::new(FileId::new(0));
         let mut trans = DatalogTransaction::new(&inner)?;
         let result = transaction(&mut trans)?;
 
         let delta = {
+            let span = tracing::info_span!("ddlog transaction lock");
+            let _guard = span.enter();
+
             let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
             self.hddlog.apply_valupdates(
                 inner.updates.borrow_mut().drain(..),
@@ -135,9 +153,18 @@ impl Datalog {
         );
 
         query
+            .map_err(|err| tracing::error!("expression query error: {:?}", err))
             .ok()
-            // TODO: Log error if there's more than one value
-            .and_then(|query| query.into_iter().next())
+            .and_then(|query| {
+                if query.len() > 1 {
+                    tracing::error!(
+                        "more than one expression was returned from query: {:?}",
+                        query,
+                    );
+                }
+
+                query.into_iter().next()
+            })
             .map(Expression::from_ddvalue)
     }
 
@@ -148,9 +175,18 @@ impl Datalog {
         );
 
         query
+            .map_err(|err| tracing::error!("statement query error: {:?}", err))
             .ok()
-            // TODO: Log error if there's more than one value
-            .and_then(|query| query.into_iter().next())
+            .and_then(|query| {
+                if query.len() > 1 {
+                    tracing::error!(
+                        "more than one statement was returned from query: {:?}",
+                        query,
+                    );
+                }
+
+                query.into_iter().next()
+            })
             .map(Statement::from_ddvalue)
     }
 
@@ -177,15 +213,15 @@ impl Datalog {
             })
         }
 
+        let span = tracing::info_span!("purge file");
+        let _guard = span.enter();
+        tracing::trace!("purging file {}", file.id);
+
         let files = self.query(Indexes::inputs_FileById, Some(file.into_ddvalue()))?;
         let input_scopes =
             self.query(Indexes::inputs_InputScopeByFile, Some(file.into_ddvalue()))?;
         let every_scope =
             self.query(Indexes::inputs_EveryScopeByFile, Some(file.into_ddvalue()))?;
-        let implicit_globals = self.query(
-            Indexes::inputs_ImplicitGlobalByFile,
-            Some(file.into_ddvalue()),
-        )?;
         let statements = self.query(Indexes::inputs_StatementByFile, Some(file.into_ddvalue()))?;
         let expressions =
             self.query(Indexes::inputs_ExpressionByFile, Some(file.into_ddvalue()))?;
@@ -195,14 +231,13 @@ impl Datalog {
         let updates = delete_all(files, Relations::inputs_File)
             .chain(delete_all(input_scopes, Relations::inputs_InputScope))
             .chain(delete_all(every_scope, Relations::inputs_EveryScope))
-            .chain(delete_all(
-                implicit_globals,
-                Relations::inputs_ImplicitGlobal,
-            ))
             .chain(delete_all(statements, Relations::inputs_Statement))
             .chain(delete_all(expressions, Relations::inputs_Expression));
 
         let delta = {
+            let span = tracing::info_span!("ddlog transaction lock");
+            let _guard = span.enter();
+
             let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
             self.hddlog
                 .apply_valupdates(updates, guard.handle.as_ref().unwrap())?;
@@ -215,7 +250,10 @@ impl Datalog {
     }
 
     pub fn get_lints(&self, file: FileId) -> DatalogResult<Vec<DatalogLint>> {
-        let mut lints = Vec::new();
+        let span = tracing::info_span!("getting ddlog lints");
+        let _guard = span.enter();
+
+        let mut lints = Vec::with_capacity(20);
 
         lints.extend(self.outputs().no_undef.iter().filter_map(|usage| {
             if usage.key().file == file {
@@ -246,30 +284,12 @@ impl Datalog {
                 return None;
             }
 
-            let whole_expr = self
-                .query(
-                    Indexes::inputs_ExpressionById,
-                    Some(tuple2(undef.key().whole_expr, file).into_ddvalue()),
-                )
-                .ok()?
-                .into_iter()
-                .next()
-                .map(Expression::from_ddvalue)?;
-
-            let undefined_portion = self
-                .query(
-                    Indexes::inputs_ExpressionById,
-                    Some(tuple2(undef.key().undefined_expr, file).into_ddvalue()),
-                )
-                .ok()?
-                .into_iter()
-                .next()
-                .map(Expression::from_ddvalue)?
-                .span;
+            let whole_expr = self.get_expr(undef.key().whole_expr, file)?;
+            let undefined_portion = self.get_expr(undef.key().undefined_expr, file)?;
 
             Some(DatalogLint::TypeofUndef {
                 whole_expr: whole_expr.span,
-                undefined_portion,
+                undefined_portion: undefined_portion.span,
                 file: whole_expr.file,
             })
         }));
@@ -475,14 +495,13 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
     }
 
     // TODO: Fully integrate global info into ddlog
-    fn implicit_global(&self, file: FileId, global: &JsGlobal) -> GlobalId {
+    fn implicit_global(&self, global: &JsGlobal) -> GlobalId {
         let id = self.datalog.inc_global();
         self.datalog.insert(
             Relations::inputs_ImplicitGlobal,
             ImplicitGlobal {
                 id: GlobalId { id: id.id },
                 name: Intern::new(global.name.to_string()),
-                file,
                 privileges: if global.writeable {
                     GlobalPriv::ReadWriteGlobal
                 } else {

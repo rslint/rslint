@@ -993,22 +993,19 @@ impl ::std::fmt::Debug for If {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct ImplicitGlobal {
     pub id: crate::ast::GlobalId,
-    pub file: crate::ast::FileId,
     pub name: crate::ast::Name,
     pub privileges: crate::ast::GlobalPriv
 }
 impl abomonation::Abomonation for ImplicitGlobal{}
-::differential_datalog::decl_struct_from_record!(ImplicitGlobal["inputs::ImplicitGlobal"]<>, ["inputs::ImplicitGlobal"][4]{[0]id["id"]: crate::ast::GlobalId, [1]file["file"]: crate::ast::FileId, [2]name["name"]: crate::ast::Name, [3]privileges["privileges"]: crate::ast::GlobalPriv});
-::differential_datalog::decl_struct_into_record!(ImplicitGlobal, ["inputs::ImplicitGlobal"]<>, id, file, name, privileges);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ImplicitGlobal, <>, id: crate::ast::GlobalId, file: crate::ast::FileId, name: crate::ast::Name, privileges: crate::ast::GlobalPriv);
+::differential_datalog::decl_struct_from_record!(ImplicitGlobal["inputs::ImplicitGlobal"]<>, ["inputs::ImplicitGlobal"][3]{[0]id["id"]: crate::ast::GlobalId, [1]name["name"]: crate::ast::Name, [2]privileges["privileges"]: crate::ast::GlobalPriv});
+::differential_datalog::decl_struct_into_record!(ImplicitGlobal, ["inputs::ImplicitGlobal"]<>, id, name, privileges);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ImplicitGlobal, <>, id: crate::ast::GlobalId, name: crate::ast::Name, privileges: crate::ast::GlobalPriv);
 impl ::std::fmt::Display for ImplicitGlobal {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::inputs::ImplicitGlobal{id,file,name,privileges} => {
+            crate::inputs::ImplicitGlobal{id,name,privileges} => {
                 __formatter.write_str("inputs::ImplicitGlobal{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(name, __formatter)?;
                 __formatter.write_str(",")?;

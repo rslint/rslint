@@ -22,6 +22,8 @@ use types::{
     internment::Intern,
 };
 
+static_assertions::assert_obj_safe!(DatalogBuilder);
+
 pub trait DatalogBuilder<'ddlog> {
     fn scope_id(&self) -> ScopeId;
 
@@ -68,14 +70,13 @@ pub trait DatalogBuilder<'ddlog> {
     }
 
     // TODO: Fully integrate global info into ddlog
-    fn implicit_global(&self, file: FileId, global: &JsGlobal) -> GlobalId {
+    fn implicit_global(&self, global: &JsGlobal) -> GlobalId {
         let id = self.datalog().inc_global();
         self.datalog().insert(
             Relations::inputs_ImplicitGlobal,
             ImplicitGlobal {
                 id: GlobalId { id: id.id },
                 name: Intern::new(global.name.to_string()),
-                file,
                 privileges: if global.writeable {
                     GlobalPriv::ReadWriteGlobal
                 } else {

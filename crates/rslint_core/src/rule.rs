@@ -93,6 +93,7 @@ pub trait Rule: Debug + DynClone + Send + Sync {
     }
 }
 
+static_assertions::assert_obj_safe!(Rule, CstRule);
 dyn_clone::clone_trait_object!(Rule);
 dyn_clone::clone_trait_object!(CstRule);
 

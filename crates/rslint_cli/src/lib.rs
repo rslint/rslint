@@ -71,89 +71,116 @@ fn run_inner(
     verify_formatter(&mut formatter);
 
     if walker.files.is_empty() {
+        tracing::info!("no files found, returning early");
         lint_err!("No matching files found");
+
         return 2;
     }
-
-    let span = tracing::info_span!("lint files");
-    let analyzer = ScopeAnalyzer::new().unwrap();
 
     let span = info_span!("ddlog startup");
     let (ddlog_send, ddlog_thread) = span.in_scope(|| {
         let (ddlog_send, ddlog_recv) = mpsc::channel::<(FileId, SyntaxNode, ScopeConfig)>();
 
+        tracing::trace!("spawning ddlog thread");
         let ddlog_thread = thread::spawn(move || {
             let span = info_span!("analyzer init");
             let analyzer = span.in_scope(|| ScopeAnalyzer::new().unwrap());
+            analyzer.enable_profiling(true);
 
+            tracing::trace!("started ddlog");
             let span = info_span!("ddlog analysis");
             span.in_scope(|| {
-                while let Ok((file_id, syntax, config)) = ddlog_recv.recv() {
+                let mut batch = Vec::with_capacity(25);
+                for (file_id, syntax, config) in ddlog_recv.iter() {
                     let span = info_span!("ddlog analysis on file {}", file_id.id);
                     let _guard = span.enter();
 
-                    analyzer.inject_globals(file_id, BUILTIN).unwrap();
-                    analyzer.inject_globals(file_id, ES2021).unwrap();
-                    analyzer.inject_globals(file_id, NODE).unwrap();
-                    analyzer.analyze(file_id, &syntax, config).unwrap();
+                    batch.push((file_id, syntax, config));
+                    tracing::trace!("finished ddlog file {}", file_id.id,);
                 }
+
+                tracing::trace!("finished receiving ast nodes, analyzing batch");
+                analyzer.inject_globals(BUILTIN).unwrap();
+                analyzer.inject_globals(ES2021).unwrap();
+                analyzer.inject_globals(NODE).unwrap();
+                analyzer.analyze_batch(&batch).unwrap();
+                println!("ssssafsdgfsadgdfsgdfsgdfgdsfg");
             });
 
+            tracing::trace!("finished ddlog");
             analyzer
         });
 
         (ddlog_send, ddlog_thread)
     });
 
-    let guard = span.enter();
-    let mut results = walker
-        .files
-        .par_values()
-        .map(|file| lint_file(file, &store, verbose, None, Some(ddlog_send)))
-        .filter_map(|res| {
-            if let Err(diagnostic) = res {
-                emit_diagnostic(&diagnostic, &walker);
-                None
-            } else {
-                res.ok()
-            }
-        })
-        .collect::<Vec<_>>();
-    drop(guard);
+    let span = tracing::info_span!("lint files");
+    let mut results = span.in_scope(|| {
+        tracing::trace!(
+            "linting {} files with {} rules",
+            walker.files.len(),
+            store.len(),
+        );
 
-    {
-        let span = info_span!("join ddlog thread");
-        let analyzer = span.in_scope(|| ddlog_thread.join().unwrap());
+        walker
+            .files
+            .par_keys()
+            .map_with(ddlog_send, |ddlog_send, id| {
+                let file = walker.files.get(id).unwrap();
+                lint_file(
+                    *id,
+                    &file.source.clone(),
+                    file.kind == JsFileKind::Module,
+                    &store,
+                    verbose,
+                    None,
+                    Some(ddlog_send),
+                )
+            })
+            .filter_map(|res| {
+                if let Err(diagnostic) = res {
+                    emit_diagnostic(&diagnostic, &walker);
+                    None
+                } else {
+                    res.ok()
+                }
+            })
+            .collect::<Vec<_>>()
+    });
 
-        let span = info_span!("run ddlog rules");
-        span.in_scope(|| {
-            results.par_extend(
-                walker
-                    .files
-                    .par_keys()
-                    .map(|id| {
-                        let file = walker.files.get(id).unwrap();
-                        lint_file(
-                            *id,
-                            &file.source.clone(),
-                            file.kind == JsFileKind::Module,
-                            &store,
-                            verbose,
-                            Some(analyzer.clone()),
-                            None,
-                        )
-                    })
-                    .filter_map(|res| {
-                        if let Err(diagnostic) = res {
-                            emit_diagnostic(&diagnostic, &walker);
-                            None
-                        } else {
-                            res.ok()
-                        }
-                    }),
-            );
-        });
-    }
+    let span = info_span!("join ddlog thread");
+    let analyzer = span.in_scope(|| ddlog_thread.join().unwrap());
+
+    let span = info_span!("run ddlog rules");
+    span.in_scope(|| {
+        results.par_extend(
+            walker
+                .files
+                .par_keys()
+                .map(|id| {
+                    let file = walker.files.get(id).unwrap();
+                    lint_file(
+                        *id,
+                        &file.source.clone(),
+                        file.kind == JsFileKind::Module,
+                        &store,
+                        verbose,
+                        Some(analyzer.clone()),
+                        None,
+                    )
+                })
+                .filter_map(|res| {
+                    if let Err(diagnostic) = res {
+                        emit_diagnostic(&diagnostic, &walker);
+                        None
+                    } else {
+                        res.ok()
+                    }
+                }),
+        );
+    });
+
+    std::fs::write("ddlog_profile.txt", analyzer.ddlog_profile()).unwrap();
 
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)

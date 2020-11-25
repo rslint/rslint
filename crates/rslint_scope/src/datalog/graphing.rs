@@ -1,3 +1,4 @@
+/*
 use crate::Datalog;
 use differential_datalog::ddval::DDValConvert;
 use rslint_scoping_ddlog::Indexes;
@@ -109,3 +110,4 @@ fn _graph_file(file: FileId, datalog: &Datalog, output: &mut impl Write) -> Resu
 //     let mut output = std::io::BufWriter::new(std::fs::File::create("graph.dot").unwrap());
 //     _graph_file(file, &*analyzer, &mut output).unwrap();
 // }
+*/

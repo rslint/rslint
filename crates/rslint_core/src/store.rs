@@ -58,4 +58,14 @@ impl CstRuleStore {
             .iter()
             .any(|rule| rule.name() == rule_name.as_ref())
     }
+
+    /// Returns the number of currently loaded rules
+    pub fn len(&self) -> usize {
+        self.rules.len()
+    }
+
+    /// Returns whether the rule store is empty or not
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }

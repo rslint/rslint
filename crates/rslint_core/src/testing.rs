@@ -53,7 +53,7 @@ macro_rules! rule_tests {
             $(
                 let res = rslint_parser::parse_module($code, 0);
 
-                let errs = $crate::run_rule(&$rule, 0, res.syntax(), true, &[], std::sync::Arc::new($code.to_string()), None);
+                let errs = $crate::run_rule(&$rule, 0, res.syntax(), true, &[], std::sync::Arc::from($code.to_string()), None);
                 if errs.diagnostics.is_empty() {
                     panic!("\nExpected:\n```\n{}\n```\nto fail linting, but instead it passed (with {} parsing errors)", $code, res.errors().len());
                 }
@@ -65,7 +65,7 @@ macro_rules! rule_tests {
             $(
                 let res = rslint_parser::parse_module($ok_code, 0);
 
-                let errs = $crate::run_rule(&$rule, 0, res.syntax(), true, &[], std::sync::Arc::new($ok_code.to_string()), None);
+                let errs = $crate::run_rule(&$rule, 0, res.syntax(), true, &[], std::sync::Arc::from($ok_code.to_string()), None);
                 if !errs.diagnostics.is_empty() {
                     panic!("\nExpected:\n```\n{}\n```\nto pass linting, but instead it threw errors (along with {} parsing errors):\n\n", $ok_code, res.errors().len());
                 }

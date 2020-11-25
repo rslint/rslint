@@ -31,15 +31,11 @@ toml = "0.5.6"
 heck = "0.3.1"
 notify = "4.0.15"
 colored = "2.0.0"
-tracing = "0.1.21"
+tracing = { version = "0.1.22", features = ["attributes", "release_max_level_trace"] }
 tracing-flame = "0.1.0"
 inferno = "0.10.1"
 
 [dependencies.tracing-subscriber]
 version = "0.2.15"
 default-features = false
-features = ["fmt", "registry", "ansi"]
-tracing = { version = "0.1.21", features = ["attributes"] }
-
-[features]
-default = []
+features = ["fmt", "registry", "ansi", "env-filter"]

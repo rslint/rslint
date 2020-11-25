@@ -10,10 +10,10 @@ TypeofUndef(whole_expr, undefined_expr, file) :-
     config.no_undef_enabled() or config.no_typeof_undef_enabled(),
     NameRef(undefined_expr, file, name),
     Expression(undefined_expr, file, ExprNameRef, scope, span),
-    not NameInScope(file, name, scope, _, _, _, _, _),
     // Expressions like `typeof not_undefined` are allowed under NoUndef
     // and are instead output through TypeofUndef
-    WithinTypeofExpr(whole_expr, undefined_expr, file).
+    WithinTypeofExpr(whole_expr, undefined_expr, file),
+    not NameInScope(file, name, scope, _).
 
 relation WithinTypeofExpr(type_of: ExprId, expr: ExprId, file: FileId)
 // `typeof not_defined`

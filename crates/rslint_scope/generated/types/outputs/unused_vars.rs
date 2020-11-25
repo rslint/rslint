@@ -63,36 +63,3 @@ impl ::std::fmt::Debug for UnusedVariables {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
-pub struct VariableUsages {
-    pub file: crate::ast::FileId,
-    pub name: crate::ast::Name,
-    pub scope: crate::ast::ScopeId,
-    pub declared_in: crate::ast::AnyId
-}
-impl abomonation::Abomonation for VariableUsages{}
-::differential_datalog::decl_struct_from_record!(VariableUsages["outputs::unused_vars::VariableUsages"]<>, ["outputs::unused_vars::VariableUsages"][4]{[0]file["file"]: crate::ast::FileId, [1]name["name"]: crate::ast::Name, [2]scope["scope"]: crate::ast::ScopeId, [3]declared_in["declared_in"]: crate::ast::AnyId});
-::differential_datalog::decl_struct_into_record!(VariableUsages, ["outputs::unused_vars::VariableUsages"]<>, file, name, scope, declared_in);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(VariableUsages, <>, file: crate::ast::FileId, name: crate::ast::Name, scope: crate::ast::ScopeId, declared_in: crate::ast::AnyId);
-impl ::std::fmt::Display for VariableUsages {
-    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        match self {
-            crate::outputs::unused_vars::VariableUsages{file,name,scope,declared_in} => {
-                __formatter.write_str("outputs::unused_vars::VariableUsages{")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(name, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(scope, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(declared_in, __formatter)?;
-                __formatter.write_str("}")
-            }
-        }
-    }
-}
-impl ::std::fmt::Debug for VariableUsages {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        ::std::fmt::Display::fmt(&self, f)
-    }
-}

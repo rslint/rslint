@@ -12,3 +12,4 @@ package-lock.json
 rslint.svg
 **/output.log/**
 yarn.lock
+ddlog_profile.txt

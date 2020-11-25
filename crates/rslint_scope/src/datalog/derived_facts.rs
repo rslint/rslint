@@ -154,6 +154,17 @@ impl InnerOutputs {
     }
 
     pub fn batch_update(&self, updates: DeltaMap<DDValue>) {
+        let span = tracing::info_span!("ddlog batch update");
+        let _guard = span.enter();
+
+        tracing::trace!(
+            "received a batch update with {} changes",
+            updates
+                .iter()
+                .map(|(_, changes)| changes.len())
+                .sum::<usize>(),
+        );
+
         {
             let mut file = self.output_file.lock().unwrap();
             if let Some(file) = &mut *file {

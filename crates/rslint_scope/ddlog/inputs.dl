@@ -80,12 +80,9 @@ input relation ImportDecl(
 // Globals
 input relation ImplicitGlobal(
     id: GlobalId,
-    file: FileId,
     name: Name,
     privileges: GlobalPriv,
 )
-
-index ImplicitGlobalByFile(file: FileId) on ImplicitGlobal(_, file, _, _)
 
 // Statements
 input relation Statement(

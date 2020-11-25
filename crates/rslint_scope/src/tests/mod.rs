@@ -284,47 +284,26 @@ impl<'a> TestCase<'a> {
             parse_text(&*self.code, 0).syntax()
         };
 
-        self.harness
-            .datalog
-            .datalog
-            .inject_globals(
-                file_id,
-                &self
-                    .globals
-                    .iter()
-                    .map(|g| JsGlobal::new(g.to_string(), false))
-                    .collect::<Vec<_>>(),
-            )
-            .expect("failed to inject global variables");
+        let _ = self.harness.datalog.datalog.inject_globals(
+            &self
+                .globals
+                .iter()
+                .map(|g| JsGlobal::new(g.to_string(), false))
+                .collect::<Vec<_>>(),
+        );
 
-        self.harness
-            .datalog
-            .datalog
-            .inject_globals(file_id, BUILTIN)
-            .expect("failed to inject builtin variables");
+        let _ = self.harness.datalog.datalog.inject_globals(BUILTIN);
 
         if self.browser {
-            self.harness
-                .datalog
-                .datalog
-                .inject_globals(file_id, BROWSER)
-                .expect("failed to add browser globals");
+            let _ = self.harness.datalog.datalog.inject_globals(BROWSER);
         }
 
         if self.node {
-            self.harness
-                .datalog
-                .datalog
-                .inject_globals(file_id, NODE)
-                .expect("failed to add node globals");
+            let _ = self.harness.datalog.datalog.inject_globals(NODE);
         }
 
         if self.ecma || self.es2021 {
-            self.harness
-                .datalog
-                .datalog
-                .inject_globals(file_id, ES2021)
-                .expect("failed to add ecma globals");
+            let _ = self.harness.datalog.datalog.inject_globals(ES2021);
         }
 
         self.harness

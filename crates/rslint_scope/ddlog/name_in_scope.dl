@@ -4,36 +4,49 @@ import utils
 import group
 import inputs
 import scopes
+import var_decls
 
+/// The origin of a name
+// TODO: More variants
 typedef NameOrigin =
+    /// The name came from an implicit global variable
     AutoGlobal
+    /// The name was imported
     | Imported
+    /// The name was defined in the given scope
     | UserDefined { scope: ScopeId }
 
+// TODO: Reduce the size of this since there are so many copies of it
 typedef NameInScope = NameInScope {
+    /// The file the name belongs to
     file: FileId,
+    /// The name of the symbol
     name: Name,
+    /// The scope the symbol is in-scope within
     scope: ScopeId,
-    span: Option<Span>,
-    declared_in: AnyId,
-    implicit: bool,
-    is_arg: bool,
-    origin: NameOrigin,
+    /// The id of the item that declared the symbol
+    declared: AnyId,
 }
 
-// The `NameInScope` relation gives every name/symbol/ident that's defined for any given scope.
-// Names are walked down children scopes, meaning all children have access to the variables of
-// their parent scope(s)
-//
-// ```
-// // 'a defines the `foo` symbol
-// 'a: { foo }
-//  │
-//  │ // 'b defines the `bar` symbol and inherits
-//  │ // the `foo` symbol
-//  └-'b: { foo, bar }
-// ```
-//
+/// The `NameInScope` relation gives every name/symbol/ident that's defined for any given scope.
+/// Names are walked down children scopes, meaning all children have access to the variables of
+/// their parent scope(s). Each rule of `NameInScope` utilizes `NameOccursInScope` to only propigate
+/// *used* variables down scopes to avoid an exponental explosion of names that drastically increases
+/// compute time and memory usage. This allows lazily computing names within scope, since variables
+/// will only be propigated down segments of scope trees where they're actually used, which is
+/// especally important when you consider JS's ungodly amount of global variables (both implicit
+/// and user-defined). All in all it reduces the memory/cpu usage of this relation to be linear
+/// with the amount of code being processed instead of some terrifying exponent.
+///
+/// ```
+/// // 'a defines the `foo` symbol
+/// 'a: { foo }
+///  │
+///  │ // 'b defines the `bar` symbol and inherits
+///  │ // the `foo` symbol
+///  └-'b: { foo, bar }
+/// ```
+///
 relation NameInScope[NameInScope]
 
 // An index that returns all variables avaliable in a given scope
@@ -44,221 +57,37 @@ index Index_VariablesForScope(file: FileId, scope: ScopeId)
 index Index_VariableInScope(file: FileId, scope: ScopeId, variable: Name)
     on NameInScope[NameInScope { .file = file, .name = variable, .scope = scope }]
 
-// Add implicit globals to every scope
-NameInScope(file, name, scope, None, AnyIdGlobal { global }, true, false, AutoGlobal) :-
-    ImplicitGlobal(global, file, name, _),
-    EveryScope(scope, file).
-
-// Import declarations
-//
-// ```js
-// // Scope: { Foo, Bar, .. }
-// import { Foo, Bar } from "./somewhere.js";
-// // Scope: { Foo, Bar, .. }
-// ```
-NameInScope(file, name, scope, Some { span }, AnyIdImport { id }, false, false, Imported) :-
-    ImportDecl(id, file, clause),
-    EveryScope(scope, file),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var free_var = FlatMap(clause.free_variables()),
-    Spanned { var name, var span } = free_var.
-
-// Class declarations
-//
-// Class declarations create a new scope when they're declared,
-// so we add the class's name within that scope
-//
-// ```js
-// // Scope: { ... }
-// class Baz { }
-// // Scope: { Baz, ... }
-// ```
-//
-NameInScope(
-    file,
-    name,
-    scope,
-    Some { span },
-    AnyIdClass { class },
-    false,
-    false,
-    UserDefined { scope },
-) :-
-    Class(class, file, Some { Spanned { name, span }}, _, _, scope, _).
-
-// `let` declarations
-//
-// Let declarations create a new scope when they're declared,
-// so we add the variable's name within that scope
-//
-// ```js
-// // Scope: { ... }
-// let foo = 10;
-// // Scope: { foo, ... }
-// ```
-//
-NameInScope(file, name, scope, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
-    LetDecl(stmt, file, Some { pat }, _, _),
-    Statement(stmt, file, _, scope, _),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound_var.
-
-// `const` declarations
-//
-// Const declarations create a new scope when they're declared,
-// so we add the variable's name within that scope
-//
-// ```js
-// // Scope: { ... }
-// const foo = 10;
-// // Scope: { foo, ... }
-// ```
-//
-NameInScope(file, name, scope, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
-    ConstDecl(stmt, file, Some { pat }, _, _),
-    Statement(stmt, file, _, scope, _),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound_var.
-
-// `var` declarations
-//
-// Var declarations bubble up to the nearest function-level block
-//
-// ```js
-// // Scope: { ... }
-// function foo() {
-//     // Scope: { baz, ... }
-//     var baz = 10;
-//     // Scope: { baz, ... }
-// }
-// // Scope: { ... }
-// ```
-//
-NameInScope(file, name, nearest, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
-    VarDecl(stmt, file, Some { pat }, _, _),
-    Statement(stmt, file, _, scope, _),
-    // Bubble `var` up to the nearest function-level scope
-    FunctionLevelScope(scope, nearest, file, _),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound_var.
-
-// Function declarations
-//
-// ```js
-// // Scope: { foo, ... }
-// function foo() {
-//     // Scope: { foo, ... }
-// }
-// // Scope: { foo, ... }
-// ```
-//
-NameInScope(file, name, nearest, Some { span }, AnyIdFunc { func }, false, false, UserDefined { scope }) :-
-    Function(func, file, Some { Spanned { name, span }}, scope, _, _),
-    // Bubble functions up to the nearest function-level scope
-    FunctionLevelScope(scope, nearest, file, _).
-
-// Introduce function arguments within the body of their enclosing function
-//
-// ```js
-// // Scope: { ... }
-// function foo(bar, baz) {
-//     // Scope: { bar, baz, ... }
-// }
-// // Scope: { ... }
-// ```
-//
-NameInScope(file, name, body, Some { span }, AnyIdFunc { func }, implicit, true, UserDefined { scope }) :-
-    FunctionArg(func, file, pat, implicit),
-    Function(func, file, _, scope, body, _),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound_var.
-
-// Introduce closure arguments within the body of their enclosing closure
-//
-// ```js
-// // Scope: { ... }
-// ((bar, baz) => {
-//     // Scope: { bar, baz, ... }
-// });
-// // Scope: { ... }
-// ```
-//
-NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, false, true, UserDefined { scope }) :-
-    ArrowParam(expr, file, pat),
-    Arrow(expr, file, Some { (_, scope) }),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound_var.
-
-// Inline function names
-//
-// Inline functions that are named only have their names added inside their bodies.
-// The function names are marked as implict, since their name matters for weird
-// meta-programming stuff.
-//
-// ```js
-// // Scope: { ... }
-// let _ = function foo() {
-//     // Scope: { foo, ... }
-// }
-// // Scope: { ... }
-// ```
-//
-// TODO: Make the implicit be configured by directives
-NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, true, false, UserDefined { scope }) :-
-    InlineFunc(expr, file, Some { Spanned { name, span }}, Some { body }),
-    Statement(body, file, _, scope, _).
-
-// Introduce inline function arguments within the body of their enclosing closure
-//
-// ```js
-// // Scope: { ... }
-// let _ = function(bar, baz) {
-//     // Scope: { bar, baz, ... }
-// };
-// // Scope: { ... }
-// ```
-//
-NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, false, true, UserDefined { scope }) :-
-    InlineFuncParam(expr, file, pat),
-    InlineFunc(expr, file, _, Some { body }),
-    Statement(body, file, _, scope, _),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound_var.
-
-// `catch` statement patterns
-NameInScope(file, name, scope, Some { span }, AnyIdStmt { catcher }, false, false, UserDefined { scope }) :-
-    Try(stmt, file, _, TryHandler { Some { error }, Some { catcher } }, _),
-    Statement(expr, file, _, scope, _),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(error.bound_vars()),
-    Spanned { var name, var span } = bound_var.
-
-// Class methods and static class methods
-NameInScope(file, name, scope, Some { span }, AnyIdClass { class }, implicit, true, UserDefined { scope }) :-
-    Class(class, file, _, _, Some { elements }, _, _),
-    var elem = FlatMap(elements),
-    Some { (var params, var body) } = elem.ival().method_comps(),
-    Statement(body, file, _, scope, _),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(params.flatmap(|param| param.bound_vars())),
-    (Spanned { var name, var span }, var implicit) = bound_var.
-
-// Method properties, getters and setters
-NameInScope(file, name, scope, Some { span }, AnyIdExpr { expr }, implicit, true, UserDefined { scope }) :-
-    Property(expr, file, _, Some { val }),
-    Some { (var params, var body) } = val.method_comps(),
-    Statement(body, file, _, scope, _),
-    // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
-    var bound_var = FlatMap(params.flatmap(|param| param.bound_vars())),
-    (Spanned { var name, var span }, var implicit) = bound_var.
+// Introduce all declared variables where they're used
+NameInScope(file, name, scope, declared) :-
+    VariableDeclarations(file, name, scope, _, declared, _, _, _),
+    NameOccursInScope(name, scope, file).
 
 // Walk variables down scopes
-NameInScope(file, name, to, span, declared_in, implicit, is_arg, origin) :-
-    NameInScope(file, name, from, span, declared_in, implicit, is_arg, origin),
-    ChildScope(from, to, file).
+NameInScope(file, name, to, declared) :-
+    NameInScope(file, name, from, declared),
+    ChildScope(from, to, file),
+    NameOccursInScope(name, to, file).
+
+/// A record of where variable usages actually happen
+relation NameOccursInScope(name: Name, scope: ScopeId, file: FileId)
+
+/// Add all name references
+NameOccursInScope(name, scope, file) :-
+    NameRef(id, file, name),
+    Expression(id, file, _, scope, _).
+
+/// Add assignment patterns
+NameOccursInScope(name, scope, file) :-
+    Assign(id, file, Some { Left { pattern }}, _, _),
+    Expression(id, file, _, scope, _),
+    var name = FlatMap(pattern.bound_vars().map(|name| name.data)).
+
+/// Add exports
+NameOccursInScope(name, scope, file) :-
+    FileExport(file, NamedExport { export_name, export_alias }, scope),
+    Some { Spanned { var name, _ }} = export_alias.or_else(export_name).
+
+/// Recurse to parent scopes
+NameOccursInScope(name, parent, file) :-
+    NameOccursInScope(name, child, file),
+    ChildScope(parent, child, file).

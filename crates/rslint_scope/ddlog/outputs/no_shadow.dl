@@ -4,6 +4,7 @@ import utils
 import scopes
 import inputs
 import config
+import var_decls
 import name_in_scope
 
 output relation NoShadow(
@@ -20,32 +21,15 @@ NoShadow(variable_name, (initial_id, initial_span), (shadower_id, shadower_span)
     File(file, _, _, config),
     config.no_shadow_enabled(),
 
-    NameInScope(
-        file,
-        variable_name,
-        name_scope,
-        Some { initial_span },
-        initial_id,
-        false,
-        inital_is_arg,
-        _,
-    ),
+    NameInScope(file, variable_name, name_scope, initial_id),
+    VariableDeclarations(file, variable_name, name_scope, Some { initial_span }, initial_id, false, initial_is_arg, _),
     // Get the declaration scope of the shadowed
     ScopeOfId(initial_id, file, initial_id_scope),
-    var initial_scope = if inital_is_arg { name_scope } else { initial_id_scope },
+    var initial_scope = if initial_is_arg { name_scope } else { initial_id_scope },
 
     // Get the shadowing variable
-    NameInScope(
-        file,
-        variable_name,
-        name_scope,
-        Some { shadower_span },
-        shadower_id,
-        // Implicit variables cannot shadow things
-        false,
-        shadower_is_arg,
-        _,
-    ),
+    NameInScope(file, variable_name, name_scope, shadower_id),
+    VariableDeclarations(file, variable_name, name_scope, Some { shadower_span }, shadower_id, false, shadower_is_arg, _),
     // Get the declaration scope of the shadower
     ScopeOfId(shadower_id, file, shadower_id_scope),
     var shadower_scope = if shadower_is_arg { name_scope } else { shadower_id_scope },
@@ -64,33 +48,16 @@ NoShadow(variable_name, (initial_id, initial_span), (shadower_id, shadower_span)
     config.no_shadow_enabled() and config.no_shadow_hoisting(),
 
     // Get the inital variable, the one that is being shadowed
-    NameInScope(
-        file,
-        variable_name,
-        name_scope,
-        Some { initial_span },
-        initial_id,
-        false,
-        false,
-        _,
-    ),
+    NameInScope(file, variable_name, name_scope, initial_id),
+    VariableDeclarations(file, variable_name, name_scope, Some { initial_span }, initial_id, false, false, _),
     // If only function hoisting is enabled, only hoist functions
     if (config.no_shadow_hoist_functions()) { initial_id.is_function() } else { true },
     // Get the declaration scope of the shadowed
     ScopeOfId(initial_id, file, initial_scope),
 
     // Get the shadowing variable
-    NameInScope(
-        file,
-        variable_name,
-        name_scope,
-        Some { shadower_span },
-        shadower_id,
-        // Implicit variables cannot shadow things
-        false,
-        shadower_is_arg,
-        _,
-    ),
+    NameInScope(file, variable_name, name_scope, shadower_id),
+    VariableDeclarations(file, variable_name, name_scope, Some { shadower_span }, shadower_id, false, shadower_is_arg, _),
     // Get the declaration scope of the shadower
     ScopeOfId(shadower_id, file, shadower_scope),
 

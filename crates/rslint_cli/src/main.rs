@@ -2,7 +2,7 @@ mod flame;
 
 use rslint_cli::ExplanationRunner;
 use structopt::{clap::arg_enum, StructOpt};
-use tracing_subscriber::{prelude::*, Registry};
+use tracing_subscriber::{prelude::*, EnvFilter, Registry};
 
 const DEV_FLAGS_HELP: &str = "
 Developer flags that are used by RSLint developers to debug RSLint.
@@ -12,7 +12,6 @@ Developer flags that are used by RSLint developers to debug RSLint.
     -Z dumpast  -- Parses the input files and prints the parsed AST
     -Z flame    -- Generates a flamegraph from all the tracing spans
     -Z log      -- Log all tracing events
-    -Z datalog  -- Use experimental ddlog-based scope analysis
 
 Run with 'rslint -Z <FLAG> <FILES>'.";
 
@@ -56,15 +55,8 @@ arg_enum! {
         Help,
         Tokenize,
         DumpAst,
-<<<<<<< HEAD
-<<<<<<< HEAD
         Flame,
         Log,
-=======
-        Datalog,
->>>>>>> 7e327f2... Initial ddlog work
-=======
->>>>>>> 80aa631... Working on no-unused-vars
     }
 }
 
@@ -98,17 +90,33 @@ fn main() {
     };
 
     if let DevFlag::Flame = mode {
-        let (guard, layer) = flame::flame();
-        let subscriber = Registry::default().with(layer);
-        tracing::subscriber::with_default(subscriber, || execute(opt));
-        drop(guard);
+        let filter_layer = EnvFilter::try_from_env("RSLINT_LOG")
+            .or_else(|_| EnvFilter::try_new("trace"))
+            .unwrap();
+        let (_guard, flame_layer) = flame::flame();
+        let fmt_layer = tracing_subscriber::fmt::layer().pretty();
+        let subscriber = Registry::default()
+            .with(filter_layer)
+            .with(fmt_layer)
+            .with(flame_layer);
+
+        tracing::subscriber::set_global_default(subscriber).unwrap();
+        execute(opt);
     } else if let DevFlag::Log = mode {
-        tracing_subscriber::fmt::init();
+        let filter_layer = EnvFilter::try_from_env("RSLINT_LOG")
+            .or_else(|_| EnvFilter::try_new("trace"))
+            .unwrap();
+        let fmt_layer = tracing_subscriber::fmt::layer().pretty();
+        let subscriber = Registry::default().with(filter_layer).with(fmt_layer);
+
+        tracing::subscriber::set_global_default(subscriber).unwrap();
         execute(opt);
     }
 }
 
 fn execute(opt: Options) {
+    tracing::info!("starting rslint execution");
+
     match (opt.dev_flag, opt.cmd) {
         (Some(DevFlag::Help), _) => println!("{}", DEV_FLAGS_HELP),
         (Some(DevFlag::Tokenize), _) => rslint_cli::tokenize(opt.files),
