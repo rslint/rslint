@@ -38,6 +38,7 @@ finally{}
 ```
 
 - Fixed `let_token` in VarDecl not working when there is trivia attached to it
+- Fixed infinite recursion with `[[;]]`
 
 ### Changed
 

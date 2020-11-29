@@ -18,9 +18,7 @@ use rslint_errors::Diagnostic;
 
 pub const LITERAL: TokenSet = token_set![TRUE_KW, FALSE_KW, NUMBER, STRING, NULL_KW, REGEX];
 
-// TODO: We might want to add semicolon to this
-pub const EXPR_RECOVERY_SET: TokenSet =
-    token_set![VAR_KW, SEMICOLON, R_PAREN, L_PAREN, L_BRACK, R_BRACK, SEMICOLON];
+pub const EXPR_RECOVERY_SET: TokenSet = token_set![VAR_KW, R_PAREN, L_PAREN, L_BRACK, R_BRACK];
 
 pub const ASSIGN_TOKENS: TokenSet = token_set![
     T![=],

@@ -156,7 +156,7 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                 m.complete(p, ERROR);
             }
 
-            let mut expr = expr(p)?;
+            let mut expr = p.expr_with_semi_recovery(false)?;
             // Labelled stmt
             if expr.kind() == NAME_REF && p.at(T![:]) {
                 expr.change_kind(p, NAME);
@@ -255,7 +255,7 @@ pub fn throw_stmt(p: &mut Parser) -> CompletedMarker {
 
         p.error(err);
     } else {
-        expr(p);
+        p.expr_with_semi_recovery(false);
     }
     semi(p, start..p.cur_tok().range.end);
     m.complete(p, THROW_STMT)
@@ -308,7 +308,12 @@ pub fn continue_stmt(p: &mut Parser) -> CompletedMarker {
     p.expect(T![continue]);
     let end = if !p.has_linebreak_before_n(0) && p.at(T![ident]) {
         let end = p.cur_tok().range.end;
-        let label = primary_expr(p).unwrap();
+        let mut guard = p.with_state(ParserState {
+            expr_recovery_set: EXPR_RECOVERY_SET.union(token_set![T![;]]),
+            ..p.state.clone()
+        });
+        let label = primary_expr(&mut *guard).unwrap();
+        drop(guard);
         check_label_use(p, &label);
         end
     } else {
@@ -343,7 +348,7 @@ pub fn return_stmt(p: &mut Parser) -> CompletedMarker {
     let start = p.cur_tok().range.start;
     p.expect(T![return]);
     if !p.has_linebreak_before_n(0) && p.at_ts(STARTS_EXPR) {
-        expr(p);
+        p.expr_with_semi_recovery(false);
     }
     semi(p, start..p.cur_tok().range.end);
     let complete = m.complete(p, RETURN_STMT);
@@ -702,7 +707,7 @@ fn declarator(
     let marker = pat_m.complete(p, kind);
 
     if p.eat(T![=]) {
-        assign_expr(p);
+        p.expr_with_semi_recovery(true);
     } else if marker.kind() != SINGLE_PATTERN && !for_stmt && !p.state.in_declare {
         let err = p
             .err_builder("Object and Array patterns require initializers")

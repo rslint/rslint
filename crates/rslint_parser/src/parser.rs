@@ -469,10 +469,44 @@ impl<'t> Parser<'t> {
             self.tokens.bump();
         }
     }
+
+    pub fn marker_vec_range(&self, markers: &[CompletedMarker]) -> Range<usize> {
+        let start = markers
+            .first()
+            .map(|x| usize::from(x.range(self).start()))
+            .unwrap_or_default();
+        let end = markers
+            .last()
+            .map(|x| usize::from(x.range(self).end()))
+            .unwrap_or_default();
+        start..end
+    }
+
+    pub fn expr_with_semi_recovery(&mut self, assign: bool) -> Option<CompletedMarker> {
+        let func = if assign {
+            syntax::expr::assign_expr
+        } else {
+            syntax::expr::expr
+        };
+
+        if self.at(T![;]) {
+            let m = self.start();
+            let err = self
+                .err_builder("expected an expression, but found `;` instead")
+                .primary(self.cur_tok().range, "");
+
+            self.error(err);
+            self.bump_any();
+            m.complete(self, SyntaxKind::ERROR);
+            return None;
+        }
+
+        func(self)
+    }
 }
 
 /// A structure signifying the start of parsing of a syntax tree node
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Marker {
     /// The index in the events list
     pub pos: u32,

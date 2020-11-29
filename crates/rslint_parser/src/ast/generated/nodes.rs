@@ -534,6 +534,9 @@ pub struct TsIndexSignature {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsIndexSignature {
+    pub fn readonly_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![readonly])
+    }
     pub fn l_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['[']) }
     pub fn pat(&self) -> Option<SinglePattern> { support::child(&self.syntax) }
     pub fn r_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![']']) }
@@ -576,16 +579,12 @@ impl TsPropertySignature {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct TsHeritageClause {
+pub struct TsExprWithTypeArgs {
     pub(crate) syntax: SyntaxNode,
 }
-impl TsHeritageClause {
-    pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
-    pub fn implements_token(&self) -> Option<SyntaxToken> {
-        support::token(&self.syntax, T![implements])
-    }
+impl TsExprWithTypeArgs {
     pub fn item(&self) -> Option<TsEntityName> { support::child(&self.syntax) }
-    pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
+    pub fn type_params(&self) -> Option<TsTypeArgs> { support::child(&self.syntax) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -596,7 +595,8 @@ impl TsInterfaceDecl {
     pub fn declare_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![declare]) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
-    pub fn extends(&self) -> Option<TsHeritageClause> { support::child(&self.syntax) }
+    pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
+    pub fn extends(&self) -> AstChildren<TsExprWithTypeArgs> { support::children(&self.syntax) }
     pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
     pub fn members(&self) -> AstChildren<TsTypeElement> { support::children(&self.syntax) }
     pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
@@ -1536,7 +1536,11 @@ impl ClassDecl {
     pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
     pub fn parent(&self) -> Option<Expr> { support::child(&self.syntax) }
-    pub fn implements(&self) -> Option<TsHeritageClause> { support::child(&self.syntax) }
+    pub fn parent_type_args(&self) -> Option<TsTypeArgs> { support::child(&self.syntax) }
+    pub fn implements_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![implements])
+    }
+    pub fn implements(&self) -> AstChildren<TsExprWithTypeArgs> { support::children(&self.syntax) }
     pub fn body(&self) -> Option<ClassBody> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -1550,7 +1554,11 @@ impl ClassExpr {
     pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
     pub fn extends_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![extends]) }
     pub fn parent(&self) -> Option<Expr> { support::child(&self.syntax) }
-    pub fn implements(&self) -> Option<TsHeritageClause> { support::child(&self.syntax) }
+    pub fn parent_type_args(&self) -> Option<TsTypeArgs> { support::child(&self.syntax) }
+    pub fn implements_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, T![implements])
+    }
+    pub fn implements(&self) -> AstChildren<TsExprWithTypeArgs> { support::children(&self.syntax) }
     pub fn body(&self) -> Option<ClassBody> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -2383,8 +2391,8 @@ impl AstNode for TsPropertySignature {
     }
     fn syntax(&self) -> &SyntaxNode { &self.syntax }
 }
-impl AstNode for TsHeritageClause {
-    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_HERITAGE_CLAUSE }
+impl AstNode for TsExprWithTypeArgs {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_EXPR_WITH_TYPE_ARGS }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -4683,7 +4691,7 @@ impl std::fmt::Display for TsPropertySignature {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
-impl std::fmt::Display for TsHeritageClause {
+impl std::fmt::Display for TsExprWithTypeArgs {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

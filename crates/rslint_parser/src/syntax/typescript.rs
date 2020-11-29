@@ -4,7 +4,7 @@
 //! Functions that do check will say so in the docs.
 
 use super::decl::*;
-use super::expr::{assign_expr, identifier_name, literal, template};
+use super::expr::{assign_expr, identifier_name, lhs_expr, literal, template};
 use super::stmt::{block_items, semi, var_decl};
 use crate::ast::Template;
 use crate::{SyntaxKind::*, *};
@@ -287,22 +287,25 @@ pub fn ts_interface(p: &mut Parser) -> Option<CompletedMarker> {
         ts_type_params(p);
     }
 
-    let heritage_clause = if p.cur_src() == "extends" {
-        Some(ts_heritage_clause(p))
-    } else {
-        None
+    if p.cur_src() == "extends" {
+        p.bump_any();
+        ts_heritage_clause(p, false);
     };
 
     while p.cur_src() == "extends" {
-        let clause = heritage_clause.as_ref().unwrap();
-        let mut complete = ts_heritage_clause(p);
-        complete.change_kind(p, ERROR);
+        let m = p.start();
+        p.bump_any();
+        let mut complete = ts_heritage_clause(p, false);
+        for elem in &mut complete {
+            elem.change_kind(p, ERROR);
+        }
+
         let err = p
-            .err_builder("interfaces cannot extend multiple interfaces")
-            .secondary(clause.range(p), "first heritage occurs here")
-            .primary(complete.range(p), "another heritage is invalid");
+            .err_builder("interfaces cannot contain multiple `extends` clauses")
+            .primary(p.marker_vec_range(&complete), "");
 
         p.error(err);
+        m.complete(p, ERROR);
     }
     p.expect(T!['{']);
     while !p.at(EOF) && !p.at(T!['}']) {
@@ -312,19 +315,37 @@ pub fn ts_interface(p: &mut Parser) -> Option<CompletedMarker> {
     Some(m.complete(p, TS_INTERFACE_DECL))
 }
 
-pub(crate) fn ts_heritage_clause(p: &mut Parser) -> CompletedMarker {
+// FIXME: ts allows trailing commas but this doesnt, we need to figure out a way
+// to peek at the next token and see if its the end of the heritage clause
+pub(crate) fn ts_heritage_clause(p: &mut Parser, exprs: bool) -> Vec<CompletedMarker> {
+    let mut elems = Vec::with_capacity(1);
     let m = p.start();
-    if p.cur_src() == "implements" {
-        p.bump_remap(T![implements]);
+    if exprs {
+        lhs_expr(p);
     } else {
-        debug_assert_eq!(p.cur_src(), "extends");
-        p.bump_remap(T![extends]);
+        ts_entity_name(p, None, false);
     }
-    ts_entity_name(p, None, false);
     if p.at(T![<]) {
         ts_type_params(p);
     }
-    m.complete(p, TS_HERITAGE_CLAUSE)
+    // it doesnt matter if we complete as ts_expr_with_type_args even if its an lhs expr
+    // because exprs: true will only be used with `class extends foo, bar`, in which case
+    // the first expr with be "unwrapped" to go to the class' node and the rest are errors
+    elems.push(m.complete(p, TS_EXPR_WITH_TYPE_ARGS));
+
+    while p.eat(T![,]) {
+        let m = p.start();
+        if exprs {
+            lhs_expr(p);
+        } else {
+            ts_entity_name(p, None, false);
+        }
+        if p.at(T![<]) {
+            ts_type_params(p);
+        }
+        elems.push(m.complete(p, TS_EXPR_WITH_TYPE_ARGS));
+    }
+    elems
 }
 
 pub fn ts_type_member(p: &mut Parser) -> Option<CompletedMarker> {
@@ -344,7 +365,7 @@ pub fn ts_type_member(p: &mut Parser) -> Option<CompletedMarker> {
         (p.start(), false)
     };
 
-    if let Some(idx) = try_parse_index_signature(p, m) {
+    if let Some(idx) = try_parse_index_signature(p, m.clone()) {
         return Some(idx);
     }
 

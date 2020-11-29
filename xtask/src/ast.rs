@@ -296,10 +296,10 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_INDEX_SIGNATURE",
         "TS_METHOD_SIGNATURE",
         "TS_PROPERTY_SIGNATURE",
-        "TS_HERITAGE_CLAUSE",
         "TS_INTERFACE_DECL",
         "TS_ACCESSIBILITY",
         "TS_OBJECT_TYPE",
+        "TS_EXPR_WITH_TYPE_ARGS",
     ],
 };
 
@@ -728,6 +728,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsIndexSignature {
+            T![readonly],
             T!['['],
             pat: SinglePattern,
             T![']'],
@@ -753,11 +754,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             ty: TsType,
         }
 
-        struct TsHeritageClause {
-            T![extends],
-            T![implements],
+        struct TsExprWithTypeArgs {
             item: TsEntityName,
-            type_params: TsTypeParams
+            type_params: TsTypeArgs
         }
 
         struct TsInterfaceDecl {
@@ -765,7 +764,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             /* interface */
             T![ident],
             type_params: TsTypeParams,
-            extends: TsHeritageClause,
+            T![extends],
+            extends: [TsExprWithTypeArgs],
             T!['{'],
             members: [TsTypeElement],
             T!['}']
@@ -1366,7 +1366,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             type_params: TsTypeParams,
             T![extends],
             parent: Expr,
-            implements: TsHeritageClause,
+            parent_type_args: TsTypeArgs,
+            T![implements],
+            implements: [TsExprWithTypeArgs],
             body: ClassBody
         }
 
@@ -1376,7 +1378,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             type_params: TsTypeParams,
             T![extends],
             parent: Expr,
-            implements: TsHeritageClause,
+            parent_type_args: TsTypeArgs,
+            T![implements],
+            implements: [TsExprWithTypeArgs],
             body: ClassBody
         }
 

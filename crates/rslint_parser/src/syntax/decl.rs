@@ -1,6 +1,6 @@
 //! Class and function declarations.
 
-use super::expr::{assign_expr, identifier_name, lhs_expr, object_prop_name};
+use super::expr::{assign_expr, identifier_name, object_prop_name};
 use super::pat::{binding_identifier, opt_binding_identifier, pattern};
 use super::stmt::block_stmt;
 use super::typescript::*;
@@ -52,17 +52,21 @@ fn args_body(p: &mut Parser) {
             ty.err_if_not_ts(p, "return types can only be used in TypeScript files");
         }
     }
-    let mut complete = block_stmt(p, true, None);
-    if let Some(ref mut block) = complete {
-        if p.state.in_declare {
-            let err = p
-                .err_builder(
-                    "function implementations cannot be given in ambient (declare) contexts",
-                )
-                .primary(block.range(p), "");
+    if p.typescript() && !p.at(T!['{']) && p.eat(T![;]) {
+        // omitting the body is allowed in ts
+    } else {
+        let mut complete = block_stmt(p, true, None);
+        if let Some(ref mut block) = complete {
+            if p.state.in_declare {
+                let err = p
+                    .err_builder(
+                        "function implementations cannot be given in ambient (declare) contexts",
+                    )
+                    .primary(block.range(p), "");
 
-            p.error(err);
-            block.change_kind(p, ERROR);
+                p.error(err);
+                block.change_kind(p, ERROR);
+            }
         }
     }
 }
@@ -425,47 +429,66 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
         ts_type_params(&mut *guard);
     }
 
-    let heritage_clause = if guard.cur_src() == "extends" {
+    if guard.cur_src() == "extends" {
         guard.bump_any();
-        lhs_expr(&mut *guard)
-    } else {
-        None
+        let mut elems = ts_heritage_clause(&mut *guard, true);
+        if !elems.is_empty() {
+            elems
+                .remove(0)
+                .undo_completion(&mut *guard)
+                .abandon(&mut *guard);
+        }
+        for elem in elems {
+            let err = guard
+                .err_builder("classes cannot extend multiple classes")
+                .primary(elem.range(&*guard), "");
+
+            guard.error(err);
+        }
     };
 
+    // handle `extends foo extends bar` explicitly
     while guard.at(T![extends]) {
-        let clause = heritage_clause.as_ref().unwrap();
-        let mut complete = lhs_expr(&mut *guard);
-        if let Some(ref mut compl) = complete {
-            compl.change_kind(&mut *guard, ERROR);
-        }
-
-        let mut err = guard
+        let m = guard.start();
+        guard.bump_any();
+        let elems = ts_heritage_clause(&mut *guard, true);
+        let err = guard
             .err_builder("classes cannot extend multiple classes")
-            .secondary(clause.range(&*guard), "");
-
-        if let Some(ref compl) = complete {
-            err = err.primary(compl.range(&*guard), "");
-        }
+            .primary(guard.marker_vec_range(&elems), "");
 
         guard.error(err);
+        m.complete(&mut *guard, ERROR);
     }
 
-    let implements = if guard.cur_src() == "implements" {
-        Some(ts_heritage_clause(&mut *guard))
-    } else {
-        None
-    };
+    if guard.cur_src() == "implements" {
+        let start = guard.cur_tok().range.start;
+        let maybe_err = guard.start();
+        guard.bump_remap(T![implements]);
+        let elems = ts_heritage_clause(&mut *guard, false);
+        if !guard.typescript() {
+            let err = guard
+                .err_builder("classes can only implement interfaces in TypeScript files")
+                .primary(start..(guard.marker_vec_range(&elems).end), "");
+
+            guard.error(err);
+            maybe_err.complete(&mut *guard, ERROR);
+        } else {
+            maybe_err.abandon(&mut *guard)
+        }
+    }
 
     while guard.cur_src() == "implements" {
-        let clause = implements.as_ref().unwrap();
-        let complete = ts_heritage_clause(&mut *guard);
+        let start = guard.cur_tok().range.start;
+        let m = guard.start();
+        guard.bump_any();
+        let elems = ts_heritage_clause(&mut *guard, false);
 
         let err = guard
-            .err_builder("classes cannot implement multiple interfaces")
-            .secondary(clause.range(&*guard), "")
-            .primary(complete.range(&*guard), "");
+            .err_builder("classes cannot have multiple `implements` clauses")
+            .primary(start..guard.marker_vec_range(&elems).end, "");
 
         guard.error(err);
+        m.complete(&mut *guard, ERROR);
     }
 
     class_body(&mut *guard);
@@ -784,13 +807,28 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
         maybe_err.abandon(p);
     }
 
-    if !is_abstract && !is_static && !has_accessibility {
-        if let Some(mut sig) = try_parse_index_signature(p, m) {
+    if !is_static && !has_accessibility {
+        let check = p.checkpoint();
+        if is_abstract {
+            let err = p
+                .err_builder("the `abstract` modifier cannot be used on index signatures")
+                .primary(p.cur_tok().range, "");
+
+            p.error(err);
+            let m = p.start();
+            p.bump_any();
+            m.complete(p, ERROR);
+        } else if readonly_range.is_some() {
+            p.bump_remap(T![readonly]);
+        }
+        if let Some(mut sig) = try_parse_index_signature(p, m.clone()) {
             sig.err_if_not_ts(
                 p,
                 "class index signatures can only be used in TypeScript files",
             );
             return Some(sig);
+        } else {
+            p.rewind(check);
         }
     }
 
