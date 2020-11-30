@@ -156,6 +156,8 @@ pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty
 }
 
 pub fn dump_ast(globs: Vec<String>) {
+    use rslint_parser::{NodeOrToken, WalkEvent};
+
     for_each_file(globs, |_, file| {
         let header = if let Some(path) = &file.path {
             format!("File {}", path.display())
@@ -164,7 +166,48 @@ pub fn dump_ast(globs: Vec<String>) {
         };
         println!("{}", header.red().bold());
 
-        println!("{:#?}", file.parse());
+        let parse = file.parse();
+        let mut level = 0;
+        for event in parse.preorder_with_tokens() {
+            match event {
+                WalkEvent::Enter(element) => {
+                    for _ in 0..level {
+                        print!("  ");
+                    }
+                    match element {
+                        NodeOrToken::Node(node) => {
+                            println!(
+                                "{}@{}",
+                                format!("{:?}", node.kind()).yellow(),
+                                format!("{:#?}", node.text_range()).cyan()
+                            );
+                        }
+                        NodeOrToken::Token(token) => {
+                            print!(
+                                "{}@{}",
+                                format!("{:?}", token.kind()).yellow(),
+                                format!("{:#?}", token.text_range()).cyan()
+                            );
+                            if token.text().len() < 25 {
+                                print!(" {}", format!("{:#?}", token.text()).green());
+                            } else {
+                                let text = token.text().as_str();
+                                for idx in 21..25 {
+                                    if text.is_char_boundary(idx) {
+                                        let text = format!("{} ...", &text[..idx]);
+                                        print!(" {}", format!("{:#?}", text).green());
+                                    }
+                                }
+                            }
+                            println!();
+                        }
+                    }
+                    level += 1;
+                }
+                WalkEvent::Leave(_) => level -= 1,
+            }
+        }
+        println!();
     })
 }
 
