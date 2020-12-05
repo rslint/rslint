@@ -8,7 +8,7 @@ pub use derived_facts::{DatalogLint, Outputs};
 use crate::globals::JsGlobal;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
-    program::{IdxId, RelId, TransactionHandle, Update},
+    program::{IdxId, RelId, Update},
     record::Record,
     DDlog, DeltaMap,
 };
@@ -16,7 +16,9 @@ use rslint_scoping_ddlog::{api::HDDlog, Indexes, Relations, INPUT_RELIDMAP};
 use std::{
     cell::{Cell, RefCell},
     collections::BTreeSet,
+    fs::File,
     io::{self, Write},
+    path::Path,
     sync::{Mutex, MutexGuard},
 };
 use types::{
@@ -27,7 +29,10 @@ use types::{
     config::Config,
     ddlog_std::tuple2,
     inputs::Statement,
-    inputs::{EveryScope, Expression, File as InputFile, FunctionArg, ImplicitGlobal, InputScope},
+    inputs::{
+        EveryScope, Expression, File as InputFile, FunctionArg, ImplicitGlobal, InputScope,
+        UserGlobal,
+    },
     internment::Intern,
 };
 
@@ -36,6 +41,7 @@ const DATALOG_WORKERS: usize = 1;
 
 // TODO: Work on the internment situation, I don't like
 //       having to allocate strings for idents
+// TODO: Reduce the number of scopes generated as much as possible
 
 pub type DatalogResult<T> = Result<T, String>;
 
@@ -45,6 +51,8 @@ pub struct Datalog {
     transaction_lock: Mutex<()>,
     outputs: Outputs,
 }
+
+static_assertions::assert_impl_all!(Datalog: Send, Sync);
 
 impl Datalog {
     pub fn new() -> DatalogResult<Self> {
@@ -68,6 +76,16 @@ impl Datalog {
         self.hddlog.enable_cpu_profiling(enable);
     }
 
+    pub fn record_commands<P>(&mut self, file: P) -> io::Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let file = File::create(file.as_ref())?;
+        self.hddlog.record_commands(&mut Some(Mutex::new(file)));
+
+        Ok(())
+    }
+
     pub fn ddlog_profile(&self) -> String {
         self.hddlog.profile()
     }
@@ -81,9 +99,9 @@ impl Datalog {
 
         {
             let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
-            let handle = guard.handle.as_ref().unwrap();
+            // let handle = guard.handle.as_ref().unwrap();
             for relation in INPUT_RELIDMAP.keys().copied() {
-                self.hddlog.clear_relation(relation as RelId, handle)?;
+                self.hddlog.clear_relation(relation as RelId)?;
             }
 
             guard.commit_dump_changes()?;
@@ -100,6 +118,19 @@ impl Datalog {
 
             for global in globals {
                 trans.implicit_global(global);
+            }
+
+            Ok(())
+        })
+    }
+
+    // TODO: Make this take an iterator
+    pub fn inject_user_globals(&self, file: FileId, globals: &[JsGlobal]) -> DatalogResult<()> {
+        self.transaction(|trans| {
+            tracing::trace!("injecting {} global variables", globals.len());
+
+            for global in globals {
+                trans.user_global(file, global);
             }
 
             Ok(())
@@ -134,10 +165,8 @@ impl Datalog {
             let _guard = span.enter();
 
             let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
-            self.hddlog.apply_valupdates(
-                inner.updates.borrow_mut().drain(..),
-                guard.handle.as_ref().unwrap(),
-            )?;
+            self.hddlog
+                .apply_valupdates(inner.updates.borrow_mut().drain(..))?;
 
             guard.commit_dump_changes()?
         };
@@ -239,8 +268,7 @@ impl Datalog {
             let _guard = span.enter();
 
             let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
-            self.hddlog
-                .apply_valupdates(updates, guard.handle.as_ref().unwrap())?;
+            self.hddlog.apply_valupdates(updates)?;
 
             guard.commit_dump_changes()?
         };
@@ -512,6 +540,26 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
 
         id
     }
+
+    // TODO: Fully integrate global info into ddlog
+    fn user_global(&self, file: FileId, global: &JsGlobal) -> GlobalId {
+        let id = self.datalog.inc_global();
+        self.datalog.insert(
+            Relations::inputs_UserGlobal,
+            UserGlobal {
+                id: GlobalId { id: id.id },
+                file,
+                name: Intern::new(global.name.to_string()),
+                privileges: if global.writeable {
+                    GlobalPriv::ReadWriteGlobal
+                } else {
+                    GlobalPriv::ReadonlyGlobal
+                },
+            },
+        );
+
+        id
+    }
 }
 
 #[derive(Clone)]
@@ -596,24 +644,30 @@ fn dump_delta(delta: &differential_datalog::DeltaMap<DDValue>) {
 
 struct TransactionGuard<'a> {
     hddlog: &'a HDDlog,
-    handle: Option<TransactionHandle>,
+    // handle: Option<TransactionHandle>,
+    committed: bool,
     _lock: MutexGuard<'a, ()>,
 }
 
 impl<'a> TransactionGuard<'a> {
     pub fn new(hddlog: &'a HDDlog, lock: &'a Mutex<()>) -> DatalogResult<Self> {
         let _lock = lock.lock().expect("failed to lock transaction");
+        hddlog.transaction_start()?;
+
         Ok(Self {
-            handle: Some(hddlog.transaction_start()?),
             hddlog,
+            // handle: Some(hddlog.transaction_start()?),
+            committed: false,
             _lock,
         })
     }
 
     pub fn commit_dump_changes(mut self) -> DatalogResult<DeltaMap<DDValue>> {
-        let delta = self
-            .hddlog
-            .transaction_commit_dump_changes(self.handle.take().unwrap())?;
+        // let delta = self
+        //     .hddlog
+        //     .transaction_commit_dump_changes(self.handle.take().unwrap())?;
+        let delta = self.hddlog.transaction_commit_dump_changes()?;
+        self.committed = true;
 
         Ok(delta)
     }
@@ -621,8 +675,14 @@ impl<'a> TransactionGuard<'a> {
 
 impl Drop for TransactionGuard<'_> {
     fn drop(&mut self) {
-        if let Some(handle) = self.handle.take() {
-            if let Err(err) = self.hddlog.transaction_rollback(handle) {
+        // if let Some(handle) = self.handle.take() {
+        //     if let Err(err) = self.hddlog.transaction_rollback(handle) {
+        //         eprintln!("failed to rollback transaction: {}", err);
+        //     }
+        // }
+
+        if !self.committed {
+            if let Err(err) = self.hddlog.transaction_rollback() {
                 eprintln!("failed to rollback transaction: {}", err);
             }
         }

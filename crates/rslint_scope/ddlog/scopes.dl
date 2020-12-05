@@ -5,32 +5,54 @@ import group
 import scopes
 import inputs
 
-// Build the scope graph, unrolling the parent<-child relationships to full trees
-//
-// Given
-// ```
-// a<-b
-// b<-c
-// b<-d
-// ```
-// It will produce
-// ```
-// a
-// ├-b
-// │ └┐  
-// │  ├╴c
-// │  └╴d 
-// ├╴c
-// └╴d
-// ```
-//
-relation ChildScope(parent: ScopeId, child: ScopeId, file: FileId)
-index ChildScopeByParent(parent: ScopeId, file: FileId) on ChildScope(parent, _, file)
+/// All scopes that need their parent scopes
+relation NeedsScopeParents(scope: ScopeId, file: FileId)
 
-ChildScope(parent, child, file) :- InputScope(parent, child, file), parent != child.
-ChildScope(parent, child, file) :-
+/// All scopes that need their child scopes
+relation NeedsScopeChildren(scope: ScopeId, file: FileId)
+
+/// Build the scope graph, unrolling the parent<-child relationships to full trees
+///
+/// Given
+/// ```
+/// a<-b
+/// b<-c
+/// b<-d
+/// ```
+/// It will produce
+/// ```
+/// a
+/// ├-b
+/// │ └┐  
+/// │  ├╴c
+/// │  └╴d 
+/// ├╴c
+/// └╴d
+/// ```
+///
+relation ScopeFamily(parent: ScopeId, child: ScopeId, file: FileId)
+index ScopeFamilyByParent(parent: ScopeId, file: FileId) on ScopeFamily(parent, _, file)
+
+ScopeFamily(parent, child, file) :-
+    NeedsScopeChildren(parent, file),
+    InputScope(parent, child, file),
+    parent != child.
+
+ScopeFamily(parent, child, file) :-
+    NeedsScopeParents(child, file),
+    InputScope(parent, child, file),
+    parent != child.
+
+ScopeFamily(parent, child, file) :-
+    NeedsScopeChildren(parent, file),
     InputScope(parent, interum, file),
-    ChildScope(interum, child, file),
+    ScopeFamily(interum, child, file),
+    parent != child.
+
+ScopeFamily(parent, child, file) :-
+    NeedsScopeParents(child, file),
+    InputScope(interum, child, file),
+    ScopeFamily(parent, interum, file),
     parent != child.
 
 // TODO: Are other things hoistable?
@@ -40,6 +62,7 @@ IsHoistable(AnyIdStmt { id }, file, true) :- VarDecl(id, file, _, _, _).
 
 // Function-level scoping, the scope of the nearest getter, setter,
 // method, function, arrow function or file/module
+// TODO: Make this top-down
 relation FunctionLevelScope(
     // An arbitrary scope to get the closest function-level scope
     scope: ScopeId,
@@ -89,7 +112,7 @@ FunctionLevelScope(scope, scope, file, AnyIdExpr { expr }) :-
 //        the aggregate, but I can't be fucked right now
 FunctionLevelScope(child, scope, file, id) :-
     FunctionLevelScope(parent, scope, file, id),
-    ChildScope(parent, child, file),
+    InputScope(parent, child, file),
     (var scope, var id) = (scope, id).group_by((child, file)).arg_max(|scope| scope.0).
 
 relation ScopeOfId(id: AnyId, file: FileId, scope: ScopeId)

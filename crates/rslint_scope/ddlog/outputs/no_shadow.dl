@@ -16,40 +16,49 @@ output relation NoShadow(
 )
 
 // Unhoisted variables
-NoShadow(variable_name, (initial_id, initial_span), (shadower_id, shadower_span), false, file) :-
+NoShadow(
+    variable_name,
+    (initial_id, initial_span),
+    (shadower_id, shadower_span),
+    false,
+    file,
+) :-
     // Only analyze a file if NoShadow is enabled
     File(file, _, _, config),
     config.no_shadow_enabled(),
 
     NameInScope(file, variable_name, name_scope, initial_id),
-    VariableDeclarations(file, variable_name, name_scope, Some { initial_span }, initial_id, false, initial_is_arg, _),
+    VariableDeclarations(file, variable_name, _, Some { initial_span }, initial_id, false, initial_is_arg, _),
     // Get the declaration scope of the shadowed
     ScopeOfId(initial_id, file, initial_id_scope),
     var initial_scope = if initial_is_arg { name_scope } else { initial_id_scope },
 
     // Get the shadowing variable
     NameInScope(file, variable_name, name_scope, shadower_id),
-    VariableDeclarations(file, variable_name, name_scope, Some { shadower_span }, shadower_id, false, shadower_is_arg, _),
+    VariableDeclarations(file, variable_name, _, Some { shadower_span }, shadower_id, false, shadower_is_arg, _),
     // Get the declaration scope of the shadower
     ScopeOfId(shadower_id, file, shadower_id_scope),
     var shadower_scope = if shadower_is_arg { name_scope } else { shadower_id_scope },
 
     // Make sure the shadower and shadowed aren't the same variables and that
     // the shadowed variable is lexically in front of the shadower
-    initial_span != shadower_span and initial_span < shadower_span,
-
-    // Make sure the inital variable is a direct parent of the shadower
-    ChildScope(initial_scope, shadower_scope, file).
+    initial_span != shadower_span and initial_span < shadower_span.
 
 // Hoisted variables
-NoShadow(variable_name, (initial_id, initial_span), (shadower_id, shadower_span), false, file) :-
+NoShadow(
+    variable_name,
+    (initial_id, initial_span),
+    (shadower_id, shadower_span),
+    false,
+    file,
+ ) :-
     // Only do hoisted scopes when hoisting is enabled
     File(file, _, _, config),
     config.no_shadow_enabled() and config.no_shadow_hoisting(),
 
     // Get the inital variable, the one that is being shadowed
     NameInScope(file, variable_name, name_scope, initial_id),
-    VariableDeclarations(file, variable_name, name_scope, Some { initial_span }, initial_id, false, false, _),
+    VariableDeclarations(file, variable_name, _, Some { initial_span }, initial_id, false, false, _),
     // If only function hoisting is enabled, only hoist functions
     if (config.no_shadow_hoist_functions()) { initial_id.is_function() } else { true },
     // Get the declaration scope of the shadowed
@@ -57,7 +66,7 @@ NoShadow(variable_name, (initial_id, initial_span), (shadower_id, shadower_span)
 
     // Get the shadowing variable
     NameInScope(file, variable_name, name_scope, shadower_id),
-    VariableDeclarations(file, variable_name, name_scope, Some { shadower_span }, shadower_id, false, shadower_is_arg, _),
+    VariableDeclarations(file, variable_name, _, Some { shadower_span }, shadower_id, false, shadower_is_arg, _),
     // Get the declaration scope of the shadower
     ScopeOfId(shadower_id, file, shadower_scope),
 
@@ -68,6 +77,4 @@ NoShadow(variable_name, (initial_id, initial_span), (shadower_id, shadower_span)
     IsHoistable(initial_id, file, true),
 
     // Get the hoisted scope of the initial variable
-    FunctionLevelScope(initial_scope, hoisted_scope, file, _),
-    // Make sure the hoisted variable is a direct parent of the shadower
-    ChildScope(hoisted_scope, shadower_scope, file).
+    FunctionLevelScope(initial_scope, hoisted_scope, file, _).

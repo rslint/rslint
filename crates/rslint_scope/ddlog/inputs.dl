@@ -77,9 +77,17 @@ input relation ImportDecl(
     clause: ImportClause,
 )
 
-// Globals
+// Implicit Globals
 input relation ImplicitGlobal(
     id: GlobalId,
+    name: Name,
+    privileges: GlobalPriv,
+)
+
+// User Globals
+input relation UserGlobal(
+    id: GlobalId,
+    file: FileId,
     name: Name,
     privileges: GlobalPriv,
 )

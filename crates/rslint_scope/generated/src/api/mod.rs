@@ -143,13 +143,9 @@ impl HDDlog {
         Ok(())
     }
 
-    pub fn clear_relation(
-        &self,
-        table: usize,
-        transaction: &TransactionHandle,
-    ) -> Result<(), String> {
+    pub fn clear_relation(&self, table: usize) -> Result<(), String> {
         self.record_clear_relation(table);
-        self.prog.lock().unwrap().clear_relation(table, transaction)
+        self.prog.lock().unwrap().clear_relation(table)
     }
 
     pub fn dump_table<F>(&self, table: usize, cb: Option<F>) -> Result<(), &'static str>
@@ -203,20 +199,17 @@ impl DDlog for HDDlog {
         Self::do_run(workers, do_store, CallbackUpdateHandler::new(cb), None)
     }
 
-    fn transaction_start(&self) -> Result<TransactionHandle, String> {
+    fn transaction_start(&self) -> Result<(), String> {
         self.record_transaction_start();
         self.prog.lock().unwrap().transaction_start()
     }
 
-    fn transaction_commit_dump_changes(
-        &self,
-        transaction: TransactionHandle,
-    ) -> Result<DeltaMap<DDValue>, String> {
+    fn transaction_commit_dump_changes(&self) -> Result<DeltaMap<DDValue>, String> {
         self.record_transaction_commit(true);
         *self.deltadb.lock().unwrap() = Some(DeltaMap::new());
 
         self.update_handler.before_commit();
-        match (self.prog.lock().unwrap().transaction_commit(transaction)) {
+        match (self.prog.lock().unwrap().transaction_commit()) {
             Ok(()) => {
                 self.update_handler.after_commit(true);
                 let mut delta = self.deltadb.lock().unwrap();
@@ -229,11 +222,11 @@ impl DDlog for HDDlog {
         }
     }
 
-    fn transaction_commit(&self, transaction: TransactionHandle) -> Result<(), String> {
+    fn transaction_commit(&self) -> Result<(), String> {
         self.record_transaction_commit(false);
         self.update_handler.before_commit();
 
-        match (self.prog.lock().unwrap().transaction_commit(transaction)) {
+        match (self.prog.lock().unwrap().transaction_commit()) {
             Ok(()) => {
                 self.update_handler.after_commit(true);
                 Ok(())
@@ -245,13 +238,13 @@ impl DDlog for HDDlog {
         }
     }
 
-    fn transaction_rollback(&self, transaction: TransactionHandle) -> Result<(), String> {
+    fn transaction_rollback(&self) -> Result<(), String> {
         self.record_transaction_rollback();
-        self.prog.lock().unwrap().transaction_rollback(transaction)
+        self.prog.lock().unwrap().transaction_rollback()
     }
 
     /// Two implementations of `apply_updates`: one that takes `Record`s and one that takes `DDValue`s.
-    fn apply_updates<V, I>(&self, upds: I, transaction: &TransactionHandle) -> Result<(), String>
+    fn apply_updates<V, I>(&self, upds: I) -> Result<(), String>
     where
         V: Deref<Target = record::UpdCmd>,
         I: iter::Iterator<Item = V>,
@@ -263,23 +256,21 @@ impl DDlog for HDDlog {
         // the first invalid command.
         // XXX: We must iterate till the end of `upds`, as `ddlog_apply_updates` relies on this to
         // deallocate all commands.
-        let res = self.apply_valupdates(
-            upds.flat_map(|u| {
-                if conversion_err {
-                    None
-                } else {
-                    match updcmd2upd(u.deref()) {
-                        Ok(u) => Some(u),
-                        Err(e) => {
-                            conversion_err = true;
-                            msg = Some(format!("invalid command {:?}: {}", *u, e));
-                            None
-                        }
+        let res = self.apply_valupdates(upds.flat_map(|u| {
+            if conversion_err {
+                None
+            } else {
+                match updcmd2upd(u.deref()) {
+                    Ok(u) => Some(u),
+                    Err(e) => {
+                        conversion_err = true;
+                        msg = Some(format!("invalid command {:?}: {}", *u, e));
+                        None
                     }
                 }
-            }),
-            transaction,
-        );
+            }
+        }));
+
         match msg {
             Some(e) => Err(e),
             None => res,
@@ -287,19 +278,15 @@ impl DDlog for HDDlog {
     }
 
     #[cfg(feature = "flatbuf")]
-    fn apply_updates_from_flatbuf(
-        &self,
-        buf: &[u8],
-        transaction: &TransactionHandle,
-    ) -> Result<(), String> {
+    fn apply_updates_from_flatbuf(&self, buf: &[u8]) -> Result<(), String> {
         let cmditer = flatbuf::updates_from_flatbuf(buf)?;
         let upds: Result<Vec<Update<DDValue>>, String> = cmditer
             .map(|cmd| flatbuf::DDValueUpdate::from_flatbuf(cmd).map(|x| x.0))
             .collect();
-        self.apply_valupdates(upds?.into_iter(), transaction)
+        self.apply_valupdates(upds?.into_iter())
     }
 
-    fn apply_valupdates<I>(&self, updates: I, transaction: &TransactionHandle) -> Result<(), String>
+    fn apply_valupdates<I>(&self, updates: I) -> Result<(), String>
     where
         I: Iterator<Item = Update<DDValue>>,
     {
@@ -307,11 +294,11 @@ impl DDlog for HDDlog {
         // relation
         let inspect_update: fn(&Update<DDValue>) -> Result<(), String> = |update| {
             let relation = Relations::try_from(update.relid())
-                .map_err(|_| format!("unknown index {}", update.relid()))?;
+                .map_err(|_| format!("unknown relation id {}", update.relid()))?;
 
             if let Some(value) = update.get_value() {
                 if relation.type_id() != value.type_id() {
-                    return Err("attempted to insert the incorrect type into a relation".to_owned());
+                    return Err(format!("attempted to insert the incorrect type {:?} into relation {:?} whose value type is {:?}", value.type_id(), relation, relation.type_id()));
                 }
             }
 
@@ -325,13 +312,12 @@ impl DDlog for HDDlog {
             self.prog
                 .lock()
                 .unwrap()
-                .apply_updates(updates, transaction, inspect_update)
+                .apply_updates(updates, inspect_update)
         } else {
             self.prog
                 .lock()
                 .unwrap()
-                .apply_updates(updates, transaction, inspect_update)
-
+                .apply_updates(updates, inspect_update)
         }
     }
 

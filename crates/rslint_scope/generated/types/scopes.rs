@@ -31,36 +31,6 @@ use crate::closure;
 // use crate::ddlog_std;
 
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
-pub struct ChildScope {
-    pub parent: crate::ast::ScopeId,
-    pub child: crate::ast::ScopeId,
-    pub file: crate::ast::FileId
-}
-impl abomonation::Abomonation for ChildScope{}
-::differential_datalog::decl_struct_from_record!(ChildScope["scopes::ChildScope"]<>, ["scopes::ChildScope"][3]{[0]parent["parent"]: crate::ast::ScopeId, [1]child["child"]: crate::ast::ScopeId, [2]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(ChildScope, ["scopes::ChildScope"]<>, parent, child, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ChildScope, <>, parent: crate::ast::ScopeId, child: crate::ast::ScopeId, file: crate::ast::FileId);
-impl ::std::fmt::Display for ChildScope {
-    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        match self {
-            crate::scopes::ChildScope{parent,child,file} => {
-                __formatter.write_str("scopes::ChildScope{")?;
-                ::std::fmt::Debug::fmt(parent, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(child, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
-                __formatter.write_str("}")
-            }
-        }
-    }
-}
-impl ::std::fmt::Debug for ChildScope {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        ::std::fmt::Display::fmt(&self, f)
-    }
-}
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct FunctionLevelScope {
     pub scope: crate::ast::ScopeId,
     pub nearest: crate::ast::ScopeId,
@@ -119,6 +89,90 @@ impl ::std::fmt::Display for IsHoistable {
     }
 }
 impl ::std::fmt::Debug for IsHoistable {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct NeedsScopeChildren {
+    pub scope: crate::ast::ScopeId,
+    pub file: crate::ast::FileId
+}
+impl abomonation::Abomonation for NeedsScopeChildren{}
+::differential_datalog::decl_struct_from_record!(NeedsScopeChildren["scopes::NeedsScopeChildren"]<>, ["scopes::NeedsScopeChildren"][2]{[0]scope["scope"]: crate::ast::ScopeId, [1]file["file"]: crate::ast::FileId});
+::differential_datalog::decl_struct_into_record!(NeedsScopeChildren, ["scopes::NeedsScopeChildren"]<>, scope, file);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NeedsScopeChildren, <>, scope: crate::ast::ScopeId, file: crate::ast::FileId);
+impl ::std::fmt::Display for NeedsScopeChildren {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::scopes::NeedsScopeChildren{scope,file} => {
+                __formatter.write_str("scopes::NeedsScopeChildren{")?;
+                ::std::fmt::Debug::fmt(scope, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for NeedsScopeChildren {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct NeedsScopeParents {
+    pub scope: crate::ast::ScopeId,
+    pub file: crate::ast::FileId
+}
+impl abomonation::Abomonation for NeedsScopeParents{}
+::differential_datalog::decl_struct_from_record!(NeedsScopeParents["scopes::NeedsScopeParents"]<>, ["scopes::NeedsScopeParents"][2]{[0]scope["scope"]: crate::ast::ScopeId, [1]file["file"]: crate::ast::FileId});
+::differential_datalog::decl_struct_into_record!(NeedsScopeParents, ["scopes::NeedsScopeParents"]<>, scope, file);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NeedsScopeParents, <>, scope: crate::ast::ScopeId, file: crate::ast::FileId);
+impl ::std::fmt::Display for NeedsScopeParents {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::scopes::NeedsScopeParents{scope,file} => {
+                __formatter.write_str("scopes::NeedsScopeParents{")?;
+                ::std::fmt::Debug::fmt(scope, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for NeedsScopeParents {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct ScopeFamily {
+    pub parent: crate::ast::ScopeId,
+    pub child: crate::ast::ScopeId,
+    pub file: crate::ast::FileId
+}
+impl abomonation::Abomonation for ScopeFamily{}
+::differential_datalog::decl_struct_from_record!(ScopeFamily["scopes::ScopeFamily"]<>, ["scopes::ScopeFamily"][3]{[0]parent["parent"]: crate::ast::ScopeId, [1]child["child"]: crate::ast::ScopeId, [2]file["file"]: crate::ast::FileId});
+::differential_datalog::decl_struct_into_record!(ScopeFamily, ["scopes::ScopeFamily"]<>, parent, child, file);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ScopeFamily, <>, parent: crate::ast::ScopeId, child: crate::ast::ScopeId, file: crate::ast::FileId);
+impl ::std::fmt::Display for ScopeFamily {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::scopes::ScopeFamily{parent,child,file} => {
+                __formatter.write_str("scopes::ScopeFamily{")?;
+                ::std::fmt::Debug::fmt(parent, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(child, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ScopeFamily {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }

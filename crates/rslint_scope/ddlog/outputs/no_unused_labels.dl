@@ -23,18 +23,26 @@ relation UsedLabel(
     label_name: Spanned<Name>,
 )
 
-UsedLabel(stmt, file, name) :-
+UsedLabel(stmt, file, label) :-
     File(file, _, _, config),
     config.no_unused_labels_enabled(),
-    Label(stmt, file, Some { name @ Spanned { label_name, _ }}, _, body_scope),
-    LabelUsage(_, file, label_name, body_scope).
+    InterumUsedLabel(stmt, file, label, body_scope),
+    ScopeFamily(body_scope, child_scope, file),
+    LabelUsage(_, file, label.data, child_scope).
 
-UsedLabel(stmt, file, name) :-
+relation InterumUsedLabel(
+    stmt_id: StmtId,
+    file: FileId,
+    label_name: Spanned<Name>,
+    body_scope: ScopeId, 
+)
+
+InterumUsedLabel(stmt, file, name, body_scope) :-
     File(file, _, _, config),
     config.no_unused_labels_enabled(),
-    Label(stmt, file, Some { name @ Spanned { label_name, _ }}, _, body_scope),
-    ChildScope(body_scope, child_scope, file),
-    LabelUsage(_, file, label_name, child_scope).
+    Label(stmt, file, Some { name }, _, body_scope).
+
+NeedsScopeChildren(scope, file) :-InterumUsedLabel(_, file, _, scope).
 
 relation LabelUsage(
     stmt: StmtId,

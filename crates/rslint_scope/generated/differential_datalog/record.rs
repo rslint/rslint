@@ -708,6 +708,38 @@ pub unsafe extern "C" fn ddlog_struct(
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn ddlog_named_struct(
+    constructor: *const raw::c_char,
+    field_names: *const *const raw::c_char,
+    fields: *const *mut Record,
+    len: libc::size_t,
+) -> *mut Record {
+    let constructor = match CStr::from_ptr(constructor).to_str() {
+        Ok(s) => s,
+        Err(_) => {
+            return null_mut();
+        }
+    };
+    let names: &[*const libc::c_char] = slice::from_raw_parts(field_names, len);
+    let mut tuples: Vec<(Name, Record)> = Vec::with_capacity(len as usize);
+    for (index, n) in names.iter().enumerate() {
+        let name = match CStr::from_ptr(*n).to_str() {
+            Ok(s) => s,
+            _ => {
+                return null_mut();
+            }
+        };
+        let record = Box::from_raw(*fields.add(index));
+        let tuple = (Cow::from(name.to_owned()), *record);
+        tuples.push(tuple)
+    }
+    Box::into_raw(Box::new(Record::NamedStruct(
+        Cow::from(constructor.to_owned()),
+        tuples,
+    )))
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn ddlog_struct_with_length(
     constructor: *const raw::c_char,
     constructor_len: libc::size_t,
@@ -780,6 +812,14 @@ pub unsafe extern "C" fn ddlog_is_struct(rec: *const Record) -> bool {
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn ddlog_is_named_struct(rec: *const Record) -> bool {
+    match rec.as_ref() {
+        Some(Record::NamedStruct(_, _)) => true,
+        _ => false,
+    }
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn ddlog_get_struct_field(
     rec: *const Record,
     idx: libc::size_t,
@@ -804,7 +844,7 @@ pub unsafe extern "C" fn ddlog_get_named_struct_field(
 ) -> *const Record {
     let name = match CStr::from_ptr(name).to_str() {
         Ok(s) => s,
-        Err(_) => {
+        _ => {
             return null_mut();
         }
     };
@@ -815,6 +855,30 @@ pub unsafe extern "C" fn ddlog_get_named_struct_field(
             .map(|(_, r)| r as *const Record)
             .unwrap_or(null_mut()),
         _ => null_mut(),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn ddlog_get_named_struct_field_name(
+    rec: *const Record,
+    i: libc::size_t,
+    len: *mut libc::size_t,
+) -> *const raw::c_char {
+    match rec.as_ref() {
+        Some(Record::NamedStruct(_, fields)) => match fields.get(i) {
+            Some(field) => {
+                *len = field.0.len();
+                field.0.as_ref().as_ptr() as *const raw::c_char
+            }
+            _ => {
+                *len = 0;
+                null()
+            }
+        },
+        _ => {
+            *len = 0;
+            null()
+        }
     }
 }
 
@@ -883,6 +947,21 @@ pub unsafe extern "C" fn ddlog_delete_key_cmd(
     Box::into_raw(Box::new(UpdCmd::DeleteKey(
         RelIdentifier::RelId(table),
         *rec,
+    )))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn ddlog_modify_cmd(
+    table: libc::size_t,
+    key: *mut Record,
+    values: *mut Record,
+) -> *mut UpdCmd {
+    let key = Box::from_raw(key);
+    let values = Box::from_raw(values);
+    Box::into_raw(Box::new(UpdCmd::Modify(
+        RelIdentifier::RelId(table),
+        *key,
+        *values,
     )))
 }
 
@@ -1016,6 +1095,10 @@ impl FromRecord for OrderedFloat<f32> {
             Record::Float(i) => Ok(*i),
             // Floating point values parsed from a command file are always stored as doubles.
             Record::Double(i) => Ok(OrderedFloat::<f32>::from(**i as f32)),
+            Record::Int(i) => i
+                .to_f32()
+                .map(OrderedFloat)
+                .ok_or_else(|| format!("Cannot convert {} to float", *i)),
             v => Err(format!("not a float {:?}", *v)),
         }
     }
@@ -1038,6 +1121,10 @@ impl FromRecord for OrderedFloat<f64> {
     fn from_record(val: &Record) -> Result<Self, String> {
         match val {
             Record::Double(i) => Ok(*i),
+            Record::Int(i) => i
+                .to_f64()
+                .map(OrderedFloat)
+                .ok_or_else(|| format!("Cannot convert {} to double", *i)),
             v => Err(format!("not a double {:?}", *v)),
         }
     }
@@ -1734,8 +1821,19 @@ macro_rules! decl_record_mutator_struct {
         {
             fn mutate(&self, _x: &mut $n<$($targ),*>) -> ::std::result::Result<(), String> {
                 match self {
-                    $crate::record::Record::PosStruct(..) => {
-                        return ::std::result::Result::Err(format!("Cannot use positional struct as mutator"));
+                    $crate::record::Record::PosStruct(_, _args) => {
+                        let mut index = 0;
+                        $(
+                            if index == _args.len() {
+                                return ::std::result::Result::Err(format!("Positional struct mutator does not contain all elements"));
+                            };
+                            let arg_upd = &_args[index];
+                            index = index + 1;
+                            <dyn $crate::record::Mutator<$type>>::mutate(arg_upd, &mut _x.$arg)?;
+                        )*
+                        if index != _args.len() {
+                            return ::std::result::Result::Err(format!("Positional struct mutator has too many elements"));
+                        }
                     },
                     $crate::record::Record::NamedStruct(_, _args) => {
                         $(if let Some(arg_upd) = $crate::record::arg_find(_args, stringify!($arg)) {
@@ -1760,8 +1858,28 @@ macro_rules! decl_record_mutator_enum {
         {
             fn mutate(&self, x: &mut $n<$($targ),*>) -> ::std::result::Result<(), String> {
                 match self {
-                    $crate::record::Record::PosStruct(..) => {
-                        return ::std::result::Result::Err(format!("Cannot use positional struct as mutator"));
+                    $crate::record::Record::PosStruct(constr, _args) => {
+                        match (x, constr.as_ref()) {
+                            $(
+                                ($n::$cons{$($arg),*}, stringify!($cons)) => {
+                                    let mut index = 0;
+                                    $(
+                                        if index == _args.len() {
+                                            return ::std::result::Result::Err(format!("Positional struct mutator does not contain all elements"));
+                                        };
+                                        let arg_upd = &_args[index];
+                                        index = index + 1;
+                                        <dyn $crate::record::Mutator<$type>>::mutate(arg_upd, $arg)?;
+                                    )*
+                                    if index != _args.len() {
+                                        return ::std::result::Result::Err(format!("Positional struct mutator has too many elements"));
+                                    }
+                                },
+                            )*
+                            (x, _) => {
+                                *x = <$n<$($targ),*>>::from_record(self)?;
+                            }
+                        }
                     },
                     $crate::record::Record::NamedStruct(constr, args) => {
                         match (x, constr.as_ref()) {
@@ -1773,7 +1891,6 @@ macro_rules! decl_record_mutator_enum {
                                         };
                                      )*
                                 },
-
                             )*
                             (x, _) => {
                                 *x = <$n<$($targ),*>>::from_record(self)?;

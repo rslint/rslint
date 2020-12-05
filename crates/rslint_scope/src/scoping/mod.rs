@@ -9,7 +9,7 @@ use types::{
     inputs::{Expression, InputScope, Statement},
     internment::Intern,
     name_in_scope::NameInScope,
-    scopes::ChildScope,
+    scopes::ScopeFamily,
 };
 
 pub use types::ast::{ExprId, FileId, ScopeId, StmtId};
@@ -95,14 +95,14 @@ impl<'a> ScopeInfo<'a> {
     pub fn children(&self) -> Option<Vec<ScopeId>> {
         // TODO: Log errors if they occur
         let query = self.handle.datalog.query(
-            Indexes::scopes_ChildScopeByParent,
+            Indexes::scopes_ScopeFamilyByParent,
             Some(tuple2(self.scope, self.file).into_ddvalue()),
         );
 
         query.ok().map(|query| {
             query
                 .into_iter()
-                .map(|scope| ChildScope::from_ddvalue(scope).child)
+                .map(|scope| ScopeFamily::from_ddvalue(scope).child)
                 .collect()
         })
     }

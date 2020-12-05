@@ -365,7 +365,6 @@ rule_test! {
         module: true,
         errors: [DatalogLint::no_unused_vars("y", 23..24)],
     },
-
 }
 
 /*

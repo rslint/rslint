@@ -16,10 +16,15 @@ relation VariableDeclarations(
     origin: NameOrigin,
 )
 
-// Add implicit globals to every scope
+// Add implicit globals to every file
 VariableDeclarations(file, name, scope, None, AnyIdGlobal { global }, true, false, AutoGlobal) :-
     File(file, _, scope, _),
     ImplicitGlobal(global, name, _).
+
+// Add yser globals to the file they're declared in
+VariableDeclarations(file, name, scope, None, AnyIdGlobal { global }, true, false, AutoGlobal) :-
+    UserGlobal(global, file, name, _),
+    File(file, _, scope, _).
 
 // Import declarations
 //
@@ -104,6 +109,10 @@ VariableDeclarations(file, name, nearest, Some { span }, AnyIdStmt { stmt }, fal
     var bound = FlatMap(pat.bound_vars()),
     Spanned { var name, var span } = bound.
 
+NeedsScopeChildren(scope, file) :-
+    VarDecl(stmt, file, _, _, _),
+    Statement(stmt, file, _, scope, _).
+
 // Function declarations
 //
 // ```js
@@ -118,6 +127,8 @@ VariableDeclarations(file, name, nearest, Some { span }, AnyIdFunc { func }, fal
     Function(func, file, Some { Spanned { name, span }}, scope, _, _),
     // Bubble functions up to the nearest function-level scope
     FunctionLevelScope(scope, nearest, file, _).
+
+NeedsScopeChildren(scope, file) :- Function(_, file, _, scope, _, _).
 
 // Introduce function arguments within the body of their enclosing function
 //
@@ -188,9 +199,9 @@ VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, false
     Spanned { var name, var span } = bound.
 
 // `catch` statement patterns
-VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { catcher }, false, false, UserDefined { scope }) :-
-    Try(stmt, file, _, TryHandler { Some { error }, Some { catcher } }, _),
-    Statement(expr, file, _, scope, _),
+VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
+    Try(stmt, file, _, TryHandler { Some { error }, Some { body } }, _),
+    Statement(body, file, _, scope, _),
     var bound = FlatMap(error.bound_vars()),
     Spanned { var name, var span } = bound.
 

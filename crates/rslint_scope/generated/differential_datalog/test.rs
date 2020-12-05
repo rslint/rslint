@@ -113,13 +113,13 @@ fn test_insert_non_existent_relation() {
     };
 
     let mut running = prog.run(3).unwrap();
-    let trans = running.transaction_start().unwrap();
-    let result = running.insert(1, U64(42).into_ddvalue(), &trans);
+    running.transaction_start().unwrap();
+    let result = running.insert(1, U64(42).into_ddvalue());
     assert_eq!(
         &result.unwrap_err(),
         "apply_update: unknown input relation 1"
     );
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
 }
 
 #[test]
@@ -198,58 +198,52 @@ fn test_one_relation(nthreads: usize) {
     let vals: Vec<u64> = (0..TEST_SIZE).collect();
     let set = BTreeMap::from_iter(vals.iter().map(|x| (U64(*x), 1)));
 
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(1, x.clone().into_ddvalue()).unwrap();
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(*relset.lock().unwrap(), set);
 
     /* 2. Deletion */
     let mut set2 = set.clone();
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
         set2.remove(x);
-        running
-            .delete_value(1, x.clone().into_ddvalue(), &trans)
-            .unwrap();
+        running.delete_value(1, x.clone().into_ddvalue()).unwrap();
         //assert_eq!(running.relation_clone_content(1).unwrap(), set2);
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
     assert_eq!(relset.lock().unwrap().len(), 0);
 
     /* 3. Test set semantics: insert twice, delete once */
-    let trans = running.transaction_start().unwrap();
-    running.insert(1, U64(1).into_ddvalue(), &trans).unwrap();
-    running.insert(1, U64(1).into_ddvalue(), &trans).unwrap();
-    running
-        .delete_value(1, U64(1).into_ddvalue(), &trans)
-        .unwrap();
-    running.transaction_commit(trans).unwrap();
+    running.transaction_start().unwrap();
+    running.insert(1, U64(1).into_ddvalue()).unwrap();
+    running.insert(1, U64(1).into_ddvalue()).unwrap();
+    running.delete_value(1, U64(1).into_ddvalue()).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(relset.lock().unwrap().len(), 0);
 
     /* 4. Set semantics: delete before insert */
-    let trans = running.transaction_start().unwrap();
-    running
-        .delete_value(1, U64(1).into_ddvalue(), &trans)
-        .unwrap();
-    running.insert(1, U64(1).into_ddvalue(), &trans).unwrap();
-    running.transaction_commit(trans).unwrap();
+    running.transaction_start().unwrap();
+    running.delete_value(1, U64(1).into_ddvalue()).unwrap();
+    running.insert(1, U64(1).into_ddvalue()).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(relset.lock().unwrap().len(), 1);
 
     /* 5. Rollback */
     let before = relset.lock().unwrap().clone();
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(1, x.clone().into_ddvalue()).unwrap();
     }
     //println!("delta: {:?}", *running.relation_delta(1).unwrap().lock().unwrap());
     //    assert_eq!(*relset.lock().unwrap(), set);
     //     assert_eq!(running.relation_clone_delta(1).unwrap().len(), set.len() - 1);
-    running.transaction_rollback(trans).unwrap();
+    running.transaction_rollback().unwrap();
 
     assert_eq!(*relset.lock().unwrap(), before);
 
@@ -304,7 +298,7 @@ fn test_two_relations(nthreads: usize) {
                 rel: 1,
                 xform: Some(XFormCollection::Inspect {
                     description: "Inspect".to_string(),
-                    ifun: &(ifun as InspectFunc),
+                    ifun: ifun as InspectFunc,
                     next: Box::new(None),
                 }),
             }],
@@ -326,39 +320,37 @@ fn test_two_relations(nthreads: usize) {
     let vals: Vec<u64> = (0..TEST_SIZE).collect();
     let set = BTreeMap::from_iter(vals.iter().map(|x| (U64(*x), 1)));
 
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(1, x.clone().into_ddvalue()).unwrap();
         //assert_eq!(running.relation_clone_content(1).unwrap(),
         //           running.relation_clone_content(2).unwrap());
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(*relset1.lock().unwrap(), set);
     assert_eq!(*relset1.lock().unwrap(), *relset2.lock().unwrap());
 
     /* 2. Clear T1 */
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running
-            .delete_value(1, x.clone().into_ddvalue(), &trans)
-            .unwrap();
+        running.delete_value(1, x.clone().into_ddvalue()).unwrap();
         //        assert_eq!(running.relation_clone_content(1).unwrap(),
         //                   running.relation_clone_content(2).unwrap());
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(relset2.lock().unwrap().len(), 0);
     assert_eq!(*relset1.lock().unwrap(), *relset2.lock().unwrap());
 
     /* 3. Rollback */
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(1, x.clone().into_ddvalue()).unwrap();
         //assert_eq!(running.relation_clone_content(1).unwrap(),
         //           running.relation_clone_content(2).unwrap());
     }
-    running.transaction_rollback(trans).unwrap();
+    running.transaction_rollback().unwrap();
 
     assert_eq!(relset1.lock().unwrap().len(), 0);
     assert_eq!(*relset1.lock().unwrap(), *relset2.lock().unwrap());
@@ -416,7 +408,7 @@ fn test_semijoin(nthreads: usize) {
             rules: Vec::new(),
             arrangements: vec![Arrangement::Set {
                 name: "arrange2.0".to_string(),
-                fmfun: &(fmfun1 as FilterMapFunc),
+                fmfun: fmfun1 as FilterMapFunc,
                 distinct: false,
             }],
             change_cb: Some(Arc::new(Mutex::new(Box::new(move |_, v, w| {
@@ -449,12 +441,12 @@ fn test_semijoin(nthreads: usize) {
                 rel: 1,
                 xform: Some(XFormCollection::Arrange {
                     description: "arrange by .0".to_string(),
-                    afun: &(afun1 as ArrangeFunc),
+                    afun: afun1 as ArrangeFunc,
                     next: Box::new(XFormArrangement::Semijoin {
                         description: "1.semijoin (2,0)".to_string(),
                         ffun: None,
                         arrangement: (2, 0),
-                        jfun: &(jfun as SemijoinFunc),
+                        jfun: jfun as SemijoinFunc,
                         next: Box::new(None),
                     }),
                 }),
@@ -483,12 +475,12 @@ fn test_semijoin(nthreads: usize) {
             .map(|x| (Tuple2(Box::new(U64(*x)), Box::new(U64(*x))), 1)),
     );
 
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
-        running.insert(2, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(1, x.clone().into_ddvalue()).unwrap();
+        running.insert(2, x.clone().into_ddvalue()).unwrap();
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(*relset3.lock().unwrap(), set);
 
@@ -540,7 +532,7 @@ fn test_join(nthreads: usize) {
             rules: Vec::new(),
             arrangements: vec![Arrangement::Map {
                 name: "arrange2.0".to_string(),
-                afun: &(afun1 as ArrangeFunc),
+                afun: afun1 as ArrangeFunc,
                 queryable: true,
             }],
             change_cb: Some(Arc::new(Mutex::new(Box::new(move |_, v, w| {
@@ -573,12 +565,12 @@ fn test_join(nthreads: usize) {
                 rel: 1,
                 xform: Some(XFormCollection::Arrange {
                     description: "arrange by .0".to_string(),
-                    afun: &(afun1 as ArrangeFunc),
+                    afun: afun1 as ArrangeFunc,
                     next: Box::new(XFormArrangement::Join {
                         description: "1.semijoin (2,0)".to_string(),
                         ffun: None,
                         arrangement: (2, 0),
-                        jfun: &(jfun as JoinFunc),
+                        jfun: jfun as JoinFunc,
                         next: Box::new(None),
                     }),
                 }),
@@ -652,12 +644,12 @@ fn test_join(nthreads: usize) {
             .map(|x| (Tuple2(Box::new(U64(*x)), Box::new(U64(*x))), 1)),
     );
 
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
-        running.insert(2, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(1, x.clone().into_ddvalue()).unwrap();
+        running.insert(2, x.clone().into_ddvalue()).unwrap();
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(*relset3.lock().unwrap(), set);
     assert_eq!(*relset4.lock().unwrap(), set);
@@ -754,13 +746,13 @@ fn test_antijoin(nthreads: usize) {
                 rel: 2,
                 xform: Some(XFormCollection::Map {
                     description: "map by .0".to_string(),
-                    mfun: &(mfun as MapFunc),
+                    mfun: mfun as MapFunc,
                     next: Box::new(None),
                 }),
             }],
             arrangements: vec![Arrangement::Set {
                 name: "arrange2.1".to_string(),
-                fmfun: &(fmnull_fun as FilterMapFunc),
+                fmfun: fmnull_fun as FilterMapFunc,
                 distinct: true,
             }],
             change_cb: Some(Arc::new(Mutex::new(Box::new(move |_, v, w| {
@@ -784,7 +776,7 @@ fn test_antijoin(nthreads: usize) {
                 rel: 1,
                 xform: Some(XFormCollection::Arrange {
                     description: "arrange by .0".to_string(),
-                    afun: &(afun1 as ArrangeFunc),
+                    afun: afun1 as ArrangeFunc,
                     next: Box::new(XFormArrangement::Antijoin {
                         description: "1.antijoin (21,0)".to_string(),
                         ffun: None,
@@ -819,23 +811,21 @@ fn test_antijoin(nthreads: usize) {
     );
 
     /* 1. T2 and T1 contain identical keys; antijoin is empty */
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
-        running.insert(2, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(1, x.clone().into_ddvalue()).unwrap();
+        running.insert(2, x.clone().into_ddvalue()).unwrap();
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(relset3.lock().unwrap().len(), 0);
 
     /* 1. T2 is empty; antijoin is identical to T1 */
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running
-            .delete_value(2, x.clone().into_ddvalue(), &trans)
-            .unwrap();
+        running.delete_value(2, x.clone().into_ddvalue()).unwrap();
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
     assert_eq!(*relset3.lock().unwrap(), set);
 
     running.stop().unwrap();
@@ -937,16 +927,16 @@ fn test_map(nthreads: usize) {
                 rel: 1,
                 xform: Some(XFormCollection::Map {
                     description: "map x2".to_string(),
-                    mfun: &(mfun as MapFunc),
+                    mfun: mfun as MapFunc,
                     next: Box::new(Some(XFormCollection::Filter {
                         description: "filter >10".to_string(),
-                        ffun: &(ffun as FilterFunc),
+                        ffun: ffun as FilterFunc,
                         next: Box::new(Some(XFormCollection::FilterMap {
                             description: "filter >12 map x2".to_string(),
-                            fmfun: &(fmfun as FilterMapFunc),
+                            fmfun: fmfun as FilterMapFunc,
                             next: Box::new(Some(XFormCollection::FlatMap {
                                 description: "flat-map >12 [-x,-2x]".to_string(),
-                                fmfun: &(flatmapfun as FlatMapFunc),
+                                fmfun: flatmapfun as FlatMapFunc,
                                 next: Box::new(None),
                             })),
                         })),
@@ -974,11 +964,11 @@ fn test_map(nthreads: usize) {
                 rel: 2,
                 xform: Some(XFormCollection::Arrange {
                     description: "arrange by ()".to_string(),
-                    afun: &(gfun3 as ArrangeFunc),
+                    afun: gfun3 as ArrangeFunc,
                     next: Box::new(XFormArrangement::Aggregate {
                         description: "2.aggregate".to_string(),
                         ffun: None,
-                        aggfun: &(agfun3 as AggFunc),
+                        aggfun: agfun3 as AggFunc,
                         next: Box::new(None),
                     }),
                 }),
@@ -1005,11 +995,11 @@ fn test_map(nthreads: usize) {
                 rel: 2,
                 xform: Some(XFormCollection::Arrange {
                     description: "arrange by self".to_string(),
-                    afun: &(gfun4 as ArrangeFunc),
+                    afun: gfun4 as ArrangeFunc,
                     next: Box::new(XFormArrangement::Aggregate {
                         description: "2.aggregate".to_string(),
                         ffun: None,
-                        aggfun: &(agfun4 as AggFunc),
+                        aggfun: agfun4 as AggFunc,
                         next: Box::new(None),
                     }),
                 }),
@@ -1050,11 +1040,11 @@ fn test_map(nthreads: usize) {
     let mut expected3 = BTreeMap::default();
     expected3.insert(U64(expected2.len() as u64), 1);
 
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(1, x.clone().into_ddvalue()).unwrap();
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(*relset1.lock().unwrap(), set);
     assert_eq!(*relset2.lock().unwrap(), expected2);
@@ -1138,7 +1128,7 @@ fn test_recursion(nthreads: usize) {
             rules: Vec::new(),
             arrangements: vec![Arrangement::Map {
                 name: "arrange_by_parent".to_string(),
-                afun: &(arrange_by_fst as ArrangeFunc),
+                afun: arrange_by_fst as ArrangeFunc,
                 queryable: false,
             }],
             change_cb: Some(Arc::new(Mutex::new(Box::new(move |_, v, w| {
@@ -1170,7 +1160,7 @@ fn test_recursion(nthreads: usize) {
                         description: "(2,2).join (1,0)".to_string(),
                         ffun: None,
                         arrangement: (1, 0),
-                        jfun: &(jfun as JoinFunc),
+                        jfun: jfun as JoinFunc,
                         next: Box::new(None),
                     },
                 },
@@ -1178,17 +1168,17 @@ fn test_recursion(nthreads: usize) {
             arrangements: vec![
                 Arrangement::Map {
                     name: "arrange_by_ancestor".to_string(),
-                    afun: &(arrange_by_fst as ArrangeFunc),
+                    afun: arrange_by_fst as ArrangeFunc,
                     queryable: false,
                 },
                 Arrangement::Set {
                     name: "arrange_by_self".to_string(),
-                    fmfun: &(fmnull_fun as FilterMapFunc),
+                    fmfun: fmnull_fun as FilterMapFunc,
                     distinct: true,
                 },
                 Arrangement::Map {
                     name: "arrange_by_snd".to_string(),
-                    afun: &(arrange_by_snd as ArrangeFunc),
+                    afun: arrange_by_snd as ArrangeFunc,
                     queryable: false,
                 },
             ],
@@ -1221,24 +1211,24 @@ fn test_recursion(nthreads: usize) {
                     description: "(2,0).join (2,0)".to_string(),
                     ffun: None,
                     arrangement: (2, 0),
-                    jfun: &(jfun2 as JoinFunc),
+                    jfun: jfun2 as JoinFunc,
                     next: Box::new(Some(XFormCollection::Arrange {
                         description: "arrange by self".to_string(),
-                        afun: &(anti_arrange1 as ArrangeFunc),
+                        afun: anti_arrange1 as ArrangeFunc,
                         next: Box::new(XFormArrangement::Antijoin {
                             description: "(2,0).antijoin (2,1)".to_string(),
                             ffun: None,
                             arrangement: (2, 1),
                             next: Box::new(Some(XFormCollection::Arrange {
                                 description: "arrange by .1".to_string(),
-                                afun: &(anti_arrange2 as ArrangeFunc),
+                                afun: anti_arrange2 as ArrangeFunc,
                                 next: Box::new(XFormArrangement::Antijoin {
                                     description: "...join (2,1)".to_string(),
                                     ffun: None,
                                     arrangement: (2, 1),
                                     next: Box::new(Some(XFormCollection::Filter {
                                         description: "filter .0 != .1".to_string(),
-                                        ffun: &(ffun as FilterFunc),
+                                        ffun: ffun as FilterFunc,
                                         next: Box::new(None),
                                     })),
                                 }),
@@ -1364,11 +1354,11 @@ fn test_recursion(nthreads: usize) {
     ];
     let expect_set2 = BTreeMap::from_iter(expect_vals2.iter().map(|x| (x.clone(), 1)));
 
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     for x in set.keys() {
-        running.insert(1, x.clone().into_ddvalue(), &trans).unwrap();
+        running.insert(1, x.clone().into_ddvalue()).unwrap();
     }
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
     //println!("commit done");
 
     assert_eq!(*parentset.lock().unwrap(), set);
@@ -1376,11 +1366,11 @@ fn test_recursion(nthreads: usize) {
     assert_eq!(*common_ancestorset.lock().unwrap(), expect_set2);
 
     /* 2. Remove record from "parent" relation */
-    let trans = running.transaction_start().unwrap();
+    running.transaction_start().unwrap();
     running
-        .delete_value(1, vals[0].clone().into_ddvalue(), &trans)
+        .delete_value(1, vals[0].clone().into_ddvalue())
         .unwrap();
-    running.transaction_commit(trans).unwrap();
+    running.transaction_commit().unwrap();
 
     let expect_vals3 = vec![
         Tuple2(
@@ -1415,9 +1405,9 @@ fn test_recursion(nthreads: usize) {
     assert_eq!(*common_ancestorset.lock().unwrap(), expect_set4);
 
     /* 3. Test clear_relation() */
-    let trans = running.transaction_start().unwrap();
-    running.clear_relation(1, &trans).unwrap();
-    running.transaction_commit(trans).unwrap();
+    running.transaction_start().unwrap();
+    running.clear_relation(1).unwrap();
+    running.transaction_commit().unwrap();
 
     assert_eq!(*parentset.lock().unwrap(), BTreeMap::default());
     assert_eq!(*ancestorset.lock().unwrap(), BTreeMap::default());

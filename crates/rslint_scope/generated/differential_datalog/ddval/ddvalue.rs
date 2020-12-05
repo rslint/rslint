@@ -97,25 +97,27 @@ impl Debug for DDValue {
 
 impl PartialOrd for DDValue {
     fn partial_cmp(&self, other: &DDValue) -> Option<Ordering> {
-        if (self.vtable.type_id)(&self.val) == (other.vtable.type_id)(&other.val) {
-            // Safety: The types of both values are the same
-            unsafe { (self.vtable.partial_cmp)(&self.val, &other.val) }
-        } else {
-            // TODO: Should this panic instead?
-            None
-        }
+        /* Safety: The types of both values are the same.
+         * This should be enforced by the DDlog type checker. */
+        debug_assert_eq!(
+            (self.vtable.type_id)(&self.val),
+            (other.vtable.type_id)(&other.val),
+            "DDValue::partial_cmp: attempted to compare two values of different types"
+        );
+        unsafe { (self.vtable.partial_cmp)(&self.val, &other.val) }
     }
 }
 
 impl PartialEq for DDValue {
     fn eq(&self, other: &Self) -> bool {
-        if (self.vtable.type_id)(&self.val) == (other.vtable.type_id)(&other.val) {
-            // Safety: The types of both values are the same
-            unsafe { (self.vtable.eq)(&self.val, &other.val) }
-        } else {
-            // TODO: Should this panic instead?
-            false
-        }
+        /* Safety: The types of both values are the same.
+         * This should be enforced by the DDlog type checker. */
+        debug_assert_eq!(
+            (self.vtable.type_id)(&self.val),
+            (other.vtable.type_id)(&other.val),
+            "DDValue::eq: attempted to compare two values of different types"
+        );
+        unsafe { (self.vtable.eq)(&self.val, &other.val) }
     }
 }
 
@@ -123,13 +125,13 @@ impl Eq for DDValue {}
 
 impl Ord for DDValue {
     fn cmp(&self, other: &Self) -> Ordering {
-        assert_eq!(
+        /* Safety: The types of both values are the same.
+         * This should be enforced by the DDlog type checker. */
+        debug_assert_eq!(
             (self.vtable.type_id)(&self.val),
             (other.vtable.type_id)(&other.val),
-            "attempted to compare two values of different types",
+            "DDValue::cmp: attempted to compare two values of different types"
         );
-
-        // Safety: The types of both values are the same
         unsafe { (self.vtable.cmp)(&self.val, &other.val) }
     }
 }

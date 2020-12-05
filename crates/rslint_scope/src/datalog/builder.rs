@@ -17,7 +17,7 @@ use types::{
         ExprNumber, ExprString, Expression, FileExport, For, ForIn, ForOf, Function, If,
         ImplicitGlobal, ImportDecl, InlineFunc, InlineFuncParam, InputScope, Label, LetDecl,
         NameRef, New, Property, Return, Statement, Switch, SwitchCase, Template, Ternary, Throw,
-        Try, UnaryOp, VarDecl, While, With, Yield,
+        Try, UnaryOp, UserGlobal, VarDecl, While, With, Yield,
     },
     internment::Intern,
 };
@@ -76,6 +76,26 @@ pub trait DatalogBuilder<'ddlog> {
             Relations::inputs_ImplicitGlobal,
             ImplicitGlobal {
                 id: GlobalId { id: id.id },
+                name: Intern::new(global.name.to_string()),
+                privileges: if global.writeable {
+                    GlobalPriv::ReadWriteGlobal
+                } else {
+                    GlobalPriv::ReadonlyGlobal
+                },
+            },
+        );
+
+        id
+    }
+
+    // TODO: Fully integrate global info into ddlog
+    fn user_global(&self, file: FileId, global: &JsGlobal) -> GlobalId {
+        let id = self.datalog().inc_global();
+        self.datalog().insert(
+            Relations::inputs_UserGlobal,
+            UserGlobal {
+                id: GlobalId { id: id.id },
+                file,
                 name: Intern::new(global.name.to_string()),
                 privileges: if global.writeable {
                     GlobalPriv::ReadWriteGlobal

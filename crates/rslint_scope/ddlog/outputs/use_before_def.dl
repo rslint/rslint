@@ -22,12 +22,27 @@ typedef UseBeforeDef = UseBeforeDef {
 
 // Using variables, classes and functions before they're defined
 output relation UseBeforeDef[UseBeforeDef]
+UseBeforeDef[use_before_def] :-
+    UnfilteredUseBeforeDef(use_before_def @ UseBeforeDef { }, declared_scope, used_scope),
+    not ScopeFamily(declared_scope, used_scope, use_before_def.file).
+
+output relation UnfilteredUseBeforeDef(
+    use_before_def: UseBeforeDef,
+    declared_scope: ScopeId,
+    used_scope: ScopeId,
+)
+
+NeedsScopeChildren(scope, def.file) :- UnfilteredUseBeforeDef(def, scope, _).
 
 // ```js
 // foo(bar); // used before definition
 // var bar = 10;
 // ```
-UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
+UnfilteredUseBeforeDef(
+    UseBeforeDef { name, expr, used_in, declared, declared_in, file },
+    declared_scope,
+    used_scope,
+) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     NameRef(expr, file, name),
@@ -38,10 +53,13 @@ UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
     NameInScope(file, name, used_scope, declared @ AnyIdStmt { stmt }),
     VariableDeclarations(file, name, used_scope, _, declared, _, _, _),
     Statement(stmt, file, StmtVarDecl, declared_scope, declared_in),
-    declared_scope != used_scope and used_in < declared_in,
-    not ChildScope(declared_scope, used_scope, file).
+    declared_scope != used_scope and used_in < declared_in.
 
-UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
+UnfilteredUseBeforeDef(
+    UseBeforeDef { name, expr, used_in, declared, declared_in, file },
+    decl_scope,
+    used_scope,
+) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     New(expr, file, Some { object }, _),
@@ -50,11 +68,14 @@ UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
     NameInScope(file, name, used_scope, declared @ AnyIdClass { class }),
     VariableDeclarations(file, name, used_scope, _, declared, _, _, _),
     Class(class, file, Some { Spanned { _, declared_in }}, _, _, decl_scope, _),
-    decl_scope != used_scope and used_in < declared_in,
-    not ChildScope(decl_scope, used_scope, file).
+    decl_scope != used_scope and used_in < declared_in.
 
 // TODO: Integrate with directives to ignore functions if the user wants it
-UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
+UnfilteredUseBeforeDef(
+    UseBeforeDef { name, expr, used_in, declared, declared_in, file },
+    decl_scope,
+    used_scope,
+) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     Call(expr, file, Some { callee }, _),
@@ -63,10 +84,13 @@ UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
     NameInScope(file, name, used_scope, declared @ AnyIdFunc { func }),
     VariableDeclarations(file, name, used_scope, _, declared, _, _, _),
     Function(func, file, Some { Spanned { _, declared_in }}, decl_scope, _, _),
-    decl_scope != used_scope and used_in < declared_in,
-    not ChildScope(decl_scope, used_scope, file).
+    decl_scope != used_scope and used_in < declared_in.
 
-UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
+UnfilteredUseBeforeDef(
+    UseBeforeDef { name, expr, used_in, declared, declared_in, file },
+    decl_scope,
+    used_scope,
+) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     New(expr, file, Some { object }, _),
@@ -77,15 +101,17 @@ UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
     VariableDecl(decl, file, _, _, Some { class }, _),
     ClassExpr(class, file, _),
     Expression(class, file, _, decl_scope, declared_in),
-    decl_scope != used_scope and used_in < declared_in,
-    not ChildScope(decl_scope, used_scope, file).
+    decl_scope != used_scope and used_in < declared_in.
 
-UseBeforeDef(name, expr, used_in, AnyIdClass { class }, declared_in, file) :-
+UnfilteredUseBeforeDef(
+    UseBeforeDef { name, expr, used_in, AnyIdClass { class }, declared_in, file },
+    declared_scope,
+    used_scope,
+) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     New(expr, file, Some { object }, _),
     Expression(expr, file, _, used_scope, used_in),
     NameRef(object, file, name),
     Class(class, file, Some { Spanned { name, declared_in }}, _, _, declared_scope, _),
-    declared_scope != used_scope and used_in < declared_in,
-    not ChildScope(declared_scope, used_scope, file).
+    declared_scope != used_scope and used_in < declared_in.

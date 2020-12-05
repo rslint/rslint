@@ -31,6 +31,39 @@ use crate::closure;
 // use crate::ddlog_std;
 
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct InterumUsedLabel {
+    pub stmt_id: crate::ast::StmtId,
+    pub file: crate::ast::FileId,
+    pub label_name: crate::ast::Spanned<crate::ast::Name>,
+    pub body_scope: crate::ast::ScopeId
+}
+impl abomonation::Abomonation for InterumUsedLabel{}
+::differential_datalog::decl_struct_from_record!(InterumUsedLabel["outputs::no_unused_labels::InterumUsedLabel"]<>, ["outputs::no_unused_labels::InterumUsedLabel"][4]{[0]stmt_id["stmt_id"]: crate::ast::StmtId, [1]file["file"]: crate::ast::FileId, [2]label_name["label_name"]: crate::ast::Spanned<crate::ast::Name>, [3]body_scope["body_scope"]: crate::ast::ScopeId});
+::differential_datalog::decl_struct_into_record!(InterumUsedLabel, ["outputs::no_unused_labels::InterumUsedLabel"]<>, stmt_id, file, label_name, body_scope);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(InterumUsedLabel, <>, stmt_id: crate::ast::StmtId, file: crate::ast::FileId, label_name: crate::ast::Spanned<crate::ast::Name>, body_scope: crate::ast::ScopeId);
+impl ::std::fmt::Display for InterumUsedLabel {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::outputs::no_unused_labels::InterumUsedLabel{stmt_id,file,label_name,body_scope} => {
+                __formatter.write_str("outputs::no_unused_labels::InterumUsedLabel{")?;
+                ::std::fmt::Debug::fmt(stmt_id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(label_name, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(body_scope, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for InterumUsedLabel {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct LabelUsage {
     pub stmt: crate::ast::StmtId,
     pub file: crate::ast::FileId,

@@ -39,8 +39,8 @@ pub fn run(
     no_global_config: bool,
 ) {
     let exit_code = run_inner(globs, verbose, fix, dirty, formatter, no_global_config);
-    #[cfg(not(debug_assertions))]
-    process::exit(exit_code);
+    // #[cfg(not(debug_assertions))]
+    // process::exit(exit_code);
 }
 
 /// The inner function for run to call destructors before we call [`process::exit`]

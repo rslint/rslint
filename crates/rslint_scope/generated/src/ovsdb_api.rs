@@ -13,6 +13,7 @@ use differential_datalog::ddval::*;
 use differential_datalog::program::*;
 use differential_datalog::record::{IntoRecord, Record, UpdCmd};
 use differential_datalog::record_upd_cmds;
+use differential_datalog::DDlog;
 use differential_datalog::DeltaMap;
 
 use crate::api::{updcmd2upd, HDDlog};
@@ -64,25 +65,9 @@ fn apply_updates(
         .map_err(|e| format!("invalid UTF8 string in prefix: {}", e))?;
     let commands = cmds_from_table_updates_str(prefix, updates_str)?;
 
-    record_updatecmds(prog, &commands);
-
     let updates: Result<Vec<Update<DDValue>>, String> =
         commands.iter().map(|c| updcmd2upd(c)).collect();
-    prog.prog
-        .lock()
-        .unwrap()
-        .apply_updates(updates?.into_iter())
-}
-
-fn record_updatecmds(prog: &sync::Arc<HDDlog>, upds: &[UpdCmd]) {
-    if let Some(ref f) = prog.replay_file {
-        let mut file = f.lock().unwrap();
-        let iter = upds.iter();
-        record_upd_cmds::<DDlogConverter, _, _, _>(&mut *file, iter, |_| {
-            prog.eprintln("ddlog_apply_ovsdb_updates(): failed to record invocation in replay file")
-        })
-        .for_each(|_| ());
-    }
+    prog.apply_valupdates(updates?.into_iter())
 }
 
 /// Dump OVSDB Delta-Plus, Delta-Minus, and Delta-Update tables as a sequence of OVSDB

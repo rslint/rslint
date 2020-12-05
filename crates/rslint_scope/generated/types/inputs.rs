@@ -1609,6 +1609,39 @@ impl ::std::fmt::Debug for UnaryOp {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct UserGlobal {
+    pub id: crate::ast::GlobalId,
+    pub file: crate::ast::FileId,
+    pub name: crate::ast::Name,
+    pub privileges: crate::ast::GlobalPriv
+}
+impl abomonation::Abomonation for UserGlobal{}
+::differential_datalog::decl_struct_from_record!(UserGlobal["inputs::UserGlobal"]<>, ["inputs::UserGlobal"][4]{[0]id["id"]: crate::ast::GlobalId, [1]file["file"]: crate::ast::FileId, [2]name["name"]: crate::ast::Name, [3]privileges["privileges"]: crate::ast::GlobalPriv});
+::differential_datalog::decl_struct_into_record!(UserGlobal, ["inputs::UserGlobal"]<>, id, file, name, privileges);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(UserGlobal, <>, id: crate::ast::GlobalId, file: crate::ast::FileId, name: crate::ast::Name, privileges: crate::ast::GlobalPriv);
+impl ::std::fmt::Display for UserGlobal {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::inputs::UserGlobal{id,file,name,privileges} => {
+                __formatter.write_str("inputs::UserGlobal{")?;
+                ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(privileges, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for UserGlobal {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct VarDecl {
     pub stmt_id: crate::ast::StmtId,
     pub file: crate::ast::FileId,

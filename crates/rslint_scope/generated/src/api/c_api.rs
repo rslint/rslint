@@ -8,7 +8,7 @@ use crate::{
 };
 use differential_datalog::{
     ddval::DDValue,
-    program::{IdxId, RelId, TransactionHandle},
+    program::{IdxId, RelId},
     record::IntoRecord,
     DDlog, DeltaMap,
 };
@@ -16,8 +16,6 @@ use std::{
     collections::BTreeMap,
     ffi::{CStr, CString},
     fs::File,
-    mem::ManuallyDrop,
-    num::NonZeroU64,
     os::raw,
     ptr,
     sync::{Arc, Mutex},
@@ -123,7 +121,7 @@ pub unsafe extern "C" fn ddlog_record_commands(prog: *const HDDlog, fd: RawFd) -
     if prog.is_null() {
         return -1;
     }
-    let mut prog = ManuallyDrop::new(Arc::from_raw(prog));
+    let mut prog = Arc::from_raw(prog);
 
     let file = if fd == -1 {
         None
@@ -144,6 +142,7 @@ pub unsafe extern "C" fn ddlog_record_commands(prog: *const HDDlog, fd: RawFd) -
         None => -1,
     };
 
+    Arc::into_raw(prog);
     res
 }
 
@@ -153,7 +152,7 @@ pub unsafe extern "C" fn ddlog_record_commands(prog: *const HDDlog, fd: raw::c_i
     if prog.is_null() {
         return -1;
     }
-    let mut prog = ManuallyDrop::new(Arc::from_raw(prog));
+    let mut prog = Arc::from_raw(prog);
 
     let file = if fd == -1 {
         None
@@ -163,7 +162,7 @@ pub unsafe extern "C" fn ddlog_record_commands(prog: *const HDDlog, fd: raw::c_i
         Some(File::from_raw_handle(handle as RawHandle))
     };
 
-    match Arc::get_mut(&mut prog) {
+    let res = match Arc::get_mut(&mut prog) {
         Some(prog) => {
             let mut old_file = file.map(Mutex::new);
             prog.record_commands(&mut old_file);
@@ -174,7 +173,10 @@ pub unsafe extern "C" fn ddlog_record_commands(prog: *const HDDlog, fd: raw::c_i
             0
         }
         None => -1,
-    }
+    };
+
+    Arc::into_raw(prog);
+    res
 }
 
 #[no_mangle]
@@ -184,7 +186,7 @@ pub unsafe extern "C" fn ddlog_dump_input_snapshot(prog: *const HDDlog, fd: RawF
         return -1;
     }
 
-    let prog = ManuallyDrop::new(Arc::from_raw(prog));
+    let prog = Arc::from_raw(prog);
     let mut file = File::from_raw_fd(fd);
     let res = prog
         .dump_input_snapshot(&mut file)
@@ -195,6 +197,7 @@ pub unsafe extern "C" fn ddlog_dump_input_snapshot(prog: *const HDDlog, fd: RawF
         });
 
     file.into_raw_fd();
+    Arc::into_raw(prog);
     res
 }
 
@@ -258,37 +261,29 @@ pub unsafe extern "C" fn ddlog_stop(prog: *const HDDlog) -> raw::c_int {
     }
 }
 
-/// Returns zero if there is already a transaction running and the transaction handle otherwise
 #[no_mangle]
-pub unsafe extern "C" fn ddlog_transaction_start(prog: *const HDDlog) -> raw::c_longlong {
+pub unsafe extern "C" fn ddlog_transaction_start(prog: *const HDDlog) -> raw::c_int {
     if prog.is_null() {
-        return 0;
+        return -1;
     }
     let prog = &*prog;
 
-    prog.transaction_start()
-        .map(|handle| handle.as_u64() as i64)
-        .unwrap_or_else(|e| {
-            prog.eprintln(&format!("ddlog_transaction_start(): error: {}", e));
-            0
-        })
+    prog.transaction_start().map(|_| 0).unwrap_or_else(|e| {
+        prog.eprintln(&format!("ddlog_transaction_start(): error: {}", e));
+        -1
+    })
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn ddlog_transaction_commit_dump_changes(
     prog: *const HDDlog,
-    transaction: raw::c_longlong,
 ) -> *mut DeltaMap<DDValue> {
-    if prog.is_null() || transaction == 0 {
+    if prog.is_null() {
         return ptr::null_mut();
     }
-
-    let handle = TransactionHandle::new(
-        NonZeroU64::new(transaction as u64).expect("transaction is not zero"),
-    );
     let prog = &*prog;
 
-    prog.transaction_commit_dump_changes(handle)
+    prog.transaction_commit_dump_changes()
         .map(|delta| Box::into_raw(Box::new(delta)))
         .unwrap_or_else(|e| {
             prog.eprintln(&format!(
@@ -311,14 +306,13 @@ pub unsafe extern "C" fn ddlog_transaction_commit_dump_changes_as_array(
     prog: *const HDDlog,
     changes: *mut *const ddlog_record_update,
     num_changes: *mut libc::size_t,
-    transaction: raw::c_longlong,
 ) -> raw::c_int {
     if prog.is_null() {
         return -1;
     }
     let prog = &*prog;
 
-    do_transaction_commit_dump_changes_as_array(prog, changes, num_changes, transaction)
+    do_transaction_commit_dump_changes_as_array(prog, changes, num_changes)
         .map(|_| 0)
         .unwrap_or_else(|e| {
             prog.eprintln(&format!(
@@ -333,16 +327,8 @@ unsafe fn do_transaction_commit_dump_changes_as_array(
     prog: &HDDlog,
     changes: *mut *const ddlog_record_update,
     num_changes: *mut libc::size_t,
-    transaction: raw::c_longlong,
 ) -> Result<(), String> {
-    if transaction == 0 {
-        return Err("transaction cannot be zero".to_owned());
-    }
-    let handle = TransactionHandle::new(
-        NonZeroU64::new(transaction as u64).expect("transaction is not zero"),
-    );
-
-    let updates = prog.transaction_commit_dump_changes(handle)?;
+    let updates = prog.transaction_commit_dump_changes()?;
     let mut size = 0;
     for (_, delta) in updates.as_ref().iter() {
         size += delta.len();
@@ -388,23 +374,13 @@ pub unsafe extern "C" fn ddlog_transaction_commit_dump_changes_to_flatbuf(
     buf_size: *mut libc::size_t,
     buf_capacity: *mut libc::size_t,
     buf_offset: *mut libc::size_t,
-    transaction: raw::c_longlong,
 ) -> raw::c_int {
-    if prog.is_null()
-        || buf_size.is_null()
-        || buf_capacity.is_null()
-        || buf_offset.is_null()
-        || transaction == 0
-    {
+    if prog.is_null() || buf_size.is_null() || buf_capacity.is_null() || buf_offset.is_null() {
         return -1;
     }
-
-    let handle = TransactionHandle::new(
-        NonZeroU64::new(transaction as u64).expect("transaction is not zero"),
-    );
     let prog = &*prog;
 
-    prog.transaction_commit_dump_changes(handle)
+    prog.transaction_commit_dump_changes()
         .map(|changes| {
             let (fbvec, fboffset) = flatbuf::updates_to_flatbuf(&changes);
             *buf = fbvec.as_ptr();
@@ -431,7 +407,6 @@ pub unsafe extern "C" fn ddlog_transaction_commit_dump_changes_to_flatbuf(
     _buf_size: *mut libc::size_t,
     _buf_capacity: *mut libc::size_t,
     _buf_offset: *mut libc::size_t,
-    _transaction: raw::c_longlong,
 ) -> raw::c_int {
     if prog.is_null() {
         return -1;
@@ -630,47 +605,29 @@ pub unsafe extern "C" fn ddlog_flatbuf_free(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn ddlog_transaction_commit(
-    prog: *const HDDlog,
-    transaction: raw::c_longlong,
-) -> raw::c_int {
-    if prog.is_null() || transaction == 0 {
+pub unsafe extern "C" fn ddlog_transaction_commit(prog: *const HDDlog) -> raw::c_int {
+    if prog.is_null() {
         return -1;
     }
-
-    let handle = TransactionHandle::new(
-        NonZeroU64::new(transaction as u64).expect("transaction is not zero"),
-    );
     let prog = &*prog;
 
-    prog.transaction_commit(handle)
-        .map(|_| 0)
-        .unwrap_or_else(|e| {
-            prog.eprintln(&format!("ddlog_transaction_commit(): error: {}", e));
-            -1
-        })
+    prog.transaction_commit().map(|_| 0).unwrap_or_else(|e| {
+        prog.eprintln(&format!("ddlog_transaction_commit(): error: {}", e));
+        -1
+    })
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn ddlog_transaction_rollback(
-    prog: *const HDDlog,
-    transaction: raw::c_longlong,
-) -> raw::c_int {
-    if prog.is_null() || transaction == 0 {
+pub unsafe extern "C" fn ddlog_transaction_rollback(prog: *const HDDlog) -> raw::c_int {
+    if prog.is_null() {
         return -1;
     }
-
-    let handle = TransactionHandle::new(
-        NonZeroU64::new(transaction as u64).expect("transaction is not zero"),
-    );
     let prog = &*prog;
 
-    prog.transaction_rollback(handle)
-        .map(|_| 0)
-        .unwrap_or_else(|e| {
-            prog.eprintln(&format!("ddlog_transaction_rollback(): error: {}", e));
-            -1
-        })
+    prog.transaction_rollback().map(|_| 0).unwrap_or_else(|e| {
+        prog.eprintln(&format!("ddlog_transaction_rollback(): error: {}", e));
+        -1
+    })
 }
 
 #[no_mangle]
@@ -678,23 +635,21 @@ pub unsafe extern "C" fn ddlog_apply_updates(
     prog: *const HDDlog,
     upds: *const *mut UpdCmd,
     n: libc::size_t,
-    transaction: raw::c_longlong,
 ) -> raw::c_int {
-    if prog.is_null() || upds.is_null() || transaction == 0 {
+    if prog.is_null() || upds.is_null() {
         return -1;
     }
+    let prog = Arc::from_raw(prog);
 
-    let handle = TransactionHandle::new(
-        NonZeroU64::new(transaction as u64).expect("transaction is not zero"),
-    );
-    let prog = ManuallyDrop::new(Arc::from_raw(prog));
-
-    prog.apply_updates((0..n).map(|i| Box::from_raw(*upds.add(i))), &handle)
+    let res = prog
+        .apply_updates((0..n).map(|i| Box::from_raw(*upds.add(i))))
         .map(|_| 0)
         .unwrap_or_else(|e| {
             prog.eprintln(&format!("ddlog_apply_updates(): error: {}", e));
             -1
-        })
+        });
+    Arc::into_raw(prog);
+    res
 }
 
 #[cfg(feature = "flatbuf")]
@@ -703,18 +658,13 @@ pub unsafe extern "C" fn ddlog_apply_updates_from_flatbuf(
     prog: *const HDDlog,
     buf: *const u8,
     n: libc::size_t,
-    transaction: raw::c_longlong,
 ) -> raw::c_int {
-    if prog.is_null() || buf.is_null() || transaction == 0 {
+    if prog.is_null() || buf.is_null() {
         return -1;
     }
-
-    let handle = TransactionHandle::new(
-        NonZeroU64::new(transaction as u64).expect("transaction is not zero"),
-    );
     let prog = &*prog;
 
-    prog.apply_updates_from_flatbuf(slice::from_raw_parts(buf, n), &handle)
+    prog.apply_updates_from_flatbuf(slice::from_raw_parts(buf, n))
         .map(|_| 0)
         .unwrap_or_else(|e| {
             prog.eprintln(&format!("ddlog_apply_updates_from_flatbuf(): error: {}", e));
@@ -743,23 +693,16 @@ pub unsafe extern "C" fn ddlog_apply_updates_from_flatbuf(
 pub unsafe extern "C" fn ddlog_clear_relation(
     prog: *const HDDlog,
     table: libc::size_t,
-    transaction: raw::c_longlong,
 ) -> raw::c_int {
-    if prog.is_null() || transaction == 0 {
+    if prog.is_null() {
         return -1;
     }
-
-    let handle = TransactionHandle::new(
-        NonZeroU64::new(transaction as u64).expect("transaction is not zero"),
-    );
     let prog = &*prog;
 
-    prog.clear_relation(table, &handle)
-        .map(|_| 0)
-        .unwrap_or_else(|e| {
-            prog.eprintln(&format!("ddlog_clear_relation(): error: {}", e));
-            -1
-        })
+    prog.clear_relation(table).map(|_| 0).unwrap_or_else(|e| {
+        prog.eprintln(&format!("ddlog_clear_relation(): error: {}", e));
+        -1
+    })
 }
 
 #[no_mangle]

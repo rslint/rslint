@@ -284,26 +284,47 @@ impl<'a> TestCase<'a> {
             parse_text(&*self.code, 0).syntax()
         };
 
-        let _ = self.harness.datalog.datalog.inject_globals(
-            &self
-                .globals
-                .iter()
-                .map(|g| JsGlobal::new(g.to_string(), false))
-                .collect::<Vec<_>>(),
-        );
+        self.harness
+            .datalog
+            .datalog
+            .inject_user_globals(
+                file_id,
+                &self
+                    .globals
+                    .iter()
+                    .map(|g| JsGlobal::new(g.to_string(), false))
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap();
 
-        let _ = self.harness.datalog.datalog.inject_globals(BUILTIN);
+        self.harness
+            .datalog
+            .datalog
+            .inject_user_globals(file_id, BUILTIN)
+            .unwrap();
 
         if self.browser {
-            let _ = self.harness.datalog.datalog.inject_globals(BROWSER);
+            self.harness
+                .datalog
+                .datalog
+                .inject_user_globals(file_id, BROWSER)
+                .unwrap();
         }
 
         if self.node {
-            let _ = self.harness.datalog.datalog.inject_globals(NODE);
+            self.harness
+                .datalog
+                .datalog
+                .inject_user_globals(file_id, NODE)
+                .unwrap();
         }
 
         if self.ecma || self.es2021 {
-            let _ = self.harness.datalog.datalog.inject_globals(ES2021);
+            self.harness
+                .datalog
+                .datalog
+                .inject_user_globals(file_id, ES2021)
+                .unwrap();
         }
 
         self.harness

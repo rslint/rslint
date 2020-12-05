@@ -10,3 +10,5 @@ bench = { lto = "fat", codegen-units = 1 }
 # Disabling debug info speeds up builds a lot, and we do not really
 # rely on debug info for debugging
 debug = 0
+incremental = true
+codegen-units = 16

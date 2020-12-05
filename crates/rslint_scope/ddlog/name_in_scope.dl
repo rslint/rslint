@@ -65,8 +65,9 @@ NameInScope(file, name, scope, declared) :-
 // Walk variables down scopes
 NameInScope(file, name, to, declared) :-
     NameInScope(file, name, from, declared),
-    ChildScope(from, to, file),
-    NameOccursInScope(name, to, file).
+    InputScope(from, to, file),
+    NameOccursInScope(name, to, file),
+    not VariableDeclarations(file, name, to, _, _, _, _, _).
 
 /// A record of where variable usages actually happen
 relation NameOccursInScope(name: Name, scope: ScopeId, file: FileId)
@@ -90,4 +91,4 @@ NameOccursInScope(name, scope, file) :-
 /// Recurse to parent scopes
 NameOccursInScope(name, parent, file) :-
     NameOccursInScope(name, child, file),
-    ChildScope(parent, child, file).
+    InputScope(parent, child, file).
