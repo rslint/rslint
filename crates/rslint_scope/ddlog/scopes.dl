@@ -44,13 +44,6 @@ ScopeFamily(parent, child, file) :-
     parent != child.
 
 ScopeFamily(parent, child, file) :-
-    NeedsScopeChildren(parent, file),
-    InputScope(parent, interum, file),
-    ScopeFamily(interum, child, file),
-    parent != child.
-
-ScopeFamily(parent, child, file) :-
-    NeedsScopeParents(child, file),
     InputScope(interum, child, file),
     ScopeFamily(parent, interum, file),
     parent != child.

@@ -64,10 +64,10 @@ NameInScope(file, name, scope, declared) :-
 
 // Walk variables down scopes
 NameInScope(file, name, to, declared) :-
-    NameInScope(file, name, from, declared),
-    InputScope(from, to, file),
     NameOccursInScope(name, to, file),
-    not VariableDeclarations(file, name, to, _, _, _, _, _).
+    not VariableDeclarations(file, name, to, _, _, _, _, _),
+    InputScope(from, to, file),
+    NameInScope(file, name, from, declared).
 
 /// A record of where variable usages actually happen
 relation NameOccursInScope(name: Name, scope: ScopeId, file: FileId)

@@ -15,34 +15,33 @@ NoUnusedLabels(stmt, file, name) :-
     File(file, _, _, config),
     config.no_unused_labels_enabled(),
     Label(stmt, file, Some { name }, _, _),
-    not UsedLabel(stmt, file, name).
+    not UsedLabels(stmt, file, name.data).
 
-relation UsedLabel(
+
+output relation UsedLabels(
     stmt_id: StmtId,
     file: FileId,
-    label_name: Spanned<Name>,
+    label_name: Name,
 )
 
-UsedLabel(stmt, file, label) :-
+UsedLabels(stmt, file, name.data) :-
     File(file, _, _, config),
     config.no_unused_labels_enabled(),
-    InterumUsedLabel(stmt, file, label, body_scope),
+    Label(stmt, file, Some { name }, _, body_scope),
+    LabelUsage(_, file, name.data, body_scope).
+
+UsedLabels(stmt, file, name.data) :-
+    File(file, _, _, config),
+    config.no_unused_labels_enabled(),
+    Label(stmt, file, Some { name }, _, body_scope),
     ScopeFamily(body_scope, child_scope, file),
-    LabelUsage(_, file, label.data, child_scope).
+    LabelUsage(_, file, name.data, child_scope).
 
-relation InterumUsedLabel(
-    stmt_id: StmtId,
-    file: FileId,
-    label_name: Spanned<Name>,
-    body_scope: ScopeId, 
-)
-
-InterumUsedLabel(stmt, file, name, body_scope) :-
+NeedsScopeChildren(scope, file) :- 
     File(file, _, _, config),
     config.no_unused_labels_enabled(),
-    Label(stmt, file, Some { name }, _, body_scope).
-
-NeedsScopeChildren(scope, file) :-InterumUsedLabel(_, file, _, scope).
+    Label(_, file, Some { Spanned { name, _ }}, _, scope),
+    not LabelUsage(_, file, name, scope).
 
 relation LabelUsage(
     stmt: StmtId,
