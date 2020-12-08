@@ -2,13 +2,13 @@
 
 use crate::core::session::Session;
 use anyhow::Result;
+use lspower::lsp_types::{
+    CompletionItem, CompletionItemKind, CompletionParams, CompletionResponse, Documentation,
+    MarkupContent, MarkupKind,
+};
 use rslint_core::{
     directives::ComponentKind, directives::Instruction, util::levenshtein_distance, CstRuleStore,
     DirectiveErrorKind,
-};
-use tower_lsp::lsp_types::{
-    CompletionItem, CompletionItemKind, CompletionParams, CompletionResponse, Documentation,
-    MarkupContent, MarkupKind,
 };
 
 pub async fn complete(

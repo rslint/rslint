@@ -2,11 +2,11 @@
 
 use crate::core::session::Session;
 use anyhow::Result;
-use rslint_errors::file::Files;
-use tower_lsp::lsp_types::{
+use lspower::lsp_types::{
     Hover, HoverContents, HoverParams, MarkedString, Position, TextDocumentIdentifier,
     TextDocumentPositionParams,
 };
+use rslint_errors::file::Files;
 
 pub async fn on_hover(session: &Session, params: HoverParams) -> Result<Option<Hover>> {
     let TextDocumentPositionParams {

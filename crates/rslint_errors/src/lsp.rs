@@ -75,6 +75,7 @@ pub fn convert_to_lsp_diagnostic(
         message,
         related_information: Some(related_information),
         tags,
+        ..Default::default()
     })
 }
 
@@ -220,8 +221,8 @@ fn location_to_position(
         Err(LocationError::InvalidCharBoundary { given }.into())
     } else {
         let line_utf16 = line_str[..column].encode_utf16();
-        let character = line_utf16.count() as u64;
-        let line = line as u64;
+        let character = line_utf16.count() as u32;
+        let line = line as u32;
 
         Ok(LspPosition { line, character })
     }
@@ -271,7 +272,7 @@ where
     })
 }
 
-pub fn character_to_line_offset(line: &str, character: u64) -> Result<usize, Error> {
+pub fn character_to_line_offset(line: &str, character: u32) -> Result<usize, Error> {
     let line_len = line.len();
     let mut character_offset = 0;
 
@@ -284,7 +285,7 @@ pub fn character_to_line_offset(line: &str, character: u64) -> Result<usize, Err
             return Ok(line_len - chars_off - ch_off);
         }
 
-        character_offset += ch.len_utf16() as u64;
+        character_offset += ch.len_utf16() as u32;
     }
 
     // Handle positions after the last character on the line
@@ -311,7 +312,7 @@ where
     let line_span = files.line_range(file_id, position.line as usize).unwrap();
     let line_str = source.get(line_span.clone()).unwrap();
 
-    let byte_offset = character_to_line_offset(line_str, position.character)?;
+    let byte_offset = character_to_line_offset(line_str, position.character as u32)?;
 
     Ok(line_span.start + byte_offset)
 }

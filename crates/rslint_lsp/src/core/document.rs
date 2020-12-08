@@ -1,11 +1,11 @@
 //! Core definitions related to documents.
 
 use crate::core::language::{Language, LanguageId};
+use lspower::lsp_types::*;
 use rslint_core::{autofix::Fixer, Directive, DirectiveError, DirectiveParser};
 use rslint_errors::file::SimpleFiles;
 use rslint_parser::{ast, parse_module, parse_text, GreenNode, Parse, ParserError, SyntaxNode};
 use std::convert::TryFrom;
-use tower_lsp::lsp_types::*;
 
 /// Trait for working with Parse<T> for a document.
 pub trait DocumentParse: Send + Sync {

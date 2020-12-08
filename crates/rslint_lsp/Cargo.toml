@@ -14,7 +14,7 @@ path = "src/bin/main.rs"
 [features]
 default = ["threaded"]
 corpus = []
-threaded = ["tokio/rt-threaded"]
+threaded = ["tokio/rt-multi-thread"]
 
 [build-dependencies]
 anyhow = "1.0"
@@ -27,6 +27,7 @@ env_logger = "0.7"
 futures = "0.3"
 itertools = "0.9"
 log = "0.4"
+lspower = { git = "https://github.com/rslint/lspower", branch = "main" }
 rayon = "1.4.0"
 rslint_core = { path = "../rslint_core", version = "0.2" }
 rslint_parser = { path = "../rslint_parser", version = "0.2" }
@@ -34,8 +35,7 @@ rslint_errors = { path = "../rslint_errors", version = "0.1", features = ["lsp"]
 rslint_config = { path = "../rslint_config", version = "0.1", features = ["schema"] }
 serde_json = "1.0"
 thiserror = "1.0"
-tokio = { version = "0.2", features = ["io-std", "macros"] }
-tower-lsp = "=0.13.3"
+tokio = { version = "0.3", features = ["io-std", "macros", "sync"] }
 serde = { version = "1.0.117", features = ["derive"] }
-taplo = { version = "0.4", features = ["schema"] }
+taplo = { git = "https://github.com/darinmorrison/taplo", branch = "update-lsp-types", features = ["schema"] }
 schemars = "0.8.0"

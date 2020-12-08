@@ -2,12 +2,12 @@
 
 use crate::core::session::Session;
 use anyhow::Result;
-use rslint_errors::Severity;
-use std::ops::Range;
-use tower_lsp::lsp_types::{
+use lspower::lsp_types::{
     CodeAction, CodeActionKind, CodeActionOrCommand, CodeActionParams, CodeActionResponse,
     TextEdit, WorkspaceEdit,
 };
+use rslint_errors::Severity;
+use std::ops::Range;
 
 pub async fn actions(
     session: &Session,

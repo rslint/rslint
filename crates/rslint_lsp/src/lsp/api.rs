@@ -6,13 +6,13 @@ use crate::{
     provider,
     service::synchronizer,
 };
-use tower_lsp::{
+use lspower::{
     jsonrpc::{self, Result},
     lsp_types::*,
     LanguageServer,
 };
 
-#[tower_lsp::async_trait]
+#[lspower::async_trait]
 impl LanguageServer for Server {
     async fn initialize(&self, _: InitializeParams) -> Result<InitializeResult> {
         let capabilities = crate::lsp::server::capabilities();

@@ -6,6 +6,7 @@ use std::collections::HashSet;
 
 use crate::core::session::TomlDocument;
 use itertools::Itertools;
+use lspower::lsp_types::*;
 use schemars::{
     schema::{InstanceType, RootSchema, Schema, SingleOrVec},
     Map,
@@ -17,7 +18,6 @@ use taplo::{
     schema::util::{get_schema_objects, ExtendedSchema},
     syntax::SyntaxKind,
 };
-use tower_lsp::lsp_types::*;
 
 pub(crate) fn toml_completions(
     doc: &TomlDocument,

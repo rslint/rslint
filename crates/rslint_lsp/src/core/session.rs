@@ -6,13 +6,13 @@ use dashmap::{
     DashMap,
 };
 use futures::executor::block_on;
+use lspower::lsp_types::ConfigurationItem;
+use lspower::{lsp_types::*, Client};
 use rslint_core::CstRuleStore;
 use serde::Deserialize;
 use serde_json::Value;
 use std::sync::RwLock;
 use taplo::{parser::Parse, util::coords::Mapper};
-use tower_lsp::lsp_types::ConfigurationItem;
-use tower_lsp::{lsp_types::*, Client};
 
 #[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Deserialize)]

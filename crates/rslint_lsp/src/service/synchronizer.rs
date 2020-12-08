@@ -10,10 +10,10 @@ pub(crate) mod document {
         },
         provider,
     };
+    use lspower::lsp_types::*;
     use rslint_core::DirectiveParser;
     use rslint_errors::file::SimpleFiles;
     use rslint_parser::{parse_module, parse_text, SyntaxNode};
-    use tower_lsp::lsp_types::*;
 
     /// Handle a document "change" event.
     pub(crate) async fn change(

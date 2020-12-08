@@ -4,6 +4,7 @@ use crate::core::{
     document::{Document, RuleResult},
     session::Session,
 };
+use lspower::lsp_types::*;
 use rayon::prelude::*;
 use rslint_core::{
     apply_top_level_directives, directives::DirectiveResult, run_rule, DirectiveParser,
@@ -11,7 +12,6 @@ use rslint_core::{
 use rslint_errors::{lsp::convert_to_lsp_diagnostic, Diagnostic as RslintDiagnostic};
 use rslint_parser::SyntaxNode;
 use std::{collections::HashMap, sync::Arc};
-use tower_lsp::lsp_types::*;
 
 fn process_diagnostics(
     document: &Document,

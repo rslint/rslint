@@ -1,8 +1,8 @@
 //! Definitions for the LSP server instance.
 
 use crate::core::session::Session;
+use lspower::{lsp_types::*, Client};
 use std::sync::Arc;
-use tower_lsp::{lsp_types::*, Client};
 
 /// The RSLint Language Server instance.
 pub struct Server {
