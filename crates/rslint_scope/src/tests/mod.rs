@@ -31,6 +31,15 @@ macro_rules! rule_test {
             };
             use std::borrow::Cow;
             use rayon::iter::{ParallelIterator, IntoParallelIterator};
+            use tracing_subscriber::{layer::SubscriberExt, Layer, EnvFilter, Registry};
+
+            let filter_layer = EnvFilter::try_from_env("RSLINT_LOG")
+                .or_else(|_| EnvFilter::try_new("trace"))
+                .unwrap();
+            let fmt_layer = tracing_subscriber::fmt::layer().pretty();
+            let subscriber = Registry::default().with(filter_layer).with(fmt_layer);
+
+            let _ = tracing::subscriber::set_global_default(subscriber);
 
             let config = ($rule_conf as fn(Config) -> Config)(Config::empty());
             let analyzer = DatalogTestHarness::new()

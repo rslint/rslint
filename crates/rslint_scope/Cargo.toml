@@ -5,7 +5,7 @@ authors = ["RSLint developers"]
 edition = "2018"
 description = "Scope analysis of JS programs"
 license = "MIT"
-repository = "https://github.com/RDambrosio016/RSLint"
+repository = "https://github.com/rslint/rslint"
 
 [features]
 schema = ["schemars"]
@@ -28,5 +28,16 @@ tracing = { version = "0.1.22", features = ["release_max_level_trace"] }
 path = "./generated"
 default-features = false
 
+[build-dependencies]
+toml = "0.5.7"
+anyhow = "1.0.35"
+walkdir = "2.3.1"
+cargo_toml = "0.8.1"
+
 [dev-dependencies]
 rayon = "1.5.0"
+
+[dev-dependencies.tracing-subscriber]
+version = "0.2.15"
+default-features = false
+features = ["fmt", "registry", "ansi", "env-filter"]
