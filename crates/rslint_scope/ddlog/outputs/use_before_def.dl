@@ -51,7 +51,6 @@ UnfilteredUseBeforeDef(
     // ex. `new Foo(); var Foo;`
     not New(_, file, Some { expr }, _),
     NameInScope(file, name, used_scope, declared @ AnyIdStmt { stmt }),
-    VariableDeclarations(file, name, used_scope, _, declared, _, _, _),
     Statement(stmt, file, StmtVarDecl, declared_scope, declared_in),
     declared_scope != used_scope and used_in < declared_in.
 
@@ -66,7 +65,6 @@ UnfilteredUseBeforeDef(
     Expression(expr, file, _, used_scope, used_in),
     NameRef(callee, file, name),
     NameInScope(file, name, used_scope, declared @ AnyIdClass { class }),
-    VariableDeclarations(file, name, used_scope, _, declared, _, _, _),
     Class(class, file, Some { Spanned { _, declared_in }}, _, _, decl_scope, _),
     decl_scope != used_scope and used_in < declared_in.
 
@@ -82,7 +80,6 @@ UnfilteredUseBeforeDef(
     Expression(expr, file, _, used_scope, used_in),
     NameRef(callee, file, name),
     NameInScope(file, name, used_scope, declared @ AnyIdFunc { func }),
-    VariableDeclarations(file, name, used_scope, _, declared, _, _, _),
     Function(func, file, Some { Spanned { _, declared_in }}, decl_scope, _, _),
     decl_scope != used_scope and used_in < declared_in.
 
@@ -97,7 +94,6 @@ UnfilteredUseBeforeDef(
     Expression(expr, file, _, used_scope, used_in),
     NameRef(object, file, name),
     NameInScope(file, name, used_scope, declared @ AnyIdStmt { decl }),
-    VariableDeclarations(file, name, used_scope, _, declared, _, _, _),
     VariableDecl(decl, file, _, _, Some { class }, _),
     ClassExpr(class, file, _),
     Expression(class, file, _, decl_scope, declared_in),

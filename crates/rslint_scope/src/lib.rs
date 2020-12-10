@@ -1,7 +1,7 @@
 mod analyzer;
 mod datalog;
 pub mod globals;
-pub mod scoping;
+// pub mod scoping;
 mod tests;
 
 pub use datalog::{Datalog, DatalogLint, DatalogResult};
