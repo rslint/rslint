@@ -11,6 +11,7 @@ import variable_decl
 
 // TODO: Strip extra info and give fields better names,
 //       lint consumers can get needed info via queries
+// TODO: Factor lazy symbol resolution into this somehow
 typedef UseBeforeDef = UseBeforeDef {
     name: Name,
     used: ExprId,
@@ -22,27 +23,12 @@ typedef UseBeforeDef = UseBeforeDef {
 
 // Using variables, classes and functions before they're defined
 output relation UseBeforeDef[UseBeforeDef]
-UseBeforeDef[use_before_def] :-
-    UnfilteredUseBeforeDef(use_before_def @ UseBeforeDef { }, declared_scope, used_scope),
-    not ScopeFamily(declared_scope, used_scope, use_before_def.file).
-
-output relation UnfilteredUseBeforeDef(
-    use_before_def: UseBeforeDef,
-    declared_scope: ScopeId,
-    used_scope: ScopeId,
-)
-
-NeedsScopeChildren(scope, def.file) :- UnfilteredUseBeforeDef(def, scope, _).
 
 // ```js
 // foo(bar); // used before definition
 // var bar = 10;
 // ```
-UnfilteredUseBeforeDef(
-    UseBeforeDef { name, expr, used_in, declared, declared_in, file },
-    declared_scope,
-    used_scope,
-) :-
+UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     NameRef(expr, file, name),
@@ -54,11 +40,7 @@ UnfilteredUseBeforeDef(
     Statement(stmt, file, StmtVarDecl, declared_scope, declared_in),
     declared_scope != used_scope and used_in < declared_in.
 
-UnfilteredUseBeforeDef(
-    UseBeforeDef { name, expr, used_in, declared, declared_in, file },
-    decl_scope,
-    used_scope,
-) :-
+UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     New(expr, file, Some { object }, _),
@@ -69,11 +51,7 @@ UnfilteredUseBeforeDef(
     decl_scope != used_scope and used_in < declared_in.
 
 // TODO: Integrate with directives to ignore functions if the user wants it
-UnfilteredUseBeforeDef(
-    UseBeforeDef { name, expr, used_in, declared, declared_in, file },
-    decl_scope,
-    used_scope,
-) :-
+UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     Call(expr, file, Some { callee }, _),
@@ -83,11 +61,7 @@ UnfilteredUseBeforeDef(
     Function(func, file, Some { Spanned { _, declared_in }}, decl_scope, _, _),
     decl_scope != used_scope and used_in < declared_in.
 
-UnfilteredUseBeforeDef(
-    UseBeforeDef { name, expr, used_in, declared, declared_in, file },
-    decl_scope,
-    used_scope,
-) :-
+UseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     New(expr, file, Some { object }, _),
@@ -99,11 +73,7 @@ UnfilteredUseBeforeDef(
     Expression(class, file, _, decl_scope, declared_in),
     decl_scope != used_scope and used_in < declared_in.
 
-UnfilteredUseBeforeDef(
-    UseBeforeDef { name, expr, used_in, AnyIdClass { class }, declared_in, file },
-    declared_scope,
-    used_scope,
-) :-
+UseBeforeDef(name, expr, used_in, AnyIdClass { class }, declared_in, file) :-
     File(file, _, _, config),
     config.no_use_before_def_enabled(),
     New(expr, file, Some { object }, _),

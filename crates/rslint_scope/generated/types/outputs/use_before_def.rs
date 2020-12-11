@@ -31,36 +31,6 @@ use crate::closure;
 // use crate::ddlog_std;
 
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
-pub struct UnfilteredUseBeforeDef {
-    pub use_before_def: crate::outputs::use_before_def::UseBeforeDef,
-    pub declared_scope: crate::ast::ScopeId,
-    pub used_scope: crate::ast::ScopeId
-}
-impl abomonation::Abomonation for UnfilteredUseBeforeDef{}
-::differential_datalog::decl_struct_from_record!(UnfilteredUseBeforeDef["outputs::use_before_def::UnfilteredUseBeforeDef"]<>, ["outputs::use_before_def::UnfilteredUseBeforeDef"][3]{[0]use_before_def["use_before_def"]: crate::outputs::use_before_def::UseBeforeDef, [1]declared_scope["declared_scope"]: crate::ast::ScopeId, [2]used_scope["used_scope"]: crate::ast::ScopeId});
-::differential_datalog::decl_struct_into_record!(UnfilteredUseBeforeDef, ["outputs::use_before_def::UnfilteredUseBeforeDef"]<>, use_before_def, declared_scope, used_scope);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(UnfilteredUseBeforeDef, <>, use_before_def: crate::outputs::use_before_def::UseBeforeDef, declared_scope: crate::ast::ScopeId, used_scope: crate::ast::ScopeId);
-impl ::std::fmt::Display for UnfilteredUseBeforeDef {
-    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        match self {
-            crate::outputs::use_before_def::UnfilteredUseBeforeDef{use_before_def,declared_scope,used_scope} => {
-                __formatter.write_str("outputs::use_before_def::UnfilteredUseBeforeDef{")?;
-                ::std::fmt::Debug::fmt(use_before_def, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(declared_scope, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(used_scope, __formatter)?;
-                __formatter.write_str("}")
-            }
-        }
-    }
-}
-impl ::std::fmt::Debug for UnfilteredUseBeforeDef {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-        ::std::fmt::Display::fmt(&self, f)
-    }
-}
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct UseBeforeDef {
     pub name: crate::ast::Name,
     pub used: crate::ast::ExprId,
