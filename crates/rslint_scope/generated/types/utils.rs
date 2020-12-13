@@ -36,8 +36,12 @@ pub fn dbg<T: Debug>(val: T) {
     tracing::trace!(target: "ddlog", "{:#?}", &val);
 }
 
+pub fn debug<T: Debug>(val: T) {
+    println!("{:?}", val);
+}
+
 /* fn dbg<T: crate::Val>(val: & T) -> () */
-/* fn debug(message: & String) -> () */
+/* fn debug<T: crate::Val>(val: & T) -> () */
 pub fn or_else<T: crate::Val>(option: & crate::ddlog_std::Option<T>, option_b: & crate::ddlog_std::Option<T>) -> crate::ddlog_std::Option<T>
 {   match (*option) {
         crate::ddlog_std::Option::Some{x: _} => (*option).clone(),

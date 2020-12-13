@@ -30,7 +30,7 @@ typedef NameInScope = NameInScope {
 
 /// The `NameInScope` relation gives every name/symbol/ident that's defined for any given scope.
 /// Names are walked down children scopes, meaning all children have access to the variables of
-/// their parent scope(s). Each rule of `NameInScope` utilizes `NameVisibleInScope` to only propigate
+/// their parent scope(s). Each rule of `NameInScope` utilizes `NameOccursInScope` to only propigate
 /// *used* variables down scopes to avoid an exponental explosion of names that drastically increases
 /// compute time and memory usage. This allows lazily computing names within scope, since variables
 /// will only be propigated down segments of scope trees where they're actually used, which is
@@ -60,35 +60,35 @@ index Index_VariableInScope(file: FileId, scope: ScopeId, variable: Name)
 // Introduce all declared variables where they're used
 NameInScope(file, name, scope, declared) :-
     VariableDeclarations(file, name, scope, _, declared, _, _, _),
-    NameVisibleInScope(name, scope, file).
+    NameOccursInScope(name, scope, file).
 
 // Walk variables down scopes
 NameInScope(file, name, to, declared) :-
-    NameVisibleInScope(name, to, file),
+    NameOccursInScope(name, to, file),
     not VariableDeclarations(file, name, to, _, _, _, _, _),
     InputScope(from, to, file),
     NameInScope(file, name, from, declared).
 
 /// A record of where variable usages actually happen
-relation NameVisibleInScope(name: Name, scope: ScopeId, file: FileId)
+relation NameOccursInScope(name: Name, scope: ScopeId, file: FileId)
 
 /// Add all name references
-NameVisibleInScope(name, scope, file) :-
+NameOccursInScope(name, scope, file) :-
     NameRef(id, file, name),
     Expression(id, file, _, scope, _).
 
 /// Add assignment patterns
-NameVisibleInScope(name, scope, file) :-
+NameOccursInScope(name, scope, file) :-
     Assign(id, file, Some { Left { pattern }}, _, _),
     Expression(id, file, _, scope, _),
     var name = FlatMap(pattern.bound_vars().map(|name| name.data)).
 
 /// Add exports
-NameVisibleInScope(name, scope, file) :-
+NameOccursInScope(name, scope, file) :-
     FileExport(file, NamedExport { export_name, export_alias }, scope),
     Some { Spanned { var name, _ }} = export_alias.or_else(export_name).
 
 /// Recurse to parent scopes
-NameVisibleInScope(name, parent, file) :-
-    NameVisibleInScope(name, child, file),
+NameOccursInScope(name, parent, file) :-
+    NameOccursInScope(name, child, file),
     InputScope(parent, child, file).
