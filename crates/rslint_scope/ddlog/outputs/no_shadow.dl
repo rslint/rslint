@@ -21,16 +21,6 @@ NoShadow(name, (initial_id, initial_span), (shadower_id, shadower_span), false, 
     File(file, _, _, config),
     config.no_shadow_enabled(),
 
-    VariableDeclarations(file, name, initial_scope, Some { initial_span }, initial_id, false, true, _),
-    ScopeFamily(initial_scope, child_scope, file),
-    VariableDeclarations(file, name, child_scope, Some { shadower_span }, shadower_id, false, _, _),
-    shadower_id != initial_id and initial_span < shadower_span.
-
-NoShadow(name, (initial_id, initial_span), (shadower_id, shadower_span), false, file) :-
-    // Only analyze a file if NoShadow is enabled
-    File(file, _, _, config),
-    config.no_shadow_enabled(),
-
     VariableDeclarations(file, name, _, Some { initial_span }, initial_id, false, _, UserDefined { initial_scope }),
     ScopeFamily(initial_scope, child_scope, file),
     VariableDeclarations(file, name, child_scope, Some { shadower_span }, shadower_id, false, _, _),
@@ -44,6 +34,22 @@ NoShadow(name, (initial_id, initial_span), (shadower_id, shadower_span), false, 
 
     VariableDeclarations(file, name, initial_scope, Some { initial_span }, initial_id, false, false, _),
     VariableDeclarations(file, name, initial_scope, Some { shadower_span }, shadower_id, false, _, _),
+    shadower_id != initial_id and initial_span > shadower_span.
+
+NoShadow(name, (initial_id, initial_span), (shadower_id, shadower_span), false, file) :-
+    // Only do hoisted scopes when hoisting is enabled
+    File(file, _, _, config),
+    config.no_shadow_enabled() and config.no_shadow_hoisting(),
+
+    VariableDeclarations(file, name, initial_scope, Some { initial_span }, initial_id, false, false, _),
+    // Make sure the initial variable is able to be hoisted
+    IsHoistable(initial_id, file, true),
+
+    // Get the hoisted scope of the initial variable
+    FunctionLevelScope(initial_scope, hoisted_scope, file, _),
+
+    ScopeFamily(hoisted_scope, child_scope, file),
+    VariableDeclarations(file, name, child_scope, Some { shadower_span }, shadower_id, false, _, _),
     shadower_id != initial_id and initial_span > shadower_span.
 
 NeedsScopeChildren(scope, file) :- VariableDeclarations(file,  _, scope,  _, _, _, _, _).

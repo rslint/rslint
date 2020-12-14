@@ -1,12 +1,3 @@
-import ast
-import tdz
-import utils
-import inputs
-import scopes
-import config
-import is_exported
-import variable_decl
-import name_in_scope
 import outputs::no_undef
 import outputs::no_shadow
 import outputs::unused_vars

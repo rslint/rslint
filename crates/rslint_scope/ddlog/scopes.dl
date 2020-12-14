@@ -2,7 +2,6 @@ import ast
 import vec
 import utils
 import group
-import scopes
 import inputs
 
 /// All scopes that need their parent scopes

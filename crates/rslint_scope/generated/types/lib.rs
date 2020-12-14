@@ -140,14 +140,13 @@ pub mod log;
 pub mod ast;
 pub mod vec;
 pub mod utils;
-pub mod tdz;
 pub mod inputs;
 pub mod config;
-pub mod scopes;
-pub mod group;
-pub mod is_exported;
-pub mod var_decls;
 pub mod name_in_scope;
+pub mod group;
+pub mod scopes;
+pub mod var_decls;
+pub mod is_exported;
 pub mod variable_decl;
 use ast::{Pattern, Span, Spanned};
 use internment::Intern;
@@ -165,6 +164,7 @@ pub static IMPLICIT_ARGUMENTS: Lazy<Intern<Pattern>> = Lazy::new(|| {
         .into(),
     })
 });
+
 
 
 
