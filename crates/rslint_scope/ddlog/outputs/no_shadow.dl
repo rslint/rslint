@@ -15,45 +15,83 @@ output relation NoShadow(
     file: FileId,
 )
 
-// Unhoisted variables
 NoShadow(name, (initial_id, initial_span), (shadower_id, shadower_span), false, file) :-
-    // Only analyze a file if NoShadow is enabled
     File(file, _, _, config),
     config.no_shadow_enabled(),
 
-    VariableDeclarations(file, name, _, Some { initial_span }, initial_id, false, _, UserDefined { initial_scope }),
-    ScopeFamily(initial_scope, child_scope, file),
-    VariableDeclarations(file, name, child_scope, Some { shadower_span }, shadower_id, false, _, _),
-    shadower_id != initial_id and initial_span < shadower_span.
+    // Get the initial variable
+    VariableDeclarations(
+        file,
+        name,
+        scope,
+        initial_id,
+        &VariableMeta {
+            .implicitly_declared = false,
+            .declaration_span = Some { initial_span },
+        },
+    ),
+    var initial_scope = if (config.no_shadow_hoisting()) {
+        scope.hoisted_scope()
+    } else {
+        scope.unhoisted_scope()
+    },
 
-// Hoisted variables
-NoShadow(name, (initial_id, initial_span), (shadower_id, shadower_span), false, file) :-
-    // Only analyze a file if NoShadow is enabled
+    // Search all visible declarations
+    DeclarationVisibleWithin(file, initial_scope, shadower_id),
+    // A declaration cannot shadow itself
+    shadower_id != initial_id,
+
+    // Filter declarations for one with an identical name
+    VariableDeclarations(
+        file,
+        name,
+        shadower_scope,
+        shadower_id,
+        &VariableMeta {
+            .implicitly_declared = false,
+            .declaration_span = Some { shadower_span },
+        },
+    ),
+
+    // Make sure the hoisted variable occurs lexically after the
+    // declaration that shadows it
+    if (shadower_scope.is_hoistable() and config.no_shadow_hoisting()) {
+        initial_span > shadower_span
+
+    // Otherwise make sure the initial variable occurs lexically
+    // before the shadowing declaration
+    } else {
+        initial_span < shadower_span
+    }.
+
+
+relation DeclarationVisibleWithin(file: FileId, scope: ScopeId, declaration: AnyId)
+
+DeclarationVisibleWithin(file, scope, declaration) :-
     File(file, _, _, config),
-    config.no_shadow_enabled() and config.no_shadow_hoisting(),
+    config.no_shadow_enabled(),
 
-    VariableDeclarations(file, name, initial_scope, Some { initial_span }, initial_id, false, false, _),
-    VariableDeclarations(file, name, initial_scope, Some { shadower_span }, shadower_id, false, _, _),
-    shadower_id != initial_id and initial_span > shadower_span.
+    VariableDeclarations(
+        file,
+        _,
+        decl_scope,
+        declaration,
+        &VariableMeta { .implicitly_declared = false },
+    ),
+    // Globals have no concrete declarations, plus they cause
+    // massive bloat in the relation
+    not declaration.is_global(),
 
-NoShadow(name, (initial_id, initial_span), (shadower_id, shadower_span), false, file) :-
-    // Only do hoisted scopes when hoisting is enabled
-    File(file, _, _, config),
-    config.no_shadow_enabled() and config.no_shadow_hoisting(),
+    // If hoisting is enabled, use hoisted scopes
+    var scope = if (config.no_shadow_hoisting()) {
+        decl_scope.hoisted_scope()
 
-    VariableDeclarations(file, name, initial_scope, Some { initial_span }, initial_id, false, false, _),
-    // Make sure the initial variable is able to be hoisted
-    IsHoistable(initial_id, file, true),
+    // If hoisting is disabled, use unhoisted scopes
+    } else {
+        decl_scope.unhoisted_scope()
+    }.
 
-    // Get the hoisted scope of the initial variable
-    FunctionLevelScope(initial_scope, hoisted_scope, file, _),
-
-    ScopeFamily(hoisted_scope, child_scope, file),
-    VariableDeclarations(file, name, child_scope, Some { shadower_span }, shadower_id, false, _, _),
-    shadower_id != initial_id and initial_span > shadower_span.
-
-NeedsScopeChildren(scope, file) :- VariableDeclarations(file,  _, scope,  _, _, _, _, _).
-NeedsScopeChildren(hoisted_scope, file) :-
-    VariableDeclarations(file, _, scope,  _, id, _, _, _),
-    IsHoistable(id, file, true),
-    FunctionLevelScope(scope, hoisted_scope, file, _).
+// Propigate visibility
+DeclarationVisibleWithin(file, child, declaration) :-
+    DeclarationVisibleWithin(file, scope, declaration),
+    InputScope(scope, child, file).

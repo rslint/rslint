@@ -13,6 +13,10 @@ typedef StmtId = StmtId { id: u32 }
 typedef ExprId = ExprId { id: u32 }
 typedef ScopeId = ScopeId { id: u32 }
 
+function any_id(global: GlobalId): AnyId {
+    AnyIdGlobal { global }
+}
+
 function to_string(scope: ScopeId): string {
     "Scope_${scope.id}"
 }

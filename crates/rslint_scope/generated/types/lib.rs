@@ -130,6 +130,8 @@ macro_rules! deserialize_map_from_array {
 }
 
 
+pub static __STATIC_2: ::once_cell::sync::Lazy<crate::ddlog_std::Ref<crate::var_decls::VariableMeta>> = ::once_cell::sync::Lazy::new(|| crate::ddlog_std::ref_new((&(crate::var_decls::VariableMeta{is_function_argument: false, implicitly_declared: false, declaration_span: (crate::ddlog_std::Option::None{})}))));
+pub static __STATIC_3: ::once_cell::sync::Lazy<crate::ddlog_std::Ref<crate::var_decls::VariableMeta>> = ::once_cell::sync::Lazy::new(|| crate::ddlog_std::ref_new((&(crate::var_decls::VariableMeta{is_function_argument: true, implicitly_declared: false, declaration_span: (crate::ddlog_std::Option::None{})}))));
 pub static __STATIC_1: ::once_cell::sync::Lazy<crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>> = ::once_cell::sync::Lazy::new(|| crate::ddlog_std::vec_empty());
 pub static __STATIC_0: ::once_cell::sync::Lazy<crate::ddlog_std::Vec<crate::ast::Spanned<crate::ast::Name>>> = ::once_cell::sync::Lazy::new(|| crate::ddlog_std::vec_with_capacity((&(1 as u64))));
 pub mod outputs;
@@ -164,6 +166,10 @@ pub static IMPLICIT_ARGUMENTS: Lazy<Intern<Pattern>> = Lazy::new(|| {
         .into(),
     })
 });
+
+
+
+
 
 
 

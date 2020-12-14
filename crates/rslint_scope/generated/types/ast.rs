@@ -2010,6 +2010,9 @@ impl ::std::default::Default for UnaryOperand {
         crate::ast::UnaryOperand::UnaryIncrement{}
     }
 }
+pub fn any_id(global: & crate::ast::GlobalId) -> crate::ast::AnyId
+{   (crate::ast::AnyId::AnyIdGlobal{global: (*global).clone()})
+}
 pub fn body_ast_PropertyVal_ddlog_std_Option__ast_StmtId(prop: & crate::ast::PropertyVal) -> crate::ddlog_std::Option<crate::ast::StmtId>
 {   match (*prop) {
         crate::ast::PropertyVal::PropGetter{body: crate::ddlog_std::Option::Some{x: ref body}} => (crate::ddlog_std::Option::Some{x: (*body).clone()}),

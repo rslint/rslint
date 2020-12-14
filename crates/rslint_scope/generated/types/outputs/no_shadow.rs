@@ -31,6 +31,36 @@ use crate::closure;
 // use crate::ddlog_std;
 
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct DeclarationVisibleWithin {
+    pub file: crate::ast::FileId,
+    pub scope: crate::ast::ScopeId,
+    pub declaration: crate::ast::AnyId
+}
+impl abomonation::Abomonation for DeclarationVisibleWithin{}
+::differential_datalog::decl_struct_from_record!(DeclarationVisibleWithin["outputs::no_shadow::DeclarationVisibleWithin"]<>, ["outputs::no_shadow::DeclarationVisibleWithin"][3]{[0]file["file"]: crate::ast::FileId, [1]scope["scope"]: crate::ast::ScopeId, [2]declaration["declaration"]: crate::ast::AnyId});
+::differential_datalog::decl_struct_into_record!(DeclarationVisibleWithin, ["outputs::no_shadow::DeclarationVisibleWithin"]<>, file, scope, declaration);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(DeclarationVisibleWithin, <>, file: crate::ast::FileId, scope: crate::ast::ScopeId, declaration: crate::ast::AnyId);
+impl ::std::fmt::Display for DeclarationVisibleWithin {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::outputs::no_shadow::DeclarationVisibleWithin{file,scope,declaration} => {
+                __formatter.write_str("outputs::no_shadow::DeclarationVisibleWithin{")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(scope, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(declaration, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for DeclarationVisibleWithin {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct NoShadow {
     pub variable: crate::ast::Name,
     pub original: crate::ddlog_std::tuple2<crate::ast::AnyId, crate::ast::Span>,

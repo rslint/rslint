@@ -4,27 +4,81 @@ import inputs
 import scopes
 import name_in_scope
 
+/// The scope a variable was declared in
+typedef DeclarationScope =
+    Unhoistable { scope: ScopeId }
+    | Hoistable { hoisted: ScopeId, unhoisted: ScopeId }
+
+/// Whether the scope is hoistable
+function is_hoistable(scope: DeclarationScope): bool {
+    match (scope) {
+        Unhoistable -> false,
+        Hoistable -> true,
+    }
+}
+
+/// Whether the scope is unhoistable
+function is_unhoistable(scope: DeclarationScope): bool {
+    match (scope) {
+        Unhoistable -> true,
+        Hoistable -> false,
+    }
+}
+
+/// Get the hoisted scope of a `DeclarationScope`
+function hoisted_scope(scope: DeclarationScope): ScopeId {
+    match (scope) {
+        Unhoistable { scope } -> scope,
+        Hoistable { hoisted, _ } -> hoisted,
+    }
+}
+
+/// Get the unhoisted scope of a `DeclarationScope`
+function unhoisted_scope(scope: DeclarationScope): ScopeId {
+    match (scope) {
+        Unhoistable { scope } -> scope,
+        Hoistable { _, unhoisted } -> unhoisted,
+    }
+}
+
+/// Metadata associated with a variable declaration
+typedef VariableMeta = VariableMeta {
+    /// Whether the variable is from a function argument
+    is_function_argument: bool,
+    /// Whether the variable is implicitly declared
+    implicitly_declared: bool,
+    /// The span of the declared variable
+    declaration_span: Option<Span>,
+}
+
 /// All declarations of variables
+// TODO: Rewrite and refine semantics of this
+// TODO: Document this
 relation VariableDeclarations(
     file: FileId,
     name: Name,
-    scope: ScopeId,
-    span: Option<Span>,
+    scope: DeclarationScope,
     declared_in: AnyId,
-    implicit: bool,
-    is_arg: bool,
-    origin: NameOrigin,
+    meta: Ref<VariableMeta>,
 )
 
 // Add implicit globals to every file
-VariableDeclarations(file, name, scope, None, AnyIdGlobal { global }, true, false, AutoGlobal) :-
-    File(file, _, scope, _),
-    ImplicitGlobal(global, name, _).
+VariableDeclarations(file, name, scope, id, meta) :-
+    File(file, _, file_scope, _),
+    ImplicitGlobal(global, name, _),
+
+    var meta = VariableMeta { false, false, None }.ref_new(),
+    var id = AnyIdGlobal { global },
+    var scope = Unhoistable { file_scope }.
 
 // Add yser globals to the file they're declared in
-VariableDeclarations(file, name, scope, None, AnyIdGlobal { global }, true, false, AutoGlobal) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     UserGlobal(global, file, name, _),
-    File(file, _, scope, _).
+    File(file, _, file_scope, _),
+
+    var meta = VariableMeta { true, false, None }.ref_new(),
+    var id = AnyIdGlobal { global },
+    var scope = Unhoistable { file_scope }.
 
 // Import declarations
 //
@@ -33,11 +87,16 @@ VariableDeclarations(file, name, scope, None, AnyIdGlobal { global }, true, fals
 // import { Foo, Bar } from "./somewhere.js";
 // // Scope: { Foo, Bar, .. }
 // ```
-VariableDeclarations(file, name, scope, Some { span }, AnyIdImport { id }, false, false, Imported) :-
-    ImportDecl(id, file, clause),
-    File(file, _, scope, _),
+VariableDeclarations(file, name, scope, id, meta) :-
+    ImportDecl(import_id, file, clause),
+    File(file, _, file_scope, _),
+
     var imported = FlatMap(clause.free_variables()),
-    Spanned { var name, var span } = imported.
+    Spanned { var name, var span } = imported,
+
+    var meta = VariableMeta { false, false, Some { span }}.ref_new(),
+    var id = AnyIdImport { import_id },
+    var scope = Unhoistable { file_scope }.
 
 // Class declarations
 //
@@ -50,8 +109,12 @@ VariableDeclarations(file, name, scope, Some { span }, AnyIdImport { id }, false
 // // Scope: { Baz, ... }
 // ```
 //
-VariableDeclarations(file, name, scope, Some { span }, AnyIdClass { class }, false, false, UserDefined { scope }) :-
-    Class(class, file, Some { Spanned { name, span }}, _, _, scope, _).
+VariableDeclarations(file, name, scope, id, meta) :-
+    Class(class, file, Some { Spanned { name, span }}, _, _, class_scope, _),
+
+    var meta = VariableMeta { false, false, Some { span }}.ref_new(),
+    var id = AnyIdClass { class },
+    var scope = Unhoistable { class_scope }.
 
 // `let` declarations
 //
@@ -64,11 +127,16 @@ VariableDeclarations(file, name, scope, Some { span }, AnyIdClass { class }, fal
 // // Scope: { foo, ... }
 // ```
 //
-VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     LetDecl(stmt, file, Some { pat }, _, _),
-    Statement(stmt, file, _, scope, _),
+    Statement(stmt, file, _, stmt_scope, _),
+
     var bound = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound.
+    Spanned { var name, var span } = bound,
+
+    var meta = VariableMeta { false, false, Some { span }}.ref_new(),
+    var id = AnyIdStmt { stmt },
+    var scope = Unhoistable { stmt_scope }.
 
 // `const` declarations
 //
@@ -81,11 +149,16 @@ VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { stmt }, false
 // // Scope: { foo, ... }
 // ```
 //
-VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     ConstDecl(stmt, file, Some { pat }, _, _),
-    Statement(stmt, file, _, scope, _),
+    Statement(stmt, file, _, stmt_scope, _),
+
     var bound = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound.
+    Spanned { var name, var span } = bound,
+
+    var meta = VariableMeta { false, false, Some { span }}.ref_new(),
+    var id = AnyIdStmt { stmt },
+    var scope = Unhoistable { stmt_scope }.
 
 // `var` declarations
 //
@@ -101,17 +174,18 @@ VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { stmt }, false
 // // Scope: { ... }
 // ```
 //
-VariableDeclarations(file, name, nearest, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     VarDecl(stmt, file, Some { pat }, _, _),
-    Statement(stmt, file, _, scope, _),
+    Statement(stmt, file, _, stmt_scope, _),
     // Bubble `var` up to the nearest function-level scope
-    FunctionLevelScope(scope, nearest, file, _),
-    var bound = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound.
+    FunctionLevelScope(stmt_scope, nearest_scope, file, _),
 
-NeedsScopeChildren(scope, file) :-
-    VarDecl(stmt, file, _, _, _),
-    Statement(stmt, file, _, scope, _).
+    var bound = FlatMap(pat.bound_vars()),
+    Spanned { var name, var span } = bound,
+
+    var meta = VariableMeta { false, false, Some { span }}.ref_new(),
+    var id = AnyIdStmt { stmt },
+    var scope = Hoistable { .hoisted = nearest_scope, .unhoisted = stmt_scope }.
 
 // Function declarations
 //
@@ -123,12 +197,14 @@ NeedsScopeChildren(scope, file) :-
 // // Scope: { foo, ... }
 // ```
 //
-VariableDeclarations(file, name, nearest, Some { span }, AnyIdFunc { func }, false, false, UserDefined { scope }) :-
-    Function(func, file, Some { Spanned { name, span }}, scope, _, _),
+VariableDeclarations(file, name, scope, id, meta) :-
+    Function(func, file, Some { Spanned { name, span }}, func_scope, _, _),
     // Bubble functions up to the nearest function-level scope
-    FunctionLevelScope(scope, nearest, file, _).
+    FunctionLevelScope(func_scope, nearest_scope, file, _),
 
-NeedsScopeChildren(scope, file) :- Function(_, file, _, scope, _, _).
+    var meta = VariableMeta { false, false, Some { span }}.ref_new(),
+    var id = AnyIdFunc { func },
+    var scope = Hoistable { .hoisted = nearest_scope, .unhoisted = func_scope }.
 
 // Introduce function arguments within the body of their enclosing function
 //
@@ -140,11 +216,21 @@ NeedsScopeChildren(scope, file) :- Function(_, file, _, scope, _, _).
 // // Scope: { ... }
 // ```
 //
-VariableDeclarations(file, name, body, Some { span }, AnyIdFunc { func }, implicit, true, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     FunctionArg(func, file, pat, implicit),
-    Function(func, file, _, scope, body, _),
+    Function(func, file, _, _, body, _),
+
     var bound = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound.
+    Spanned { var name, var span } = bound,
+    
+    var meta = VariableMeta {
+        .is_function_argument = true,
+        .implicitly_declared = implicit,
+        .declaration_span = Some { span },
+    }
+    .ref_new(),
+    var id = AnyIdFunc { func },
+    var scope = Unhoistable { body }.
 
 // Introduce closure arguments within the body of their enclosing closure
 //
@@ -156,11 +242,21 @@ VariableDeclarations(file, name, body, Some { span }, AnyIdFunc { func }, implic
 // // Scope: { ... }
 // ```
 //
-VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, false, true, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     ArrowParam(expr, file, pat),
-    Arrow(expr, file, Some { (_, scope) }),
+    Arrow(expr, file, Some { (_, body_scope) }),
+
     var bound = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound.
+    Spanned { var name, var span } = bound,
+    
+    var meta = VariableMeta {
+        .is_function_argument = true,
+        .implicitly_declared = false,
+        .declaration_span = Some { span },
+    }
+    .ref_new(),
+    var id = AnyIdExpr { expr },
+    var scope = Unhoistable { body_scope }.
 
 // Inline function names
 //
@@ -176,10 +272,19 @@ VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, false
 // // Scope: { ... }
 // ```
 //
-// TODO: Make the implicit be configured by directives
-VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, true, false, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     InlineFunc(expr, file, Some { Spanned { name, span }}, Some { body }),
-    Statement(body, file, _, scope, _).
+    Statement(body, file, _, body_scope, _),
+
+    var meta = VariableMeta {
+        .is_function_argument = false,
+        // TODO: Make this configured by directives
+        .implicitly_declared = true,
+        .declaration_span = Some { span },
+    }
+    .ref_new(),
+    var id = AnyIdExpr { expr },
+    var scope = Unhoistable { body_scope }.
 
 // Introduce inline function arguments within the body of their enclosing closure
 //
@@ -191,33 +296,68 @@ VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, true,
 // // Scope: { ... }
 // ```
 //
-VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, false, true, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     InlineFuncParam(expr, file, pat),
     InlineFunc(expr, file, _, Some { body }),
-    Statement(body, file, _, scope, _),
+    Statement(body, file, _, body_scope, _),
+
     var bound = FlatMap(pat.bound_vars()),
-    Spanned { var name, var span } = bound.
+    Spanned { var name, var span } = bound,
+    
+    var meta = VariableMeta {
+        .is_function_argument = true,
+        .implicitly_declared = false,
+        .declaration_span = Some { span },
+    }
+    .ref_new(),
+    var id = AnyIdExpr { expr },
+    var scope = Unhoistable { body_scope }.
 
 // `catch` statement patterns
-VariableDeclarations(file, name, scope, Some { span }, AnyIdStmt { stmt }, false, false, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     Try(stmt, file, _, TryHandler { Some { error }, Some { body } }, _),
-    Statement(body, file, _, scope, _),
+    Statement(body, file, _, stmt_scope, _),
+
     var bound = FlatMap(error.bound_vars()),
-    Spanned { var name, var span } = bound.
+    Spanned { var name, var span } = bound,
+    
+    var meta = VariableMeta { false, false, Some { span }}.ref_new(),
+    var id = AnyIdStmt { stmt },
+    var scope = Unhoistable { stmt_scope }.
 
 // Class methods and static class methods
-VariableDeclarations(file, name, scope, Some { span }, AnyIdClass { class }, implicit, true, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     Class(class, file, _, _, Some { elements }, _, _),
     var elem = FlatMap(elements),
     Some { (var params, var body) } = elem.ival().method_comps(),
-    Statement(body, file, _, scope, _),
+    Statement(body, file, _, stmt_scope, _),
+
     var bound = FlatMap(params.flatmap(|param| param.bound_vars())),
-    (Spanned { var name, var span }, var implicit) = bound.
+    (Spanned { var name, var span }, var implicit) = bound,
+    
+    var meta = VariableMeta {
+        .is_function_argument = true,
+        .implicitly_declared = implicit,
+        .declaration_span = Some { span },
+    }
+    .ref_new(),
+    var id = AnyIdClass { class },
+    var scope = Unhoistable { stmt_scope }.
 
 // Method properties, getters and setters
-VariableDeclarations(file, name, scope, Some { span }, AnyIdExpr { expr }, implicit, false, UserDefined { scope }) :-
+VariableDeclarations(file, name, scope, id, meta) :-
     Property(expr, file, _, Some { val }),
     Some { (var params, var body) } = val.method_comps(),
-    Statement(body, file, _, scope, _),
+    Statement(body, file, _, stmt_scope, _),
+
     var bound = FlatMap(params.flatmap(|param| param.bound_vars())),
-    (Spanned { var name, var span }, var implicit) = bound.
+    (Spanned { var name, var span }, var implicit) = bound,
+    
+    var meta = VariableMeta {
+        .is_function_argument = false,
+        .implicitly_declared = implicit,
+        .declaration_span = Some { span },
+    }
+    .ref_new(),
+    var id = AnyIdExpr { expr },
+    var scope = Unhoistable { stmt_scope }.

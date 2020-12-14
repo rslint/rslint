@@ -58,14 +58,21 @@ index Index_VariableInScope(file: FileId, scope: ScopeId, variable: Name)
     on NameInScope[NameInScope { .file = file, .name = variable, .scope = scope }]
 
 // Introduce all declared variables where they're used
-NameInScope(file, name, scope, declared) :-
-    VariableDeclarations(file, name, scope, _, declared, _, _, _),
-    NameOccursInScope(name, scope, file).
+NameInScope(file, name, variable_scope, declared) :-
+    VariableDeclarations(file, name, scope, declared, _),
+    var variable_scope = scope.hoisted_scope(),
+    NameOccursInScope(name, variable_scope, file).
 
 // Walk variables down scopes
 NameInScope(file, name, to, declared) :-
     NameOccursInScope(name, to, file),
-    not VariableDeclarations(file, name, to, _, _, _, _, _),
+    not VariableDeclarations(file, name, Unhoistable { to }, _, _),
+    InputScope(from, to, file),
+    NameInScope(file, name, from, declared).
+
+NameInScope(file, name, to, declared) :-
+    NameOccursInScope(name, to, file),
+    not VariableDeclarations(file, name, Hoistable { to, _ }, _, _),
     InputScope(from, to, file),
     NameInScope(file, name, from, declared).
 

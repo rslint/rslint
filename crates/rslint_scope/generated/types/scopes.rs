@@ -65,22 +65,22 @@ impl ::std::fmt::Debug for FunctionLevelScope {
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct IsHoistable {
-    pub id: crate::ast::AnyId,
     pub file: crate::ast::FileId,
+    pub id: crate::ast::AnyId,
     pub hoistable: bool
 }
 impl abomonation::Abomonation for IsHoistable{}
-::differential_datalog::decl_struct_from_record!(IsHoistable["scopes::IsHoistable"]<>, ["scopes::IsHoistable"][3]{[0]id["id"]: crate::ast::AnyId, [1]file["file"]: crate::ast::FileId, [2]hoistable["hoistable"]: bool});
-::differential_datalog::decl_struct_into_record!(IsHoistable, ["scopes::IsHoistable"]<>, id, file, hoistable);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(IsHoistable, <>, id: crate::ast::AnyId, file: crate::ast::FileId, hoistable: bool);
+::differential_datalog::decl_struct_from_record!(IsHoistable["scopes::IsHoistable"]<>, ["scopes::IsHoistable"][3]{[0]file["file"]: crate::ast::FileId, [1]id["id"]: crate::ast::AnyId, [2]hoistable["hoistable"]: bool});
+::differential_datalog::decl_struct_into_record!(IsHoistable, ["scopes::IsHoistable"]<>, file, id, hoistable);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(IsHoistable, <>, file: crate::ast::FileId, id: crate::ast::AnyId, hoistable: bool);
 impl ::std::fmt::Display for IsHoistable {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::scopes::IsHoistable{id,file,hoistable} => {
+            crate::scopes::IsHoistable{file,id,hoistable} => {
                 __formatter.write_str("scopes::IsHoistable{")?;
-                ::std::fmt::Debug::fmt(id, __formatter)?;
-                __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(id, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(hoistable, __formatter)?;
                 __formatter.write_str("}")
