@@ -64,25 +64,49 @@ impl ::std::fmt::Debug for NameInScope {
     }
 }
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
-pub struct NameOccursInScope {
+pub struct NameOccurance {
     pub name: crate::ast::Name,
-    pub scope: crate::ast::ScopeId,
     pub file: crate::ast::FileId
 }
+impl abomonation::Abomonation for NameOccurance{}
+::differential_datalog::decl_struct_from_record!(NameOccurance["name_in_scope::NameOccurance"]<>, ["name_in_scope::NameOccurance"][2]{[0]name["name"]: crate::ast::Name, [1]file["file"]: crate::ast::FileId});
+::differential_datalog::decl_struct_into_record!(NameOccurance, ["name_in_scope::NameOccurance"]<>, name, file);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NameOccurance, <>, name: crate::ast::Name, file: crate::ast::FileId);
+impl ::std::fmt::Display for NameOccurance {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::name_in_scope::NameOccurance{name,file} => {
+                __formatter.write_str("name_in_scope::NameOccurance{")?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for NameOccurance {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct NameOccursInScope {
+    pub scope: crate::ast::ScopeId,
+    pub name: crate::internment::Intern<crate::name_in_scope::NameOccurance>
+}
 impl abomonation::Abomonation for NameOccursInScope{}
-::differential_datalog::decl_struct_from_record!(NameOccursInScope["name_in_scope::NameOccursInScope"]<>, ["name_in_scope::NameOccursInScope"][3]{[0]name["name"]: crate::ast::Name, [1]scope["scope"]: crate::ast::ScopeId, [2]file["file"]: crate::ast::FileId});
-::differential_datalog::decl_struct_into_record!(NameOccursInScope, ["name_in_scope::NameOccursInScope"]<>, name, scope, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NameOccursInScope, <>, name: crate::ast::Name, scope: crate::ast::ScopeId, file: crate::ast::FileId);
+::differential_datalog::decl_struct_from_record!(NameOccursInScope["name_in_scope::NameOccursInScope"]<>, ["name_in_scope::NameOccursInScope"][2]{[0]scope["scope"]: crate::ast::ScopeId, [1]name["name"]: crate::internment::Intern<crate::name_in_scope::NameOccurance>});
+::differential_datalog::decl_struct_into_record!(NameOccursInScope, ["name_in_scope::NameOccursInScope"]<>, scope, name);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NameOccursInScope, <>, scope: crate::ast::ScopeId, name: crate::internment::Intern<crate::name_in_scope::NameOccurance>);
 impl ::std::fmt::Display for NameOccursInScope {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            crate::name_in_scope::NameOccursInScope{name,scope,file} => {
+            crate::name_in_scope::NameOccursInScope{scope,name} => {
                 __formatter.write_str("name_in_scope::NameOccursInScope{")?;
-                ::std::fmt::Debug::fmt(name, __formatter)?;
-                __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(scope, __formatter)?;
                 __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(file, __formatter)?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -132,5 +156,38 @@ impl ::std::fmt::Debug for NameOrigin {
 impl ::std::default::Default for NameOrigin {
     fn default() -> Self {
         crate::name_in_scope::NameOrigin::AutoGlobal{}
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+pub struct ScopeOfDeclName {
+    pub file: crate::ast::FileId,
+    pub name: crate::ast::Name,
+    pub scope: crate::ast::ScopeId,
+    pub declared: crate::ast::AnyId
+}
+impl abomonation::Abomonation for ScopeOfDeclName{}
+::differential_datalog::decl_struct_from_record!(ScopeOfDeclName["name_in_scope::ScopeOfDeclName"]<>, ["name_in_scope::ScopeOfDeclName"][4]{[0]file["file"]: crate::ast::FileId, [1]name["name"]: crate::ast::Name, [2]scope["scope"]: crate::ast::ScopeId, [3]declared["declared"]: crate::ast::AnyId});
+::differential_datalog::decl_struct_into_record!(ScopeOfDeclName, ["name_in_scope::ScopeOfDeclName"]<>, file, name, scope, declared);
+#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ScopeOfDeclName, <>, file: crate::ast::FileId, name: crate::ast::Name, scope: crate::ast::ScopeId, declared: crate::ast::AnyId);
+impl ::std::fmt::Display for ScopeOfDeclName {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            crate::name_in_scope::ScopeOfDeclName{file,name,scope,declared} => {
+                __formatter.write_str("name_in_scope::ScopeOfDeclName{")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(name, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(scope, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(declared, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ScopeOfDeclName {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
     }
 }

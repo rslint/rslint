@@ -8,8 +8,10 @@ output relation TypeofUndef(whole_expr: ExprId, undefined_expr: ExprId, file: Fi
 TypeofUndef(whole_expr, undefined_expr, file) :-
     File(file, _, _, config),
     config.no_undef_enabled() or config.no_typeof_undef_enabled(),
+
     NameRef(undefined_expr, file, name),
     Expression(undefined_expr, file, ExprNameRef, scope, span),
+
     // Expressions like `typeof not_undefined` are allowed under NoUndef
     // and are instead output through TypeofUndef
     WithinTypeofExpr(whole_expr, undefined_expr, file),
