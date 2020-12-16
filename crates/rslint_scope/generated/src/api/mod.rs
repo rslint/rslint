@@ -39,7 +39,7 @@ use super::*;
 use super::flatbuf;
 
 #[cfg(feature = "flatbuf")]
-use types::flatbuf::FromFlatBuffer;
+use super::flatbuf::FromFlatBuffer;
 
 // TODO: Move HDDlog into the differential_datalog crate.
 #[derive(Debug)]
@@ -53,6 +53,10 @@ pub struct HDDlog {
     /// the specified `.dat` file so that they can be replayed later.
     pub replay_file: Option<Mutex<fs::File>>,
 }
+
+// `HDDlog` is not `Send` because `WorkerGuards` are not `Send`.  Remove this
+// unsafe impl once we switcht to a more recent DD.
+unsafe impl Send for HDDlog {}
 
 /* Public API */
 impl HDDlog {

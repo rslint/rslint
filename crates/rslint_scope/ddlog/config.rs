@@ -112,6 +112,7 @@ decl_struct_from_record!(
     }
 );
 
+#[allow(clippy::assign_op_pattern)]
 decl_record_mutator_struct!(
     Config, <>,
     no_shadow: bool,

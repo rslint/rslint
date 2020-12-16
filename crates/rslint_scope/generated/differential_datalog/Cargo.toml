@@ -11,17 +11,19 @@ nested_ts_32 = []
 c_api = []
 
 [dependencies]
-differential-dataflow = "0.11.0"
+#differential-dataflow = "0.11.0"
+differential-dataflow = { git = "https://github.com/ddlog-dev/differential-dataflow", branch = "ddlog-1" }
+#timely = "0.11"
+timely = { git = "https://github.com/ddlog-dev/timely-dataflow", branch = "ddlog-1" }
+
 abomonation = "0.7"
 ordered-float = { version = "2.0.0", features = ["serde"] }
 fnv = "1.0.2"
-timely = "0.11"
 libc = "0.2"
 csv = "1.1"
 num = { version = "0.3", features = ["serde"] }
 sequence_trie = "0.3"
 serde = { version = "1.0", features = ["derive"] }
-typetag = "0.1"
 erased-serde = "0.3"
 
 [dev-dependencies]

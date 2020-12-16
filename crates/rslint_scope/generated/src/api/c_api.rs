@@ -27,7 +27,7 @@ use std::{mem, slice};
 #[cfg(feature = "flatbuf")]
 use super::flatbuf;
 #[cfg(feature = "flatbuf")]
-use types::flatbuf::FromFlatBuffer;
+use super::flatbuf::FromFlatBuffer;
 
 #[cfg(unix)]
 use std::os::unix::io::{FromRawFd, IntoRawFd, RawFd};

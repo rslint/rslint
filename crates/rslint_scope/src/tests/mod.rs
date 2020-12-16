@@ -25,10 +25,8 @@ macro_rules! rule_test {
                 tests::DatalogTestHarness,
                 datalog::DatalogLint::{self, *},
             };
-            use types::{
-                ast::Span,
-                config::{Config, NoShadowHoisting::{self, *}},
-            };
+            use ast::Span;
+            use config::{Config, NoShadowHoisting::{self, *}};
             use std::borrow::Cow;
             use rayon::iter::{ParallelIterator, IntoParallelIterator};
             use tracing_subscriber::{layer::SubscriberExt, Layer, EnvFilter, Registry};
@@ -85,10 +83,8 @@ macro_rules! rule_test {
                 tests::DatalogTestHarness,
                 datalog::DatalogLint::{self, *},
             };
-            use types::{
-                ast::Span,
-                config::{Config, NoShadowHoisting::{self, *}},
-            };
+            use ast::Span;
+            use config::{Config, NoShadowHoisting::{self, *}};
             use std::borrow::Cow;
             use rayon::iter::{ParallelIterator, IntoParallelIterator};
 
@@ -124,6 +120,8 @@ use crate::{
     globals::{JsGlobal, BROWSER, BUILTIN, ES2021, NODE},
     ScopeAnalyzer,
 };
+use ast::FileId;
+use config::Config;
 use rslint_parser::{parse_module, parse_text};
 use std::{
     borrow::Cow,
@@ -132,7 +130,6 @@ use std::{
     path::Path,
     sync::atomic::{AtomicUsize, Ordering},
 };
-use types::{ast::FileId, config::Config};
 
 struct DatalogTestHarness {
     datalog: ScopeAnalyzer,

@@ -4,22 +4,19 @@ pub mod globals;
 // pub mod scoping;
 mod tests;
 
+pub use ast::{self, FileId};
+pub use config::{Config, NoShadowHoisting};
 pub use datalog::{Datalog, DatalogLint, DatalogResult};
-pub use types::{
-    ast,
-    ast::FileId,
-    config::{Config, NoShadowHoisting},
-    ddlog_std,
-};
+pub use ddlog_std;
 
 use analyzer::{AnalyzerInner, Visit};
+use ast::{FileKind, JSFlavor};
 use rslint_parser::{
     ast::{Module, ModuleItem, Script},
     SyntaxNode, SyntaxNodeExt,
 };
 use serde::{Deserialize, Serialize};
 use std::{ops::Deref, sync::Arc};
-use types::ast::{FileKind, JSFlavor};
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct ScopeAnalyzer {

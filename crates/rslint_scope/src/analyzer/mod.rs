@@ -6,16 +6,14 @@ mod visit;
 pub(crate) use visit::Visit;
 
 use crate::datalog::DatalogBuilder;
+use ast::{
+    IPattern, Name as DatalogName, ObjectPatternProp as DatalogObjectPatternProp,
+    Pattern as DatalogPattern, Spanned,
+};
+use internment::Intern;
 use rslint_parser::{
     ast::{AstChildren, Name, ObjectPatternProp, Pattern},
     AstNode,
-};
-use types::{
-    ast::{
-        IPattern, Name as DatalogName, ObjectPatternProp as DatalogObjectPatternProp,
-        Pattern as DatalogPattern, Spanned,
-    },
-    internment::Intern,
 };
 
 pub(super) struct AnalyzerInner;

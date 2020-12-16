@@ -21,6 +21,8 @@ use std::sync::mpsc::*;
 use std::sync::{Arc, Barrier, Mutex, MutexGuard};
 use std::thread::*;
 
+use differential_datalog::program::CBFn;
+use differential_datalog::program::RelId;
 use differential_datalog::Callback;
 use differential_datalog::DeltaMap;
 

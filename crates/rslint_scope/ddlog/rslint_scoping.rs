@@ -1,6 +1,6 @@
-use ast::{Pattern, Span, Spanned};
 use internment::Intern;
 use once_cell::sync::Lazy;
+use types__ast::{Pattern, Span, Spanned};
 
 /// The implicitly introduced `arguments` variable for function scopes,
 /// kept in a global so we only allocate & intern it once

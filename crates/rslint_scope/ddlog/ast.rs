@@ -1,4 +1,3 @@
-use super::internment::Intern;
 use rslint_parser::{
     ast::{AssignOp as AstAssignOp, BinOp as AstBinOp, UnaryOp as AstUnaryOp},
     TextRange,
@@ -7,18 +6,6 @@ use std::{
     cell::Cell,
     ops::{Add, AddAssign, Range},
 };
-
-impl From<&str> for Intern<String> {
-    fn from(string: &str) -> Self {
-        Self::new(string.to_owned())
-    }
-}
-
-impl From<String> for Intern<String> {
-    fn from(string: String) -> Self {
-        Self::new(string)
-    }
-}
 
 impl<T> Spanned<T> {
     /// Create a new `Spanned`

@@ -532,6 +532,107 @@ dependencies = [
 ]
 
 [[package]]
+name = "ddlog_bigint"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_rt",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+]
+
+[[package]]
+name = "ddlog_log"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+]
+
+[[package]]
+name = "ddlog_rt"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+]
+
+[[package]]
+name = "ddlog_std"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_rt",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+]
+
+[[package]]
+name = "debug"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_rt",
+ "ddlog_std",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+]
+
+[[package]]
 name = "difference"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -540,8 +641,7 @@ checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 [[package]]
 name = "differential-dataflow"
 version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e03c280ce549faae59fecf2f201ff0901ccd5e9726ce0c292cc79d46e8dfa11c"
+source = "git+https://github.com/ddlog-dev/differential-dataflow?branch=ddlog-1#9557cee8c106fbb2d110fc153a2447c470647884"
 dependencies = [
  "abomonation",
  "abomonation_derive",
@@ -571,7 +671,6 @@ dependencies = [
  "serde",
  "serde_derive",
  "timely",
- "typetag",
 ]
 
 [[package]]
@@ -1039,6 +1138,29 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e74a1aa87c59aeff6ef2cc2fa62d41bc43f54952f55652656b18a02fd5e356c0"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "internment"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "arc-interner",
+ "ddlog_bigint",
+ "ddlog_rt",
+ "ddlog_std",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
 ]
 
 [[package]]
@@ -2002,7 +2124,10 @@ dependencies = [
  "anyhow",
  "cargo_toml",
  "dashmap",
+ "ddlog_bigint",
+ "ddlog_std",
  "differential_datalog",
+ "internment",
  "rayon",
  "rslint_parser",
  "rslint_scoping",
@@ -2013,6 +2138,10 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "types",
+ "types__ast",
+ "types__config",
+ "types__inputs",
+ "types__outputs__no_unused_labels",
  "typetag",
  "walkdir",
 ]
@@ -2023,9 +2152,16 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "cpuprofiler",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
  "differential-dataflow",
  "differential_datalog",
+ "erased-serde",
  "fnv",
+ "internment",
  "libc",
  "libtool",
  "num",
@@ -2036,6 +2172,15 @@ dependencies = [
  "time",
  "timely",
  "types",
+ "types__ast",
+ "types__config",
+ "types__group",
+ "types__inputs",
+ "types__outputs__no_unused_labels",
+ "types__scopes",
+ "types__utils",
+ "types__variable_decl",
+ "types__vec",
 ]
 
 [[package]]
@@ -2581,9 +2726,8 @@ dependencies = [
 
 [[package]]
 name = "timely"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfe8827dd1a7fd3360e0aed3e93d5706c75c402b46f81d634b3a9ab73fca71cf"
+version = "0.11.0"
+source = "git+https://github.com/ddlog-dev/timely-dataflow?branch=ddlog-1#9e6928eec132a143d00943c0c1b5de3313930170"
 dependencies = [
  "abomonation",
  "abomonation_derive",
@@ -2597,14 +2741,12 @@ dependencies = [
 [[package]]
 name = "timely_bytes"
 version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3aa590d9f1532c3e265ffea178f757cb0fb2f617a5123326526cb6c8287c5c4"
+source = "git+https://github.com/ddlog-dev/timely-dataflow?branch=ddlog-1#9e6928eec132a143d00943c0c1b5de3313930170"
 
 [[package]]
 name = "timely_communication"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcc4b4cb3a970337237e3e00807d54904ac9693106dcb45e395ab01b9093a30c"
+version = "0.11.0"
+source = "git+https://github.com/ddlog-dev/timely-dataflow?branch=ddlog-1#9e6928eec132a143d00943c0c1b5de3313930170"
 dependencies = [
  "abomonation",
  "abomonation_derive",
@@ -2617,9 +2759,8 @@ dependencies = [
 
 [[package]]
 name = "timely_logging"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0ddcf773c75363ce1a25ad4cb7eb1b9e8c2f3a90332395630332f67423bee44"
+version = "0.11.0"
+source = "git+https://github.com/ddlog-dev/timely-dataflow?branch=ddlog-1#9e6928eec132a143d00943c0c1b5de3313930170"
 
 [[package]]
 name = "timely_sort"
@@ -2795,24 +2936,286 @@ name = "types"
 version = "0.1.0"
 dependencies = [
  "abomonation",
- "arc-interner",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
  "differential-dataflow",
  "differential_datalog",
  "erased-serde",
  "fnv",
+ "internment",
  "libc",
  "num",
- "num-traits",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+ "types__ast",
+ "types__config",
+ "types__group",
+ "types__inputs",
+ "types__outputs__no_unused_labels",
+ "types__scopes",
+ "types__utils",
+ "types__variable_decl",
+ "types__vec",
+]
+
+[[package]]
+name = "types__ast"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
  "once_cell",
  "ordered-float",
  "rslint_errors",
  "rslint_parser",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+ "types__utils",
+ "types__vec",
+]
+
+[[package]]
+name = "types__config"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
  "schemars",
  "serde",
  "serde_json",
  "time",
  "timely",
+]
+
+[[package]]
+name = "types__group"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+]
+
+[[package]]
+name = "types__inputs"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+ "types__ast",
+ "types__config",
+ "types__utils",
+ "types__vec",
+]
+
+[[package]]
+name = "types__outputs__no_unused_labels"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+ "types__ast",
+ "types__config",
+ "types__group",
+ "types__inputs",
+ "types__scopes",
+ "types__utils",
+ "types__vec",
+]
+
+[[package]]
+name = "types__scopes"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+ "types__ast",
+ "types__config",
+ "types__group",
+ "types__inputs",
+ "types__utils",
+ "types__vec",
+]
+
+[[package]]
+name = "types__utils"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
  "tracing",
+]
+
+[[package]]
+name = "types__variable_decl"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
+ "types__ast",
+ "types__config",
+ "types__inputs",
+ "types__utils",
+ "types__vec",
+]
+
+[[package]]
+name = "types__vec"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
 ]
 
 [[package]]

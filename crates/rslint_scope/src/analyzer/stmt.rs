@@ -2,6 +2,8 @@ use crate::{
     datalog::{DatalogBuilder, DatalogScope},
     AnalyzerInner, Visit,
 };
+use ast::{ClassId, ForInit, FuncId, Spanned, StmtId, SwitchClause, TryHandler};
+use internment::Intern;
 use rslint_parser::{
     ast::{
         AstChildren, BlockStmt, BreakStmt, ClassDecl, ContinueStmt, DebuggerStmt, Decl,
@@ -10,11 +12,7 @@ use rslint_parser::{
     },
     AstNode, SyntaxNodeExt,
 };
-use types::{
-    ast::{ClassId, ForInit, FuncId, Spanned, StmtId, SwitchClause, TryHandler},
-    internment::Intern,
-    IMPLICIT_ARGUMENTS,
-};
+use types::IMPLICIT_ARGUMENTS;
 
 // TODO: Make this more fine-grained? What things *don't* require new scopes?
 impl<'ddlog> Visit<'ddlog, Stmt> for AnalyzerInner {

@@ -6,12 +6,23 @@ pub use builder::DatalogBuilder;
 pub use derived_facts::{DatalogLint, Outputs};
 
 use crate::globals::JsGlobal;
+use ast::{
+    ClassId, ExprId, FileId, FileKind, FuncId, GlobalId, GlobalPriv, IPattern, ImportId, Increment,
+    ScopeId, StmtId,
+};
+use config::Config;
+use ddlog_std::tuple2;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
     program::{IdxId, RelId, Update},
     record::Record,
     DDlog, DeltaMap,
 };
+use inputs::{
+    EveryScope, Expression, File as InputFile, FunctionArg, ImplicitGlobal, InputScope, Statement,
+    UserGlobal,
+};
+use internment::Intern;
 use rslint_scoping_ddlog::{api::HDDlog, Indexes, Relations, INPUT_RELIDMAP};
 use std::{
     cell::{Cell, RefCell},
@@ -20,20 +31,6 @@ use std::{
     io::{self, Write},
     path::Path,
     sync::{Mutex, MutexGuard},
-};
-use types::{
-    ast::{
-        ClassId, ExprId, FileId, FileKind, FuncId, GlobalId, GlobalPriv, IPattern, ImportId,
-        Increment, ScopeId, StmtId,
-    },
-    config::Config,
-    ddlog_std::tuple2,
-    inputs::Statement,
-    inputs::{
-        EveryScope, Expression, File as InputFile, FunctionArg, ImplicitGlobal, InputScope,
-        UserGlobal,
-    },
-    internment::Intern,
 };
 
 // TODO: Make this runtime configurable
@@ -51,6 +48,9 @@ pub struct Datalog {
     transaction_lock: Mutex<()>,
     outputs: Outputs,
 }
+
+unsafe impl Send for Datalog {}
+unsafe impl Sync for Datalog {}
 
 static_assertions::assert_impl_all!(Datalog: Send, Sync);
 

@@ -1,11 +1,13 @@
 use super::{Datalog, DatalogResult};
+use ast::{FileId, Name, ScopeId, Span};
 use dashmap::{mapref::entry::Entry, DashMap};
+use ddlog_std::tuple2;
 use differential_datalog::{
-    ddval::DDValConvert,
-    ddval::DDValue,
+    ddval::{DDValConvert, DDValue},
     program::{IdxId, RelId},
     DDlog, DeltaMap,
 };
+use no_unused_labels::NoUnusedLabels;
 use rslint_scoping_ddlog::{relid2name, Indexes, Relations};
 use std::{
     fs::File,
@@ -14,12 +16,10 @@ use std::{
     sync::{Arc, Mutex},
 };
 use types::{
-    ast::{FileId, Name, ScopeId, Span},
-    ddlog_std::tuple2,
     name_in_scope::NameInScope,
     outputs::{
-        no_shadow::NoShadow, no_undef::NoUndef, no_unused_labels::NoUnusedLabels,
-        typeof_undef::TypeofUndef, unused_vars::UnusedVariables, use_before_def::UseBeforeDef,
+        no_shadow::NoShadow, no_undef::NoUndef, typeof_undef::TypeofUndef,
+        unused_vars::UnusedVariables, use_before_def::UseBeforeDef,
     },
 };
 

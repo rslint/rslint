@@ -1,4 +1,10 @@
 use crate::{datalog::DatalogBuilder, AnalyzerInner, Visit};
+use ast::{
+    ArrayElement, ClassElement as DatalogClassElement, ExprId, FuncParam,
+    Pattern as DatalogPattern, PropertyKey, PropertyVal,
+};
+use ddlog_std::{tuple2, Either};
+use internment::Intern;
 use rslint_parser::{
     ast::{
         ArgList, ArrayExpr, ArrowExpr, ArrowExprParams, AssignExpr, AstChildren, AwaitExpr,
@@ -11,15 +17,7 @@ use rslint_parser::{
     AstNode, SyntaxNodeExt,
 };
 use std::iter;
-use types::{
-    ast::{
-        ArrayElement, ClassElement as DatalogClassElement, ExprId, FuncParam,
-        Pattern as DatalogPattern, PropertyKey, PropertyVal,
-    },
-    ddlog_std::{tuple2, Either},
-    internment::Intern,
-    IMPLICIT_ARGUMENTS,
-};
+use types::IMPLICIT_ARGUMENTS;
 
 impl<'ddlog> Visit<'ddlog, Expr> for AnalyzerInner {
     type Output = ExprId;

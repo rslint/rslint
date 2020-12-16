@@ -20,19 +20,13 @@ mod variable;
 
 #[macro_use]
 pub mod ddval;
-pub mod int;
 pub mod program;
-pub mod uint;
 
 #[macro_use]
 pub mod record;
 
 #[cfg(test)]
-mod test;
-#[cfg(test)]
 mod test_record;
-
-pub mod test_value;
 
 pub use callback::Callback;
 pub use ddlog::DDlog;

@@ -2,10 +2,10 @@ use crate::{
     datalog::{DatalogBuilder, DatalogScope},
     AnalyzerInner, Visit,
 };
+use ast::{ImportClause as DatalogImportClause, NamedImport as DatalogNamedImport, StmtId};
 use rslint_parser::ast::{
     AstChildren, ExportDecl, ExportNamed, ImportClause, ImportDecl, ModuleItem, NamedImports,
 };
-use types::ast::{ImportClause as DatalogImportClause, NamedImport as DatalogNamedImport, StmtId};
 
 impl<'ddlog> Visit<'ddlog, ModuleItem> for AnalyzerInner {
     type Output = Option<DatalogScope<'ddlog>>;

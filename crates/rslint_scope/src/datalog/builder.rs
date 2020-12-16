@@ -1,26 +1,24 @@
 use super::{DatalogFunction, DatalogInner, DatalogScope};
 use crate::globals::JsGlobal;
-use differential_datalog::int::Int;
+use ast::{
+    ArrayElement, AssignOperand, BinOperand, ClassId, ExportKind, ExprId, ExprKind, FileId,
+    ForInit, FuncId, GlobalId, GlobalPriv, IClassElement, IPattern, ImportClause, LitKind, Name,
+    Pattern, PropertyKey, PropertyVal, ScopeId, Spanned, StmtId, StmtKind, SwitchClause,
+    TryHandler, UnaryOperand,
+};
+use ddlog_bigint::Int;
+use ddlog_std::{tuple2, Either};
+use inputs::{
+    Array, Arrow, ArrowParam, Assign, Await, BinOp, BracketAccess, Break, Call, Class, ClassExpr,
+    ConstDecl, Continue, DoWhile, DotAccess, EveryScope, ExprBigInt, ExprBool, ExprNumber,
+    ExprString, Expression, FileExport, For, ForIn, ForOf, Function, If, ImplicitGlobal,
+    ImportDecl, InlineFunc, InlineFuncParam, InputScope, Label, LetDecl, NameRef, New, Property,
+    Return, Statement, Switch, SwitchCase, Template, Ternary, Throw, Try, UnaryOp, UserGlobal,
+    VarDecl, While, With, Yield,
+};
+use internment::Intern;
 use rslint_parser::{BigInt, TextRange};
 use rslint_scoping_ddlog::Relations;
-use types::{
-    ast::{
-        ArrayElement, AssignOperand, BinOperand, ClassId, ExportKind, ExprId, ExprKind, FileId,
-        ForInit, FuncId, GlobalId, GlobalPriv, IClassElement, IPattern, ImportClause, LitKind,
-        Name, Pattern, PropertyKey, PropertyVal, ScopeId, Spanned, StmtId, StmtKind, SwitchClause,
-        TryHandler, UnaryOperand,
-    },
-    ddlog_std::{tuple2, Either},
-    inputs::{
-        Array, Arrow, ArrowParam, Assign, Await, BinOp, BracketAccess, Break, Call, Class,
-        ClassExpr, ConstDecl, Continue, DoWhile, DotAccess, EveryScope, ExprBigInt, ExprBool,
-        ExprNumber, ExprString, Expression, FileExport, For, ForIn, ForOf, Function, If,
-        ImplicitGlobal, ImportDecl, InlineFunc, InlineFuncParam, InputScope, Label, LetDecl,
-        NameRef, New, Property, Return, Statement, Switch, SwitchCase, Template, Ternary, Throw,
-        Try, UnaryOp, UserGlobal, VarDecl, While, With, Yield,
-    },
-    internment::Intern,
-};
 
 static_assertions::assert_obj_safe!(DatalogBuilder);
 
