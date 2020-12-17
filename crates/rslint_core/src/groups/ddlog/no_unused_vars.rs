@@ -23,7 +23,7 @@ declare_lint! {
     */
     #[derive(Default)]
     NoUnusedVars,
-    errors,
+    ddlog,
     "no-unused-vars",
 
     // TODO: There are a few options for this rule in eslint.

@@ -143,15 +143,7 @@ pub fn lint_file<'a>(
             .send((
                 FileId::new(file_id as u32),
                 node.clone(),
-                rslint_scope::Config {
-                    no_shadow: store.contains("no_shadow"),
-                    no_shadow_hoisting: NoShadowHoisting::Always,
-                    no_undef: store.contains("no_undef"),
-                    no_unused_labels: store.contains("no_unused_labels"),
-                    no_typeof_undef: store.contains("no_unused_labels"),
-                    no_unused_vars: store.contains("no_unused_vars"),
-                    no_use_before_def: store.contains("no_use_before_def"),
-                },
+                Default::default(),
             ))
             .unwrap();
     }

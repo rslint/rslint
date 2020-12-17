@@ -18,6 +18,7 @@ impl CstRuleStore {
     pub fn builtins(mut self) -> Self {
         self.rules.extend(errors());
         self.rules.extend(style());
+        self.rules.extend(ddlog());
         self
     }
 

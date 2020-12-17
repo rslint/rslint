@@ -17,7 +17,7 @@ declare_lint! {
     */
     #[derive(Default)]
     NoUndef,
-    errors,
+    ddlog,
     "no-undef",
 
     /**

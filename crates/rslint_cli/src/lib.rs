@@ -104,7 +104,6 @@ fn run_inner(
                 analyzer.inject_globals(ES2021).unwrap();
                 analyzer.inject_globals(NODE).unwrap();
                 analyzer.analyze_batch(&batch).unwrap();
-                println!("ssssafsdgfsadgdfsgdfsgdfgdsfg");
             });
 
             tracing::trace!("finished ddlog");
@@ -114,39 +113,34 @@ fn run_inner(
         (ddlog_send, ddlog_thread)
     });
 
-    let span = tracing::info_span!("lint files");
-    let mut results = span.in_scope(|| {
-        tracing::trace!(
-            "linting {} files with {} rules",
-            walker.files.len(),
-            store.len(),
-        );
+    let mut results = walker
+        .files
+        .par_keys()
+        .map_with(ddlog_send, |ddlog_send, id| {
+            let file = walker.files.get(id).unwrap();
+            lint_file(
+                *id,
+                &file.source.clone(),
+                file.kind == JsFileKind::Module,
+                &store,
+                verbose,
+                None,
+                Some(ddlog_send),
+            )
+        })
+        .filter_map(|res| {
+            if let Err(diagnostic) = res {
+                emit_diagnostic(&diagnostic, &walker);
+                None
+            } else {
+                res.ok()
+            }
+        })
+        .collect::<Vec<_>>();
 
-        walker
-            .files
-            .par_keys()
-            .map_with(ddlog_send, |ddlog_send, id| {
-                let file = walker.files.get(id).unwrap();
-                lint_file(
-                    *id,
-                    &file.source.clone(),
-                    file.kind == JsFileKind::Module,
-                    &store,
-                    verbose,
-                    None,
-                    Some(ddlog_send),
-                )
-            })
-            .filter_map(|res| {
-                if let Err(diagnostic) = res {
-                    emit_diagnostic(&diagnostic, &walker);
-                    None
-                } else {
-                    res.ok()
-                }
-            })
-            .collect::<Vec<_>>()
-    });
+    let mut store = store.clone();
+    store.rules.clear();
+    store.load_rules(rslint_core::groups::ddlog());
 
     let span = info_span!("join ddlog thread");
     let analyzer = span.in_scope(|| ddlog_thread.join().unwrap());

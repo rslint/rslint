@@ -24,7 +24,7 @@ declare_lint! {
     */
     #[derive(Default)]
     NoUnusedLabels,
-    errors,
+    ddlog,
     "no-unused-labels"
 }
 

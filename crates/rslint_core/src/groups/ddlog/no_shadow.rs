@@ -19,7 +19,7 @@ declare_lint! {
     */
     #[derive(Default)]
     NoShadow,
-    errors,
+    ddlog,
     "no-shadow",
     // TODO: There are also some options for this rule in eslint
     // which we may want to implement too.

@@ -22,7 +22,7 @@ declare_lint! {
     ```
     */
     NoUseBeforeDef,
-    errors,
+    ddlog,
     "no-use-before-def",
 
     /**
