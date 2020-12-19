@@ -581,6 +581,7 @@ pub fn args(p: &mut Parser) -> CompletedMarker {
 // (5 + 5) => {}
 pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarker {
     let m = p.start();
+    let start = p.cur_tok().range.start;
     let token_cur = p.token_pos();
     let event_cur = p.cur_event_pos();
     p.expect(T!['(']);
@@ -593,43 +594,48 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
         ..p.state.clone()
     });
     let expr_m = temp.start();
+    let mut is_empty = false;
 
-    loop {
-        if temp.at(T![...]) {
-            let m = temp.start();
-            temp.bump_any();
-            pattern(&mut *temp);
-            let complete = m.complete(&mut *temp, REST_PATTERN);
-            spread_range = Some(complete.range(&*temp));
-            if !temp.eat(T![')']) {
-                if temp.eat(T![=]) {
-                    // formal params will handle this error
-                    assign_expr(&mut *temp);
-                    temp.expect(T![')']);
-                } else {
-                    let err = temp.err_builder(&format!("expect a closing parenthesis after a spread element, but instead found `{}`", temp.cur_src()))
+    if temp.eat(T![')']) {
+        is_empty = true;
+    } else {
+        loop {
+            if temp.at(T![...]) {
+                let m = temp.start();
+                temp.bump_any();
+                pattern(&mut *temp);
+                let complete = m.complete(&mut *temp, REST_PATTERN);
+                spread_range = Some(complete.range(&*temp));
+                if !temp.eat(T![')']) {
+                    if temp.eat(T![=]) {
+                        // formal params will handle this error
+                        assign_expr(&mut *temp);
+                        temp.expect(T![')']);
+                    } else {
+                        let err = temp.err_builder(&format!("expect a closing parenthesis after a spread element, but instead found `{}`", temp.cur_src()))
                     .primary(temp.cur_tok().range, "");
 
-                    temp.err_recover(err, EXPR_RECOVERY_SET, false);
+                        temp.err_recover(err, EXPR_RECOVERY_SET, false);
+                    }
                 }
-            }
-            break;
-        }
-        assign_expr(&mut *temp);
-        let sub_m = temp.start();
-        if temp.eat(T![,]) {
-            if temp.at(T![')']) {
-                trailing_comma_marker = Some(sub_m.complete(&mut *temp, ERROR));
-                temp.bump_any();
                 break;
             }
-            had_comma = true;
-        } else {
-            if had_comma {
-                expr_m.complete(&mut *temp, SEQUENCE_EXPR);
+            assign_expr(&mut *temp);
+            let sub_m = temp.start();
+            if temp.eat(T![,]) {
+                if temp.at(T![')']) {
+                    trailing_comma_marker = Some(sub_m.complete(&mut *temp, ERROR));
+                    temp.bump_any();
+                    break;
+                }
+                had_comma = true;
+            } else {
+                if had_comma {
+                    expr_m.complete(&mut *temp, SEQUENCE_EXPR);
+                }
+                temp.expect(T![')']);
+                break;
             }
-            temp.expect(T![')']);
-            break;
         }
     }
     drop(temp);
@@ -654,6 +660,15 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
             arrow_body(p);
             return m.complete(p, ARROW_EXPR);
         }
+    }
+
+    if is_empty {
+        let err = p
+            .err_builder("grouping expressions cannot be empty")
+            .primary(start..p.cur_tok().range.start, "");
+
+        p.error(err);
+        return m.complete(p, GROUPING_EXPR);
     }
 
     if let Some(range) = spread_range {
