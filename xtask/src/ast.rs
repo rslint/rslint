@@ -127,6 +127,8 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "type",
         "from",
         "as",
+        "require",
+        "namespace",
     ],
     literals: &["NUMBER", "STRING", "REGEX"],
     tokens: &[
@@ -300,6 +302,11 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_ACCESSIBILITY",
         "TS_OBJECT_TYPE",
         "TS_EXPR_WITH_TYPE_ARGS",
+        "TS_IMPORT_EQUALS_DECL",
+        "TS_MODULE_REF",
+        "TS_EXTERNAL_MODULE_REF",
+        "TS_EXPORT_ASSIGNMENT",
+        "TS_NAMESPACE_EXPORT_DECL",
     ],
 };
 
@@ -775,6 +782,37 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T!['{'],
             members: [TsTypeElement],
             T!['}']
+        }
+
+        struct TsImportEqualsDecl {
+            T![import],
+            T![export],
+            T![ident],
+            T![=],
+            module: TsModuleRef,
+            T![;]
+        }
+
+        struct TsExternalModuleRef {
+            T![require],
+            T!['('],
+            /* string */
+            T![')']
+        }
+
+        struct TsExportAssignment {
+            T![export],
+            T![=],
+            expr: Expr,
+            T![;]
+        }
+
+        struct TsNamespaceExportDecl {
+            T![export],
+            T![as],
+            T![namespace],
+            T![ident],
+            T![;]
         }
 
         // --------------------------------------------------
@@ -1360,7 +1398,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct ClassDecl {
-            T![ident],
+            T![abstract],
             T![class],
             name: Name,
             type_params: TsTypeParams,

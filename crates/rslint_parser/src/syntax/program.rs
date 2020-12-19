@@ -1,11 +1,22 @@
 //! Top level functions for parsing a script or module, also includes module specific items.
 
+use syntax::stmt::FOLLOWS_LET;
+
 use super::decl::{class_decl, function_decl};
-use super::expr::assign_expr;
+use super::expr::{assign_expr, expr, identifier_name};
 use super::pat::binding_identifier;
 use super::stmt::{block_items, semi, var_decl, STMT_RECOVERY_SET};
 use super::typescript::*;
 use crate::{SyntaxKind::*, *};
+
+macro_rules! at_ident_name {
+    ($p:expr) => {
+        ($p.at_ts(token_set![T![ident], T![await], T![yield]]) || $p.cur().is_keyword())
+    };
+    ($p:expr, $offset:expr) => {
+        (token_set![T![ident], T![await], T![yield]].contains($p.nth($offset)) || $p.nth($offset).is_keyword())
+    }
+}
 
 pub fn parse(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
@@ -117,6 +128,16 @@ fn specifier(p: &mut Parser) -> CompletedMarker {
     m.complete(p, SPECIFIER)
 }
 
+fn named_export_specifier(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    identifier_name(p);
+    if p.cur_src() == "as" {
+        p.bump_remap(T![as]);
+        binding_identifier(p);
+    }
+    m.complete(p, SPECIFIER)
+}
+
 fn from_clause(p: &mut Parser) {
     if p.cur_src() != "from" {
         let err = p
@@ -132,123 +153,327 @@ fn from_clause(p: &mut Parser) {
 }
 
 pub fn export_decl(p: &mut Parser) -> CompletedMarker {
-    let m = p.start();
     let start = p.cur_tok().range.start;
+    let m = p.start();
     p.expect(T![export]);
 
-    if p.eat(T![default]) {
-        let complete = match p.cur() {
-            T![function] => {
-                let inner = p.start();
-                function_decl(p, inner, true);
-                m.complete(p, EXPORT_DEFAULT_DECL)
-            }
-            T![class] => {
-                class_decl(p, false);
-                m.complete(p, EXPORT_DEFAULT_DECL)
-            }
-            _ => {
-                if p.cur_src() == "async"
-                    && p.nth_at(1, T![function])
-                    && !p.has_linebreak_before_n(1)
-                {
-                    let inner = p.start();
-                    p.bump_remap(T![async]);
-                    function_decl(
-                        &mut *p.with_state(ParserState {
-                            in_async: true,
-                            ..p.state.clone()
-                        }),
-                        inner,
-                        true,
-                    );
-                    m.complete(p, EXPORT_DEFAULT_DECL)
-                } else {
-                    let range = assign_expr(p).map(|it| it.range(p));
-                    semi(
-                        p,
-                        range
-                            .map(|it| it.into())
-                            .unwrap_or_else(|| p.cur_tok().range),
-                    );
-                    m.complete(p, EXPORT_DEFAULT_EXPR)
-                }
-            }
-        };
-        let mut state = p.state.clone();
-        let complete = state.check_default(p, complete);
-        p.state = state;
-        complete
-    } else {
-        match p.cur() {
-            T![const] | T![var] => {
-                var_decl(p, false);
-                m.complete(p, EXPORT_DECL)
-            }
-            T![class] => {
-                class_decl(p, false);
-                m.complete(p, EXPORT_DECL)
-            }
-            T![function] => {
-                let inner = p.start();
-                function_decl(p, inner, true);
-                m.complete(p, EXPORT_DECL)
-            }
-            T!['{'] => {
-                let start_marker = p.start();
-                let inner = named_list(p, start_marker);
-                if p.cur_src() == "from" {
-                    from_clause(p);
-                }
-                inner.complete(p, EXPORT_NAMED)
-            }
-            _ if p.cur_src() == "type" && p.nth_at(1, T!['{']) => {
-                let start_marker = p.start();
-                p.bump_remap(T![type]);
-                let inner = named_list(p, start_marker);
-                if p.cur_src() == "from" {
-                    from_clause(p);
-                }
-                inner.complete(p, EXPORT_NAMED)
-            }
-            T![*] => {
-                let start_marker = p.start();
-                let inner = wildcard(p, start_marker);
-                from_clause(p);
-                semi(p, start..p.cur_tok().range.start);
-                inner.complete(p, EXPORT_WILDCARD)
-            }
-            _ => {
-                if p.cur_src() == "let" {
-                    var_decl(p, false);
-                    m.complete(p, EXPORT_DECL)
-                } else if p.cur_src() == "async"
-                    && p.nth_at(1, T![function])
-                    && !p.has_linebreak_before_n(1)
-                {
-                    let inner = p.start();
-                    p.bump_remap(T![async]);
-                    function_decl(
-                        &mut *p.with_state(ParserState {
-                            in_async: true,
-                            ..p.state.clone()
-                        }),
-                        inner,
-                        true,
-                    );
-                    m.complete(p, EXPORT_DECL)
-                } else {
-                    if ts_decl(p).is_some() {
-                        return m.complete(p, EXPORT_DECL);
-                    }
-                    let err = p
-                        .err_builder("Expected an item to export, but found none")
-                        .primary(p.cur_tok().range, "");
+    let declare = p.typescript() && p.cur_src() == "declare";
 
-                    p.error(err);
-                    m.complete(p, ERROR)
-                }
-            }
+    if declare {
+        if let Some(mut res) = try_parse_ts(p, |p| ts_declare(p)) {
+            res.err_if_not_ts(
+                p,
+                "TypeScript declarations can only be used in TypeScript files",
+            );
+            return m.complete(p, EXPORT_DECL);
         }
     }
+
+    let offset = declare as usize;
+
+    if p.typescript() && at_ident_name!(p, offset) {
+        if let Some(mut res) = try_parse_ts(p, |p| ts_decl(p)) {
+            res.err_if_not_ts(
+                p,
+                "TypeScript declarations can only be used in TypeScript files",
+            );
+            return m.complete(p, EXPORT_DECL);
+        }
+    }
+
+    macro_rules! err_if_declare {
+        ($p:expr, $declare:expr, $msg:literal) => {
+            if $declare {
+                let range = $p.cur_tok().range;
+                $p.bump_remap(T![declare]);
+                let err = $p.err_builder($msg).primary(range, "");
+
+                $p.error(err);
+            }
+        };
+    }
+
+    match p.nth(offset) {
+        T![import] => {
+            err_if_declare!(
+                p,
+                declare,
+                "`declare` modifiers cannot be applied to import declarations"
+            );
+            p.bump_any();
+            let mut complete = ts_import_equals_decl(p, m);
+            complete.err_if_not_ts(
+                p,
+                "import equals declarations can only be used in TypeScript files",
+            );
+            return complete;
+        }
+        T![=] => {
+            err_if_declare!(
+                p,
+                declare,
+                "`declare` modifiers cannot be applied to export equals declarations"
+            );
+            p.bump_any();
+            expr(p);
+            semi(p, start..p.cur_tok().range.start);
+            let mut complete = m.complete(p, TS_EXPORT_ASSIGNMENT);
+            complete.err_if_not_ts(
+                p,
+                "export equals declarations can only be used in TypeScript files",
+            );
+            return complete;
+        }
+        T![as] => {
+            err_if_declare!(
+                p,
+                declare,
+                "`declare` modifiers cannot be applied to export as namespace declarations"
+            );
+            p.bump_any();
+            if p.cur_src() != "namespace" {
+                let err = p
+                    .err_builder("expected `namespace`, but found none")
+                    .primary(p.cur_tok().range, "");
+
+                p.error(err);
+            } else {
+                p.bump_remap(T![namespace]);
+            }
+
+            // TODO(RDambrosio016): verify, is identifier_name correct here or should it just be ident?
+            identifier_name(p);
+            semi(p, start..p.cur_tok().range.start);
+            let mut complete = m.complete(p, TS_NAMESPACE_EXPORT_DECL);
+            complete.err_if_not_ts(
+                p,
+                "export as namespace declarations can only be used in TypeScript files",
+            );
+            return complete;
+        }
+        _ => {}
+    }
+
+    // TODO: Is this logic correct? declare seems to not be always allowed but
+    // considering ts has no spec (D:) it's kind of hard to know where it is allowed.
+    // even swc and babel seem to get this wrong
+    if declare {
+        if !p.typescript() {
+            let m = p.start();
+            let err = p
+                .err_builder("declare modifiers can only be used in TypeScript files")
+                .primary(p.cur_tok().range, "");
+
+            p.error(err);
+            p.bump_any();
+            m.complete(p, ERROR);
+        } else {
+            p.bump_remap(T![declare]);
+        }
+    }
+
+    let only_ty = p.typescript()
+        && (p.cur_src() == "type" && {
+            p.bump_remap(T![type]);
+            true
+        });
+
+    let mut exports_ns = false;
+    let mut has_star = false;
+
+    if p.eat(T![*]) {
+        has_star = true;
+        if p.cur_src() == "from" {
+            from_clause_and_semi(p, start);
+            return m.complete(p, EXPORT_WILDCARD);
+        }
+        if p.cur_src() == "as" {
+            p.bump_remap(T![as]);
+            identifier_name(p);
+            exports_ns = true;
+        }
+    }
+
+    let mut export_default = false;
+
+    if !only_ty && !exports_ns && p.eat(T![default]) {
+        if p.cur_src() == "abstract" && p.nth_at(1, T![class]) {
+            let inner = p.start();
+            if !p.typescript() {
+                let err = p
+                    .err_builder("`abstract` modifiers can only be used in TypeScript files")
+                    .primary(p.cur_tok().range, "");
+
+                p.error(err);
+                let m = p.start();
+                p.bump_any();
+                m.complete(p, ERROR);
+            } else {
+                p.bump_remap(T![abstract]);
+            }
+            class_decl(p, false).undo_completion(p).abandon(p);
+            inner.complete(p, CLASS_DECL);
+            return m.complete(p, EXPORT_DEFAULT_DECL);
+        }
+
+        if p.cur_src() == "interface" {
+            if let Some(ref mut compl) = ts_interface(p) {
+                compl.err_if_not_ts(p, "interfaces can only be used in TypeScript files");
+            }
+            return m.complete(p, EXPORT_DEFAULT_DECL);
+        }
+
+        if p.at(T![class]) {
+            class_decl(p, false);
+            return m.complete(p, EXPORT_DEFAULT_DECL);
+        }
+
+        if p.at(T![async]) && p.nth_at(1, T![function]) && !p.has_linebreak_before_n(1) {
+            let mut guard = p.with_state(ParserState {
+                in_async: true,
+                ..p.state.clone()
+            });
+            let inner = guard.start();
+            guard.bump_any();
+            function_decl(&mut *guard, inner, false);
+            return m.complete(&mut *guard, EXPORT_DEFAULT_DECL);
+        }
+
+        if p.cur_src() == "from" || (p.at(T![,]) && p.nth_at(1, T!['{'])) {
+            export_default = true;
+        } else {
+            assign_expr(p);
+            semi(p, start..p.cur_tok().range.start);
+            return m.complete(p, EXPORT_DEFAULT_EXPR);
+        }
+    }
+
+    if !only_ty && p.at(T![class]) {
+        class_decl(p, false);
+    } else if !only_ty
+        && p.at(T![async])
+        && p.nth_at(1, T![function])
+        && !p.has_linebreak_before_n(1)
+    {
+        let mut guard = p.with_state(ParserState {
+            in_async: true,
+            ..p.state.clone()
+        });
+        let inner = guard.start();
+        guard.bump_any();
+        function_decl(&mut *guard, inner, false);
+    } else if !only_ty && p.at(T![function]) {
+        let m = p.start();
+        function_decl(p, m, false);
+    } else if !only_ty && p.at(T![const]) && p.nth_src(1) == "enum" {
+        ts_enum(p).err_if_not_ts(p, "enums can only be used in TypeScript files");
+    } else if !only_ty
+        && (p.at(T![var])
+            || p.at(T![const])
+            || (p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1))))
+    {
+        var_decl(p, true);
+    } else {
+        if p.cur_src() == "from" && exports_ns {
+            from_clause_and_semi(p, start);
+            return m.complete(p, EXPORT_WILDCARD);
+        }
+
+        if !export_default
+            && (token_set![T![async], T![yield], T![yield]].contains(p.cur())
+                || p.cur().is_keyword())
+        {
+            identifier_name(p);
+            export_default = true;
+        }
+
+        if p.cur_src() == "from" && export_default {
+            from_clause_and_semi(p, start);
+            return m.complete(p, EXPORT_NAMED);
+        }
+
+        if has_star && !exports_ns {
+            from_clause_and_semi(p, start);
+            return m.complete(p, EXPORT_WILDCARD);
+        }
+
+        if exports_ns || export_default {
+            p.expect(T![,]);
+        }
+
+        p.expect(T!['{']);
+
+        let mut first = true;
+
+        // TODO: make something like `p.at_ident_name()`
+        while !p.at(EOF)
+            && (p.at(T![,])
+                || (token_set![T![async], T![yield], T![yield]].contains(p.cur())
+                    || p.cur().is_keyword()))
+        {
+            if first {
+                first = false;
+            } else if p.eat(T![,]) && p.at(T!['}']) {
+                break;
+            }
+            named_export_specifier(p);
+        }
+        p.expect(T!['}']);
+        if p.cur_src() == "from" {
+            from_clause_and_semi(p, start);
+        } else {
+            semi(p, start..p.cur_tok().range.start);
+            if export_default || exports_ns {
+                let err = p
+                    .err_builder(
+                        "`export default` and `export as` declarations must have a `from` clause",
+                    )
+                    .primary(start..p.cur_tok().range.start, "");
+
+                p.error(err);
+            }
+        }
+
+        return m.complete(p, EXPORT_NAMED);
+    }
+    m.complete(p, EXPORT_DECL)
+}
+
+fn from_clause_and_semi(p: &mut Parser, start: usize) {
+    debug_assert_eq!(p.cur_src(), "from");
+    p.bump_remap(T![from]);
+    p.expect(STRING);
+    semi(p, start..p.cur_tok().range.start);
+}
+
+pub fn ts_import_equals_decl(p: &mut Parser, m: Marker) -> CompletedMarker {
+    let start = p.cur_tok().range.start;
+    identifier_name(p);
+    p.expect(T![=]);
+
+    if p.cur_src() == "require" && p.nth_at(1, T!['(']) {
+        ts_external_module_ref(p);
+    } else {
+        ts_entity_name(p, None, false);
+    }
+    semi(p, start..p.cur_tok().range.start);
+    m.complete(p, TS_MODULE_REF)
+}
+
+pub fn ts_external_module_ref(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    if p.cur_src() != "require" {
+        let err = p
+            .err_builder("expected `require` for an external module reference, but found none")
+            .primary(p.cur_tok().range, "");
+
+        p.error(err);
+    } else {
+        p.bump_remap(T![require]);
+    }
+
+    p.expect(T!['(']);
+    p.expect(STRING);
+    p.expect(T![')']);
+    m.complete(p, TS_EXTERNAL_MODULE_REF)
 }

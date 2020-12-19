@@ -52,8 +52,10 @@ fn args_body(p: &mut Parser) {
             ty.err_if_not_ts(p, "return types can only be used in TypeScript files");
         }
     }
-    if p.typescript() && !p.at(T!['{']) && p.eat(T![;]) {
-        // omitting the body is allowed in ts
+
+    // omitting the body is allowed in ts
+    if p.typescript() && !p.at(T!['{']) && is_semi(p, 0) {
+        p.eat(T![;]);
     } else {
         let mut complete = block_stmt(p, true, None);
         if let Some(ref mut block) = complete {
@@ -735,7 +737,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
                 p.bump_any();
                 m.complete(p, ERROR);
             }
-            p.bump_any();
+            identifier_name(p);
             maybe_opt(p);
             args_body(p);
             return Some(m.complete(p, METHOD));

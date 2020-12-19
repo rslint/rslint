@@ -340,6 +340,9 @@ pub enum ModuleItem {
     ExportDefaultExpr(ExportDefaultExpr),
     ExportWildcard(ExportWildcard),
     ExportDecl(ExportDecl),
+    TsImportEqualsDecl(TsImportEqualsDecl),
+    TsExportAssignment(TsExportAssignment),
+    TsNamespaceExportDecl(TsNamespaceExportDecl),
     Stmt(Stmt),
 }
 
@@ -353,6 +356,8 @@ impl AstNode for ModuleItem {
                 | EXPORT_DEFAULT_EXPR
                 | EXPORT_WILDCARD
                 | EXPORT_DECL
+                | TS_IMPORT_EQUALS_DECL
+                | TS_NAMESPACE_EXPORT_DECL
         ) || Stmt::can_cast(kind)
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -363,6 +368,11 @@ impl AstNode for ModuleItem {
             EXPORT_DEFAULT_EXPR => ModuleItem::ExportDefaultExpr(ExportDefaultExpr { syntax }),
             EXPORT_WILDCARD => ModuleItem::ExportWildcard(ExportWildcard { syntax }),
             EXPORT_DECL => ModuleItem::ExportDecl(ExportDecl { syntax }),
+            TS_IMPORT_EQUALS_DECL => ModuleItem::TsImportEqualsDecl(TsImportEqualsDecl { syntax }),
+            TS_EXPORT_ASSIGNMENT => ModuleItem::TsExportAssignment(TsExportAssignment { syntax }),
+            TS_NAMESPACE_EXPORT_DECL => {
+                ModuleItem::TsNamespaceExportDecl(TsNamespaceExportDecl { syntax })
+            }
             _ => ModuleItem::Stmt(Stmt::cast(syntax)?),
         };
         Some(res)
@@ -376,6 +386,9 @@ impl AstNode for ModuleItem {
             ModuleItem::ExportWildcard(it) => &it.syntax,
             ModuleItem::ExportDecl(it) => &it.syntax,
             ModuleItem::Stmt(it) => &it.syntax(),
+            ModuleItem::TsImportEqualsDecl(it) => &it.syntax,
+            ModuleItem::TsExportAssignment(it) => &it.syntax,
+            ModuleItem::TsNamespaceExportDecl(it) => &it.syntax,
         }
     }
 }

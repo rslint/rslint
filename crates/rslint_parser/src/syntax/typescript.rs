@@ -1,7 +1,4 @@
 //! TypeScript specific functions.
-//!
-//! Most of the functions do not check if the parser is configured for TypeScript.
-//! Functions that do check will say so in the docs.
 
 use super::decl::*;
 use super::expr::{assign_expr, identifier_name, lhs_expr, literal, template};
@@ -137,7 +134,7 @@ pub(crate) fn ts_declare(p: &mut Parser) -> Option<CompletedMarker> {
 pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
     if p.cur_src() == "abstract" {
         let m = p.start();
-        p.bump_any();
+        p.bump_remap(T![abstract]);
         class_decl(p, false).undo_completion(p).abandon(p);
         return Some(m.complete(p, CLASS_DECL));
     }
