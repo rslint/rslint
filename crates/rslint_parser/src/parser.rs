@@ -56,7 +56,8 @@ use crate::*;
 /// let mut sink = LosslessTreeSink::new(source, &tokens);
 ///
 /// // Consume the parser and get its events, then apply them to a tree sink with `process`.
-/// process(&mut sink, parser.finish());
+/// let (events, errors) = parser.finish();
+/// process(&mut sink, events, errors);
 ///
 /// let (green, errors) = sink.finish();
 ///

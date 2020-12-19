@@ -138,11 +138,11 @@ error[SyntaxError]: expected a block statement but instead found `(`
   │           ^
 
 --
-error[SyntaxError]: Expected an expression, but found none
-  ┌─ function_decl_err.js:3:12
+error[SyntaxError]: grouping expressions cannot be empty
+  ┌─ function_decl_err.js:3:11
   │
 3 │ function *() {}
-  │            ^ Expected an expression here
+  │           ^^^
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none
