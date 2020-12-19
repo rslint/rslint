@@ -126,7 +126,7 @@ fn parse_common(
     file_id: usize,
     module: bool,
 ) -> (Vec<Event>, Vec<ParserError>, Vec<rslint_lexer::Token>) {
-    let (tokens, errors) = tokenize(&text, file_id);
+    let (tokens, mut errors) = tokenize(&text, file_id);
 
     let tok_source = TokenSource::new(text, &tokens);
 
@@ -140,7 +140,10 @@ fn parse_common(
         parser
     };
 
-    (parser.finish(), errors, tokens)
+    let (events, p_errs) = parser.finish();
+    errors.extend(p_errs);
+
+    (events, errors, tokens)
 }
 
 /// Parse text into a [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
@@ -171,12 +174,11 @@ fn parse_common(
 /// assert_eq!(&util::concat_tokens(&tokens), "foo. bar[2]")
 /// ```
 pub fn parse_text(text: &str, file_id: usize) -> Parse<Script> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, false);
+    let (events, errors, tokens) = parse_common(text, file_id, false);
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
-    crate::process(&mut tree_sink, events);
+    crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
-    errors.extend(parse_errors);
-    Parse::new(green, errors)
+    Parse::new(green, parse_errors)
 }
 
 /// Lossly parse text into a [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
@@ -213,45 +215,42 @@ pub fn parse_text(text: &str, file_id: usize) -> Parse<Script> {
 /// assert_eq!(&util::concat_tokens(&tokens), "foo.bar[2]")
 /// ```
 pub fn parse_text_lossy(text: &str, file_id: usize) -> Parse<Script> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, false);
+    let (events, errors, tokens) = parse_common(text, file_id, false);
     let mut tree_sink = LossyTreeSink::new(text, &tokens);
-    crate::process(&mut tree_sink, events);
+    crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
-    errors.extend(parse_errors);
-    Parse::new(green, errors)
+    Parse::new(green, parse_errors)
 }
 
 /// Same as [`parse_text_lossy`] but configures the parser to parse an ECMAScript module instead of a Script
 pub fn parse_module_lossy(text: &str, file_id: usize) -> Parse<Module> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, true);
+    let (events, errors, tokens) = parse_common(text, file_id, true);
     let mut tree_sink = LossyTreeSink::new(text, &tokens);
-    crate::process(&mut tree_sink, events);
+    crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
-    errors.extend(parse_errors);
-    Parse::new(green, errors)
+    Parse::new(green, parse_errors)
 }
 
 /// Same as [`parse_text`] but configures the parser to parse an ECMAScript module instead of a script
 pub fn parse_module(text: &str, file_id: usize) -> Parse<Module> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, true);
+    let (events, errors, tokens) = parse_common(text, file_id, true);
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
-    crate::process(&mut tree_sink, events);
+    crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
-    errors.extend(parse_errors);
-    Parse::new(green, errors)
+    Parse::new(green, parse_errors)
 }
 
 /// Losslessly Parse text into an expression [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
 /// Or turned into a typed [`Expr`](Expr) with [`tree`](Parse::tree).
 pub fn parse_expr(text: &str, file_id: usize) -> Parse<Expr> {
-    let (tokens, errors) = tokenize(&text, file_id);
+    let (tokens, mut errors) = tokenize(&text, file_id);
     let tok_source = TokenSource::new(text, &tokens);
     let mut parser = crate::Parser::new(tok_source, file_id);
     crate::syntax::expr::expr(&mut parser);
-    let (events, mut errors, tokens) = (parser.finish(), errors, tokens);
+    let (events, p_diags) = parser.finish();
+    errors.extend(p_diags);
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
-    crate::process(&mut tree_sink, events);
+    crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
-    errors.extend(parse_errors);
-    Parse::new(green, errors)
+    Parse::new(green, parse_errors)
 }

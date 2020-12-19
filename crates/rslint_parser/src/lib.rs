@@ -133,8 +133,8 @@ pub trait TreeSink {
     /// branch as current.
     fn finish_node(&mut self);
 
-    /// Emit an error
-    fn error(&mut self, error: ParserError);
+    /// Emit errors
+    fn errors(&mut self, errors: Vec<ParserError>);
 }
 
 /// Matches a `SyntaxNode` against an `ast` type.

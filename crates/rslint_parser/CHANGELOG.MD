@@ -26,6 +26,9 @@ finally{}
 ### Changed
 
 - Made "redundant strict mode declaration" have a primary label instead of a single secondary label
+- Reduce `Event` memory usage by 833%
+- Remove `Event::Error`
+- Rename `TreeSink::error` to `TreeSink::errors` and make it take `Vec<ParserError>`
 
 ## [0.2.1] - 2020-10-20
 

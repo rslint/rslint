@@ -80,6 +80,7 @@ pub struct Parser<'t> {
     // We use a cell so we dont need &mut self on `nth()`
     steps: Cell<u32>,
     pub state: ParserState,
+    errors: Vec<ParserError>,
 }
 
 impl<'t> Parser<'t> {
@@ -91,6 +92,7 @@ impl<'t> Parser<'t> {
             events: vec![],
             steps: Cell::new(0),
             state: ParserState::default(),
+            errors: vec![],
         }
     }
 
@@ -102,6 +104,7 @@ impl<'t> Parser<'t> {
             events: vec![],
             steps: Cell::new(0),
             state: ParserState::module(),
+            errors: vec![],
         }
     }
 
@@ -114,8 +117,8 @@ impl<'t> Parser<'t> {
     }
 
     /// Consume the parser and return the list of events it produced
-    pub fn finish(self) -> Vec<Event> {
-        self.events
+    pub fn finish(self) -> (Vec<Event>, Vec<ParserError>) {
+        (self.events, self.errors)
     }
 
     /// Get the current token kind of the parser
@@ -265,9 +268,10 @@ impl<'t> Parser<'t> {
         ErrorBuilder::error(self.file_id, message)
     }
 
-    /// Add an error event
+    /// Add an error
+    #[cold]
     pub fn error(&mut self, err: impl Into<ParserError>) {
-        self.push_event(Event::Error { err: err.into() });
+        self.errors.push(err.into())
     }
 
     /// Check if the parser's current token is contained in a token set
@@ -354,7 +358,7 @@ impl<'t> Parser<'t> {
 
         let mut sink =
             LosslessTreeSink::with_offset(self.tokens.source(), &self.tokens.raw_tokens, start);
-        process(&mut sink, events);
+        process(&mut sink, events, vec![]);
         T::cast(SyntaxNode::new_root(sink.finish().0))
             .expect("Marker was parsed to the wrong ast node")
     }

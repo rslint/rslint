@@ -14,6 +14,7 @@ pub struct LossyTreeSink<'a> {
     token_pos: usize,
     state: State,
     inner: SyntaxTreeBuilder,
+    errors: Vec<ParserError>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -62,8 +63,8 @@ impl<'a> TreeSink for LossyTreeSink<'a> {
         }
     }
 
-    fn error(&mut self, error: ParserError) {
-        self.inner.error(error)
+    fn errors(&mut self, errors: Vec<ParserError>) {
+        self.errors = errors;
     }
 }
 
@@ -76,6 +77,7 @@ impl<'a> LossyTreeSink<'a> {
             token_pos: 0,
             state: State::PendingStart,
             inner: SyntaxTreeBuilder::default(),
+            errors: vec![],
         }
     }
 
@@ -95,6 +97,7 @@ impl<'a> LossyTreeSink<'a> {
                     token_pos: idx,
                     state: State::PendingStart,
                     inner: SyntaxTreeBuilder::default(),
+                    errors: vec![],
                 };
             }
             len += tok.len;
@@ -111,7 +114,7 @@ impl<'a> LossyTreeSink<'a> {
             State::PendingStart | State::Normal => unreachable!(),
         }
 
-        self.inner.finish_raw()
+        (self.inner.finish(), self.errors)
     }
 
     fn eat_trivias(&mut self) {

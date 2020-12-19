@@ -26,21 +26,13 @@ pub enum Event {
     },
 
     /// Complete the previous `Start` event
-    Finish {
-        end: usize,
-    },
+    Finish { end: usize },
 
     /// Produce a single leaf-element.
     /// `n_raw_tokens` is used to glue complex contextual tokens.
     /// For example, lexer tokenizes `>>` as `>`, `>`, and
     /// `n_raw_tokens = 2` is used to produced a single `>>`.
-    Token {
-        kind: SyntaxKind,
-    },
-
-    Error {
-        err: ParserError,
-    },
+    Token { kind: SyntaxKind },
 }
 
 impl Event {
@@ -55,10 +47,11 @@ impl Event {
 
 /// Generate the syntax tree with the control of events.
 #[inline]
-pub fn process(sink: &mut dyn TreeSink, mut events: Vec<Event>) {
+pub fn process(sink: &mut impl TreeSink, mut events: Vec<Event>, errors: Vec<ParserError>) {
     let span = tracing::info_span!("processing parse events", count = events.len());
     let _guard = span.enter();
 
+    sink.errors(errors);
     let mut forward_parents = Vec::new();
 
     for i in 0..events.len() {
@@ -107,7 +100,6 @@ pub fn process(sink: &mut dyn TreeSink, mut events: Vec<Event>) {
             Event::Token { kind } => {
                 sink.token(kind);
             }
-            Event::Error { err } => sink.error(err),
         }
     }
 }
