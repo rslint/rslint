@@ -15,6 +15,7 @@ rslint_rowan = { path = "../rslint_rowan", version = "0.10.0" }
 num-bigint = "0.3.0"
 lexical = { version = "5.2.0", features = ["radix"] }
 tracing = "0.1.21"
+regress = "0.2.0"
 
 [dev-dependencies]
 walkdir = "2.3.1"
