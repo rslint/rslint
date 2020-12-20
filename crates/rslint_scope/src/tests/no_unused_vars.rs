@@ -179,6 +179,29 @@ rule_test! {
         "}",
     },
 
+    // Ignoring variables by pattern
+    {
+        "let _x = 10;",
+        trans: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
+            ignored_patterns: RegexSet::new(vec!["^_"]).unwrap(),
+            ..Default::default()
+        })),
+    },
+    {
+        "function foo(_bar) {}; foo(10);",
+        trans: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
+            ignored_patterns: RegexSet::new(vec!["^_"]).unwrap(),
+            ..Default::default()
+        })),
+    },
+    {
+        "function(a) {}",
+        trans: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
+            ignored_patterns: RegexSet::new(vec!["a"]).unwrap(),
+            ..Default::default()
+        })),
+    },
+
     // Should fail
     { "f({ set foo(a) { return; } });", errors: [DatalogLint::no_unused_vars("a", 12..13)] },
     { "function a(x, y){ return y; }; a();", errors: [DatalogLint::no_unused_vars("x", 11..12)] },

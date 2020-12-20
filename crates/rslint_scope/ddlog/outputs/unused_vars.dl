@@ -1,5 +1,6 @@
 import ast
 import vec
+import regex
 import inputs
 import config
 import scopes
@@ -11,8 +12,7 @@ output relation UnusedVariables(name: Name, declared: AnyId, span: Span, file: F
 
 // Only hit non-function arguments and non-globals
 UnusedVariables(name, declared, span, file) :-
-    File(file, _, _, config),
-    config.no_unused_vars_enabled(),
+    EnableNoUnusedVars(file, config),
 
     VariableDeclarations(
         file,
@@ -26,6 +26,9 @@ UnusedVariables(name, declared, span, file) :-
             .declaration_span = Some { span },
         },
     ),
+
+    // If the variable name matches an ignored pattern, don't analyze it
+    not config.deref().ignored_patterns().regex_set_match(name.ival()),
     // Ignore global variables
     not declared.is_global(),
 
@@ -34,8 +37,7 @@ UnusedVariables(name, declared, span, file) :-
 
 // For function arguments it doesn't matter if the parent function is exported or not
 UnusedVariables(name, declared, span, file) :-
-    File(file, _, _, config),
-    config.no_unused_vars_enabled(),
+    EnableNoUnusedVars(file, config),
 
     VariableDeclarations(
         file,
@@ -50,12 +52,14 @@ UnusedVariables(name, declared, span, file) :-
         },
     ),
 
+    // If the variable name matches an ignored pattern, don't analyze it
+    not config.deref().ignored_patterns().regex_set_match(name.ival()),
+
     not NameInScope(file, name, scope.unhoisted_scope(), declared).
 
 // Handle globals
 UnusedVariables(name, declared, span, file) :-
-    File(file, _, _, config),
-    config.no_unused_vars_enabled(),
+    EnableNoUnusedVars(file, config),
 
     VariableDeclarations(
         file,
@@ -69,6 +73,9 @@ UnusedVariables(name, declared, span, file) :-
             .declaration_span = Some { span },
         },
     ),
+
+    // If the variable name matches an ignored pattern, don't analyze it
+    not config.deref().ignored_patterns().regex_set_match(name.ival()),
     
     not IsExported(file, declared),
     not NameInScope(file, name, scope.unhoisted_scope(), declared).

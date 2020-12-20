@@ -111,7 +111,7 @@ pub static __Arng___Prefix_5_0 : ::once_cell::sync::Lazy<program::Arrangement> =
                                                                                                                      __f},
                                                                                                                      queryable: false
                                                                                                                  });
-pub static __Arng___Prefix_6_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+pub static __Arng___Prefix_7_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                     name: std::borrow::Cow::from(r###"((_0: ast::FileId), (_: config::Config)) /*join*/"###),
                                                                                                                      afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                      {
@@ -125,19 +125,6 @@ pub static __Arng___Prefix_6_0 : ::once_cell::sync::Lazy<program::Arrangement> =
                                                                                                                      queryable: false
                                                                                                                  });
 pub static __Arng___Prefix_8_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                    name: std::borrow::Cow::from(r###"((_0: ast::FileId), (_: config::Config)) /*join*/"###),
-                                                                                                                     afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                     {
-                                                                                                                         let __cloned = __v.clone();
-                                                                                                                         match < ddlog_std::tuple2<types__ast::FileId, types__config::Config>>::from_ddvalue(__v) {
-                                                                                                                             ddlog_std::tuple2(ref _0, _) => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                             _ => None
-                                                                                                                         }.map(|x|(x,__cloned))
-                                                                                                                     }
-                                                                                                                     __f},
-                                                                                                                     queryable: false
-                                                                                                                 });
-pub static __Arng___Prefix_9_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                     name: std::borrow::Cow::from(r###"((_0: ast::FileId), (_: config::Config)) /*join*/"###),
                                                                                                                      afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                      {
@@ -253,31 +240,12 @@ pub static __Rule___Prefix_5_0 : ::once_cell::sync::Lazy<program::Rule> = ::once
                                                                                                                               next: Box::new(None)
                                                                                                                           })
                                                                                                           });
-pub static __Rule___Prefix_6_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* __Prefix_6[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_unused_vars_enabled(config)). */
+pub static __Rule___Prefix_7_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* __Prefix_7[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_undef_enabled(config)). */
                                                                                                           program::Rule::CollectionRule {
-                                                                                                              description: std::borrow::Cow::from("__Prefix_6[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_unused_vars_enabled(config))."),
+                                                                                                              description: std::borrow::Cow::from("__Prefix_7[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_undef_enabled(config))."),
                                                                                                               rel: 29,
                                                                                                               xform: Some(XFormCollection::FilterMap{
-                                                                                                                              description: std::borrow::Cow::from("head of __Prefix_6[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_unused_vars_enabled(config))."),
-                                                                                                                              fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                              {
-                                                                                                                                  let (ref file, ref config) = match *<types__inputs::File>::from_ddvalue_ref(&__v) {
-                                                                                                                                      types__inputs::File{id: ref file, kind: _, top_level_scope: _, config: ref config} => ((*file).clone(), (*config).clone()),
-                                                                                                                                      _ => return None
-                                                                                                                                  };
-                                                                                                                                  if !types__config::no_unused_vars_enabled(config) {return None;};
-                                                                                                                                  Some((ddlog_std::tuple2((*file).clone(), (*config).clone())).into_ddvalue())
-                                                                                                                              }
-                                                                                                                              __f},
-                                                                                                                              next: Box::new(None)
-                                                                                                                          })
-                                                                                                          });
-pub static __Rule___Prefix_8_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* __Prefix_8[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_undef_enabled(config)). */
-                                                                                                          program::Rule::CollectionRule {
-                                                                                                              description: std::borrow::Cow::from("__Prefix_8[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_undef_enabled(config))."),
-                                                                                                              rel: 29,
-                                                                                                              xform: Some(XFormCollection::FilterMap{
-                                                                                                                              description: std::borrow::Cow::from("head of __Prefix_8[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_undef_enabled(config))."),
+                                                                                                                              description: std::borrow::Cow::from("head of __Prefix_7[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_undef_enabled(config))."),
                                                                                                                               fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                               {
                                                                                                                                   let (ref file, ref config) = match *<types__inputs::File>::from_ddvalue_ref(&__v) {
@@ -291,12 +259,12 @@ pub static __Rule___Prefix_8_0 : ::once_cell::sync::Lazy<program::Rule> = ::once
                                                                                                                               next: Box::new(None)
                                                                                                                           })
                                                                                                           });
-pub static __Rule___Prefix_9_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* __Prefix_9[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_shadow_enabled(config)). */
+pub static __Rule___Prefix_8_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* __Prefix_8[((file: ast::FileId), (config: config::Config))] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(config: config::Config)}: inputs::File)], (config::no_shadow_enabled(config)). */
                                                                                                           program::Rule::CollectionRule {
-                                                                                                              description: std::borrow::Cow::from("__Prefix_9[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_shadow_enabled(config))."),
+                                                                                                              description: std::borrow::Cow::from("__Prefix_8[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_shadow_enabled(config))."),
                                                                                                               rel: 29,
                                                                                                               xform: Some(XFormCollection::FilterMap{
-                                                                                                                              description: std::borrow::Cow::from("head of __Prefix_9[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_shadow_enabled(config))."),
+                                                                                                                              description: std::borrow::Cow::from("head of __Prefix_8[(file, config)] :- inputs::File(.id=file, .kind=_, .top_level_scope=_, .config=config), (config::no_shadow_enabled(config))."),
                                                                                                                               fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                               {
                                                                                                                                   let (ref file, ref config) = match *<types__inputs::File>::from_ddvalue_ref(&__v) {
@@ -389,7 +357,7 @@ pub static __Rule___Prefix_2_0 : ::once_cell::sync::Lazy<program::Rule> = ::once
                                                                                                               xform: XFormArrangement::Join{
                                                                                                                          description: std::borrow::Cow::from("__Prefix_4[(file, config)], outputs::typeof_undef::WithinTypeofExpr(.type_of=type_of, .expr=expr, .file=file)"),
                                                                                                                          ffun: None,
-                                                                                                                         arrangement: (75,0),
+                                                                                                                         arrangement: (76,0),
                                                                                                                          jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                          {
                                                                                                                              let (ref file, ref config) = match *<ddlog_std::tuple2<types__ast::FileId, types__config::Config>>::from_ddvalue_ref(__v1) {

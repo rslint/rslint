@@ -552,6 +552,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ddlog_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "ddlog_log"
 version = "0.1.0"
 dependencies = [
@@ -2177,6 +2186,7 @@ dependencies = [
  "types__group",
  "types__inputs",
  "types__outputs__no_unused_labels",
+ "types__regex",
  "types__scopes",
  "types__utils",
  "types__variable_decl",
@@ -2959,6 +2969,7 @@ dependencies = [
  "types__group",
  "types__inputs",
  "types__outputs__no_unused_labels",
+ "types__regex",
  "types__scopes",
  "types__utils",
  "types__variable_decl",
@@ -3000,6 +3011,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3018,6 +3030,10 @@ dependencies = [
  "serde_json",
  "time",
  "timely",
+ "types__ast",
+ "types__regex",
+ "types__utils",
+ "types__vec",
 ]
 
 [[package]]
@@ -3070,6 +3086,7 @@ dependencies = [
  "timely",
  "types__ast",
  "types__config",
+ "types__regex",
  "types__utils",
  "types__vec",
 ]
@@ -3101,9 +3118,36 @@ dependencies = [
  "types__config",
  "types__group",
  "types__inputs",
+ "types__regex",
  "types__scopes",
  "types__utils",
  "types__vec",
+]
+
+[[package]]
+name = "types__regex"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "internment",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "regex",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
 ]
 
 [[package]]
@@ -3133,6 +3177,7 @@ dependencies = [
  "types__config",
  "types__group",
  "types__inputs",
+ "types__regex",
  "types__utils",
  "types__vec",
 ]
@@ -3189,6 +3234,7 @@ dependencies = [
  "types__ast",
  "types__config",
  "types__inputs",
+ "types__regex",
  "types__utils",
  "types__vec",
 ]

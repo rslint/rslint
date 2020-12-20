@@ -55,7 +55,7 @@ pub use rslint_scope::ScopeAnalyzer;
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
-use rslint_scope::{FileId, NoShadowHoisting};
+use rslint_scope::FileId;
 use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},

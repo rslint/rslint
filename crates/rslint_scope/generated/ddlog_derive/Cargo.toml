@@ -1,0 +1,13 @@
+[package]
+name = "ddlog_derive"
+version = "0.1.0"
+edition = "2018"
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0.48"
+quote = "1.0.7"
+proc-macro2 = "1.0.24"

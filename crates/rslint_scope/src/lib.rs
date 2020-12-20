@@ -4,16 +4,24 @@ pub mod globals;
 // pub mod scoping;
 mod tests;
 
-pub use ast::{self, FileId};
-pub use config::{Config, NoShadowHoisting};
+pub use ast;
+use config::EnableNoUnusedVars;
 pub use datalog::{Datalog, DatalogLint, DatalogResult};
-pub use ddlog_std;
+pub use ddlog_std::{self, Ref};
+pub use rslint_scoping_ddlog::typedefs::{
+    ast::FileId,
+    config::{Config, NoShadowHoisting, NoUnusedVarsConfig},
+    regex::{Regex, RegexSet},
+};
 
 use analyzer::{AnalyzerInner, Visit};
-use ast::{FileKind, JSFlavor};
 use rslint_parser::{
     ast::{Module, ModuleItem, Script},
     SyntaxNode, SyntaxNodeExt,
+};
+use rslint_scoping_ddlog::{
+    typedefs::ast::{FileKind, JSFlavor},
+    Relations,
 };
 use serde::{Deserialize, Serialize};
 use std::{ops::Deref, sync::Arc};
@@ -30,6 +38,28 @@ impl ScopeAnalyzer {
 
         Ok(Self {
             datalog: Arc::new(Datalog::new()?),
+        })
+    }
+
+    pub fn no_unused_vars(
+        &self,
+        file: FileId,
+        config: Option<NoUnusedVarsConfig>,
+    ) -> DatalogResult<()> {
+        self.datalog.transaction(|trans| {
+            if let Some(config) = config {
+                trans.insert_or_update(
+                    Relations::config_EnableNoUnusedVars,
+                    EnableNoUnusedVars {
+                        file,
+                        config: Ref::from(config),
+                    },
+                );
+            } else {
+                trans.delete_key(Relations::config_EnableNoUnusedVars, file);
+            }
+
+            Ok(())
         })
     }
 

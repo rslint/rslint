@@ -5,8 +5,8 @@ edition = "2018"
 
 [features]
 default = []
-flatbuf = ["differential_datalog/flatbuf","ddlog_rt/flatbuf", "ddlog_std/flatbuf", "ddlog_bigint/flatbuf", "ddlog_log/flatbuf", "debug/flatbuf", "internment/flatbuf", "types__ast/flatbuf", "types__inputs/flatbuf", "types__vec/flatbuf", "types__utils/flatbuf", "types__config/flatbuf"]
-c_api = ["differential_datalog/c_api","ddlog_rt/c_api", "ddlog_std/c_api", "ddlog_bigint/c_api", "ddlog_log/c_api", "debug/c_api", "internment/c_api", "types__ast/c_api", "types__inputs/c_api", "types__vec/c_api", "types__utils/c_api", "types__config/c_api"]
+flatbuf = ["differential_datalog/flatbuf","ddlog_rt/flatbuf", "ddlog_std/flatbuf", "ddlog_bigint/flatbuf", "ddlog_log/flatbuf", "debug/flatbuf", "internment/flatbuf", "types__ast/flatbuf", "types__inputs/flatbuf", "types__vec/flatbuf", "types__utils/flatbuf", "types__config/flatbuf", "types__regex/flatbuf"]
+c_api = ["differential_datalog/c_api","ddlog_rt/c_api", "ddlog_std/c_api", "ddlog_bigint/c_api", "ddlog_log/c_api", "debug/c_api", "internment/c_api", "types__ast/c_api", "types__inputs/c_api", "types__vec/c_api", "types__utils/c_api", "types__config/c_api", "types__regex/c_api"]
 
 [dependencies]
 differential_datalog = { path = "../../differential_datalog" }
@@ -34,6 +34,7 @@ types__inputs = { path = "../inputs" }
 types__vec = { path = "../vec" }
 types__utils = { path = "../utils" }
 types__config = { path = "../config" }
+types__regex = { path = "../regex" }
 
 [lib]
 name = "types__variable_decl"

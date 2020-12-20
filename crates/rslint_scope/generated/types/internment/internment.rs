@@ -74,12 +74,6 @@ use std::{
 
 /// An atomically reference counted handle to an interned value
 ///
-/// While this type is thread safe, it may cause logical bugs
-/// due to the underlying internment cache being a global variable,
-/// so don't rely on the existence or pre-internment of a variable
-/// since there's no way to know whether it will or will not exist
-/// within a threaded context.
-///
 /// The `PartialOrd` and `Ord` implementations for this type do not
 /// compare the underlying values but instead compare the pointers
 /// to them. Do not rely on the `PartialOrd` and `Ord` implementations
@@ -201,7 +195,7 @@ where
     }
 }
 
-impl<T> serde::Serialize for Intern<T>
+impl<T> Serialize for Intern<T>
 where
     T: Serialize + Eq + Hash + Send + Sync,
 {
@@ -276,7 +270,7 @@ where
 /// Join interned strings with a separator
 pub fn istring_join(strings: &DDlogVec<istring>, separator: &String) -> String {
     strings
-        .x
+        .vec
         .iter()
         .map(|string| string.as_ref())
         .cloned()
@@ -286,13 +280,11 @@ pub fn istring_join(strings: &DDlogVec<istring>, separator: &String) -> String {
 
 /// Split an interned string by a separator
 pub fn istring_split(string: &istring, separator: &String) -> DDlogVec<String> {
-    DDlogVec {
-        x: string
-            .as_ref()
-            .split(separator)
-            .map(|string| string.to_owned())
-            .collect(),
-    }
+    string
+        .as_ref()
+        .split(separator)
+        .map(|string| string.to_owned())
+        .collect()
 }
 
 /// Returns true if the interned string contains the given pattern

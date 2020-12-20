@@ -20,49 +20,40 @@ NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false
     config.no_shadow_enabled(),
 
     // Get the initial variable
+    ScopeOfDecl(file, shadowed_scope, shadowed_id),
     VariableDeclarations(
         file,
         name,
-        scope,
-        shadower_id,
-        &VariableMeta {
-            .implicitly_declared = false,
-            .declaration_span = Some { shadower_span },
-        },
-    ),
-    var shadower_scope = if (config.no_shadow_hoisting()) {
-        scope.hoisted_scope()
-    } else {
-        scope.unhoisted_scope()
-    },
-
-    // Search all visible declarations
-    DeclarationVisibleWithin(file, shadower_scope, shadowed_id),
-    // A declaration cannot shadow itself
-    shadowed_id != shadower_id,
-
-    InputScope(parent_scope, child_scope, file),
-    // Filter declarations for one with an identical name
-    VariableDeclarations(
-        file,
-        name,
-        shadowed_scope,
+        shadowed_scope_raw,
         shadowed_id,
         &VariableMeta {
             .implicitly_declared = false,
             .declaration_span = Some { shadowed_span },
         },
     ),
-    child_scope == if (config.no_shadow_hoisting()) {
-        shadowed_scope.hoisted_scope()
-    } else {
-        shadowed_scope.unhoisted_scope()
-    },
+
+    // Search the child scopes for visible declarations of the same name
+    DeclarationInDescendent(file, shadowed_scope, name, shadower_id),
+
+    // A declaration cannot shadow itself
+    shadowed_id != shadower_id,
+
+    // Filter declarations for one with an identical name
+    VariableDeclarations(
+        file,
+        name,
+        shadower_scope_raw,
+        shadower_id,
+        &VariableMeta {
+            .implicitly_declared = false,
+            .declaration_span = Some { shadower_span },
+        },
+    ),
 
     // Within this match all "first", "second", etc. positional references are
     // in lexical terms, where the first declaration occurs before the second
     // in the physical source file
-    match ((config.no_shadow_hoisting(), scope.is_hoistable(), shadowed_scope.is_hoistable())) {
+    match ((config.no_shadow_hoisting(), shadower_scope_raw.is_hoistable(), shadowed_scope_raw.is_hoistable())) {
         // If a variable is hoisted, the second shadows the first
         (true, true, true) -> shadower_span < shadowed_span,
         (true, false, true) -> shadower_span < shadowed_span,
@@ -73,35 +64,30 @@ NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false
     }.
 
 
-// TODO: Does `NameInScope` do this?
-relation DeclarationVisibleWithin(file: FileId, scope: ScopeId, declaration: AnyId)
+relation DeclarationInDescendent(file: FileId, scope: ScopeId, name: Name, id: AnyId)
 
-DeclarationVisibleWithin(file, scope, declaration) :-
+DeclarationInDescendent(file, scope, name, id) :-
+    ScopeOfDecl(file, scope, id),
+    VariableDeclarations(file, name, _, id, _).
+
+DeclarationInDescendent(file, parent, name, id) :-
+    DeclarationInDescendent(file, child, name, id),
+    InputScope(parent, child, file).
+
+
+relation ScopeOfDecl(file: FileId, scope: ScopeId, declared: AnyId)
+
+ScopeOfDecl(file, scope, declared) :-
     File(file, _, _, config),
     config.no_shadow_enabled(),
 
-    VariableDeclarations(
-        file,
-        _,
-        decl_scope,
-        declaration,
-        &VariableMeta { .implicitly_declared = false },
-    ),
+    VariableDeclarations(file, _, Unhoistable { scope }, declared, _),
+    not declared.is_global().
 
-    // Globals have no concrete declarations and cause massive bloat in the relation
-    not declaration.is_global(),
+ScopeOfDecl(file, scope, declared) :-
+    File(file, _, _, config),
+    config.no_shadow_enabled(),
 
-    // If hoisting is enabled, use hoisted scopes
-    var scope = if (config.no_shadow_hoisting()) {
-        decl_scope.hoisted_scope()
-
-    // If hoisting is disabled, use unhoisted scopes
-    } else {
-        decl_scope.unhoisted_scope()
-    }.
-
-// Propigate visibility
-DeclarationVisibleWithin(file, child, declaration) :-
-    DeclarationVisibleWithin(file, scope, declaration),
-    InputScope(scope, child, file),
-    not ScopeOfDeclName(file, _, child, declaration).
+    VariableDeclarations(file, _, Hoistable { hoisted_scope, unhoisted_scope }, declared, _),
+    not declared.is_global(),
+    var scope = if (config.no_shadow_hoisting()) { hoisted_scope } else { unhoisted_scope }.

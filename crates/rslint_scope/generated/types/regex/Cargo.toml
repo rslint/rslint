@@ -1,12 +1,12 @@
 [package]
-name = "types__config"
+name = "types__regex"
 version = "0.1.0"
 edition = "2018"
 
 [features]
 default = []
-flatbuf = ["differential_datalog/flatbuf","ddlog_rt/flatbuf", "ddlog_std/flatbuf", "ddlog_bigint/flatbuf", "ddlog_log/flatbuf", "debug/flatbuf", "internment/flatbuf", "types__ast/flatbuf", "types__regex/flatbuf", "types__vec/flatbuf", "types__utils/flatbuf"]
-c_api = ["differential_datalog/c_api","ddlog_rt/c_api", "ddlog_std/c_api", "ddlog_bigint/c_api", "ddlog_log/c_api", "debug/c_api", "internment/c_api", "types__ast/c_api", "types__regex/c_api", "types__vec/c_api", "types__utils/c_api"]
+flatbuf = ["differential_datalog/flatbuf","ddlog_rt/flatbuf", "ddlog_std/flatbuf", "ddlog_bigint/flatbuf", "ddlog_log/flatbuf", "debug/flatbuf", "internment/flatbuf"]
+c_api = ["differential_datalog/c_api","ddlog_rt/c_api", "ddlog_std/c_api", "ddlog_bigint/c_api", "ddlog_log/c_api", "debug/c_api", "internment/c_api"]
 
 [dependencies]
 differential_datalog = { path = "../../differential_datalog" }
@@ -29,16 +29,9 @@ ddlog_bigint = { path = "../ddlog_bigint" }
 ddlog_log = { path = "../ddlog_log" }
 debug = { path = "../debug" }
 internment = { path = "../internment" }
-types__ast = { path = "../ast" }
-types__regex = { path = "../regex" }
-types__vec = { path = "../vec" }
-types__utils = { path = "../utils" }
 
 [lib]
-name = "types__config"
-path = "config.rs"
-[dependencies.schemars]
-version = "0.8.0"
-
-[dependencies.ddlog_derive]
-path = "../../ddlog_derive"
+name = "types__regex"
+path = "regex.rs"
+[dependencies.regex]
+version = "1.4.2"

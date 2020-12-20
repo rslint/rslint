@@ -1,4 +1,8 @@
+import ast
+import regex
+
 extern type Config
+extern type NoShadowHoisting
 
 extern function no_shadow_enabled(config: Config): bool
 extern function no_shadow_hoisting(config: Config): bool
@@ -8,3 +12,14 @@ extern function no_unused_labels_enabled(config: Config): bool
 extern function no_typeof_undef_enabled(config: Config): bool
 extern function no_unused_vars_enabled(config: Config): bool
 extern function no_use_before_def_enabled(config: Config): bool
+
+extern type NoUnusedVarsConfig
+
+extern function ignored_patterns(config: NoUnusedVarsConfig): RegexSet
+
+extern type IgnoreArgs
+
+extern type CaughtErrors
+
+input relation EnableNoUnusedVars(file: FileId, config: Ref<NoUnusedVarsConfig>)
+primary key (conf) (conf.file)

@@ -15,6 +15,7 @@ macro_rules! rule_test {
             $(, es2021: $es2021:literal)?
             $(, errors: [$($error:expr),* $(,)?])?
             $(, config: $config:expr)?
+            $(, trans: $trans:expr)?
             $(,)?
         }),* $(,)?
     ) => {
@@ -24,6 +25,7 @@ macro_rules! rule_test {
             use crate::{
                 tests::DatalogTestHarness,
                 datalog::DatalogLint::{self, *},
+                NoUnusedVarsConfig, RegexSet,
             };
             use ast::Span;
             use config::{Config, NoShadowHoisting::{self, *}};
@@ -53,6 +55,7 @@ macro_rules! rule_test {
                     $(.is_module($module))?
                     $(.with_es2021($es2021))?
                     $(.with_errors(vec![$($error),*]))?
+                    $(.with_transaction($trans))?
                     .with_config($(($config as fn(Config) -> Config))?(config.clone())),
             )?]
             .into_par_iter()
@@ -118,7 +121,7 @@ mod use_before_def;
 use crate::{
     datalog::DatalogLint,
     globals::{JsGlobal, BROWSER, BUILTIN, ES2021, NODE},
-    ScopeAnalyzer,
+    DatalogResult, ScopeAnalyzer,
 };
 use ast::FileId;
 use config::Config;
@@ -193,6 +196,7 @@ struct TestCase<'a> {
     harness: &'a DatalogTestHarness,
     id: usize,
     config: Config,
+    transaction: Option<fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>>,
 }
 
 impl<'a> TestCase<'a> {
@@ -229,6 +233,7 @@ impl<'a> TestCase<'a> {
             harness,
             id,
             config: Config::default(),
+            transaction: None,
         }
     }
 
@@ -273,6 +278,14 @@ impl<'a> TestCase<'a> {
         self
     }
 
+    pub fn with_transaction(
+        mut self,
+        transaction: fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>,
+    ) -> Self {
+        self.transaction = Some(transaction);
+        self
+    }
+
     // TODO: This is so ugly
     pub fn run(mut self) {
         let file_id = FileId::new(self.id as u32);
@@ -289,6 +302,16 @@ impl<'a> TestCase<'a> {
         } else {
             parse_text(&*self.code, 0).syntax()
         };
+
+        if self.config.no_unused_vars {
+            self.harness
+                .datalog
+                .no_unused_vars(file_id, Some(Default::default()))
+                .unwrap();
+        }
+        if let Some(transaction) = self.transaction {
+            transaction(&self.harness.datalog, file_id).unwrap();
+        }
 
         self.harness
             .datalog

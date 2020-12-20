@@ -61,14 +61,14 @@ index Index_VariableInScope(file: FileId, scope: ScopeId, variable: Name)
 NameInScope(file, name, variable_scope, declared) :-
     VariableDeclarations(file, name, scope, declared, _),
     var variable_scope = scope.hoisted_scope(),
-    NameOccursInScope(variable_scope, &NameOccurance { name, file }).
+    NameOccursInScope(variable_scope, &NameOccurrence { name, file }).
 
 // Walk variables down scopes
-NameInScope(file, name, to, declared) :-
-    NameOccursInScope(to, &NameOccurance { name, file }),
-    not ScopeOfDeclName(file, name, to, _),
-    InputScope(from, to, file),
-    NameInScope(file, name, from, declared).
+NameInScope(file, name, child, declared) :-
+    NameOccursInScope(child, &NameOccurrence { name, file }),
+    not ScopeOfDeclName(file, name, child, _),
+    InputScope(parent, child, file),
+    NameInScope(file, name, parent, declared).
 
 
 relation ScopeOfDeclName(file: FileId, name: Name, scope: ScopeId, declared: AnyId)
@@ -77,34 +77,34 @@ ScopeOfDeclName(file, name, scope, declared) :-
 ScopeOfDeclName(file, name, scope, declared) :-
     VariableDeclarations(file, name, Hoistable { scope, _ }, declared, _).
 
-typedef NameOccurance = NameOccurance {
+typedef NameOccurrence = NameOccurrence {
     name: Name,
     file: FileId,
 }
 
 /// A record of where variable usages actually happen
-relation NameOccursInScope(scope: ScopeId, name: Intern<NameOccurance>)
+relation NameOccursInScope(scope: ScopeId, name: Intern<NameOccurrence>)
 
 /// Add all name references
 NameOccursInScope(scope, interned) :-
     NameRef(id, file, name),
     Expression(id, file, _, scope, _),
-    var interned = NameOccurance { name, file }.intern().
+    var interned = NameOccurrence { name, file }.intern().
 
 /// Add assignment patterns
 NameOccursInScope(scope, interned) :-
     Assign(id, file, Some { Left { pattern }}, _, _),
     Expression(id, file, _, scope, _),
     var name = FlatMap(pattern.bound_vars().map(|name| name.data)),
-    var interned = NameOccurance { name, file }.intern().
+    var interned = NameOccurrence { name, file }.intern().
 
 /// Add exports
 NameOccursInScope(scope, interned) :-
     FileExport(file, NamedExport { export_name, export_alias }, scope),
     Some { Spanned { var name, _ }} = export_alias.or_else(export_name),
-    var interned = NameOccurance { name, file }.intern().
+    var interned = NameOccurrence { name, file }.intern().
 
 /// Recurse to parent scopes
 NameOccursInScope(parent, interned) :-
-    NameOccursInScope(child, interned @ &NameOccurance { _, file }),
+    NameOccursInScope(child, interned @ &NameOccurrence { _, file }),
     InputScope(parent, child, file).

@@ -2293,19 +2293,6 @@ pub static __Arng_inputs_InputScope_1 : ::once_cell::sync::Lazy<program::Arrange
                                                                                                                             queryable: false
                                                                                                                         });
 pub static __Arng_inputs_InputScope_2 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                           name: std::borrow::Cow::from(r###"(inputs::InputScope{.parent=(_: ast::ScopeId), .child=(_: ast::ScopeId), .file=(_0: ast::FileId)}: inputs::InputScope) /*join*/"###),
-                                                                                                                            afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                            {
-                                                                                                                                let __cloned = __v.clone();
-                                                                                                                                match < InputScope>::from_ddvalue(__v) {
-                                                                                                                                    InputScope{parent: _, child: _, file: ref _0} => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                                    _ => None
-                                                                                                                                }.map(|x|(x,__cloned))
-                                                                                                                            }
-                                                                                                                            __f},
-                                                                                                                            queryable: false
-                                                                                                                        });
-pub static __Arng_inputs_InputScope_3 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                            name: std::borrow::Cow::from(r###"(inputs::InputScope{.parent=(_: ast::ScopeId), .child=_0, .file=_1}: inputs::InputScope) /*join*/"###),
                                                                                                                             afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                             {
@@ -2318,7 +2305,7 @@ pub static __Arng_inputs_InputScope_3 : ::once_cell::sync::Lazy<program::Arrange
                                                                                                                             __f},
                                                                                                                             queryable: true
                                                                                                                         });
-pub static __Arng_inputs_InputScope_4 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+pub static __Arng_inputs_InputScope_3 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                            name: std::borrow::Cow::from(r###"(inputs::InputScope{.parent=(_: ast::ScopeId), .child=(_: ast::ScopeId), .file=_0}: inputs::InputScope) /*join*/"###),
                                                                                                                             afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                             {
@@ -2331,7 +2318,7 @@ pub static __Arng_inputs_InputScope_4 : ::once_cell::sync::Lazy<program::Arrange
                                                                                                                             __f},
                                                                                                                             queryable: true
                                                                                                                         });
-pub static __Arng_inputs_InputScope_5 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+pub static __Arng_inputs_InputScope_4 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                            name: std::borrow::Cow::from(r###"(inputs::InputScope{.parent=_0, .child=(_: ast::ScopeId), .file=_1}: inputs::InputScope) /*join*/"###),
                                                                                                                             afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                             {

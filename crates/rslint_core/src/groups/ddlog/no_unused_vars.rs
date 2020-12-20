@@ -1,5 +1,5 @@
 use crate::rule_prelude::*;
-use rslint_scope::FileId;
+use rslint_scope::{FileId, NoUnusedVarsConfig};
 
 declare_lint! {
     /**
@@ -26,17 +26,21 @@ declare_lint! {
     ddlog,
     "no-unused-vars",
 
-    // TODO: There are a few options for this rule in eslint.
-    // Not sure if we need all of them.
+    #[serde(flatten)]
+    config: NoUnusedVarsConfig,
 }
 
 #[typetag::serde]
 impl CstRule for NoUnusedVars {
     fn check_root(&self, _root: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
-        let outputs = ctx.analyzer.as_ref()?.outputs().clone();
+        let analyzer = ctx.analyzer.as_ref()?.clone();
         let file = FileId::new(ctx.file_id as u32);
 
-        outputs.no_unused_vars.iter().for_each(|unused| {
+        analyzer
+            .no_unused_vars(file, Some(self.config.clone()))
+            .unwrap();
+
+        analyzer.outputs().no_unused_vars.iter().for_each(|unused| {
             let unused = unused.key();
 
             if unused.file == file {

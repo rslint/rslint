@@ -20,6 +20,7 @@ static_assertions = "1.1.0"
 tracing = { version = "0.1.22", features = ["release_max_level_trace"] }
 
 # Datalog
+# TODO: REmove direct dependencies and use the `rslint_scoping_ddlog::typedefs` module's exports
 ast = { path = "./generated/types/ast", package = "types__ast" }
 types = { path = "./generated/types" }
 config = { path = "./generated/types/config", package = "types__config" }

@@ -62,35 +62,34 @@ pub type std_usize = u64;
 pub type std_isize = i64;
 
 
+use abomonation::Abomonation;
 /// Rust implementation of DDlog standard library functions and types.
-use differential_datalog::decl_record_mutator_struct;
-use differential_datalog::decl_struct_from_record;
-use differential_datalog::decl_struct_into_record;
-use differential_datalog::record::arg_extract;
-use differential_datalog::record::Record;
-
+use differential_datalog::{
+    decl_record_mutator_struct, decl_struct_from_record, decl_struct_into_record,
+    record::{arg_extract, Record},
+};
 use fnv::FnvHasher;
-use serde::de::Deserializer;
-use serde::ser::SerializeStruct;
-use serde::ser::Serializer;
-
 use num::Zero;
-use std::borrow;
-use std::cmp;
-use std::collections::btree_map;
-use std::collections::btree_set;
-use std::collections::{BTreeMap, BTreeSet};
-use std::fmt;
-use std::fmt::Display;
-use std::hash::Hash;
-use std::hash::Hasher;
-use std::iter::FromIterator;
-use std::ops;
-use std::option;
-use std::result;
-use std::slice;
-use std::sync::Arc;
-use std::vec;
+use serde::{
+    de::{DeserializeOwned, Deserializer},
+    ser::{SerializeStruct, Serializer},
+};
+use std::{
+    borrow,
+    cmp::{self, Ordering},
+    collections::{btree_map, btree_set, BTreeMap, BTreeSet},
+    fmt::{self, Debug, Display, Formatter, Result as FmtResult},
+    hash::{Hash, Hasher},
+    io,
+    iter::FromIterator,
+    mem,
+    ops::{self, Add, DerefMut},
+    option::Option as StdOption,
+    result::Result as StdResult,
+    slice,
+    sync::Arc,
+    vec::{self, Vec as StdVec},
+};
 
 const XX_SEED1: u64 = 0x23b691a751d0e108;
 const XX_SEED2: u64 = 0x20b09801dce5ff84;
@@ -101,8 +100,8 @@ pub fn default<T: Default>() -> T {
 
 // Result
 
-/* Convert Rust result type to DDlog's std::Result. */
-pub fn res2std<T, E: Display>(res: ::std::result::Result<T, E>) -> Result<T, String> {
+/// Convert Rust result type to DDlog's std::Result
+pub fn res2std<T, E: Display>(res: StdResult<T, E>) -> Result<T, String> {
     match res {
         Ok(res) => Result::Ok { res },
         Err(e) => Result::Err {
@@ -120,6 +119,7 @@ pub fn result_unwrap_or_default<T: Default + Clone, E>(res: &Result<T, E>) -> T 
 
 // Ref
 
+/// An atomically reference counted reference
 #[derive(Eq, PartialOrd, PartialEq, Ord, Clone, Hash)]
 pub struct Ref<T> {
     x: Arc<T>,
@@ -147,41 +147,40 @@ impl<T> From<T> for Ref<T> {
     }
 }
 
-impl<T: abomonation::Abomonation> abomonation::Abomonation for Ref<T> {
-    unsafe fn entomb<W: ::std::io::Write>(&self, write: &mut W) -> ::std::io::Result<()> {
+impl<T: Abomonation> Abomonation for Ref<T> {
+    unsafe fn entomb<W: io::Write>(&self, write: &mut W) -> io::Result<()> {
         self.deref().entomb(write)
     }
-    unsafe fn exhume<'a, 'b>(
-        &'a mut self,
-        bytes: &'b mut [u8],
-    ) -> ::std::option::Option<&'b mut [u8]> {
+
+    unsafe fn exhume<'a, 'b>(&'a mut self, bytes: &'b mut [u8]) -> StdOption<&'b mut [u8]> {
         Arc::get_mut(&mut self.x).unwrap().exhume(bytes)
     }
+
     fn extent(&self) -> usize {
         self.deref().extent()
     }
 }
 
 impl<T> Ref<T> {
-    pub fn get_mut(this: &mut Self) -> ::std::option::Option<&mut T> {
+    pub fn get_mut(this: &mut Self) -> StdOption<&mut T> {
         Arc::get_mut(&mut this.x)
     }
 }
 
-impl<T: fmt::Display> fmt::Display for Ref<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<T: Display> Display for Ref<T> {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
         self.deref().fmt(f)
     }
 }
 
-impl<T: fmt::Debug> fmt::Debug for Ref<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<T: Debug> Debug for Ref<T> {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
         self.deref().fmt(f)
     }
 }
 
 impl<T: Serialize> Serialize for Ref<T> {
-    fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> StdResult<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -190,7 +189,7 @@ impl<T: Serialize> Serialize for Ref<T> {
 }
 
 impl<'de, T: Deserialize<'de>> Deserialize<'de> for Ref<T> {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Ref<T>, D::Error>
+    fn deserialize<D>(deserializer: D) -> StdResult<Ref<T>, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -199,7 +198,7 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Ref<T> {
 }
 
 impl<T: FromRecord> FromRecord for Ref<T> {
-    fn from_record(val: &Record) -> ::std::result::Result<Self, String> {
+    fn from_record(val: &Record) -> StdResult<Self, String> {
         T::from_record(val).map(Self::from)
     }
 }
@@ -210,14 +209,16 @@ impl<T: IntoRecord + Clone> IntoRecord for Ref<T> {
     }
 }
 
-impl<T: Clone> Mutator<Ref<T>> for Record
+impl<T> Mutator<Ref<T>> for Record
 where
+    T: Clone,
     Record: Mutator<T>,
 {
-    fn mutate(&self, arc: &mut Ref<T>) -> ::std::result::Result<(), String> {
+    fn mutate(&self, arc: &mut Ref<T>) -> StdResult<(), String> {
         let mut copy: T = (*arc).deref().clone();
         self.mutate(&mut copy)?;
         *arc = Ref::from(copy);
+
         Ok(())
     }
 }
@@ -266,81 +267,88 @@ pub fn bigint_pow32(base: &ddlog_bigint::Int, exp: &u32) -> ddlog_bigint::Int {
 }
 
 // Option
-pub fn option2std<T>(x: ::std::option::Option<T>) -> Option<T> {
+pub fn option2std<T>(x: StdOption<T>) -> Option<T> {
     match x {
-        ::std::option::Option::None => Option::None,
-        ::std::option::Option::Some(v) => Option::Some { x: v },
+        StdOption::None => Option::None,
+        StdOption::Some(v) => Option::Some { x: v },
     }
 }
 
-pub fn std2option<T>(x: Option<T>) -> ::std::option::Option<T> {
+pub fn std2option<T>(x: Option<T>) -> StdOption<T> {
     match x {
-        Option::None => ::std::option::Option::None,
-        Option::Some { x } => ::std::option::Option::Some(x),
+        Option::None => StdOption::None,
+        Option::Some { x } => StdOption::Some(x),
     }
 }
 
-impl<T> From<::std::option::Option<T>> for Option<T> {
-    fn from(x: ::std::option::Option<T>) -> Self {
+impl<T> From<StdOption<T>> for Option<T> {
+    fn from(x: StdOption<T>) -> Self {
         option2std(x)
     }
 }
 
 // this requires Rust 1.41+
-impl<T> From<Option<T>> for ::std::option::Option<T> {
+impl<T> From<Option<T>> for StdOption<T> {
     fn from(x: Option<T>) -> Self {
         std2option(x)
     }
 }
 
-impl<A: FromRecord + serde::de::DeserializeOwned + Default> FromRecord for Option<A> {
-    fn from_record(val: &Record) -> result::Result<Self, String> {
+impl<T> FromRecord for Option<T>
+where
+    T: FromRecord + DeserializeOwned + Default,
+{
+    fn from_record(val: &Record) -> StdResult<Self, String> {
         match val {
             Record::PosStruct(constr, args) => match constr.as_ref() {
                 "ddlog_std::None" if args.len() == 0 => Ok(Option::None {}),
                 "ddlog_std::Some" if args.len() == 1 => Ok(Option::Some {
-                    x: <A>::from_record(&args[0])?,
+                    x: <T>::from_record(&args[0])?,
                 }),
-                c => result::Result::Err(format!(
+                c => StdResult::Err(format!(
                     "unknown constructor {} of type Option in {:?}",
                     c, *val
                 )),
             },
+
             Record::NamedStruct(constr, args) => match constr.as_ref() {
                 "ddlog_std::None" => Ok(Option::None {}),
                 "ddlog_std::Some" => Ok(Option::Some {
-                    x: arg_extract::<A>(args, "x")?,
+                    x: arg_extract::<T>(args, "x")?,
                 }),
-                c => result::Result::Err(format!(
+                c => StdResult::Err(format!(
                     "unknown constructor {} of type Option in {:?}",
                     c, *val
                 )),
             },
-            /* `Option` encoded as an array of size 0 or 1.  This is, for instance, useful when
-             * interfacing with OVSDB. */
+
+            // `Option` encoded as an array of size 0 or 1.  This is, for instance, useful when
+            // interfacing with OVSDB.
             Record::Array(kind, records) => match (records.len()) {
                 0 => Ok(Option::None {}),
                 1 => Ok(Option::Some {
-                    x: A::from_record(&records[0])?,
+                    x: T::from_record(&records[0])?,
                 }),
                 n => Err(format!(
                     "cannot deserialize ddlog_std::Option from container of size {:?}",
                     n
                 )),
             },
+
             Record::Serialized(format, s) => {
                 if format == "json" {
                     serde_json::from_str(&*s).map_err(|e| format!("{}", e))
                 } else {
-                    result::Result::Err(format!("unsupported serialization format '{}'", format))
+                    StdResult::Err(format!("unsupported serialization format '{}'", format))
                 }
             }
+
             v => {
-                /* Finally, assume that the record contains the inner value of a `Some`.
-                 * XXX: this introduces ambiguity, as an array could represent either the inner
-                 * value or an array encoding of `Option`. */
+                // Finally, assume that the record contains the inner value of a `Some`.
+                // XXX: this introduces ambiguity, as an array could represent either the inner
+                // value or an array encoding of `Option`.
                 Ok(Option::Some {
-                    x: A::from_record(&v)?,
+                    x: T::from_record(&v)?,
                 })
             }
         }
@@ -375,13 +383,14 @@ pub fn range<A: Clone + Ord + ops::Add<Output = A> + PartialOrd>(
 */
 
 // Range
-pub fn range_vec<A: Clone + Ord + ops::Add<Output = A> + PartialOrd + Zero>(
+pub fn range_vec<A: Clone + Ord + Add<Output = A> + PartialOrd + Zero>(
     from: &A,
     to: &A,
     step: &A,
 ) -> Vec<A> {
     let mut vec = Vec::new();
     let mut x = from.clone();
+
     if step < &A::zero() {
         while x > *to {
             vec.push(x.clone());
@@ -393,261 +402,288 @@ pub fn range_vec<A: Clone + Ord + ops::Add<Output = A> + PartialOrd + Zero>(
             x = x + step.clone();
         }
     }
+
     vec
 }
 
-// Vector
-
+/// A contiguous growable array type mirroring [`Vec`]
+///
+/// [`Vec`]: https://doc.rust-lang.org/std/vec/struct.Vec.html
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default)]
 pub struct Vec<T> {
-    pub x: ::std::vec::Vec<T>,
+    pub vec: StdVec<T>,
 }
 
-impl<T: Serialize> Serialize for Vec<T> {
-    fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.x.serialize(serializer)
-    }
-}
-
-impl<'de, T: Deserialize<'de>> Deserialize<'de> for Vec<T> {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        ::std::vec::Vec::deserialize(deserializer).map(|x| Vec { x })
-    }
-}
-
-/* This is needed so we can support for-loops over `Vec`'s
- */
-pub struct VecIter<'a, X> {
-    iter: slice::Iter<'a, X>,
-}
-
-impl<'a, X> VecIter<'a, X> {
-    pub fn new(vec: &'a Vec<X>) -> VecIter<'a, X> {
-        VecIter { iter: vec.x.iter() }
-    }
-}
-
-impl<'a, X> Iterator for VecIter<'a, X> {
-    type Item = &'a X;
-
-    fn next(&mut self) -> ::std::option::Option<Self::Item> {
-        self.iter.next()
+impl<T> Vec<T> {
+    /// Creates a new, empty vector
+    pub const fn new() -> Self {
+        Vec { vec: StdVec::new() }
     }
 
-    fn size_hint(&self) -> (usize, ::std::option::Option<usize>) {
-        self.iter.size_hint()
+    /// Creates a new, empty `Vec<T>` with the specified capacity
+    pub fn with_capacity(capacity: usize) -> Self {
+        Vec {
+            vec: StdVec::with_capacity(capacity),
+        }
     }
-}
 
-impl<'a, T> Vec<T> {
-    pub fn iter(&'a self) -> VecIter<'a, T> {
+    /// Returns an iterator over the vector
+    pub fn iter<'a>(&'a self) -> VecIter<'a, T> {
         VecIter::new(self)
     }
 }
 
-impl<T> Vec<T> {
-    pub fn new() -> Self {
-        Vec {
-            x: ::std::vec::Vec::new(),
-        }
-    }
-    pub fn with_capacity(capacity: usize) -> Self {
-        Vec {
-            x: ::std::vec::Vec::with_capacity(capacity),
-        }
-    }
-    pub fn push(&mut self, v: T) {
-        self.x.push(v);
+impl<T: Clone> Vec<T> {
+    pub fn resize(&mut self, new_len: usize, value: &T) {
+        self.vec.resize_with(new_len, || value.clone());
     }
 }
 
 impl<T: Clone> From<&[T]> for Vec<T> {
-    fn from(s: &[T]) -> Self {
+    fn from(slice: &[T]) -> Self {
         Vec {
-            x: ::std::vec::Vec::from(s),
+            vec: slice.to_vec(),
         }
     }
 }
 
-impl<T: Clone> From<::std::vec::Vec<T>> for Vec<T> {
-    fn from(x: ::std::vec::Vec<T>) -> Self {
-        Vec { x }
+impl<T> FromIterator<T> for Vec<T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        Self {
+            vec: ::std::vec::Vec::from_iter(iter),
+        }
     }
 }
 
-impl<T> ops::Deref for Vec<T> {
-    type Target = [T];
-
-    fn deref(&self) -> &[T] {
-        self.x.deref()
+impl<T> From<StdVec<T>> for Vec<T> {
+    fn from(vec: StdVec<T>) -> Self {
+        Vec { vec }
     }
 }
 
-impl<T: Clone> Vec<T> {
-    pub fn extend_from_slice(&mut self, other: &[T]) {
-        self.x.extend_from_slice(other);
+impl<T> Deref for Vec<T> {
+    type Target = StdVec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.vec
     }
-    pub fn resize(&mut self, new_len: usize, value: &T) {
-        self.x.resize_with(new_len, || value.clone());
+}
+
+impl<T> DerefMut for Vec<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.vec
+    }
+}
+
+impl<T> AsRef<StdVec<T>> for Vec<T> {
+    fn as_ref(&self) -> &StdVec<T> {
+        &self.vec
+    }
+}
+
+impl<T> AsMut<StdVec<T>> for Vec<T> {
+    fn as_mut(&mut self) -> &mut StdVec<T> {
+        &mut self.vec
+    }
+}
+
+impl<T> AsRef<[T]> for Vec<T> {
+    fn as_ref(&self) -> &[T] {
+        self.as_slice()
+    }
+}
+
+impl<T> AsMut<[T]> for Vec<T> {
+    fn as_mut(&mut self) -> &mut [T] {
+        self.as_mut_slice()
+    }
+}
+
+impl<T: Serialize> Serialize for Vec<T> {
+    fn serialize<S>(&self, serializer: S) -> StdResult<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.vec.serialize(serializer)
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Vec<T> {
+    fn deserialize<D>(deserializer: D) -> StdResult<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        StdVec::deserialize(deserializer).map(|vec| Vec { vec })
     }
 }
 
 impl<T: FromRecord> FromRecord for Vec<T> {
-    fn from_record(val: &Record) -> ::std::result::Result<Self, String> {
-        ::std::vec::Vec::from_record(val).map(|x| Vec { x })
+    fn from_record(val: &Record) -> StdResult<Self, String> {
+        StdVec::from_record(val).map(|vec| Vec { vec })
     }
 }
 
 impl<T: IntoRecord> IntoRecord for Vec<T> {
     fn into_record(self) -> Record {
-        self.x.into_record()
+        self.vec.into_record()
     }
 }
 
 impl<T: FromRecord> Mutator<Vec<T>> for Record {
-    fn mutate(&self, vec: &mut Vec<T>) -> ::std::result::Result<(), String> {
-        self.mutate(&mut vec.x)
+    fn mutate(&self, vec: &mut Vec<T>) -> StdResult<(), String> {
+        self.mutate(&mut vec.vec)
     }
 }
 
-impl<T: Display> Display for Vec<T> {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        let len = self.x.len();
-        formatter.write_str("[")?;
-        for (i, v) in self.x.iter().enumerate() {
-            formatter.write_fmt(format_args!("{}", *v))?;
-            if i < len - 1 {
-                formatter.write_str(",")?;
-            }
-        }
-        formatter.write_str("]")?;
-        Ok(())
-    }
-}
-
-impl<T: fmt::Debug> fmt::Debug for Vec<T> {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        let len = self.x.len();
-        formatter.write_str("[")?;
-        for (i, v) in self.x.iter().enumerate() {
-            formatter.write_fmt(format_args!("{:?}", *v))?;
-            if i < len - 1 {
-                formatter.write_str(",")?;
-            }
-        }
-        formatter.write_str("]")?;
-        Ok(())
+impl<T: Debug> Debug for Vec<T> {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_list().entries(self.vec.iter()).finish()
     }
 }
 
 impl<T> IntoIterator for Vec<T> {
     type Item = T;
     type IntoIter = vec::IntoIter<T>;
+
     fn into_iter(self) -> Self::IntoIter {
-        self.x.into_iter()
+        self.vec.into_iter()
     }
 }
 
-pub fn vec_len<X: Ord + Clone>(v: &Vec<X>) -> std_usize {
-    v.x.len() as std_usize
+// This is needed so we can support for-loops over `Vec`'s
+pub struct VecIter<'a, X> {
+    iter: slice::Iter<'a, X>,
 }
 
-pub fn vec_empty<X: Ord + Clone>() -> Vec<X> {
+impl<'a, X> VecIter<'a, X> {
+    pub fn new(vec: &'a Vec<X>) -> VecIter<'a, X> {
+        VecIter {
+            iter: vec.vec.iter(),
+        }
+    }
+}
+
+impl<'a, X> Iterator for VecIter<'a, X> {
+    type Item = &'a X;
+
+    fn next(&mut self) -> StdOption<Self::Item> {
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (usize, StdOption<usize>) {
+        self.iter.size_hint()
+    }
+}
+
+/// Get the length of a vec
+pub fn vec_len<T>(vec: &Vec<T>) -> std_usize {
+    vec.len() as std_usize
+}
+
+/// Create a new, empty vec
+pub const fn vec_empty<T>() -> Vec<T> {
     Vec::new()
 }
 
-pub fn vec_with_length<X: Ord + Clone>(len: &std_usize, x: &X) -> Vec<X> {
+/// Create an fill a vec with `len` copies of `splat`
+pub fn vec_with_length<T: Clone>(len: &std_usize, splat: &T) -> Vec<T> {
     let mut res = Vec::with_capacity(*len as usize);
-    res.resize(*len as usize, x);
+    res.resize(*len as usize, splat);
     res
 }
 
-pub fn vec_with_capacity<X: Ord + Clone>(len: &std_usize) -> Vec<X> {
+/// Create a new vec with the requested capacity
+pub fn vec_with_capacity<T>(len: &std_usize) -> Vec<T> {
     Vec::with_capacity(*len as usize)
 }
 
-pub fn vec_singleton<X: Ord + Clone>(x: &X) -> Vec<X> {
-    Vec { x: vec![x.clone()] }
-}
-
-pub fn vec_append<X: Ord + Clone>(v: &mut Vec<X>, other: &Vec<X>) {
-    v.extend_from_slice(other.x.as_slice());
-}
-
-pub fn vec_push<X: Ord + Clone>(v: &mut Vec<X>, x: &X) {
-    v.push((*x).clone());
-}
-
-pub fn vec_push_imm<X: Ord + Clone>(v: &Vec<X>, x: &X) -> Vec<X> {
-    let mut v2 = v.clone();
-    v2.push((*x).clone());
-    v2
-}
-
-pub fn vec_contains<X: Ord>(v: &Vec<X>, x: &X) -> bool {
-    v.x.contains(x)
-}
-
-pub fn vec_is_empty<X: Ord>(v: &Vec<X>) -> bool {
-    v.x.is_empty()
-}
-
-pub fn vec_nth<X: Ord + Clone>(v: &Vec<X>, n: &std_usize) -> Option<X> {
-    option2std(v.x.get(*n as usize).cloned())
-}
-
-pub fn vec_to_set<X: Ord + Clone>(s: &Vec<X>) -> Set<X> {
-    Set {
-        x: s.x.iter().cloned().collect(),
+/// Create a new vec with a single element
+pub fn vec_singleton<T: Clone>(value: &T) -> Vec<T> {
+    Vec {
+        vec: vec![value.clone()],
     }
 }
 
-pub fn vec_sort<X: Ord>(v: &mut Vec<X>) {
-    v.x.as_mut_slice().sort();
+pub fn vec_append<T: Clone>(vec: &mut Vec<T>, other: &Vec<T>) {
+    vec.extend_from_slice(other.as_slice());
 }
 
-pub fn vec_sort_imm<X: Ord + Clone>(v: &Vec<X>) -> Vec<X> {
-    let mut res = (*v).clone();
-    res.x.sort();
+pub fn vec_push<T: Clone>(vec: &mut Vec<T>, elem: &T) {
+    vec.push(elem.clone());
+}
+
+/// Pushes to a vector immutably by creating an entirely new vector and pushing the new
+/// element to it
+pub fn vec_push_imm<T: Clone>(immutable_vec: &Vec<T>, x: &T) -> Vec<T> {
+    let mut mutable_vec = Vec::with_capacity(immutable_vec.len());
+    mutable_vec.extend_from_slice(immutable_vec.as_slice());
+    mutable_vec.push(x.clone());
+
+    mutable_vec
+}
+
+pub fn vec_contains<T: PartialEq>(vec: &Vec<T>, x: &T) -> bool {
+    vec.contains(x)
+}
+
+pub fn vec_is_empty<T>(vec: &Vec<T>) -> bool {
+    vec.is_empty()
+}
+
+pub fn vec_nth<T: Clone>(vec: &Vec<T>, nth: &std_usize) -> Option<T> {
+    vec.get(*nth as usize).cloned().into()
+}
+
+pub fn vec_to_set<T: Ord + Clone>(vec: &Vec<T>) -> Set<T> {
+    Set {
+        x: vec.vec.iter().cloned().collect(),
+    }
+}
+
+pub fn vec_sort<T: Ord>(vec: &mut Vec<T>) {
+    vec.as_mut_slice().sort();
+}
+
+pub fn vec_sort_imm<T: Ord + Clone>(vec: &Vec<T>) -> Vec<T> {
+    let mut res = (*vec).clone();
+    res.vec.sort();
     res
 }
 
-pub fn vec_resize<X: Clone>(v: &mut Vec<X>, new_len: &std_usize, value: &X) {
-    v.resize(*new_len as usize, value)
+pub fn vec_resize<T: Clone>(vec: &mut Vec<T>, new_len: &std_usize, value: &T) {
+    vec.resize(*new_len as usize, value)
 }
 
-pub fn vec_truncate<X>(v: &mut Vec<X>, new_len: &std_usize) {
-    v.x.truncate(*new_len as usize)
+pub fn vec_truncate<T>(vec: &mut Vec<T>, new_len: &std_usize) {
+    vec.vec.truncate(*new_len as usize)
 }
 
-pub fn vec_swap_nth<X: Clone>(v: &mut Vec<X>, idx: &std_usize, value: &mut X) -> bool {
-    if (*idx as usize) < v.x.len() {
-        ::std::mem::swap(&mut v.x[*idx as usize], value);
-        return true;
-    };
-    return false;
+pub fn vec_swap_nth<T: Clone>(vec: &mut Vec<T>, idx: &std_usize, value: &mut T) -> bool {
+    if (*idx as usize) < vec.len() {
+        mem::swap(&mut vec[*idx as usize], value);
+        true
+    } else {
+        false
+    }
 }
 
-pub fn vec_update_nth<X: Clone>(v: &mut Vec<X>, idx: &std_usize, value: &X) -> bool {
-    if (*idx as usize) < v.x.len() {
-        v.x[*idx as usize] = value.clone();
-        return true;
-    };
-    return false;
+pub fn vec_update_nth<T: Clone>(vec: &mut Vec<T>, idx: &std_usize, value: &T) -> bool {
+    if (*idx as usize) < vec.len() {
+        vec[*idx as usize] = value.clone();
+        true
+    } else {
+        false
+    }
 }
 
 pub fn vec_zip<X: Clone, Y: Clone>(v1: &Vec<X>, v2: &Vec<Y>) -> Vec<tuple2<X, Y>> {
     Vec {
-        x: v1
-            .x
+        vec: v1
             .iter()
-            .zip(v2.x.iter())
+            .zip(v2.iter())
             .map(|(x, y)| tuple2(x.clone(), y.clone()))
             .collect(),
     }
@@ -661,7 +697,7 @@ pub struct Set<T: Ord> {
 }
 
 impl<T: Ord + Serialize> Serialize for Set<T> {
-    fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> StdResult<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -670,7 +706,7 @@ impl<T: Ord + Serialize> Serialize for Set<T> {
 }
 
 impl<'de, T: Ord + Deserialize<'de>> Deserialize<'de> for Set<T> {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> StdResult<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -684,8 +720,11 @@ pub struct SetIter<'a, X> {
     iter: btree_set::Iter<'a, X>,
 }
 
-impl<'a, X: Ord> SetIter<'a, X> {
-    pub fn new(set: &'a Set<X>) -> SetIter<'a, X> {
+impl<'a, T> SetIter<'a, T> {
+    pub fn new(set: &'a Set<T>) -> SetIter<'a, T>
+    where
+        T: Ord,
+    {
         SetIter { iter: set.x.iter() }
     }
 }
@@ -693,11 +732,11 @@ impl<'a, X: Ord> SetIter<'a, X> {
 impl<'a, X> Iterator for SetIter<'a, X> {
     type Item = &'a X;
 
-    fn next(&mut self) -> ::std::option::Option<Self::Item> {
+    fn next(&mut self) -> StdOption<Self::Item> {
         self.iter.next()
     }
 
-    fn size_hint(&self) -> (usize, ::std::option::Option<usize>) {
+    fn size_hint(&self) -> (usize, StdOption<usize>) {
         self.iter.size_hint()
     }
 }
@@ -712,13 +751,14 @@ impl<T: Ord> Set<T> {
     pub fn new() -> Self {
         Set { x: BTreeSet::new() }
     }
+
     pub fn insert(&mut self, v: T) {
         self.x.insert(v);
     }
 }
 
 impl<T: FromRecord + Ord> FromRecord for Set<T> {
-    fn from_record(val: &Record) -> ::std::result::Result<Self, String> {
+    fn from_record(val: &Record) -> StdResult<Self, String> {
         BTreeSet::from_record(val).map(|x| Set { x })
     }
 }
@@ -730,7 +770,7 @@ impl<T: IntoRecord + Ord> IntoRecord for Set<T> {
 }
 
 impl<T: FromRecord + Ord> Mutator<Set<T>> for Record {
-    fn mutate(&self, set: &mut Set<T>) -> ::std::result::Result<(), String> {
+    fn mutate(&self, set: &mut Set<T>) -> StdResult<(), String> {
         self.mutate(&mut set.x)
     }
 }
@@ -738,6 +778,7 @@ impl<T: FromRecord + Ord> Mutator<Set<T>> for Record {
 impl<T: Ord> IntoIterator for Set<T> {
     type Item = T;
     type IntoIter = btree_set::IntoIter<T>;
+
     fn into_iter(self) -> Self::IntoIter {
         self.x.into_iter()
     }
@@ -754,33 +795,9 @@ impl<T: Ord> FromIterator<T> for Set<T> {
     }
 }
 
-impl<T: Display + Ord> Display for Set<T> {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        let len = self.x.len();
-        formatter.write_str("[")?;
-        for (i, v) in self.x.iter().enumerate() {
-            formatter.write_fmt(format_args!("{}", *v))?;
-            if i < len - 1 {
-                formatter.write_str(",")?;
-            }
-        }
-        formatter.write_str("]")?;
-        Ok(())
-    }
-}
-
-impl<T: fmt::Debug + Ord> fmt::Debug for Set<T> {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        let len = self.x.len();
-        formatter.write_str("[")?;
-        for (i, v) in self.x.iter().enumerate() {
-            formatter.write_fmt(format_args!("{:?}", *v))?;
-            if i < len - 1 {
-                formatter.write_str(",")?;
-            }
-        }
-        formatter.write_str("]")?;
-        Ok(())
+impl<T: Debug + Ord> Debug for Set<T> {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_set().entries(self.x.iter()).finish()
     }
 }
 
@@ -788,7 +805,7 @@ pub fn set_size<X: Ord + Clone>(s: &Set<X>) -> std_usize {
     s.x.len() as std_usize
 }
 
-pub fn set_empty<X: Ord + Clone>() -> Set<X> {
+pub fn set_empty<X: Clone + Ord>() -> Set<X> {
     Set::new()
 }
 
@@ -820,9 +837,9 @@ pub fn set_nth<X: Ord + Clone>(s: &Set<X>, n: &std_usize) -> Option<X> {
     option2std(s.x.iter().nth(*n as usize).cloned())
 }
 
-pub fn set_to_vec<X: Ord + Clone>(s: &Set<X>) -> Vec<X> {
+pub fn set_to_vec<X: Ord + Clone>(set: &Set<X>) -> Vec<X> {
     Vec {
-        x: s.x.iter().cloned().collect(),
+        vec: set.x.iter().cloned().collect(),
     }
 }
 
@@ -834,9 +851,10 @@ pub fn set_union<X: Ord + Clone>(s1: &Set<X>, s2: &Set<X>) -> Set<X> {
 
 pub fn set_unions<X: Ord + Clone>(sets: &Vec<Set<X>>) -> Set<X> {
     let mut s = BTreeSet::new();
-    for si in sets.x.iter() {
-        s.append(&mut si.x.clone());
+    for set in sets.iter() {
+        s.append(&mut set.x.clone());
     }
+
     Set { x: s }
 }
 
@@ -860,7 +878,7 @@ pub struct Map<K: Ord, V> {
 }
 
 impl<K: Ord + Serialize, V: Serialize> Serialize for Map<K, V> {
-    fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> StdResult<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -869,7 +887,7 @@ impl<K: Ord + Serialize, V: Serialize> Serialize for Map<K, V> {
 }
 
 impl<'de, K: Ord + Deserialize<'de>, V: Deserialize<'de>> Deserialize<'de> for Map<K, V> {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> StdResult<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -877,8 +895,7 @@ impl<'de, K: Ord + Deserialize<'de>, V: Deserialize<'de>> Deserialize<'de> for M
     }
 }
 
-/* This is needed so we can support for-loops over `Map`'s
- */
+// This is needed so we can support for-loops over `Map`'s
 pub struct MapIter<'a, K, V> {
     iter: btree_map::Iter<'a, K, V>,
 }
@@ -892,11 +909,11 @@ impl<'a, K: Ord, V> MapIter<'a, K, V> {
 impl<'a, K: Clone, V: Clone> Iterator for MapIter<'a, K, V> {
     type Item = tuple2<K, V>;
 
-    fn next(&mut self) -> ::std::option::Option<Self::Item> {
+    fn next(&mut self) -> StdOption<Self::Item> {
         self.iter.next().map(|(k, v)| tuple2(k.clone(), v.clone()))
     }
 
-    fn size_hint(&self) -> (usize, ::std::option::Option<usize>) {
+    fn size_hint(&self) -> (usize, StdOption<usize>) {
         self.iter.size_hint()
     }
 }
@@ -911,13 +928,14 @@ impl<K: Ord, V> Map<K, V> {
     pub fn new() -> Self {
         Map { x: BTreeMap::new() }
     }
+
     pub fn insert(&mut self, k: K, v: V) {
         self.x.insert(k, v);
     }
 }
 
 impl<K: FromRecord + Ord, V: FromRecord> FromRecord for Map<K, V> {
-    fn from_record(val: &Record) -> ::std::result::Result<Self, String> {
+    fn from_record(val: &Record) -> StdResult<Self, String> {
         BTreeMap::from_record(val).map(|x| Map { x })
     }
 }
@@ -929,7 +947,7 @@ impl<K: IntoRecord + Ord, V: IntoRecord> IntoRecord for Map<K, V> {
 }
 
 impl<K: FromRecord + Ord, V: FromRecord + PartialEq> Mutator<Map<K, V>> for Record {
-    fn mutate(&self, map: &mut Map<K, V>) -> ::std::result::Result<(), String> {
+    fn mutate(&self, map: &mut Map<K, V>) -> StdResult<(), String> {
         self.mutate(&mut map.x)
     }
 }
@@ -949,11 +967,11 @@ impl<K: Ord, V> MapIntoIter<K, V> {
 impl<K, V> Iterator for MapIntoIter<K, V> {
     type Item = tuple2<K, V>;
 
-    fn next(&mut self) -> ::std::option::Option<Self::Item> {
+    fn next(&mut self) -> StdOption<Self::Item> {
         self.iter.next().map(|(k, v)| tuple2(k, v))
     }
 
-    fn size_hint(&self) -> (usize, ::std::option::Option<usize>) {
+    fn size_hint(&self) -> (usize, StdOption<usize>) {
         self.iter.size_hint()
     }
 }
@@ -961,6 +979,7 @@ impl<K, V> Iterator for MapIntoIter<K, V> {
 impl<K: Ord, V> IntoIterator for Map<K, V> {
     type Item = tuple2<K, V>;
     type IntoIter = MapIntoIter<K, V>;
+
     fn into_iter(self) -> Self::IntoIter {
         Self::IntoIter::new(self)
     }
@@ -977,33 +996,9 @@ impl<K: Ord, V> FromIterator<(K, V)> for Map<K, V> {
     }
 }
 
-impl<K: Display + Ord, V: Display> Display for Map<K, V> {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        let len = self.x.len();
-        formatter.write_str("[")?;
-        for (i, (k, v)) in self.x.iter().enumerate() {
-            formatter.write_fmt(format_args!("({},{})", *k, *v))?;
-            if i < len - 1 {
-                formatter.write_str(",")?;
-            }
-        }
-        formatter.write_str("]")?;
-        Ok(())
-    }
-}
-
-impl<K: fmt::Debug + Ord, V: fmt::Debug> fmt::Debug for Map<K, V> {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        let len = self.x.len();
-        formatter.write_str("[")?;
-        for (i, (k, v)) in self.x.iter().enumerate() {
-            formatter.write_fmt(format_args!("({:?},{:?})", *k, *v))?;
-            if i < len - 1 {
-                formatter.write_str(",")?;
-            }
-        }
-        formatter.write_str("]")?;
-        Ok(())
+impl<K: Debug + Ord, V: Debug> Debug for Map<K, V> {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_map().entries(self.x.iter()).finish()
     }
 }
 
@@ -1053,9 +1048,9 @@ pub fn map_union<K: Ord + Clone, V: Clone>(m1: &Map<K, V>, m2: &Map<K, V>) -> Ma
     m
 }
 
-pub fn map_keys<K: Ord + Clone, V>(m: &Map<K, V>) -> Vec<K> {
+pub fn map_keys<K: Ord + Clone, V>(map: &Map<K, V>) -> Vec<K> {
     Vec {
-        x: m.x.keys().cloned().collect(),
+        vec: map.x.keys().cloned().collect(),
     }
 }
 
@@ -1078,12 +1073,12 @@ pub fn parse_dec_i64(s: &String) -> Option<i64> {
 }
 
 pub fn string_join(strings: &Vec<String>, sep: &String) -> String {
-    strings.x.join(sep.as_str())
+    strings.join(sep.as_str())
 }
 
-pub fn string_split(s: &String, sep: &String) -> Vec<String> {
+pub fn string_split(string: &String, sep: &String) -> Vec<String> {
     Vec {
-        x: s.split(sep).map(|x| x.to_owned()).collect(),
+        vec: string.split(sep).map(|x| x.to_owned()).collect(),
     }
 }
 
@@ -1158,7 +1153,7 @@ pub fn hash128<T: Hash>(x: &T) -> u128 {
     ((w1 as u128) << 64) | (w2 as u128)
 }
 
-pub type ProjectFunc<X> = ::std::sync::Arc<dyn Fn(&DDValue) -> X + Send + Sync>;
+pub type ProjectFunc<X> = Arc<dyn Fn(&DDValue) -> X + Send + Sync>;
 
 /*
  * Group type (returned by the `group_by` operator).
@@ -1205,7 +1200,7 @@ pub enum GroupEnum<'a, K, V> {
     },
     ByVal {
         key: K,
-        group: ::std::vec::Vec<V>,
+        group: StdVec<V>,
     },
 }
 
@@ -1239,7 +1234,7 @@ impl<K: Default, V: Default> Default for Group<K, V> {
 }
 
 /* We compare two groups by comparing values returned by their `project()`
- * functions, not the underlying DDValue's.  DDValue's are not visiable to
+ * functions, not the underlying DDValue's.  DDValue's are not visible to
  * the DDlog program; hence two groups are iff they have the same
  * projections. */
 
@@ -1252,19 +1247,19 @@ impl<K: PartialEq, V: Clone + PartialEq> PartialEq for Group<K, V> {
 impl<K: PartialEq, V: Clone + PartialEq> Eq for Group<K, V> {}
 
 impl<K: PartialOrd, V: Clone + PartialOrd> PartialOrd for Group<K, V> {
-    fn partial_cmp(&self, other: &Self) -> ::std::option::Option<cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> StdOption<Ordering> {
         match self.key_ref().partial_cmp(other.key_ref()) {
             None => None,
-            Some(cmp::Ordering::Equal) => self.iter().partial_cmp(other.iter()),
+            Some(Ordering::Equal) => self.iter().partial_cmp(other.iter()),
             ord => ord,
         }
     }
 }
 
 impl<K: Ord, V: Clone + Ord> Ord for Group<K, V> {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         match self.key_ref().cmp(other.key_ref()) {
-            cmp::Ordering::Equal => self.iter().cmp(other.iter()),
+            Ordering::Equal => self.iter().cmp(other.iter()),
             ord => ord,
         }
     }
@@ -1287,7 +1282,7 @@ impl<K: Hash, V: Clone + Hash> Hash for Group<K, V> {
 
 impl<K: Clone, V: Clone> DDlogGroup<K, V> {
     pub fn from_group(g: &Group<K, V>) -> Self {
-        let vals: ::std::vec::Vec<V> = g.iter().collect();
+        let vals: StdVec<V> = g.iter().collect();
         DDlogGroup {
             key: g.key(),
             vals: Vec::from(vals),
@@ -1297,13 +1292,13 @@ impl<K: Clone, V: Clone> DDlogGroup<K, V> {
 
 impl<K, V> From<DDlogGroup<K, V>> for Group<K, V> {
     fn from(g: DDlogGroup<K, V>) -> Self {
-        Group::new(g.key, g.vals.x)
+        Group::new(g.key, g.vals.vec)
     }
 }
 
-impl<K: ::std::fmt::Debug + Clone, V: ::std::fmt::Debug + Clone> ::std::fmt::Debug for Group<K, V> {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::result::Result<(), ::std::fmt::Error> {
-        ::std::fmt::Debug::fmt(&DDlogGroup::from_group(self), f)
+impl<K: Debug + Clone, V: Debug + Clone> Debug for Group<K, V> {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        Debug::fmt(&DDlogGroup::from_group(self), f)
     }
 }
 
@@ -1320,7 +1315,7 @@ where
     K: IntoRecord + FromRecord + Clone,
     V: IntoRecord + FromRecord + Clone,
 {
-    fn mutate(&self, grp: &mut Group<K, V>) -> ::std::result::Result<(), String> {
+    fn mutate(&self, grp: &mut Group<K, V>) -> StdResult<(), String> {
         let mut dgrp = DDlogGroup::from_group(grp);
         self.mutate(&mut dgrp)?;
         *grp = Group::from(dgrp);
@@ -1333,13 +1328,13 @@ where
     K: Default + FromRecord + serde::de::DeserializeOwned,
     V: Default + FromRecord + serde::de::DeserializeOwned,
 {
-    fn from_record(rec: &Record) -> ::std::result::Result<Self, String> {
+    fn from_record(rec: &Record) -> StdResult<Self, String> {
         DDlogGroup::from_record(rec).map(|g| Group::from(g))
     }
 }
 
 impl<K: Clone + Serialize, V: Clone + Serialize> Serialize for Group<K, V> {
-    fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
+    fn serialize<S>(&self, serializer: S) -> StdResult<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -1348,7 +1343,7 @@ impl<K: Clone + Serialize, V: Clone + Serialize> Serialize for Group<K, V> {
 }
 
 impl<'de, K: Deserialize<'de>, V: Deserialize<'de>> Deserialize<'de> for Group<K, V> {
-    fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> StdResult<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -1382,7 +1377,7 @@ impl<'a, V> GroupIter<'a, V> {
 impl<'a, V: Clone> Iterator for GroupIter<'a, V> {
     type Item = V;
 
-    fn next(&mut self) -> ::std::option::Option<Self::Item> {
+    fn next(&mut self) -> StdOption<Self::Item> {
         match self {
             GroupIter::ByRef { iter, project } => match iter.next() {
                 None => None,
@@ -1395,7 +1390,7 @@ impl<'a, V: Clone> Iterator for GroupIter<'a, V> {
         }
     }
 
-    fn size_hint(&self) -> (usize, ::std::option::Option<usize>) {
+    fn size_hint(&self) -> (usize, StdOption<usize>) {
         match self {
             GroupIter::ByRef { iter, .. } => iter.size_hint(),
             GroupIter::ByVal { iter } => iter.size_hint(),
@@ -1410,7 +1405,7 @@ pub enum GroupIntoIter<V> {
         project: ProjectFunc<V>,
     },
     ByVal {
-        iter: ::std::vec::IntoIter<V>,
+        iter: vec::IntoIter<V>,
     },
 }
 
@@ -1431,7 +1426,7 @@ impl<V: Clone> GroupIntoIter<V> {
 impl<V: Clone> Iterator for GroupIntoIter<V> {
     type Item = V;
 
-    fn next(&mut self) -> ::std::option::Option<Self::Item> {
+    fn next(&mut self) -> StdOption<Self::Item> {
         match self {
             GroupIntoIter::ByRef { iter, project } => match iter.next() {
                 None => None,
@@ -1444,7 +1439,7 @@ impl<V: Clone> Iterator for GroupIntoIter<V> {
         }
     }
 
-    fn size_hint(&self) -> (usize, ::std::option::Option<usize>) {
+    fn size_hint(&self) -> (usize, StdOption<usize>) {
         match self {
             GroupIntoIter::ByRef { iter, .. } => iter.size_hint(),
             GroupIntoIter::ByVal { iter } => iter.size_hint(),
@@ -1466,7 +1461,7 @@ impl<K, V> Group<K, V> {
         }
     }
 
-    pub fn new<'a>(key: K, group: ::std::vec::Vec<V>) -> Group<K, V> {
+    pub fn new<'a>(key: K, group: StdVec<V>) -> Group<K, V> {
         GroupEnum::ByVal { key, group }
     }
 
@@ -1599,6 +1594,7 @@ pub fn group_setref_unions<K, V: Ord + Clone>(g: &Group<K, Ref<Set<V>>>) -> Ref<
                 }
             }
         }
+
         res
     }
 }
@@ -1633,6 +1629,7 @@ pub fn group_to_setmap<K1, K2: Ord + Clone, V: Clone + Ord>(
             }
         }
     }
+
     res
 }
 
@@ -1649,15 +1646,32 @@ pub fn group_sum<K, V: Clone + ops::Add<Output = V>>(g: &Group<K, V>) -> V {
     for v in g.iter().skip(1) {
         res = res + v;
     }
+
     res
 }
 
 /* Tuples */
-#[derive(Copy, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
+#[derive(Copy, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub struct tuple0;
 
+impl Debug for tuple0 {
+    fn fmt(&self, f: &mut Formatter) -> FmtResult {
+        f.debug_tuple("").finish()
+    }
+}
+
+impl From<()> for tuple0 {
+    fn from(_: ()) -> Self {
+        Self
+    }
+}
+
+impl Into<()> for tuple0 {
+    fn into(self) {}
+}
+
 impl FromRecord for tuple0 {
-    fn from_record(val: &Record) -> ::std::result::Result<Self, String> {
+    fn from_record(val: &Record) -> StdResult<Self, String> {
         <()>::from_record(val).map(|_| tuple0)
     }
 }
@@ -1668,101 +1682,102 @@ impl IntoRecord for tuple0 {
     }
 }
 
-macro_rules! decl_tuple {
-    ( $name:ident, $( $t:tt ),+ ) => {
-        #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize, Debug)]
-        pub struct $name< $($t),* >($(pub $t),*);
+impl Abomonation for tuple0 {}
 
-        impl <$($t),*> abomonation::Abomonation for $name<$($t),*>{}
+macro_rules! declare_tuples {
+    (
+        $(
+            $tuple_name:ident<$($element:tt),* $(,)?>
+        ),*
+        $(,)?
+    ) => {
+        $(
+            #[derive(Default, Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Serialize, Deserialize)]
+            pub struct $tuple_name<$($element,)*>($(pub $element,)*);
 
-        impl <$($t: FromRecord),*> FromRecord for $name<$($t),*> {
-            fn from_record(val: &Record) -> ::std::result::Result<Self, String> {
-                <($($t),*)>::from_record(val).map(|($($t),*)|$name($($t),*))
+            impl<$($element),*> From<($($element,)*)> for $tuple_name<$($element,)*> {
+                fn from(($($element,)*): ($($element,)*)) -> Self {
+                    Self($($element),*)
+                }
             }
-        }
 
-        impl <$($t: IntoRecord),*> IntoRecord for $name<$($t),*> {
-            fn into_record(self) -> Record {
-                let $name($($t),*) = self;
-                Record::Tuple(vec![$($t.into_record()),*])
+            impl<$($element),*> Into<($($element,)*)> for $tuple_name<$($element,)*> {
+                fn into(self) -> ($($element,)*) {
+                    let $tuple_name($($element),*) = self;
+                    ($($element,)*)
+                }
             }
-        }
 
-        impl <$($t: FromRecord),*> Mutator<$name<$($t),*>> for Record {
-            fn mutate(&self, x: &mut $name<$($t),*>) -> ::std::result::Result<(), String> {
-                *x = <$name<$($t),*>>::from_record(self)?;
-                Ok(())
+            impl<$($element: Debug),*> Debug for $tuple_name<$($element),*> {
+                fn fmt(&self, f: &mut Formatter) -> FmtResult {
+                    let $tuple_name($($element),*) = self;
+                    f.debug_tuple("")
+                        $(.field(&$element))*
+                        .finish()
+                }
             }
-        }
+
+            impl<$($element: Copy),*> Copy for $tuple_name<$($element),*> {}
+
+            impl<$($element),*> Abomonation for $tuple_name<$($element),*> {}
+
+            impl<$($element: FromRecord),*> FromRecord for $tuple_name<$($element),*> {
+                fn from_record(val: &Record) -> StdResult<Self, String> {
+                    <($($element,)*)>::from_record(val).map(|($($element,)*)| {
+                        $tuple_name($($element),*)
+                    })
+                }
+            }
+
+            impl<$($element: IntoRecord),*> IntoRecord for $tuple_name<$($element),*> {
+                fn into_record(self) -> Record {
+                    let $tuple_name($($element),*) = self;
+                    Record::Tuple(vec![$($element.into_record()),*])
+                }
+            }
+
+            impl<$($element: FromRecord),*> Mutator<$tuple_name<$($element),*>> for Record {
+                fn mutate(&self, x: &mut $tuple_name<$($element),*>) -> StdResult<(), String> {
+                    *x = <$tuple_name<$($element),*>>::from_record(self)?;
+                    Ok(())
+                }
+            }
+        )*
     };
 }
 
-decl_tuple!(tuple2, T1, T2);
-decl_tuple!(tuple3, T1, T2, T3);
-decl_tuple!(tuple4, T1, T2, T3, T4);
-decl_tuple!(tuple5, T1, T2, T3, T4, T5);
-decl_tuple!(tuple6, T1, T2, T3, T4, T5, T6);
-decl_tuple!(tuple7, T1, T2, T3, T4, T5, T6, T7);
-decl_tuple!(tuple8, T1, T2, T3, T4, T5, T6, T7, T8);
-decl_tuple!(tuple9, T1, T2, T3, T4, T5, T6, T7, T8, T9);
-decl_tuple!(tuple10, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10);
-decl_tuple!(tuple11, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11);
-decl_tuple!(tuple12, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12);
-decl_tuple!(tuple13, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13);
-decl_tuple!(tuple14, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14);
-decl_tuple!(tuple15, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15);
-decl_tuple!(tuple16, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16);
-decl_tuple!(tuple17, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17);
-decl_tuple!(
-    tuple18, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18
-);
-decl_tuple!(
-    tuple19, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19
-);
-decl_tuple!(
-    tuple20, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20
-);
-decl_tuple!(
-    tuple21, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21
-);
-decl_tuple!(
-    tuple22, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21, T22
-);
-decl_tuple!(
-    tuple23, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21, T22, T23
-);
-decl_tuple!(
-    tuple24, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21, T22, T23, T24
-);
-decl_tuple!(
-    tuple25, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21, T22, T23, T24, T25
-);
-decl_tuple!(
-    tuple26, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21, T22, T23, T24, T25, T26
-);
-decl_tuple!(
-    tuple27, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21, T22, T23, T24, T25, T26, T27
-);
-decl_tuple!(
-    tuple28, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21, T22, T23, T24, T25, T26, T27, T28
-);
-decl_tuple!(
-    tuple29, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21, T22, T23, T24, T25, T26, T27, T28, T29
-);
-decl_tuple!(
-    tuple30, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19,
-    T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30
-);
+declare_tuples! {
+    tuple1 <T1>,
+    tuple2 <T1, T2>,
+    tuple3 <T1, T2, T3>,
+    tuple4 <T1, T2, T3, T4>,
+    tuple5 <T1, T2, T3, T4, T5>,
+    tuple6 <T1, T2, T3, T4, T5, T6>,
+    tuple7 <T1, T2, T3, T4, T5, T6, T7>,
+    tuple8 <T1, T2, T3, T4, T5, T6, T7, T8>,
+    tuple9 <T1, T2, T3, T4, T5, T6, T7, T8, T9>,
+    tuple10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>,
+    tuple11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>,
+    tuple12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>,
+    tuple13<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>,
+    tuple14<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>,
+    tuple15<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>,
+    tuple16<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>,
+    tuple17<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17>,
+    tuple18<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18>,
+    tuple19<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19>,
+    tuple20<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20>,
+    tuple21<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21>,
+    tuple22<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22>,
+    tuple23<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23>,
+    tuple24<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24>,
+    tuple25<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25>,
+    tuple26<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26>,
+    tuple27<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27>,
+    tuple28<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28>,
+    tuple29<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29>,
+    tuple30<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T27, T28, T29, T30>,
+}
 
 // Endianness
 pub fn ntohl(x: &u32) -> u32 {

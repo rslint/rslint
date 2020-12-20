@@ -29,6 +29,7 @@ use std::{
     collections::BTreeSet,
     fs::File,
     io::{self, Write},
+    ops::Deref,
     path::Path,
     sync::{Mutex, MutexGuard},
 };
@@ -432,13 +433,37 @@ impl DatalogInner {
         self.file_id.get()
     }
 
-    fn insert<V>(&self, relation: Relations, val: V) -> &Self
+    pub fn insert<V>(&self, relation: Relations, val: V) -> &Self
     where
         V: DDValConvert,
     {
         self.updates.borrow_mut().push(Update::Insert {
             relid: relation as RelId,
             v: val.into_ddvalue(),
+        });
+
+        self
+    }
+
+    pub fn insert_or_update<V>(&self, relation: Relations, val: V) -> &Self
+    where
+        V: DDValConvert,
+    {
+        self.updates.borrow_mut().push(Update::InsertOrUpdate {
+            relid: relation as RelId,
+            v: val.into_ddvalue(),
+        });
+
+        self
+    }
+
+    pub fn delete_key<V>(&self, relation: Relations, val: V) -> &Self
+    where
+        V: DDValConvert,
+    {
+        self.updates.borrow_mut().push(Update::DeleteKey {
+            relid: relation as RelId,
+            k: val.into_ddvalue(),
         });
 
         self
@@ -559,6 +584,14 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         );
 
         id
+    }
+}
+
+impl<'ddlog> Deref for DatalogTransaction<'ddlog> {
+    type Target = DatalogInner;
+
+    fn deref(&self) -> &Self::Target {
+        self.datalog
     }
 }
 
