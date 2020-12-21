@@ -1566,16 +1566,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b181ba2dcf07aaccad5448e8ead58db5b742cf85dfe035e2227f137a539a189"
 
 [[package]]
-name = "regress"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ade8c280902120cc06e8694a76a5aa846e875df975da904d5a1a025fa7a5b4e"
-dependencies = [
- "memchr",
- "structopt",
-]
-
-[[package]]
 name = "rgb"
 version = "0.8.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1746,7 +1736,6 @@ dependencies = [
  "lexical",
  "num-bigint",
  "rayon",
- "regress",
  "rslint_errors",
  "rslint_lexer",
  "rslint_rowan",

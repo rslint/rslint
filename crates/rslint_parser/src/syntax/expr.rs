@@ -79,24 +79,6 @@ pub fn literal(p: &mut Parser) -> Option<CompletedMarker> {
     if !p.at_ts(LITERAL) {
         return None;
     }
-
-    if p.at(REGEX) {
-        let src = p.cur_src();
-        let pat = src.trim_start_matches("/");
-
-        let (pat, flags) = if let Some(idx) = pat.find("/") {
-            let (pat, flags) = pat.split_at(idx);
-            (pat, &flags[1..])
-        } else {
-            (pat, "")
-        };
-
-        if let Err(_) = regress::Regex::with_flags(pat, flags) {
-            let file_id = p.file_id;
-            p.error(ParserError::error(file_id, "regex", "invalid regex"));
-        }
-    }
-
     let m = p.start();
     p.bump_any();
     Some(m.complete(p, SyntaxKind::LITERAL))

@@ -88,7 +88,7 @@ impl Flags {
 ///
 /// It contains the actual RegEx node, and the flags for this expression.
 #[derive(Debug, Clone)]
-pub struct RegEx {
+pub struct Regex {
     pub node: Node,
     pub flags: Flags,
 }
@@ -100,15 +100,21 @@ pub enum Node {
     /// An empty regex node.
     Empty,
     /// Alternation node (e.g. `a|b|c`).
-    Alternation(Alternation),
+    Alternation(Span, Vec<Node>),
     /// A single assertion.
-    Assertion(Assertion),
+    Assertion(Span, AssertionKind),
     /// A concatination of regex nodes.
-    Concat(Concat),
+    Concat(Span, Vec<Node>),
     /// A single character literal.
-    Literal(Literal),
+    Literal(Span, char),
     /// Matches a character class (e.g. `\d` or `\w`).
-    Class(Class),
+    ///
+    /// The bool argument indicates if this perl class is negated.
+    PerlClass(Span, ClassPerlKind, bool),
+    /// A back reference to a previous group (`\1`, `\2`, ...).
+    BackReference(Span, u32),
+    /// A `.` that matches everything.
+    Dot(Span),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -132,48 +138,8 @@ pub enum AssertionKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Alternation {
-    pub span: Span,
-    pub alternatives: Vec<Node>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Assertion {
-    pub span: Span,
-    pub kind: AssertionKind,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Concat {
-    pub span: Span,
-    pub nodes: Vec<Node>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Literal {
-    pub span: Span,
-    pub c: char,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Class {
-    pub span: Span,
-    pub kind: ClassKind,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ClassKind {
-    Dot,
+pub enum ClassPerlKind {
     Digit,
-    NotDigit,
     Word,
-    NotWord,
-    Whitespace,
-    NotWhitespace,
-    HorizontalTab,
-    CarriageReturn,
-    Linefeed,
-    VerticalTab,
-    FormFeed,
-    Null,
+    Space,
 }
