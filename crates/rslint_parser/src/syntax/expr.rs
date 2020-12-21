@@ -6,11 +6,7 @@
 use super::decl::{arrow_body, class_decl, formal_parameters, function_decl, method};
 use super::pat::pattern;
 use super::util::*;
-use crate::{
-    ast::{BinExpr, BinOp, Expr, GroupingExpr, UnaryExpr},
-    SyntaxKind::*,
-    *,
-};
+use crate::{SyntaxKind::*, *};
 
 pub const LITERAL: TokenSet = token_set![TRUE_KW, FALSE_KW, NUMBER, STRING, NULL_KW, REGEX];
 
@@ -108,15 +104,39 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
     assign_expr_recursive(&mut *guard, target, token_cur, event_cur)
 }
 
-fn is_valid_target(p: &mut Parser, target: Expr) -> bool {
-    match target.syntax().kind() {
+pub(crate) fn is_valid_target(p: &mut Parser, marker: &CompletedMarker) -> bool {
+    match marker.kind() {
         DOT_EXPR | BRACKET_EXPR | NAME_REF => true,
-        GROUPING_EXPR => target
-            .syntax()
-            .to::<GroupingExpr>()
-            .inner()
-            .map_or(false, |t| is_valid_target(p, t)),
+        GROUPING_EXPR => {
+            // avoid parsing the marker because it is incredibly expensive and this is a hot path
+            for (idx, event) in p.events[marker.start_pos as usize..].iter().enumerate() {
+                match event {
+                    Event::Finish { .. } if marker.finish_pos as usize == idx => return true,
+                    Event::Start {
+                        kind: SyntaxKind::GROUPING_EXPR,
+                        ..
+                    } => {}
+                    Event::Start { kind, .. } => {
+                        return matches!(kind, DOT_EXPR | BRACKET_EXPR | NAME_REF);
+                    }
+                    _ => {}
+                }
+            }
+            true
+        }
         _ => false,
+    }
+}
+
+fn check_assign_target_from_marker(p: &mut Parser, marker: &CompletedMarker) {
+    if !is_valid_target(p, &marker) {
+        let err = p
+            .err_builder(&format!(
+                "Invalid assignment to `{}`",
+                p.source(marker.range(p))
+            ))
+            .primary(marker.range(p), "This expression cannot be assigned to");
+        p.error(err);
     }
 }
 
@@ -135,13 +155,13 @@ fn assign_expr_recursive(
     // TODO: dont always reparse as pattern since it will yield wonky errors for `(foo = true) = bar`
     if p.at_ts(ASSIGN_TOKENS) {
         if p.at(T![=]) {
-            if !is_valid_target(p, p.parse_marker(&target)) && target.kind() != TEMPLATE {
+            if !is_valid_target(p, &target) && target.kind() != TEMPLATE {
                 p.rewind(token_cur);
                 p.drain_events(p.cur_event_pos() - event_cur);
                 target = pattern(p)?;
             }
         } else {
-            check_simple_assign_target(p, &p.parse_marker(&target), target.range(p));
+            check_assign_target_from_marker(p, &target);
         }
         let m = target.precede(p);
         p.bump_any();
@@ -235,49 +255,13 @@ fn binary_expr_recursive(
     let op = p.cur();
     let op_tok = p.cur_tok();
 
-    let err: Option<(ErrorBuilder, TextRange, TextRange)> = if let Some(UNARY_EXPR) =
-        left.map(|x| x.kind())
-    {
-        let left_ref = left.as_ref().unwrap();
-
-        if op == T![**] && !is_update_expr(p, left.as_ref().unwrap()) {
-            let err = p.err_builder("Exponentiation cannot be applied to a unary expression because it is ambiguous")
-                .secondary(left_ref.range(p), "Because this expression would first be evaluated...")
-                .primary(p.cur_tok(), "...Then it would be used for the value to be exponentiated, which is most likely unwanted behavior");
-
-            let parsed = p.parse_marker::<UnaryExpr>(left_ref);
-            let start = left_ref.offset_range(p, parsed.expr().unwrap().syntax().text_range());
-            let op = left_ref.offset_range(p, parsed.op_token().unwrap().text_range());
-            Some((err, start, op))
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-
-    if op == T![??] && left.is_some() {
-        let left_ref = left.as_ref().unwrap();
-        if left_ref.kind() == BIN_EXPR {
-            let parsed = p.parse_marker::<BinExpr>(left_ref);
-            if let Some(BinOp::LogicalAnd) | Some(BinOp::LogicalOr) = parsed.op() {
-                let err = p.err_builder("The nullish coalescing operator (??) cannot be mixed with logical operators (|| and &&)")
-                    .secondary(left_ref.range(p), "Because this expression would first be evaluated...")
-                    .primary(op_tok.range.to_owned(), "...Then it would be used for the left hand side value of this operator, which is most likely unwanted behavior")
-                    .note(&format!("if this is expected, indicate precedence by wrapping `{}` in parentheses", color(left_ref.text(p))));
-
-                p.error(err);
-            }
-        }
-    }
-
     let m = left.map(|m| m.precede(p)).unwrap_or_else(|| p.start());
     p.bump_any();
 
     // This is a hack to allow us to effectively recover from `foo + / bar`
     let right = if get_precedence(p.cur()).is_some() && !p.at_ts(token_set![T![-], T![+]]) {
         let err = p.err_builder(&format!("Expected an expression for the right hand side of a `{}`, but found an operator instead", p.token_src(&op_tok)))
-            .secondary(op_tok.to_owned(), "This operator requires a right hand side value")
+            .secondary(op_tok, "This operator requires a right hand side value")
             .primary(p.cur_tok(), "But this operator was encountered instead");
 
         p.error(err);
@@ -298,49 +282,11 @@ fn binary_expr_recursive(
     );
 
     let complete = m.complete(p, BIN_EXPR);
-    let recursive_right = binary_expr_recursive(p, Some(complete), min_prec);
+    binary_expr_recursive(p, Some(complete), min_prec)
 
-    if let Some(marker) = recursive_right {
-        if let Some((mut err, start, op)) = err {
-            let range = TextRange::new(start.start(), marker.range(p).end());
-            let text = &format!("{}({})", p.source(op), p.source(range));
-
-            err = err.help(&format!("did you mean `{}`?", color(text)));
-            p.error(err);
-        }
-    }
-
-    // Still parsing this is *technically* wrong because no production matches this, but for the purposes of error recovery
-    // we still parse it. The parser takes some liberties with things such as this to still provide meaningful errors and recover.
-    // Even if parsing this is technically not ECMA compatible
-    if let Some(BIN_EXPR) = recursive_right.map(|x| x.kind()) {
-        let right_ref = recursive_right.as_ref().unwrap();
-        let parsed = p.parse_marker::<BinExpr>(right_ref);
-        if parsed.op() == Some(BinOp::NullishCoalescing)
-            && matches!(parsed.rhs(), Some(Expr::BinExpr(bin)) if bin.op() == Some(BinOp::LogicalAnd) || bin.op() == Some(BinOp::LogicalOr))
-        {
-            let rhs_range = right_ref.offset_range(p, parsed.rhs().unwrap().syntax().text_range());
-
-            let err = p.err_builder("The nullish coalescing operator (??) cannot be mixed with logical operators (|| and &&)")
-                    .secondary(rhs_range, "Because this expression would first be evaluated...")
-                    .primary(op_tok.range, "...Then it would be used for the right hand side value of this operator, which is most likely unwanted behavior")
-                    .note(&format!("if this is expected, indicate precedence by wrapping `{}` in parentheses", color(parsed.rhs().unwrap().syntax().text().to_string().trim())));
-
-            p.error(err);
-        }
-
-        // || has the same precedence as ?? so catching `foo ?? bar || baz` is not the same as `foo ?? bar && baz`
-        if parsed.op() == Some(BinOp::LogicalOr) && op == T![??] && parsed.lhs().is_some() {
-            let err = p.err_builder("The nullish coalescing operator (??) cannot be mixed with logical operators (|| and &&)")
-                .secondary(right_ref.offset_range(p, parsed.lhs().unwrap().syntax().text_range()), "Because this expression would first be evaluated...")
-                .primary(right_ref.offset_range(p, parsed.op_token().unwrap().text_range()), "...Then it would be used for the left hand side value of this operator, which is most likely unwanted behavior")
-                .note(&format!("if this is expected, indicate precedence by wrapping `{}` in parentheses", color(parsed.lhs().unwrap().syntax().text().to_string().trim())));
-
-            p.error(err);
-        }
-    }
-
-    recursive_right
+    // FIXME(RDambrosio016): We should check for nullish-coalescing and logical expr being used together,
+    // however, i can't figure out a way to do this efficiently without using parse_marker which is way too
+    // expensive to use since this is a hot path
 }
 
 /// A parenthesis expression, also called a grouping expression.
@@ -1157,14 +1103,14 @@ pub fn postfix_expr(p: &mut Parser) -> Option<CompletedMarker> {
     if !p.has_linebreak_before_n(0) {
         match p.cur() {
             T![++] => {
-                check_simple_assign_target(p, &p.parse_marker(&lhs?), lhs?.range(p));
+                check_assign_target_from_marker(p, &lhs?);
                 let m = lhs?.precede(p);
                 p.bump(T![++]);
                 let complete = m.complete(p, UNARY_EXPR);
                 Some(complete)
             }
             T![--] => {
-                check_simple_assign_target(p, &p.parse_marker(&lhs?), lhs?.range(p));
+                check_assign_target_from_marker(p, &lhs?);
                 let m = lhs?.precede(p);
                 p.bump(T![--]);
                 let complete = m.complete(p, UNARY_EXPR);
@@ -1187,7 +1133,7 @@ pub fn unary_expr(p: &mut Parser) -> Option<CompletedMarker> {
         p.bump(T![++]);
         let right = unary_expr(p)?;
         let complete = m.complete(p, UNARY_EXPR);
-        check_simple_assign_target(p, &p.parse_marker(&right), right.range(p));
+        check_assign_target_from_marker(p, &right);
         return Some(complete);
     }
     if p.at(T![--]) {
@@ -1195,7 +1141,7 @@ pub fn unary_expr(p: &mut Parser) -> Option<CompletedMarker> {
         p.bump(T![--]);
         let right = unary_expr(p)?;
         let complete = m.complete(p, UNARY_EXPR);
-        check_simple_assign_target(p, &p.parse_marker(&right), right.range(p));
+        check_assign_target_from_marker(p, &right);
         return Some(complete);
     }
 

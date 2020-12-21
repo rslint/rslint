@@ -1,6 +1,8 @@
 use std::{fmt, hash, mem};
 
-use erasable::ErasedPtr;
+// NOTE: From `thin_dst`:
+// This MUST be size=1 such that pointer math actually advances the pointer.
+type ErasedPtr = *const u8;
 
 use crate::{
     green::{GreenNode, GreenToken, SyntaxKind},
@@ -112,7 +114,7 @@ impl From<PackedGreenElement> for GreenElement {
 
 impl PackedGreenElement {
     fn is_node(&self) -> bool {
-        self.ptr.as_ptr() as usize & 1 == 0
+        self.ptr as usize & 1 == 0
     }
 
     pub(crate) fn as_node(&self) -> Option<&GreenNode> {

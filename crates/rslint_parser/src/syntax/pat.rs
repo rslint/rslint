@@ -5,6 +5,36 @@ pub fn pattern(p: &mut Parser) -> Option<CompletedMarker> {
     Some(match p.cur() {
         T![ident] | T![yield] | T![await] => {
             let m = p.start();
+            if p.state.should_record_names {
+                let string = p.cur_src().to_string();
+                if string == "let" {
+                    let err = p
+                        .err_builder(
+                            "`let` cannot be declared as a variable name inside of a declaration",
+                        )
+                        .primary(p.cur_tok().range, "");
+
+                    p.error(err);
+                } else if let Some(existing) = p.state.name_map.get(&string) {
+                    let err = p
+                    .err_builder(
+                        "Declarations inside of a `let` or `const` declaration may not have duplicates",
+                    )
+                    .secondary(
+                        existing.to_owned(),
+                        &format!("{} is first declared here", string),
+                    )
+                    .primary(
+                        p.cur_tok().range,
+                        &format!("a second declaration of {} is not allowed", string),
+                    );
+                    p.error(err);
+                } else {
+                    p.state
+                        .name_map
+                        .insert(p.cur_src().to_string(), p.cur_tok().range);
+                }
+            }
             binding_identifier(p);
             m.complete(p, SINGLE_PATTERN)
         }

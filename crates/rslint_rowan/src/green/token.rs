@@ -1,16 +1,16 @@
-use std::{convert::TryFrom, fmt, hash, mem::ManuallyDrop, ptr, sync::Arc};
+use crate::arc::Arc;
+use std::{convert::TryFrom, fmt, hash, mem::ManuallyDrop, ptr};
 
 use crate::{green::SyntaxKind, SmolStr, TextSize};
 
 #[repr(align(2))] // NB: this is an at-least annotation
-#[derive(Debug, PartialEq, Eq, Hash)]
-struct GreenTokenData {
-    kind: SyntaxKind,
-    text: SmolStr,
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub(super) struct GreenTokenData {
+    pub(super) kind: SyntaxKind,
+    pub(super) text: SmolStr,
 }
 
 /// Leaf node in the immutable tree.
-#[repr(transparent)]
 pub struct GreenToken {
     ptr: ptr::NonNull<GreenTokenData>,
 }

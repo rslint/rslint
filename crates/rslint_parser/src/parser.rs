@@ -281,9 +281,10 @@ impl<'t> Parser<'t> {
     }
 
     fn do_bump(&mut self, kind: SyntaxKind) {
+        let range = self.cur_tok().range;
         self.tokens.bump();
 
-        self.push_event(Event::Token { kind });
+        self.push_event(Event::Token { kind, range });
     }
 
     fn push_event(&mut self, event: Event) {
@@ -469,11 +470,11 @@ impl Marker {
 /// A structure signifying a completed node
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct CompletedMarker {
-    start_pos: u32,
+    pub(crate) start_pos: u32,
     // Hack for parsing completed markers which have been preceded
     // This should be redone completely in the future
     pub(crate) old_start: u32,
-    finish_pos: u32,
+    pub(crate) finish_pos: u32,
     kind: SyntaxKind,
 }
 

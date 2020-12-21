@@ -5,7 +5,9 @@
     // missing_docs,
 )]
 #![deny(unsafe_code)]
-
+// this is ~~stolen~~ borrowed from servo_arc so a lot of this is just legacy code
+#![allow(clippy::all, warnings, unsafe_code)]
+mod arc;
 #[allow(unsafe_code)]
 pub mod cursor;
 #[allow(unsafe_code)]

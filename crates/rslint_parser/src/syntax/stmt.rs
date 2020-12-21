@@ -6,9 +6,7 @@ use super::decl::{class_decl, function_decl};
 use super::expr::{assign_expr, expr, primary_expr, EXPR_RECOVERY_SET, STARTS_EXPR};
 use super::pat::*;
 use super::program::{export_decl, import_decl};
-use super::util::{
-    check_for_stmt_declarators, check_label_use, check_lhs, check_var_decl_bound_names,
-};
+use super::util::{check_for_stmt_declarators, check_label_use, check_lhs};
 use crate::{SyntaxKind::*, *};
 
 pub const STMT_RECOVERY_SET: TokenSet = token_set![
@@ -113,28 +111,33 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
             if expr.kind() == NAME_REF && p.at(T![:]) {
                 expr.change_kind(p, NAME);
                 // Its not possible to have a name without an inner ident token
-                let name = p.parse_marker::<ast::Name>(&expr).ident_token()
+                let range = p.events[expr.start_pos as usize..].iter().find_map(|x| {
+                    match x {
+                        Event::Token { kind: T![ident], range } => Some(range),
+                        _ => None
+                    }
+                })
                     .expect("Tried to get the ident of a name node, but there was no ident. This is erroneous");
-                if let Some(range) = p.state.labels.get(name.text().as_str()) {
+
+                let text_range =
+                    TextRange::new((range.start as u32).into(), (range.end as u32).into());
+                let text = p.source(text_range);
+                if let Some(range) = p.state.labels.get(text) {
                     let err = p
                         .err_builder("Duplicate statement labels are not allowed")
                         .secondary(
                             range.to_owned(),
-                            &format!("`{}` is first used as a label here", name.text().as_str()),
+                            &format!("`{}` is first used as a label here", text),
                         )
                         .primary(
                             p.cur_tok().range,
-                            &format!(
-                                "a second use of `{}` here is not allowed",
-                                name.text().as_str()
-                            ),
+                            &format!("a second use of `{}` here is not allowed", text),
                         );
 
                     p.error(err);
                 } else {
-                    p.state
-                        .labels
-                        .insert(name.text().to_string(), name.text_range().into());
+                    let string = text.to_string();
+                    p.state.labels.insert(string, range.to_owned());
                 }
 
                 let m = expr.precede(p);
@@ -553,6 +556,7 @@ pub fn var_decl(p: &mut Parser, no_semi: bool) -> CompletedMarker {
     let m = p.start();
     let start = p.cur_tok().range.start;
     let mut is_const = None;
+    let mut is_let = false;
 
     match p.cur() {
         T![var] => p.bump_any(),
@@ -560,7 +564,10 @@ pub fn var_decl(p: &mut Parser, no_semi: bool) -> CompletedMarker {
             is_const = Some(p.cur_tok().range);
             p.bump_any()
         }
-        T![ident] if p.cur_src() == "let" => p.bump_any(),
+        T![ident] if p.cur_src() == "let" => {
+            p.bump_any();
+            is_let = true;
+        }
         _ => {
             let err = p
                 .err_builder(
@@ -572,12 +579,12 @@ pub fn var_decl(p: &mut Parser, no_semi: bool) -> CompletedMarker {
         }
     }
 
-    declarator(p, &is_const, no_semi);
+    declarator(p, &is_const, no_semi, is_let);
 
     if p.eat(T![,]) {
-        declarator(p, &is_const, no_semi);
+        declarator(p, &is_const, no_semi, is_let);
         while p.eat(T![,]) {
-            declarator(p, &is_const, no_semi);
+            declarator(p, &is_const, no_semi, is_let);
         }
     }
 
@@ -585,14 +592,22 @@ pub fn var_decl(p: &mut Parser, no_semi: bool) -> CompletedMarker {
         semi(p, start..p.cur_tok().range.start);
     }
     let complete = m.complete(p, VAR_DECL);
-    check_var_decl_bound_names(p, &complete);
+    p.state.name_map.clear();
+
     complete
 }
 
 // A single declarator, either `ident` or `ident = assign_expr`
-fn declarator(p: &mut Parser, is_const: &Option<Range<usize>>, for_stmt: bool) -> CompletedMarker {
+fn declarator(
+    p: &mut Parser,
+    is_const: &Option<Range<usize>>,
+    for_stmt: bool,
+    is_let: bool,
+) -> CompletedMarker {
     let m = p.start();
+    p.state.should_record_names = is_const.is_some() || is_let;
     let pat = pattern(p);
+    p.state.should_record_names = false;
 
     if p.eat(T![=]) {
         assign_expr(p);

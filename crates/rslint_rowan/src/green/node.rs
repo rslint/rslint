@@ -1,7 +1,11 @@
-use std::{iter::FusedIterator, slice, sync::Arc};
+use std::{
+    hash::{Hash, Hasher},
+    iter::FusedIterator,
+    slice,
+};
 
-use erasable::Thin;
-use slice_dst::SliceWithHeader;
+use fxhash::FxHasher32;
+use servo_arc::{Arc, HeaderSlice, HeaderWithLength, ThinArc};
 
 use crate::{
     green::{GreenElement, GreenElementRef, PackedGreenElement, SyntaxKind},
@@ -11,16 +15,39 @@ use crate::{
 #[repr(align(2))] // NB: this is an at-least annotation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(super) struct GreenNodeHead {
-    kind: SyntaxKind,
-    text_len: TextSize,
+    kind:       SyntaxKind,
+    text_len:   TextSize,
+    child_hash: u32,
+}
+
+impl GreenNodeHead {
+    #[inline]
+    pub(super) fn from_child_slice(kind: SyntaxKind, children: &[GreenElement]) -> Self {
+        let mut hasher = FxHasher32::default();
+        let mut text_len: TextSize = 0.into();
+        for child in children {
+            text_len += child.text_len();
+            child.hash(&mut hasher);
+        }
+        Self {
+            kind,
+            text_len,
+            child_hash: hasher.finish() as u32,
+        }
+    }
 }
 
 /// Internal node in the immutable tree.
 /// It has other nodes and tokens as children.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-#[repr(transparent)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct GreenNode {
-    pub(super) data: Thin<Arc<SliceWithHeader<GreenNodeHead, PackedGreenElement>>>,
+    pub(super) data: ThinArc<GreenNodeHead, PackedGreenElement>,
+}
+
+impl std::fmt::Debug for GreenNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.data.with_arc(|data| data.fmt(f))
+    }
 }
 
 impl GreenNode {
@@ -31,36 +58,58 @@ impl GreenNode {
         I: IntoIterator<Item = GreenElement>,
         I::IntoIter: ExactSizeIterator,
     {
+        let mut hasher = FxHasher32::default();
         let mut text_len: TextSize = 0.into();
         let children = children
             .into_iter()
-            .inspect(|it| text_len += it.text_len())
+            .inspect(|it| {
+                text_len += it.text_len();
+                it.hash(&mut hasher);
+            })
             .map(PackedGreenElement::from);
-        let mut data: Arc<_> = SliceWithHeader::new(
+        let header = HeaderWithLength::new(
             GreenNodeHead {
                 kind,
                 text_len: 0.into(),
+                child_hash: 0,
             },
-            children,
+            children.len(),
         );
+        let mut data = Arc::from_header_and_iter(header, children);
 
-        // XXX: fixup `text_len` after construction, because we can't iterate
-        // `children` twice.
-        Arc::get_mut(&mut data).unwrap().header.text_len = text_len;
+        // XXX: fixup `text_len` and `child_hash` after construction, because
+        // we can't iterate `children` twice.
+        let header = &mut Arc::get_mut(&mut data).unwrap().header.header;
+        header.text_len = text_len;
+        header.child_hash = hasher.finish() as u32;
+        GreenNode {
+            data: Arc::into_thin(data),
+        }
+    }
 
-        GreenNode { data: data.into() }
+    #[inline]
+    pub(super) fn from_head_and_children<I>(header: GreenNodeHead, children: I) -> GreenNode
+    where
+        I: IntoIterator<Item = GreenElement>,
+        I::IntoIter: ExactSizeIterator,
+    {
+        let children = children.into_iter().map(PackedGreenElement::from);
+        let header = HeaderWithLength::new(header, children.len());
+        GreenNode {
+            data: Arc::into_thin(Arc::from_header_and_iter(header, children)),
+        }
     }
 
     /// Kind of this node.
     #[inline]
     pub fn kind(&self) -> SyntaxKind {
-        self.data.header.kind
+        self.data.header.header.kind
     }
 
     /// Returns the length of the text covered by this node.
     #[inline]
     pub fn text_len(&self) -> TextSize {
-        self.data.header.text_len
+        self.data.header.header.text_len
     }
 
     /// Children of this node.
@@ -72,8 +121,15 @@ impl GreenNode {
     }
 
     pub(crate) fn ptr(&self) -> *const u8 {
-        let r: &SliceWithHeader<_, _> = &*self.data;
+        let r: &HeaderSlice<_, _> = &self.data;
         r as *const _ as _
+    }
+}
+
+impl Hash for GreenNode {
+    #[inline]
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.data.header.header.hash(state);
     }
 }
 
@@ -125,12 +181,12 @@ impl<'a> Iterator for Children<'a> {
     }
 
     #[inline]
-    fn fold<Acc, Fold>(self, init: Acc, mut f: Fold) -> Acc
+    fn fold<Acc, Fold>(mut self, init: Acc, mut f: Fold) -> Acc
     where
         Fold: FnMut(Acc, Self::Item) -> Acc,
     {
         let mut accum = init;
-        for x in self {
+        while let Some(x) = self.next() {
             accum = f(accum, x);
         }
         accum

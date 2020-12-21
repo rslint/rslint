@@ -1,8 +1,7 @@
-use std::collections::HashMap;
-use std::ops::{Deref, DerefMut, Range};
-
 use crate::syntax::expr::EXPR_RECOVERY_SET;
 use crate::{CompletedMarker, Parser, SyntaxKind, TokenSet};
+use std::collections::HashMap;
+use std::ops::{Deref, DerefMut, Range};
 
 /// State kept by the parser while parsing.
 /// It is required for things such as strict mode or async functions
@@ -40,6 +39,8 @@ pub struct ParserState {
     pub default_item: Option<Range<usize>>,
     /// The recovery set primary_expr will use
     pub expr_recovery_set: TokenSet,
+    pub should_record_names: bool,
+    pub name_map: HashMap<String, Range<usize>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,6 +66,8 @@ impl Default for ParserState {
             is_module: false,
             default_item: None,
             expr_recovery_set: EXPR_RECOVERY_SET,
+            name_map: HashMap::with_capacity(3),
+            should_record_names: false,
         }
     }
 }
@@ -72,19 +75,10 @@ impl Default for ParserState {
 impl ParserState {
     pub fn module() -> Self {
         Self {
-            allow_object_expr: true,
-            include_in: true,
-            continue_allowed: false,
-            break_allowed: false,
-            labels: HashMap::new(),
-            in_generator: false,
-            in_function: false,
-            potential_arrow_start: false,
-            in_async: false,
             strict: Some(StrictMode::Module),
             is_module: true,
-            default_item: None,
             expr_recovery_set: EXPR_RECOVERY_SET,
+            ..Default::default()
         }
     }
 

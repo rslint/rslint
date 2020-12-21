@@ -716,6 +716,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "generator"
 version = "0.6.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1738,12 +1747,16 @@ name = "rslint_rowan"
 version = "0.10.0"
 dependencies = [
  "erasable",
+ "fxhash",
  "m_lexer",
+ "nodrop",
  "rustc-hash",
  "serde",
  "servo_arc",
  "slice-dst",
+ "smallvec",
  "smol_str",
+ "stable_deref_trait",
  "text-size",
 ]
 
@@ -1984,9 +1997,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.5.0"
+version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7acad6f34eb9e8a259d3283d1e8c1d34d7415943d4895f65cc73813c7396fc85"
+checksum = "ae524f056d7d770e174287294f562e95044c68e88dec909a00d2094805db9d75"
 
 [[package]]
 name = "smol_str"

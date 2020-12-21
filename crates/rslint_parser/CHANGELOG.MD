@@ -29,6 +29,9 @@ finally{}
 - Reduce `Event` memory usage by 833%
 - Remove `Event::Error`
 - Rename `TreeSink::error` to `TreeSink::errors` and make it take `Vec<ParserError>`
+- Improved the throughput of the parser by 1050%+
+- Improved the speed of the parser by 130%+
+- Stopped using `parse_marker` in many places
 
 ## [0.2.1] - 2020-10-20
 

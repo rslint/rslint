@@ -1,14 +1,17 @@
-use rustc_hash::FxHashSet;
+use fxhash::FxHashMap;
+use smallvec::SmallVec;
 
 use crate::{
     green::{GreenElement, GreenNode, GreenToken, SyntaxKind},
     NodeOrToken, SmolStr,
 };
 
+use super::{node::GreenNodeHead, token::GreenTokenData};
+
 #[derive(Default, Debug)]
 pub struct NodeCache {
-    nodes: FxHashSet<GreenNode>,
-    tokens: FxHashSet<GreenToken>,
+    nodes: FxHashMap<GreenNodeHead, GreenNode>,
+    tokens: FxHashMap<GreenTokenData, GreenToken>,
 }
 
 impl NodeCache {
@@ -17,7 +20,7 @@ impl NodeCache {
         I: IntoIterator<Item = GreenElement>,
         I::IntoIter: ExactSizeIterator,
     {
-        let mut node = GreenNode::new(kind, children);
+        let children = children.into_iter();
         // Green nodes are fully immutable, so it's ok to deduplicate them.
         // This is the same optimization that Roslyn does
         // https://github.com/KirillOsenkov/Bliki/wiki/Roslyn-Immutable-Trees
@@ -25,23 +28,27 @@ impl NodeCache {
         // For example, all `#[inline]` in this file share the same green node!
         // For `libsyntax/parse/parser.rs`, measurements show that deduping saves
         // 17% of the memory for green nodes!
-        // Future work: make hashing faster by avoiding rehashing of subtrees.
-        if node.children().len() <= 3 {
-            match self.nodes.get(&node) {
-                Some(existing) => node = existing.clone(),
-                None => assert!(self.nodes.insert(node.clone())),
-            }
+        if children.len() <= 3 {
+            let children: SmallVec<[_; 3]> = children.collect();
+            let head = GreenNodeHead::from_child_slice(kind, children.as_ref());
+            self.nodes
+                .entry(head.clone())
+                .or_insert_with(|| GreenNode::from_head_and_children(head, children))
+                .clone()
+        } else {
+            GreenNode::new(kind, children)
         }
-        node
     }
 
     fn token(&mut self, kind: SyntaxKind, text: SmolStr) -> GreenToken {
-        let mut token = GreenToken::new(kind, text);
-        match self.tokens.get(&token) {
-            Some(existing) => token = existing.clone(),
-            None => assert!(self.tokens.insert(token.clone())),
-        }
-        token
+        let data = GreenTokenData { kind, text };
+        self.tokens
+            .entry(data.clone())
+            .or_insert_with(|| {
+                let GreenTokenData { kind, text } = data;
+                GreenToken::new(kind, text)
+            })
+            .clone()
     }
 }
 
@@ -53,6 +60,7 @@ enum MaybeOwned<'a, T> {
 
 impl<T> std::ops::Deref for MaybeOwned<'_, T> {
     type Target = T;
+
     fn deref(&self) -> &T {
         match self {
             MaybeOwned::Owned(it) => it,
@@ -134,7 +142,7 @@ impl GreenNodeBuilder<'_> {
     /// `start_node_at`.
     /// Example:
     /// ```rust
-    /// # use rslint_rowan::{GreenNodeBuilder, SyntaxKind};
+    /// # use rowan::{GreenNodeBuilder, SyntaxKind};
     /// # const PLUS: SyntaxKind = SyntaxKind(0);
     /// # const OPERATION: SyntaxKind = SyntaxKind(1);
     /// # struct Parser;
@@ -147,10 +155,10 @@ impl GreenNodeBuilder<'_> {
     /// let checkpoint = builder.checkpoint();
     /// parser.parse_expr();
     /// if parser.peek() == Some(PLUS) {
-    ///   // 1 + 2 = Add(1, 2)
-    ///   builder.start_node_at(checkpoint, OPERATION);
-    ///   parser.parse_expr();
-    ///   builder.finish_node();
+    ///     // 1 + 2 = Add(1, 2)
+    ///     builder.start_node_at(checkpoint, OPERATION);
+    ///     parser.parse_expr();
+    ///     builder.finish_node();
     /// }
     /// ```
     #[inline]
