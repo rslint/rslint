@@ -13,7 +13,6 @@ serde = { version = "1.0.89", optional = true, default-features = false }
 slice-dst = "1.4.1"
 smol_str = "0.1.10"
 text-size = "1.0.0"
-servo_arc = "0.1.1"
 nodrop = "0.1.14"
 stable_deref_trait = "1.2.0"
 fxhash = "0.2.1"

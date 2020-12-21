@@ -1,4 +1,4 @@
-use servo_arc::Arc;
+use crate::arc::Arc;
 use std::{
     cell::RefCell,
     fmt,

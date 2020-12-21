@@ -562,23 +562,25 @@ impl<H, T> Arc<HeaderSlice<H, [T]>> {
             // we'll just leak the uninitialized memory.
             ptr::write(&mut ((*ptr).count), atomic::AtomicUsize::new(1));
             ptr::write(&mut ((*ptr).data.header), header);
-            let mut current: *mut T = &mut (*ptr).data.slice[0];
-            for _ in 0..num_items {
-                ptr::write(
-                    current,
-                    items
-                        .next()
-                        .expect("ExactSizeIterator over-reported length"),
+            if num_items > 0 {
+                let mut current: *mut T = &mut (*ptr).data.slice[0];
+                for _ in 0..num_items {
+                    ptr::write(
+                        current,
+                        items
+                            .next()
+                            .expect("ExactSizeIterator over-reported length"),
+                    );
+                    current = current.offset(1);
+                }
+                assert!(
+                    items.next().is_none(),
+                    "ExactSizeIterator under-reported length"
                 );
-                current = current.offset(1);
-            }
-            assert!(
-                items.next().is_none(),
-                "ExactSizeIterator under-reported length"
-            );
 
-            // We should have consumed the buffer exactly.
-            debug_assert_eq!(current as *mut u8, buffer.offset(size as isize));
+                // We should have consumed the buffer exactly.
+                debug_assert_eq!(current as *mut u8, buffer.offset(size as isize));
+            }
         }
 
         // Return the fat Arc.

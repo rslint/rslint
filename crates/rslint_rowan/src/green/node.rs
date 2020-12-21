@@ -4,8 +4,8 @@ use std::{
     slice,
 };
 
+use crate::arc::{Arc, HeaderSlice, HeaderWithLength, ThinArc};
 use fxhash::FxHasher32;
-use servo_arc::{Arc, HeaderSlice, HeaderWithLength, ThinArc};
 
 use crate::{
     green::{GreenElement, GreenElementRef, PackedGreenElement, SyntaxKind},
