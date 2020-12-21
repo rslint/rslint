@@ -15,8 +15,8 @@ use crate::{
 #[repr(align(2))] // NB: this is an at-least annotation
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(super) struct GreenNodeHead {
-    kind:       SyntaxKind,
-    text_len:   TextSize,
+    kind: SyntaxKind,
+    text_len: TextSize,
     child_hash: u32,
 }
 
