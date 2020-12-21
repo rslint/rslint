@@ -14,25 +14,37 @@ use std::ptr;
 use std::slice;
 use std::sync::atomic;
 use std::sync::atomic::Ordering::{Acquire, Relaxed, Release};
-use std::{isize, usize};
+use std::{alloc::Layout, isize, mem::align_of_val, usize};
 
-// Private macro to get the offset of a struct field in bytes from the address of the struct.
-macro_rules! offset_of {
-    ($container:path, $field:ident) => {{
-        // Make sure the field actually exists. This line ensures that a compile-time error is
-        // generated if $field is accessed through a Deref impl.
-        let $container { $field: _, .. };
+/// Get the offset within an `ArcInner` for
+/// a payload of type described by a pointer.
+///
+/// # Safety
+///
+/// This has the same safety requirements as `align_of_val_raw`. In effect:
+///
+/// - This function is safe for any argument if `T` is sized, and
+/// - if `T` is unsized, the pointer must have appropriate pointer metadata
+///   acquired from the real instance that you are getting this offset for.
+unsafe fn data_offset<T: ?Sized>(ptr: *const T) -> isize {
+    // Align the unsized value to the end of the `ArcInner`.
+    // Because it is `?Sized`, it will always be the last field in memory.
+    // Note: This is a detail of the current implementation of the compiler,
+    // and is not a guaranteed language detail. Do not rely on it outside of std.
+    data_offset_align(align_of_val(&*ptr))
+}
 
-        // Create an (invalid) instance of the container and calculate the offset to its
-        // field. Using a null pointer might be UB if `&(*(0 as *const T)).field` is interpreted to
-        // be nullptr deref.
-        let invalid: $container = ::std::mem::uninitialized();
-        let offset = &invalid.$field as *const _ as usize - &invalid as *const _ as usize;
+#[inline]
+fn data_offset_align(align: usize) -> isize {
+    let layout = Layout::new::<ArcInner<()>>();
+    (layout.size() + padding_needed_for(&layout, align)) as isize
+}
 
-        // Do not run destructors on the made up invalid instance.
-        ::std::mem::forget(invalid);
-        offset as isize
-    }};
+#[inline]
+fn padding_needed_for(layout: &Layout, align: usize) -> usize {
+    let len = layout.size();
+    let len_rounded_up = len.wrapping_add(align).wrapping_sub(1) & !align.wrapping_sub(1);
+    len_rounded_up.wrapping_sub(len)
 }
 
 /// A soft limit on the amount of references that may be made to an `Arc`.
@@ -171,7 +183,8 @@ impl<T> Arc<T> {
     pub unsafe fn from_raw(ptr: *const T) -> Self {
         // To find the corresponding pointer to the `ArcInner` we need
         // to subtract the offset of the `data` field from the pointer.
-        let ptr = (ptr as *const u8).offset(-offset_of!(ArcInner<T>, data));
+        let offset = data_offset(ptr);
+        let ptr = (ptr as *const u8).offset(-offset);
         Arc {
             p: NonZeroPtrMut::new(ptr as *mut ArcInner<T>),
         }
@@ -500,7 +513,7 @@ impl<H, T> Arc<HeaderSlice<H, [T]>> {
     where
         I: Iterator<Item = T> + ExactSizeIterator,
     {
-        use std::mem::size_of;
+        use ::std::mem::size_of;
         assert_ne!(size_of::<T>(), 0, "Need to think about ZST");
 
         // Compute the required size for the allocation.
@@ -562,8 +575,8 @@ impl<H, T> Arc<HeaderSlice<H, [T]>> {
             // we'll just leak the uninitialized memory.
             ptr::write(&mut ((*ptr).count), atomic::AtomicUsize::new(1));
             ptr::write(&mut ((*ptr).data.header), header);
-            if num_items > 0 {
-                let mut current: *mut T = &mut (*ptr).data.slice[0];
+            if let Some(current) = (*ptr).data.slice.get_mut(0) {
+                let mut current: *mut T = current;
                 for _ in 0..num_items {
                     ptr::write(
                         current,
@@ -949,5 +962,41 @@ impl<'a, T> Deref for ArcBorrow<'a, T> {
     #[inline]
     fn deref(&self) -> &T {
         &*self.0
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Arc, HeaderWithLength, ThinArc};
+    use std::clone::Clone;
+    use std::ops::Drop;
+    use std::sync::atomic;
+    use std::sync::atomic::Ordering::{Acquire, SeqCst};
+
+    #[derive(PartialEq)]
+    struct Canary(*mut atomic::AtomicUsize);
+
+    impl Drop for Canary {
+        fn drop(&mut self) {
+            unsafe {
+                (*self.0).fetch_add(1, SeqCst);
+            }
+        }
+    }
+
+    #[test]
+    fn slices_and_thin() {
+        let mut canary = atomic::AtomicUsize::new(0);
+        let c = Canary(&mut canary as *mut atomic::AtomicUsize);
+        let v = vec![5, 6];
+        let header = HeaderWithLength::new(c, v.len());
+        {
+            let x = Arc::into_thin(Arc::from_header_and_iter(header, v.into_iter()));
+            let y = ThinArc::with_arc(&x, |q| q.clone());
+            let _ = y.clone();
+            let _ = x == x;
+            Arc::from_thin(x.clone());
+        }
+        assert_eq!(canary.load(Acquire), 1);
     }
 }
