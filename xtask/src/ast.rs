@@ -129,6 +129,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "as",
         "require",
         "namespace",
+        "assert",
     ],
     literals: &["NUMBER", "STRING", "REGEX"],
     tokens: &[
@@ -239,6 +240,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "CONSTRUCTOR",
         "CONSTRUCTOR_PARAMETERS",
         "PRIVATE_PROP_ACCESS",
+        "IMPORT_STRING_SPECIFIER",
         // TypeScript
         "TS_ANY",
         "TS_UNKNOWN",
@@ -828,11 +830,16 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ImportDecl {
             T![import],
+            T![type],
             imports: [ImportClause],
             T![from],
             /* source */
+            T![assert],
+            asserted_object: ObjectExpr,
             T![;]
         }
+
+        struct ImportStringSpecifier { /* string */ }
 
         struct WildcardImport {
             T![*],
@@ -841,7 +848,6 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct NamedImports {
-            T![type],
             T!['{'],
             specifiers: [Specifier],
             T!['}']
@@ -853,6 +859,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ExportDecl {
             T![export],
+            T![type],
             decl: Decl
         }
 
@@ -868,6 +875,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ExportWildcard {
             T![export],
+            T![type],
             T![*],
             T![as],
             T![ident],
@@ -877,12 +885,14 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct ExportDefaultDecl {
             T![export],
+            T![type],
             T![default],
             decl: DefaultDecl
         }
 
         struct ExportDefaultExpr {
             T![export],
+            T![type],
             T![default],
             expr: Expr
         }
@@ -1498,7 +1508,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         enum ImportClause {
             WildcardImport,
             NamedImports,
-            Name
+            Name,
+            ImportStringSpecifier,
         }
 
         enum DefaultDecl {

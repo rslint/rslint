@@ -3,9 +3,9 @@
 use syntax::stmt::FOLLOWS_LET;
 
 use super::decl::{class_decl, function_decl};
-use super::expr::{assign_expr, expr, identifier_name};
+use super::expr::{assign_expr, expr, identifier_name, object_expr, primary_expr};
 use super::pat::binding_identifier;
-use super::stmt::{block_items, semi, var_decl, STMT_RECOVERY_SET};
+use super::stmt::{block_items, semi, var_decl};
 use super::typescript::*;
 use crate::{SyntaxKind::*, *};
 
@@ -32,74 +32,8 @@ pub fn parse(p: &mut Parser) -> CompletedMarker {
     )
 }
 
-/// A module import declaration such as `import * from "a"`
-/// This will not automatically issue an error if the parser isnt configured to parse a module
-pub fn import_decl(p: &mut Parser) -> CompletedMarker {
+fn named_list(p: &mut Parser) -> Marker {
     let m = p.start();
-    p.expect(T![import]);
-
-    match p.cur() {
-        STRING => p.bump_any(),
-        T![*] => {
-            let inner = p.start();
-            p.bump_any();
-            if p.cur_src() == "as" {
-                p.bump_any();
-                binding_identifier(p);
-            }
-            inner.complete(p, WILDCARD_IMPORT);
-            from_clause(p);
-        }
-        T!['{'] => {
-            named_imports(p);
-            from_clause(p);
-        }
-        _ if p.cur_src() == "type" && p.nth_at(1, T!['{']) => {
-            named_imports(p);
-            from_clause(p);
-        }
-        T![ident] | T![await] | T![yield] => {
-            binding_identifier(p);
-            if p.eat(T![,]) && (p.at_ts(token_set![T![*], T!['{']]) || p.cur_src() == "type") {
-                match p.cur() {
-                    T![*] => wildcard(p, None).complete(p, WILDCARD_IMPORT),
-                    _ => named_list(p, None).complete(p, NAMED_IMPORTS),
-                };
-            }
-            from_clause(p);
-        }
-        _ => {
-            let err = p
-                .err_builder("Expected an import clause, but found none")
-                .primary(p.cur_tok().range, "");
-
-            p.err_recover(err, STMT_RECOVERY_SET, true);
-        }
-    }
-
-    p.expect(T![;]);
-    m.complete(p, IMPORT_DECL)
-}
-
-pub(crate) fn named_imports(p: &mut Parser) -> CompletedMarker {
-    named_list(p, None).complete(p, NAMED_IMPORTS)
-}
-
-fn wildcard(p: &mut Parser, m: impl Into<Option<Marker>>) -> Marker {
-    let m = m.into().unwrap_or_else(|| p.start());
-    p.bump_any();
-    if p.cur_src() == "as" {
-        p.bump_any();
-        binding_identifier(p);
-    }
-    m
-}
-
-fn named_list(p: &mut Parser, m: impl Into<Option<Marker>>) -> Marker {
-    let m = m.into().unwrap_or_else(|| p.start());
-    if p.cur_src() == "type" {
-        p.bump_remap(T![type]);
-    }
     p.expect(T!['{']);
     let mut first = true;
     while !p.at(EOF) && !p.at(T!['}']) {
@@ -138,18 +72,140 @@ fn named_export_specifier(p: &mut Parser) -> CompletedMarker {
     m.complete(p, SPECIFIER)
 }
 
-fn from_clause(p: &mut Parser) {
+/// An import declaration
+///
+/// # Panics
+/// Panics if the current syntax kind is not IMPORT_KW
+pub fn import_decl(p: &mut Parser) -> CompletedMarker {
+    assert_eq!(p.cur(), T![import]);
+    let m = p.start();
+    let start = p.cur_tok().range.start;
+
+    // import.meta and import(foo)
+    if p.nth_at(1, T![.]) || p.nth_at(1, T!['(']) {
+        primary_expr(p).expect(
+            "returned value from primary_expr should not be None because
+                the current token is guaranteed to be `IMPORT_KW`",
+        );
+        semi(p, start..p.cur_tok().range.start);
+        return m.complete(p, EXPR_STMT);
+    }
+
+    let p = &mut *p.with_state(ParserState {
+        is_module: true,
+        strict: Some(StrictMode::Module),
+        ..p.state.clone()
+    });
+
+    p.expect(T![import]);
+
+    if p.at_ts(token_set![T![ident], T![async], T![yield]]) && p.nth_at(1, T![=]) {
+        let mut complete = ts_import_equals_decl(p, m);
+        complete.err_if_not_ts(
+            p,
+            "import equals declarations can only be used in TypeScript files",
+        );
+        return complete;
+    }
+
+    if p.at(STRING) {
+        let inner = p.start();
+        p.bump_any();
+        inner.complete(p, IMPORT_STRING_SPECIFIER);
+        semi(p, start..p.cur_tok().range.start);
+        return m.complete(p, IMPORT_DECL);
+    }
+
+    let ty_only = p.cur_src() == "type"
+        && (p.nth_at(1, T!['{']) || p.nth_src(1) != "from" && !p.nth_at(1, T![,]));
+
+    if ty_only {
+        if !p.typescript() {
+            let err = p
+                .err_builder("type imports can only be used in TypeScript files")
+                .primary(p.cur_tok().range, "");
+
+            p.error(err);
+            let m = p.start();
+            p.bump_any();
+            m.complete(p, ERROR);
+        } else {
+            p.bump_remap(T![type]);
+        }
+    }
+
+    if p.at_ts(token_set![T![async], T![yield], T![ident]]) {
+        imported_binding(p);
+        if p.cur_src() != "from" {
+            p.expect(T![,]);
+        }
+    }
+
+    if p.at(T![*]) {
+        let m = p.start();
+        if p.cur_src() != "as" {
+            let err = p
+                .err_builder("expected `as` for a namespace specifier, but found none")
+                .primary(p.cur_tok().range, "");
+
+            p.error(err);
+        } else {
+            p.bump_remap(T![as]);
+        }
+        imported_binding(p);
+        m.complete(p, WILDCARD_IMPORT);
+    } else if p.at(T!['{']) {
+        named_list(p).complete(p, NAMED_IMPORTS);
+    }
+
     if p.cur_src() != "from" {
         let err = p
-            .err_builder("Expected a `from` clause, but found none")
+            .err_builder("expected a `from` clause for an import, but found none")
             .primary(p.cur_tok().range, "");
 
-        p.err_recover(err, STMT_RECOVERY_SET, true);
+        p.error(err);
     } else {
         p.bump_remap(T![from]);
     }
 
-    p.expect(STRING);
+    if !p.at(STRING) {
+        let err = p
+            .err_builder(
+                "expected a source for a `from` clause in an import statement, but found none",
+            )
+            .primary(p.cur_tok().range, "");
+
+        p.error(err);
+    } else {
+        p.bump_any();
+    }
+
+    if p.cur_src() == "assert" {
+        p.bump_remap(T![assert]);
+        if !p.at(T!['{']) {
+            let err = p
+                .err_builder("assert clauses in import declarations require an object expression")
+                .primary(p.cur_tok().range, "");
+
+            p.error(err);
+        } else {
+            object_expr(p);
+        }
+    }
+
+    semi(p, start..p.cur_tok().range.start);
+    m.complete(p, IMPORT_DECL)
+}
+
+fn imported_binding(p: &mut Parser) {
+    let p = &mut *p.with_state(ParserState {
+        in_async: false,
+        in_generator: false,
+        ..p.state.clone()
+    });
+    let m = p.start();
+    p.bump_remap(T![ident]);
+    m.complete(p, NAME);
 }
 
 pub fn export_decl(p: &mut Parser) -> CompletedMarker {
@@ -457,7 +513,7 @@ pub fn ts_import_equals_decl(p: &mut Parser, m: Marker) -> CompletedMarker {
         ts_entity_name(p, None, false);
     }
     semi(p, start..p.cur_tok().range.start);
-    m.complete(p, TS_MODULE_REF)
+    m.complete(p, TS_IMPORT_EQUALS_DECL)
 }
 
 pub fn ts_external_module_ref(p: &mut Parser) -> CompletedMarker {

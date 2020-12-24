@@ -684,10 +684,19 @@ pub struct ImportDecl {
 }
 impl ImportDecl {
     pub fn import_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![import]) }
+    pub fn type_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![type]) }
     pub fn imports(&self) -> AstChildren<ImportClause> { support::children(&self.syntax) }
     pub fn from_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![from]) }
+    pub fn assert_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![assert]) }
+    pub fn asserted_object(&self) -> Option<ObjectExpr> { support::child(&self.syntax) }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [;]) }
 }
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ImportStringSpecifier {
+    pub(crate) syntax: SyntaxNode,
+}
+impl ImportStringSpecifier {}
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WildcardImport {
@@ -704,7 +713,6 @@ pub struct NamedImports {
     pub(crate) syntax: SyntaxNode,
 }
 impl NamedImports {
-    pub fn type_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![type]) }
     pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
     pub fn specifiers(&self) -> AstChildren<Specifier> { support::children(&self.syntax) }
     pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
@@ -722,6 +730,7 @@ pub struct ExportDecl {
 }
 impl ExportDecl {
     pub fn export_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![export]) }
+    pub fn type_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![type]) }
     pub fn decl(&self) -> Option<Decl> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -744,6 +753,7 @@ pub struct ExportWildcard {
 }
 impl ExportWildcard {
     pub fn export_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![export]) }
+    pub fn type_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![type]) }
     pub fn star_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [*]) }
     pub fn as_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![as]) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
@@ -756,6 +766,7 @@ pub struct ExportDefaultDecl {
 }
 impl ExportDefaultDecl {
     pub fn export_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![export]) }
+    pub fn type_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![type]) }
     pub fn default_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![default]) }
     pub fn decl(&self) -> Option<DefaultDecl> { support::child(&self.syntax) }
 }
@@ -766,6 +777,7 @@ pub struct ExportDefaultExpr {
 }
 impl ExportDefaultExpr {
     pub fn export_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![export]) }
+    pub fn type_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![type]) }
     pub fn default_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![default]) }
     pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
 }
@@ -1712,6 +1724,7 @@ pub enum ImportClause {
     WildcardImport(WildcardImport),
     NamedImports(NamedImports),
     Name(Name),
+    ImportStringSpecifier(ImportStringSpecifier),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -2542,6 +2555,17 @@ impl AstNode for Module {
 }
 impl AstNode for ImportDecl {
     fn can_cast(kind: SyntaxKind) -> bool { kind == IMPORT_DECL }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for ImportStringSpecifier {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == IMPORT_STRING_SPECIFIER }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -3806,13 +3830,26 @@ impl From<NamedImports> for ImportClause {
 impl From<Name> for ImportClause {
     fn from(node: Name) -> ImportClause { ImportClause::Name(node) }
 }
+impl From<ImportStringSpecifier> for ImportClause {
+    fn from(node: ImportStringSpecifier) -> ImportClause {
+        ImportClause::ImportStringSpecifier(node)
+    }
+}
 impl AstNode for ImportClause {
-    fn can_cast(kind: SyntaxKind) -> bool { matches!(kind, WILDCARD_IMPORT | NAMED_IMPORTS | NAME) }
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            WILDCARD_IMPORT | NAMED_IMPORTS | NAME | IMPORT_STRING_SPECIFIER
+        )
+    }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         let res = match syntax.kind() {
             WILDCARD_IMPORT => ImportClause::WildcardImport(WildcardImport { syntax }),
             NAMED_IMPORTS => ImportClause::NamedImports(NamedImports { syntax }),
             NAME => ImportClause::Name(Name { syntax }),
+            IMPORT_STRING_SPECIFIER => {
+                ImportClause::ImportStringSpecifier(ImportStringSpecifier { syntax })
+            }
             _ => return None,
         };
         Some(res)
@@ -3822,6 +3859,7 @@ impl AstNode for ImportClause {
             ImportClause::WildcardImport(it) => &it.syntax,
             ImportClause::NamedImports(it) => &it.syntax,
             ImportClause::Name(it) => &it.syntax,
+            ImportClause::ImportStringSpecifier(it) => &it.syntax,
         }
     }
 }
@@ -4831,6 +4869,11 @@ impl std::fmt::Display for Module {
     }
 }
 impl std::fmt::Display for ImportDecl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for ImportStringSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }
