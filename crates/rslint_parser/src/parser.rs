@@ -86,6 +86,7 @@ pub struct Parser<'t> {
     steps: Cell<u32>,
     pub state: ParserState,
     pub syntax: Syntax,
+    pub errors: Vec<ParserError>,
 }
 
 impl<'t> Parser<'t> {
@@ -106,6 +107,7 @@ impl<'t> Parser<'t> {
             steps: Cell::new(0),
             state,
             syntax,
+            errors: vec![],
         }
     }
 
@@ -379,9 +381,11 @@ impl<'t> Parser<'t> {
         let Checkpoint {
             token_pos,
             event_pos,
+            errors_pos,
         } = checkpoint;
         self.tokens.rewind(token_pos);
         self.drain_events(self.cur_event_pos() - event_pos);
+        self.errors.truncate(errors_pos);
     }
 
     /// Get a checkpoint representing the progress of the parser at this point in time
@@ -389,6 +393,7 @@ impl<'t> Parser<'t> {
         Checkpoint {
             token_pos: self.token_pos(),
             event_pos: self.cur_event_pos(),
+            errors_pos: self.errors.len(),
         }
     }
 
@@ -438,10 +443,7 @@ impl<'t> Parser<'t> {
     {
         let checkpoint = self.checkpoint();
         let res = func(self);
-        if self.events[checkpoint.event_pos..self.cur_event_pos()]
-            .iter()
-            .any(|x| matches!(x, Event::Error { .. }))
-        {
+        if checkpoint.errors_pos != self.errors.len() {
             self.rewind(checkpoint);
             return None;
         }
@@ -716,4 +718,5 @@ impl CompletedMarker {
 pub struct Checkpoint {
     pub token_pos: usize,
     pub event_pos: usize,
+    pub errors_pos: usize,
 }

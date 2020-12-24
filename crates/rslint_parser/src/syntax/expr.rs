@@ -9,12 +9,7 @@ use super::decl::{
 use super::pat::pattern;
 use super::typescript::*;
 use super::util::*;
-use crate::{
-    ast::{BinExpr, BinOp, Expr, GroupingExpr, UnaryExpr},
-    SyntaxKind::*,
-    *,
-};
-use rslint_errors::Diagnostic;
+use crate::{ast::Expr, SyntaxKind::*, *};
 
 pub const LITERAL: TokenSet = token_set![TRUE_KW, FALSE_KW, NUMBER, STRING, NULL_KW, REGEX];
 
@@ -329,8 +324,8 @@ fn binary_expr_recursive(
     // This is a hack to allow us to effectively recover from `foo + / bar`
     let right = if get_precedence(p.cur()).is_some() && !p.at_ts(token_set![T![-], T![+]]) {
         let err = p.err_builder(&format!("Expected an expression for the right hand side of a `{}`, but found an operator instead", p.token_src(&op_tok)))
-            .secondary(op_tok, "This operator requires a right hand side value")
-            .primary(p.cur_tok(), "But this operator was encountered instead");
+            .secondary(op_tok.range, "This operator requires a right hand side value")
+            .primary(p.cur_tok().range, "But this operator was encountered instead");
 
         p.error(err);
         None
@@ -687,7 +682,7 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
             if temp.at(T![...]) {
                 let m = temp.start();
                 temp.bump_any();
-                pattern(&mut *temp);
+                pattern(&mut *temp, false);
                 let complete = m.complete(&mut *temp, REST_PATTERN);
                 spread_range = Some(complete.range(&*temp));
                 if !temp.eat(T![')']) {
@@ -711,16 +706,17 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
                     trailing_comma_marker = Some(sub_m.complete(&mut *temp, ERROR));
                     temp.bump_any();
                     break;
+                } else {
+                    sub_m.abandon(&mut *temp);
                 }
                 had_comma = true;
             } else {
+                sub_m.abandon(&mut *temp);
                 if had_comma {
                     expr_m.complete(&mut *temp, SEQUENCE_EXPR);
                 }
                 temp.expect(T![')']);
                 break;
-            } else {
-                sub_m.abandon(&mut *temp);
             }
         }
     }

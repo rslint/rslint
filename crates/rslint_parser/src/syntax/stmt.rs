@@ -7,9 +7,7 @@ use super::expr::{assign_expr, expr, primary_expr, EXPR_RECOVERY_SET, STARTS_EXP
 use super::pat::*;
 use super::program::{export_decl, import_decl};
 use super::typescript::*;
-use super::util::{
-    check_for_stmt_declarators, check_label_use, check_lhs, check_var_decl_bound_names,
-};
+use super::util::{check_for_stmt_declarators, check_label_use, check_lhs};
 use crate::{SyntaxKind::*, *};
 
 pub const STMT_RECOVERY_SET: TokenSet = token_set![
@@ -663,14 +661,13 @@ fn declarator(
     is_const: &Option<Range<usize>>,
     for_stmt: bool,
     is_let: bool,
-) -> CompletedMarker {
+) -> Option<CompletedMarker> {
     let m = p.start();
     p.state.should_record_names = is_const.is_some() || is_let;
     let pat_m = p.start();
     let pat = pattern(p, false)?;
     p.state.should_record_names = false;
     let kind = pat.kind();
-    pat.undo_completion(p).abandon(p);
 
     let cur = p.cur_tok().range;
     let opt = p.eat(T![!]);

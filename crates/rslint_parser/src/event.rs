@@ -26,7 +26,9 @@ pub enum Event {
     },
 
     /// Complete the previous `Start` event
-    Finish { end: usize },
+    Finish {
+        end: usize,
+    },
 
     /// Produce a single leaf-element.
     /// `n_raw_tokens` is used to glue complex contextual tokens.

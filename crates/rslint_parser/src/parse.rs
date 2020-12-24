@@ -166,7 +166,7 @@ fn parse_common(
 /// assert_eq!(&util::concat_tokens(&tokens), "foo. bar[2]")
 /// ```
 pub fn parse_text(text: &str, file_id: usize) -> Parse<Script> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, Syntax::default());
+    let (events, errors, tokens) = parse_common(text, file_id, Syntax::default());
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
@@ -207,7 +207,7 @@ pub fn parse_text(text: &str, file_id: usize) -> Parse<Script> {
 /// assert_eq!(&util::concat_tokens(&tokens), "foo.bar[2]")
 /// ```
 pub fn parse_text_lossy(text: &str, file_id: usize) -> Parse<Script> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, Syntax::default());
+    let (events, errors, tokens) = parse_common(text, file_id, Syntax::default());
     let mut tree_sink = LossyTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
@@ -216,7 +216,7 @@ pub fn parse_text_lossy(text: &str, file_id: usize) -> Parse<Script> {
 
 /// Same as [`parse_text_lossy`] but configures the parser to parse an ECMAScript module instead of a Script
 pub fn parse_module_lossy(text: &str, file_id: usize) -> Parse<Module> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, Syntax::default().module());
+    let (events, errors, tokens) = parse_common(text, file_id, Syntax::default().module());
     let mut tree_sink = LossyTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
@@ -225,7 +225,7 @@ pub fn parse_module_lossy(text: &str, file_id: usize) -> Parse<Module> {
 
 /// Same as [`parse_text`] but configures the parser to parse an ECMAScript module instead of a script
 pub fn parse_module(text: &str, file_id: usize) -> Parse<Module> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, Syntax::default().module());
+    let (events, errors, tokens) = parse_common(text, file_id, Syntax::default().module());
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
@@ -248,10 +248,9 @@ pub fn parse_expr(text: &str, file_id: usize) -> Parse<Expr> {
 }
 
 pub fn parse_with_syntax(text: &str, file_id: usize, syntax: Syntax) -> Parse<()> {
-    let (events, mut errors, tokens) = parse_common(text, file_id, syntax);
+    let (events, errors, tokens) = parse_common(text, file_id, syntax);
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
-    crate::process(&mut tree_sink, events);
+    crate::process(&mut tree_sink, events, errors);
     let (green, parse_errors) = tree_sink.finish();
-    errors.extend(parse_errors);
-    Parse::new(green, errors)
+    Parse::new(green, parse_errors)
 }
