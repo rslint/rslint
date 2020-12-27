@@ -1,6 +1,8 @@
 //! Class and function declarations.
 
-use super::expr::{assign_expr, identifier_name, object_prop_name};
+use super::expr::{
+    args, assign_expr, expr, identifier_name, identifier_reference, object_prop_name,
+};
 use super::pat::{binding_identifier, opt_binding_identifier, pattern};
 use super::stmt::block_stmt;
 use super::typescript::*;
@@ -17,6 +19,88 @@ pub const BASE_METHOD_RECOVERY_SET: TokenSet = token_set![
     NUMBER,
     STRING
 ];
+
+pub fn decorators(p: &mut Parser) -> Vec<CompletedMarker> {
+    let mut decorators = Vec::with_capacity(1);
+    while p.at(T![@]) {
+        let decorator = decorator(p);
+        if !p.syntax.decorators {
+            let err = p
+                .err_builder("decorators are not allowed")
+                .primary(decorator.range(p), "");
+
+            p.error(err);
+        }
+        decorators.push(decorator);
+    }
+    decorators
+}
+
+pub fn decorator(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.expect(T![@]);
+    let marker = if p.at(T!['(']) {
+        expr(p)
+    } else {
+        let marker = if !p.at_ts(token_set![T![await], T![yield], T![ident]]) {
+            let err = p
+                .err_builder("decorators require an expression or a function to call")
+                .primary(p.cur_tok().range, "");
+
+            p.error(err);
+            None
+        } else {
+            identifier_reference(p)
+        };
+
+        if p.at(T![.]) {
+            let m = marker.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
+
+            if !p.at_ts(token_set![T![await], T![yield], T![ident]]) && !p.cur().is_keyword() {
+                p.expect(T![ident]);
+            } else {
+                p.bump_remap(T![ident]);
+            }
+            let mut expr = m.complete(p, DOT_EXPR);
+
+            while p.at(T![.]) {
+                let m = expr.precede(p);
+
+                p.bump_any();
+                if !p.at_ts(token_set![T![await], T![yield], T![ident]]) && !p.cur().is_keyword() {
+                    p.expect(T![ident]);
+                } else {
+                    p.bump_remap(T![ident]);
+                }
+                expr = m.complete(p, DOT_EXPR);
+            }
+            Some(expr)
+        } else {
+            None
+        }
+    };
+
+    if p.at(T![<]) {
+        let expr = marker.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
+        if let Some(mut ty) = ts_type_args(p) {
+            ty.err_if_not_ts(p, "type arguments can only be used in TypeScript files");
+        }
+
+        if !p.at(T!['(']) {
+            let err = p
+                .err_builder("expressions with type arguments must be called as functions")
+                .primary(p.cur_tok().range, "");
+
+            p.error(err);
+        } else {
+            args(p);
+        }
+
+        expr.complete(p, CALL_EXPR);
+    }
+
+    m.complete(p, TS_DECORATOR)
+}
 
 pub fn maybe_private_name(p: &mut Parser) -> Option<CompletedMarker> {
     if p.at(T![#]) {

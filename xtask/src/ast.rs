@@ -70,6 +70,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         ("||=", "PIPE2EQ"),
         ("**=", "STAR2EQ"),
         ("??=", "QUESTION2EQ"),
+        ("@", "AT"),
     ],
     keywords: &[
         "await",
@@ -130,9 +131,12 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "require",
         "namespace",
         "assert",
+        "module",
+        "global",
     ],
     literals: &["NUMBER", "STRING", "REGEX"],
     tokens: &[
+        "HASH", // #
         "TEMPLATE_CHUNK",
         "DOLLARCURLY", // ${
         "BACKTICK",
@@ -141,7 +145,6 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "WHITESPACE",
         "COMMENT",
         "SHEBANG",
-        "HASH", // #
     ],
     nodes: &[
         "SCRIPT",
@@ -309,6 +312,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_EXTERNAL_MODULE_REF",
         "TS_EXPORT_ASSIGNMENT",
         "TS_NAMESPACE_EXPORT_DECL",
+        "TS_DECORATOR",
     ],
 };
 
@@ -709,7 +713,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct TsModuleDecl {
             T![declare],
-            /* module */
+            T![global],
+            T![module],
             T![.],
             T![ident],
             body: TsNamespaceBody
@@ -815,6 +820,11 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![namespace],
             T![ident],
             T![;]
+        }
+
+        struct TsDecorator {
+            T![@],
+            expr: Expr,
         }
 
         // --------------------------------------------------
@@ -1197,6 +1207,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct CallExpr {
             callee: Expr,
+            type_args: TsTypeArgs,
             /* optional chain */
             arguments: ArgList,
         }

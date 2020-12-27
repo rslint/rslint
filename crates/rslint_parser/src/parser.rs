@@ -143,7 +143,9 @@ impl<'t> Parser<'t> {
         let steps = self.steps.get();
         assert!(
             steps <= 10_000_000,
-            "The parser seems to be recursing forever"
+            "The parser seems to be recursing forever on the token \n{:#?} {}",
+            self.tokens.lookahead_nth(n),
+            self.cur_src()
         );
         self.steps.set(steps + 1);
 
@@ -155,7 +157,9 @@ impl<'t> Parser<'t> {
         let steps = self.steps.get();
         assert!(
             steps <= 10_000_000,
-            "The parser seems to be recursing forever"
+            "The parser seems to be recursing forever on the token \n{:#?} {}",
+            self.tokens.lookahead_nth(n),
+            self.cur_src()
         );
         self.steps.set(steps + 1);
 

@@ -1262,6 +1262,7 @@ impl<'src> Lexer<'src> {
                     }
                 }
             }
+            AT_ => self.eat(tok![@]),
             _ => {
                 let err = Diagnostic::error(
                     self.file_id,
@@ -1389,6 +1390,7 @@ enum Dispatch {
     EQL,
     MOR,
     QST,
+    AT_,
     BTO,
     BSL,
     BTC,
@@ -1425,7 +1427,7 @@ static DISPATCHER: [Dispatch; 256] = [
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
     WHS, EXL, QOT, HAS, IDT, PRC, AMP, QOT, PNO, PNC, MUL, PLS, COM, MIN, PRD, SLH, // 2
     ZER, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LSS, EQL, MOR, QST, // 3
-    ERR, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, // 4
+    AT_, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, // 4
     IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, BTO, BSL, BTC, CRT, IDT, // 5
     TPL, L_A, L_B, L_C, L_D, L_E, L_F, IDT, IDT, L_I, IDT, IDT, IDT, IDT, L_N, IDT, // 6
     IDT, IDT, L_R, L_S, L_T, IDT, L_V, L_W, IDT, L_Y, IDT, BEO, PIP, BEC, TLD, ERR, // 7

@@ -47,6 +47,7 @@ pub struct ParserState {
     pub(crate) no_recovery: bool,
     pub in_declare: bool,
     pub in_binding_list_for_signature: bool,
+    pub decorators_were_valid: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -79,6 +80,7 @@ impl Default for ParserState {
             no_recovery: false,
             in_declare: false,
             in_binding_list_for_signature: false,
+            decorators_were_valid: false,
         }
     }
 }

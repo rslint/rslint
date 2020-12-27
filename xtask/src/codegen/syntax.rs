@@ -434,6 +434,7 @@ impl Field<'_> {
                     "+" => "plus",
                     "-" => "minus",
                     "#" => "hash",
+                    "@" => "at",
                     _ => name,
                 };
                 format_ident!("{}_token", name)

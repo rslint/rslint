@@ -9,7 +9,7 @@ use super::decl::{
 use super::pat::pattern;
 use super::typescript::*;
 use super::util::*;
-use crate::{ast::Expr, SyntaxKind::*, *};
+use crate::{SyntaxKind::*, *};
 
 pub const LITERAL: TokenSet = token_set![TRUE_KW, FALSE_KW, NUMBER, STRING, NULL_KW, REGEX];
 
@@ -131,7 +131,8 @@ fn assign_expr_base(p: &mut Parser) -> Option<CompletedMarker> {
 
 pub(crate) fn is_valid_target(p: &mut Parser, marker: &CompletedMarker) -> bool {
     match marker.kind() {
-        DOT_EXPR | BRACKET_EXPR | NAME_REF | PRIVATE_PROP_ACCESS => true,
+        DOT_EXPR | BRACKET_EXPR | NAME_REF | PRIVATE_PROP_ACCESS | TS_CONST_ASSERTION
+        | TS_ASSERTION | TS_NON_NULL => true,
         GROUPING_EXPR => {
             // avoid parsing the marker because it is incredibly expensive and this is a hot path
             for (idx, event) in p.events[marker.start_pos as usize..].iter().enumerate() {
@@ -141,8 +142,21 @@ pub(crate) fn is_valid_target(p: &mut Parser, marker: &CompletedMarker) -> bool 
                         kind: SyntaxKind::GROUPING_EXPR,
                         ..
                     } => {}
+                    Event::Start {
+                        kind: SyntaxKind::TOMBSTONE,
+                        ..
+                    } => {}
                     Event::Start { kind, .. } => {
-                        return matches!(kind, DOT_EXPR | BRACKET_EXPR | NAME_REF);
+                        return matches!(
+                            kind,
+                            DOT_EXPR
+                                | BRACKET_EXPR
+                                | NAME_REF
+                                | PRIVATE_PROP_ACCESS
+                                | TS_CONST_ASSERTION
+                                | TS_ASSERTION
+                                | TS_NON_NULL
+                        );
                     }
                     _ => {}
                 }
@@ -184,17 +198,22 @@ fn assign_expr_recursive(
                 target = pattern(p, false)?;
             }
         } else {
-            check_assign_target_from_marker(p, &target);
-            let parsed = p.parse_marker::<Expr>(&target);
-            // FIXME: should this only be done if the parser isnt configured for ts?
-            check_simple_assign_target(p, &parsed, target.range(p));
-            if (parsed.text() == "eval" || parsed.text() == "arguments")
-                && p.state.strict.is_some()
-                && p.typescript()
+            if !is_valid_target(p, &target) {
+                let err = p
+                    .err_builder(&format!(
+                        "Invalid assignment to `{}`",
+                        p.source(target.range(p)).trim()
+                    ))
+                    .primary(target.range(p), "This expression cannot be assigned to");
+
+                p.error(err);
+            }
+            let text = p.source(target.range(p));
+            if (text == "eval" || text == "arguments") && p.state.strict.is_some() && p.typescript()
             {
                 let err = p
                     .err_builder("`eval` and `arguments` cannot be assigned to")
-                    .primary(parsed.range(), "");
+                    .primary(target.range(p), "");
 
                 p.error(err);
             }
@@ -322,7 +341,7 @@ fn binary_expr_recursive(
     }
 
     // This is a hack to allow us to effectively recover from `foo + / bar`
-    let right = if get_precedence(p.cur()).is_some() && !p.at_ts(token_set![T![-], T![+]]) {
+    let right = if get_precedence(p.cur()).is_some() && !p.at_ts(token_set![T![-], T![+], T![<]]) {
         let err = p.err_builder(&format!("Expected an expression for the right hand side of a `{}`, but found an operator instead", p.token_src(&op_tok)))
             .secondary(op_tok.range, "This operator requires a right hand side value")
             .primary(p.cur_tok().range, "But this operator was encountered instead");
@@ -465,6 +484,10 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
             T![.] => lhs = dot_expr(p, lhs, false),
             T![!] if !p.has_linebreak_before_n(0) => {
                 lhs = {
+                    // FIXME(RDambrosio016): we need to tell the lexer that an expression is not
+                    // allowed here, but we have no way of doing that currently because we get all of the
+                    // tokens ahead of time, therefore we need to switch to using the lexer as an iterator
+                    // which isn't as simple as it sounds :)
                     let m = lhs.precede(p);
                     p.bump_any();
                     let mut comp = m.complete(p, TS_NON_NULL);
@@ -746,7 +769,6 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
                 p,
                 "arrow functions can only have return types in TypeScript files",
             );
-            *p = cloned;
             return complete;
         }
     }
@@ -1373,7 +1395,7 @@ pub fn unary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             ts_type(p);
             p.expect(T![>]);
             unary_expr(p);
-            let mut res = m.complete(p, TS_CONST_ASSERTION);
+            let mut res = m.complete(p, TS_ASSERTION);
             res.err_if_not_ts(p, "type assertions can only be used in TypeScript files");
             return Some(res);
         }

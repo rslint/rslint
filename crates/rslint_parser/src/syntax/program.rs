@@ -143,6 +143,7 @@ pub fn import_decl(p: &mut Parser) -> CompletedMarker {
 
     if p.at(T![*]) {
         let m = p.start();
+        p.bump_any();
         if p.cur_src() != "as" {
             let err = p
                 .err_builder("expected `as` for a namespace specifier, but found none")
@@ -204,7 +205,7 @@ fn imported_binding(p: &mut Parser) {
         ..p.state.clone()
     });
     let m = p.start();
-    p.bump_remap(T![ident]);
+    binding_identifier(p);
     m.complete(p, NAME);
 }
 
@@ -280,13 +281,13 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
             );
             return complete;
         }
-        T![as] => {
+        _ if p.nth_src(offset) == "as" => {
             err_if_declare!(
                 p,
                 declare,
                 "`declare` modifiers cannot be applied to export as namespace declarations"
             );
-            p.bump_any();
+            p.bump_remap(T![as]);
             if p.cur_src() != "namespace" {
                 let err = p
                     .err_builder("expected `namespace`, but found none")
@@ -428,7 +429,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
             || p.at(T![const])
             || (p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1))))
     {
-        var_decl(p, true);
+        var_decl(p, false);
     } else {
         if p.cur_src() == "from" && exports_ns {
             from_clause_and_semi(p, start);

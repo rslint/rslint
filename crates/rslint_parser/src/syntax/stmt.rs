@@ -2,7 +2,7 @@
 //!
 //! See the [ECMAScript spec](https://www.ecma-international.org/ecma-262/5.1/#sec-12).
 
-use super::decl::{class_decl, function_decl};
+use super::decl::{class_decl, decorators, function_decl};
 use super::expr::{assign_expr, expr, primary_expr, EXPR_RECOVERY_SET, STARTS_EXPR};
 use super::pat::*;
 use super::program::{export_decl, import_decl};
@@ -66,9 +66,14 @@ pub fn semi(p: &mut Parser, err_range: Range<usize>) {
 
 /// A generic statement such as a block, if, while, with, etc
 pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option<CompletedMarker> {
-    Some(match p.cur() {
+    let decorator = if p.at(T![@]) {
+        decorators(p).into_iter().next() // should be always Some
+    } else {
+        None
+    };
+    let res = match p.cur() {
         T![;] => empty_stmt(p),
-        T!['{'] => return block_stmt(p, false, recovery_set),
+        T!['{'] => block_stmt(p, false, recovery_set).unwrap(), // It is only ever None if there is no `{`,
         T![if] => if_stmt(p),
         T![with] => with_stmt(p),
         T![while] => while_stmt(p),
@@ -88,17 +93,29 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
         T![throw] => throw_stmt(p),
         T![debugger] => debugger_stmt(p),
         T![function] => {
-            let m = p.start();
+            p.state.decorators_were_valid = true;
+            let m = decorator.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
             // TODO: Should we change this to fn_expr if there is no name?
             function_decl(p, m, true)
         }
-        T![class] => class_decl(p, false),
+        T![class] => {
+            p.state.decorators_were_valid = true;
+            let complete = class_decl(p, false);
+            if let Some(decorator) = decorator {
+                let new = decorator.precede(p);
+                complete.undo_completion(p);
+                new.complete(p, CLASS_DECL)
+            } else {
+                complete
+            }
+        }
         T![ident]
             if p.cur_src() == "async"
                 && p.nth_at(1, T![function])
                 && !p.has_linebreak_before_n(1) =>
         {
-            let m = p.start();
+            p.state.decorators_were_valid = true;
+            let m = decorator.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
             p.bump_any();
             function_decl(
                 &mut *p.with_state(ParserState {
@@ -113,90 +130,16 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
         T![ident] if p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)) => var_decl(p, false),
         // TODO: handle `<T>() => {};` with less of a hack
         _ if p.at_ts(STARTS_EXPR) || p.at(T![<]) => {
-            let start = p.cur_tok().range.start;
-            if p.typescript()
-                && matches!(
-                    p.cur_src(),
-                    "global"
-                        | "declare"
-                        | "abstract"
-                        | "enum"
-                        | "interface"
-                        | "module"
-                        | "namespace"
-                        | "type"
-                )
-                && !p.nth_at(1, T![:])
-                && !p.nth_at(1, T![.])
-            {
-                if let Some(mut res) = try_parse_ts(p, |p| ts_expr_stmt(p)) {
-                    res.err_if_not_ts(
-                        p,
-                        "TypeScript declarations can only be used in TypeScript files",
-                    );
-                    return Some(res);
-                }
-            }
-
-            if p.typescript()
-                && matches!(p.cur_src(), "public" | "private" | "protected")
-                && p.nth_src(1) == "interface"
-            {
+            let complete = expr_stmt(p, decorator);
+            if let Some(decorator) = decorator.filter(|_| !p.state.decorators_were_valid) {
                 let err = p
-                    .err_builder("interface declarations cannot have accessibility modifiers")
-                    .primary(p.cur_tok().range, "")
-                    .secondary(p.nth_tok(1).range, "");
+                    .err_builder("decorators are not valid in this position")
+                    .primary(decorator.range(p), "");
 
                 p.error(err);
-                let m = p.start();
-                p.bump_any();
-                ts_interface(p);
-                m.complete(p, ERROR);
             }
-
-            let mut expr = p.expr_with_semi_recovery(false)?;
-            // Labelled stmt
-            if expr.kind() == NAME_REF && p.at(T![:]) {
-                expr.change_kind(p, NAME);
-                // Its not possible to have a name without an inner ident token
-                let range = p.events[expr.start_pos as usize..].iter().find_map(|x| {
-                    match x {
-                        Event::Token { kind: T![ident], range } => Some(range),
-                        _ => None
-                    }
-                })
-                    .expect("Tried to get the ident of a name node, but there was no ident. This is erroneous");
-
-                let text_range =
-                    TextRange::new((range.start as u32).into(), (range.end as u32).into());
-                let text = p.source(text_range);
-                if let Some(range) = p.state.labels.get(text) {
-                    let err = p
-                        .err_builder("Duplicate statement labels are not allowed")
-                        .secondary(
-                            range.to_owned(),
-                            &format!("`{}` is first used as a label here", text),
-                        )
-                        .primary(
-                            p.cur_tok().range,
-                            &format!("a second use of `{}` here is not allowed", text),
-                        );
-
-                    p.error(err);
-                } else {
-                    let string = text.to_string();
-                    p.state.labels.insert(string, range.to_owned());
-                }
-
-                let m = expr.precede(p);
-                p.bump_any();
-                stmt(p, None);
-                return Some(m.complete(p, LABELLED_STMT));
-            }
-
-            let m = expr.precede(p);
-            semi(p, start..p.cur_tok().range.end);
-            m.complete(p, EXPR_STMT)
+            p.state.decorators_were_valid = false;
+            return complete;
         }
         _ => {
             let err = p
@@ -215,7 +158,116 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
             p.err_recover(err, recovery_set.into().unwrap_or(STMT_RECOVERY_SET), false);
             return None;
         }
-    })
+    };
+
+    if let Some(decorator) = decorator.filter(|_| !p.state.decorators_were_valid) {
+        let err = p
+            .err_builder("decorators are not valid in this position")
+            .primary(decorator.range(p), "");
+
+        p.error(err);
+    }
+    p.state.decorators_were_valid = false;
+
+    Some(res)
+}
+
+fn expr_stmt(p: &mut Parser, decorator: Option<CompletedMarker>) -> Option<CompletedMarker> {
+    let start = p.cur_tok().range.start;
+    // this is *technically* wrong because it would be an expr stmt in js but for our purposes
+    // we treat these as always being ts declarations since ambiguity is inefficient in this style of
+    // parsing and it results in better errors usually
+    if matches!(
+        p.cur_src(),
+        "declare" | "abstract" | "enum" | "interface" | "namespace" | "type"
+    ) && !p.nth_at(1, T![:])
+        && !p.nth_at(1, T![.])
+    {
+        if let Some(mut res) = ts_expr_stmt(p) {
+            if let Some(decorator) = decorator {
+                let kind = res.kind();
+                let m = decorator.precede(p);
+                res.undo_completion(p);
+                res = m.complete(p, kind);
+            }
+            res.err_if_not_ts(
+                p,
+                "TypeScript declarations can only be used in TypeScript files",
+            );
+            Some(res)
+        } else {
+            None
+        }
+    } else {
+        // module and global are special because its used normally in js a lot so we cant assume its a ts module decl
+        if p.cur_src() == "module" || (p.cur_src() == "global" && p.nth_at(1, T!['{'])) {
+            if let Some(mut res) = try_parse_ts(p, |p| ts_expr_stmt(p)) {
+                res.err_if_not_ts(
+                    p,
+                    "TypeScript declarations can only be used in TypeScript files",
+                );
+                return Some(res);
+            }
+        }
+        if p.typescript()
+            && matches!(p.cur_src(), "public" | "private" | "protected")
+            && p.nth_src(1) == "interface"
+        {
+            let err = p
+                .err_builder("interface declarations cannot have accessibility modifiers")
+                .primary(p.cur_tok().range, "")
+                .secondary(p.nth_tok(1).range, "");
+
+            p.error(err);
+            let m = p.start();
+            p.bump_any();
+            ts_interface(p);
+            m.complete(p, ERROR);
+        }
+
+        let mut expr = p.expr_with_semi_recovery(false)?;
+        // Labelled stmt
+        if expr.kind() == NAME_REF && p.at(T![:]) {
+            expr.change_kind(p, NAME);
+            // Its not possible to have a name without an inner ident token
+            let range = p.events[expr.start_pos as usize..].iter().find_map(|x| {
+            match x {
+                Event::Token { kind: T![ident], range } => Some(range),
+                _ => None
+            }
+        })
+            .expect("Tried to get the ident of a name node, but there was no ident. This is erroneous");
+
+            let text_range = TextRange::new((range.start as u32).into(), (range.end as u32).into());
+            let text = p.source(text_range);
+            if let Some(range) = p.state.labels.get(text) {
+                let err = p
+                    .err_builder("Duplicate statement labels are not allowed")
+                    .secondary(
+                        range.to_owned(),
+                        &format!("`{}` is first used as a label here", text),
+                    )
+                    .primary(
+                        p.cur_tok().range,
+                        &format!("a second use of `{}` here is not allowed", text),
+                    );
+
+                p.error(err);
+            } else {
+                let string = text.to_string();
+                p.state.labels.insert(string, range.to_owned());
+            }
+
+            let m = expr.precede(p);
+            p.bump_any();
+            stmt(p, None);
+            return Some(m.complete(p, LABELLED_STMT));
+        }
+
+        let m = expr.precede(p);
+        semi(p, start..p.cur_tok().range.end);
+        Some(m.complete(p, EXPR_STMT))
+    }
 }
 
 /// A debugger statement such as `debugger;`
@@ -715,7 +767,7 @@ fn declarator(
 
         p.error(err);
     // FIXME: does ts allow const var declarations without initializers in .d.ts files?
-    } else if is_const.is_some() && !for_stmt {
+    } else if is_const.is_some() && !for_stmt && !p.state.in_declare {
         let err = p
             .err_builder("Const var declarations must have an initialized value")
             .primary(marker.range(p), "this variable needs to be initialized");

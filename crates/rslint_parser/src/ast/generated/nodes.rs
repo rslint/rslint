@@ -490,6 +490,8 @@ pub struct TsModuleDecl {
 }
 impl TsModuleDecl {
     pub fn declare_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![declare]) }
+    pub fn global_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![global]) }
+    pub fn module_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![module]) }
     pub fn dot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [.]) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn body(&self) -> Option<TsNamespaceBody> { support::child(&self.syntax) }
@@ -658,6 +660,15 @@ impl TsNamespaceExportDecl {
     }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [;]) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsDecorator {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsDecorator {
+    pub fn at_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [@]) }
+    pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -1269,6 +1280,7 @@ pub struct CallExpr {
 }
 impl CallExpr {
     pub fn callee(&self) -> Option<Expr> { support::child(&self.syntax) }
+    pub fn type_args(&self) -> Option<TsTypeArgs> { support::child(&self.syntax) }
     pub fn arguments(&self) -> Option<ArgList> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -2522,6 +2534,17 @@ impl AstNode for TsExportAssignment {
 }
 impl AstNode for TsNamespaceExportDecl {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_NAMESPACE_EXPORT_DECL }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsDecorator {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_DECORATOR }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -4854,6 +4877,11 @@ impl std::fmt::Display for TsExportAssignment {
     }
 }
 impl std::fmt::Display for TsNamespaceExportDecl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsDecorator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

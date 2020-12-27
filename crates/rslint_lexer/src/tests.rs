@@ -1011,3 +1011,17 @@ fn fuzz_fail_7() {
         WHITESPACE:2
     }
 }
+
+#[test]
+fn at_token() {
+    assert_lex! {
+        "@",
+        AT:1
+    }
+
+    assert_lex! {
+        "@foo",
+        AT:1,
+        IDENT:3
+    }
+}

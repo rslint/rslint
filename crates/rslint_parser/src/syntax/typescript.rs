@@ -82,13 +82,19 @@ pub(crate) fn ts_expr_stmt(p: &mut Parser) -> Option<CompletedMarker> {
 
 pub(crate) fn ts_declare(p: &mut Parser) -> Option<CompletedMarker> {
     debug_assert_eq!(p.cur_src(), "declare");
+    let p = &mut *p.with_state(ParserState {
+        in_declare: true,
+        ..p.state.clone()
+    });
     Some(match p.nth(1) {
         T![function] => {
+            p.state.decorators_were_valid = true;
             let m = p.start();
             p.bump_remap(T![declare]);
             function_decl(p, m, false)
         }
         T![class] => {
+            p.state.decorators_were_valid = true;
             let m = p.start();
             p.bump_remap(T![declare]);
             class_decl(p, false).undo_completion(p).abandon(p);
@@ -133,8 +139,17 @@ pub(crate) fn ts_declare(p: &mut Parser) -> Option<CompletedMarker> {
 
 pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
     if p.cur_src() == "abstract" {
+        p.state.decorators_were_valid = true;
         let m = p.start();
+        let range = p.cur_tok().range;
         p.bump_remap(T![abstract]);
+        if !p.at(T![class]) {
+            let err = p.err_builder("abstract modifiers can only be applied to classes, methods, or property definitions")
+                .primary(range, "");
+
+            p.error(err);
+            return None;
+        }
         class_decl(p, false).undo_completion(p).abandon(p);
         return Some(m.complete(p, CLASS_DECL));
     }
@@ -151,6 +166,7 @@ pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
         if p.nth_at(1, STRING) {
             return ts_ambient_external_module_decl(p, true);
         } else if token_set![T![ident], T![yield], T![await]].contains(p.nth(1)) {
+            p.bump_remap(T![module]);
             return Some(ts_module_or_namespace_decl(p, false, false));
         }
     }
@@ -229,7 +245,10 @@ pub fn ts_ambient_external_module_decl(
             .primary(p.cur_tok().range, "");
 
         p.error(err);
+    } else if check_for_module {
+        p.bump_remap(T![module]);
     }
+
     let end = p.cur_tok().range.end;
     if p.cur_src() == "global" {
         p.bump_any();
