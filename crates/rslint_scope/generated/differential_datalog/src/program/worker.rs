@@ -38,6 +38,7 @@ use timely::{
     communication::Allocator,
     dataflow::{operators::probe::Handle as ProbeHandle, scopes::Child, Scope},
     logging::TimelyEvent,
+    progress::frontier::AntichainRef,
     worker::Worker,
 };
 
@@ -366,8 +367,10 @@ impl<'a> DDlogWorker<'a> {
         }
 
         for (_, trace) in traces.iter_mut() {
-            trace.distinguish_since(&[epoch]);
-            trace.advance_by(&[epoch]);
+            let e = [epoch];
+            let ac = AntichainRef::new(&e);
+            trace.distinguish_since(ac);
+            trace.advance_by(ac);
         }
     }
 

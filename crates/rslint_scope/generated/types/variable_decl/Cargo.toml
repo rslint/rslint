@@ -20,8 +20,8 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 num = "0.3"
 erased-serde = "0.3"
-differential-dataflow = { git = "https://github.com/ddlog-dev/differential-dataflow", branch = "ddlog-1" }
-timely = { git = "https://github.com/ddlog-dev/timely-dataflow", branch = "ddlog-1" }
+differential-dataflow = { git = "https://github.com/ddlog-dev/differential-dataflow", branch = "ddlog-2" }
+timely = { git = "https://github.com/ddlog-dev/timely-dataflow", branch = "ddlog-2" }
 
 ddlog_rt = { path = "../ddlog_rt" }
 ddlog_std = { path = "../ddlog_std" }

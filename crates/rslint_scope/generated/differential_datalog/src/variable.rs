@@ -1,6 +1,4 @@
-use differential_dataflow::difference::Semigroup;
 use differential_dataflow::lattice::Lattice;
-use differential_dataflow::operators::*;
 use differential_dataflow::{Collection, Data, ExchangeData, Hashable};
 use num::One;
 use timely::dataflow::operators::feedback::Handle;
@@ -10,7 +8,7 @@ use timely::dataflow::*;
 use timely::order::Product;
 
 use crate::profile::*;
-use crate::program::{TSNested, Weight};
+use crate::program::{arrange::diff_distinct, TSNested, Weight};
 
 /// A collection defined by multiple mutually recursive rules.
 ///
@@ -94,8 +92,7 @@ where
         if let Some(feedback) = self.feedback.take() {
             with_prof_context(&format!("Variable: {}", self.name), || {
                 if self.distinct {
-                    self.current
-                        .threshold(|_, c| if c.is_zero() { 0 } else { 1 })
+                    diff_distinct(&self.current)
                         .inner
                         .map(|(x, t, d)| (x, Product::new(t.outer, t.inner + TSNested::one()), d))
                         .connect_loop(feedback)

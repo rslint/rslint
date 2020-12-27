@@ -12,13 +12,13 @@
 // TODO: namespace cleanup
 // TODO: single input relation
 
-mod arrange;
+pub mod arrange;
 mod timestamp;
 mod update;
 mod worker;
 
-pub use arrange::concatenate_collections;
-pub use timestamp::{TSNested, TupleTS, TS, TS16};
+pub use arrange::{concatenate_collections, diff_distinct};
+pub use timestamp::{TSNested, TupleTS, TS};
 pub use update::Update;
 
 use crate::{ddval::*, profile::*, record::Mutator};
@@ -603,12 +603,7 @@ impl Arrangement {
             } => {
                 let filtered = collection.flat_map(fmfun);
                 if distinct {
-                    ArrangedCollection::Set(
-                        filtered
-                            .threshold(|_, c| if c.is_zero() { 0 } else { 1 })
-                            .map(|k| (k, ()))
-                            .arrange(),
-                    )
+                    ArrangedCollection::Set(diff_distinct(&filtered).map(|k| (k, ())).arrange())
                 } else {
                     ArrangedCollection::Set(filtered.map(|k| (k, ())).arrange())
                 }

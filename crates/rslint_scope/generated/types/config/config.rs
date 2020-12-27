@@ -10,7 +10,6 @@
     overflowing_literals,
     unreachable_patterns,
     unused_variables,
-    clippy::unknown_clippy_lints,
     clippy::missing_safety_doc,
     clippy::match_single_binding,
     clippy::ptr_arg,
@@ -42,25 +41,23 @@ use ::timely::dataflow::scopes;
 use ::timely::worker;
 
 //use ::serde::de::DeserializeOwned;
-use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::ddval::DDValConvert;
+use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
-
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
-
 
 use ddlog_derive::FromRecord;
 use differential_datalog::{
@@ -423,16 +420,16 @@ impl Default for CaughtErrors {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct EnableNoUnusedVars {
     pub file: types__ast::FileId,
-    pub config: ddlog_std::Ref<NoUnusedVarsConfig>
+    pub config: ddlog_std::Ref<NoUnusedVarsConfig>,
 }
-impl abomonation::Abomonation for EnableNoUnusedVars{}
+impl abomonation::Abomonation for EnableNoUnusedVars {}
 ::differential_datalog::decl_struct_from_record!(EnableNoUnusedVars["config::EnableNoUnusedVars"]<>, ["config::EnableNoUnusedVars"][2]{[0]file["file"]: types__ast::FileId, [1]config["config"]: ddlog_std::Ref<NoUnusedVarsConfig>});
 ::differential_datalog::decl_struct_into_record!(EnableNoUnusedVars, ["config::EnableNoUnusedVars"]<>, file, config);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(EnableNoUnusedVars, <>, file: types__ast::FileId, config: ddlog_std::Ref<NoUnusedVarsConfig>);
 impl ::std::fmt::Display for EnableNoUnusedVars {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            EnableNoUnusedVars{file,config} => {
+            EnableNoUnusedVars { file, config } => {
                 __formatter.write_str("config::EnableNoUnusedVars{")?;
                 ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str(",")?;
@@ -457,19 +454,27 @@ impl ::std::fmt::Debug for EnableNoUnusedVars {
 /* fn no_unused_vars_enabled(config: & Config) -> bool */
 /* fn no_use_before_def_enabled(config: & Config) -> bool */
 pub fn __Key_config_EnableNoUnusedVars(__key: &DDValue) -> DDValue {
-    let ref conf = *{<EnableNoUnusedVars>::from_ddvalue_ref(__key) };
+    let ref conf = *{ <EnableNoUnusedVars>::from_ddvalue_ref(__key) };
     (conf.file.clone()).into_ddvalue()
 }
-pub static __Arng_config_EnableNoUnusedVars_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                   name: std::borrow::Cow::from(r###"(config::EnableNoUnusedVars{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars) /*join*/"###),
-                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                    {
-                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                        match < EnableNoUnusedVars>::from_ddvalue(__v) {
-                                                                                                                                            EnableNoUnusedVars{file: ref _0, config: _} => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }.map(|x|(x,__cloned))
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    queryable: false
-                                                                                                                                });
+pub static __Arng_config_EnableNoUnusedVars_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(config::EnableNoUnusedVars{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <EnableNoUnusedVars>::from_ddvalue(__v) {
+                    EnableNoUnusedVars {
+                        file: ref _0,
+                        config: _,
+                    } => Some(((*_0).clone()).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });

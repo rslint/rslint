@@ -8,12 +8,16 @@ use differential_dataflow::{
     difference::{Diff, Monoid},
     hashable::Hashable,
     lattice::Lattice,
-    operators::{arrange::arrangement::Arranged, JoinCore},
+    operators::{
+        arrange::arrangement::{ArrangeBySelf, Arranged},
+        Consolidate, JoinCore, Reduce,
+    },
     trace::{BatchReader, Cursor, TraceReader},
-    AsCollection, Collection, Data,
+    AsCollection, Collection, Data, ExchangeData,
 };
 use fnv::FnvHashMap;
-use std::ops::Mul;
+use num::One;
+use std::ops::{Add, Mul, Neg};
 use timely::{
     dataflow::{
         operators::Concatenate,
@@ -172,4 +176,37 @@ where
     scope
         .concatenate(iterator.into_iter().map(|x| x.inner))
         .as_collection()
+}
+
+/// An alternative implementation of `distinct`.
+///
+/// The implementation of `distinct` in differential dataflow maintains both its input and output
+/// arrangements.  This implementation, suggested by @frankmcsherry instead uses a single
+/// arrangement that produces the number of "surplus" records, which are then subtracted from the
+/// input to get an output with distinct records. This has the advantage that for keys that are
+/// already distinct, there is no additional memory used in the output (nothing to subtract).  It
+/// has the downside that if the input changes a lot, the output may have more changes (to track
+/// the input changes) than if it just recorded distinct records (which is pretty stable).
+pub fn diff_distinct<G, D, R>(collection: &Collection<G, D, R>) -> Collection<G, D, R>
+where
+    G: Scope,
+    G::Timestamp: Lattice,
+    D: ExchangeData + Hashable,
+    R: Monoid + ExchangeData + One + Neg<Output = R> + Add<R, Output = R>,
+{
+    collection
+        .concat(
+            // For each value with weight w != 1, compute an adjustment record with the same value and
+            // weight (1-w)
+            &collection
+                .arrange_by_self()
+                .reduce(|_, src, dst| {
+                    // If the input weight is 1, don't produce a surplus record.
+                    if !src[0].1.is_one() {
+                        dst.push(((), <R>::one() + src[0].1.clone().neg()))
+                    }
+                })
+                .map(|x| x.0),
+        )
+        .consolidate()
 }

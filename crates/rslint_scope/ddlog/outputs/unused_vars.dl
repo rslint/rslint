@@ -42,7 +42,7 @@ UnusedVariables(name, declared, span, file) :-
     VariableDeclarations(
         file,
         name,
-        scope,
+        _,
         declared,
         &VariableMeta {
             .is_function_argument = true,
@@ -55,7 +55,8 @@ UnusedVariables(name, declared, span, file) :-
     // If the variable name matches an ignored pattern, don't analyze it
     not config.deref().ignored_patterns().regex_set_match(name.ival()),
 
-    not NameInScope(file, name, scope.unhoisted_scope(), declared).
+    FunctionBodyScope(file, declared, body_scope),
+    not NameInScope(file, name, body_scope, declared).
 
 // Handle globals
 UnusedVariables(name, declared, span, file) :-
@@ -79,3 +80,18 @@ UnusedVariables(name, declared, span, file) :-
     
     not IsExported(file, declared),
     not NameInScope(file, name, scope.unhoisted_scope(), declared).
+
+relation FunctionBodyScope(file: FileId, id: AnyId, body: ScopeId)
+
+FunctionBodyScope(file, AnyIdFunc { id }, body) :-
+    EnableNoUnusedVars(file, config),
+    Function(id, file, _, _, body, _).
+
+FunctionBodyScope(file, AnyIdExpr { id }, body) :-
+    EnableNoUnusedVars(file, config),
+    Arrow(id, file, Some { (_, body) }).
+
+FunctionBodyScope(file, AnyIdExpr { id }, body) :-
+    EnableNoUnusedVars(file, config),
+    InlineFunc(id, file, _, Some { body_id }),
+    Statement(body_id, file, _, body, _).

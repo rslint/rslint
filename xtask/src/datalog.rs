@@ -31,7 +31,13 @@ const TYPES_DEPS: &[&str] = &["ddlog_ovsdb_adapter", "flatbuffers"];
 const TYPES_FEATURES: &[&str] = &["ovsdb", "flatbuf"];
 
 /// Extra generated libraries that will be deleted
-const EXTRA_LIBS: &[&str] = &["distributed_datalog", "ovsdb", "cmd_parser", ".cargo", "differential_datalog_test"];
+const EXTRA_LIBS: &[&str] = &[
+    "distributed_datalog",
+    "ovsdb",
+    "cmd_parser",
+    ".cargo",
+    "differential_datalog_test",
+];
 /// Extra generated files that will be deleted
 const EXTRA_FILES: &[&str] = &["src/main.rs", "ddlog_ovsdb_test.c", "ddlog.h"];
 

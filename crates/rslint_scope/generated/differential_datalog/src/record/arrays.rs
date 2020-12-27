@@ -1,7 +1,7 @@
 //! Implementing `Record`-related traits for Rust arrays
 
 use crate::record::{CollectionKind, FromRecord, IntoRecord, Mutator, Record};
-use std::convert::TryInto;
+use std::result::Result;
 
 /// Implements `FromRecord`, `IntoRecord` and `Mutator` for arrays
 // FIXME: Replace this with `min_const_generics` after Rust v1.50
@@ -9,11 +9,28 @@ use std::convert::TryInto;
 macro_rules! ddlog_array_traits {
     ($($length:literal),* $(,)?) => {
         $(
-            impl<T: FromRecord> FromRecord for [T; $length] {
+            impl<T: FromRecord + Default> FromRecord for [T; $length] {
                 fn from_record(val: &Record) -> Result<Self, String> {
-                    Vec::from_record(val)?.try_into().map_err(|_| {
-                        format!("cannot convert {:?} to array of length {}", *val, $length)
-                    })
+                    let vec = Vec::from_record(val)?;
+                    let mut arr = <[T; $length]>::default();
+
+                    if vec.len() != $length {
+                        return Err(format!(
+                            "cannot convert {:?} to array of length {}",
+                            *val, $length
+                        ));
+                    };
+                    let mut idx = 0;
+                    for v in vec.into_iter() {
+                        arr[idx] = v;
+                        idx += 1;
+                    }
+                    Ok(arr)
+
+                    // Simpler implementation that requires Rust 1.48:
+                    // Vec::from_record(val)?.try_into().map_err(|_| {
+                    //     format!("cannot convert {:?} to array of length {}", *val, $length)
+                    // })
                 }
             }
 
@@ -26,7 +43,7 @@ macro_rules! ddlog_array_traits {
                 }
             }
 
-            impl<T: FromRecord> Mutator<[T; $length]> for Record {
+            impl<T: FromRecord + Default> Mutator<[T; $length]> for Record {
                 fn mutate(&self, array: &mut [T; $length]) -> Result<(), String> {
                     *array = <[T; $length]>::from_record(self)?;
                     Ok(())

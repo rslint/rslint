@@ -10,7 +10,6 @@
     overflowing_literals,
     unreachable_patterns,
     unused_variables,
-    clippy::unknown_clippy_lints,
     clippy::missing_safety_doc,
     clippy::match_single_binding,
     clippy::ptr_arg,
@@ -42,25 +41,23 @@ use ::timely::dataflow::scopes;
 use ::timely::worker;
 
 //use ::serde::de::DeserializeOwned;
-use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::ddval::DDValConvert;
+use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
-
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
-
 
 use std::fmt::Debug;
 
@@ -74,9 +71,12 @@ pub fn debug<T: Debug>(val: T) {
 
 /* fn dbg<T: ::ddlog_rt::Val>(val: & T) -> () */
 /* fn debug<T: ::ddlog_rt::Val>(val: & T) -> () */
-pub fn or_else<T: ::ddlog_rt::Val>(option: & ddlog_std::Option<T>, option_b: & ddlog_std::Option<T>) -> ddlog_std::Option<T>
-{   match (*option) {
-        ddlog_std::Option::Some{x: _} => (*option).clone(),
-        ddlog_std::Option::None{} => (*option_b).clone()
+pub fn or_else<T: ::ddlog_rt::Val>(
+    option: &ddlog_std::Option<T>,
+    option_b: &ddlog_std::Option<T>,
+) -> ddlog_std::Option<T> {
+    match (*option) {
+        ddlog_std::Option::Some { x: _ } => (*option).clone(),
+        ddlog_std::Option::None {} => (*option_b).clone(),
     }
 }

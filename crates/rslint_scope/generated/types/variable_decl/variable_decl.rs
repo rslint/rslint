@@ -10,7 +10,6 @@
     overflowing_literals,
     unreachable_patterns,
     unused_variables,
-    clippy::unknown_clippy_lints,
     clippy::missing_safety_doc,
     clippy::match_single_binding,
     clippy::ptr_arg,
@@ -42,25 +41,23 @@ use ::timely::dataflow::scopes;
 use ::timely::worker;
 
 //use ::serde::de::DeserializeOwned;
-use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::ddval::DDValConvert;
+use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
-
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
-
 
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct VariableDecl {
@@ -69,16 +66,23 @@ pub struct VariableDecl {
     pub kind: VariableDeclKind,
     pub pattern: ddlog_std::Option<types__ast::IPattern>,
     pub value: ddlog_std::Option<types__ast::ExprId>,
-    pub exported: bool
+    pub exported: bool,
 }
-impl abomonation::Abomonation for VariableDecl{}
+impl abomonation::Abomonation for VariableDecl {}
 ::differential_datalog::decl_struct_from_record!(VariableDecl["variable_decl::VariableDecl"]<>, ["variable_decl::VariableDecl"][6]{[0]stmt["stmt"]: types__ast::StmtId, [1]file["file"]: types__ast::FileId, [2]kind["kind"]: VariableDeclKind, [3]pattern["pattern"]: ddlog_std::Option<types__ast::IPattern>, [4]value["value"]: ddlog_std::Option<types__ast::ExprId>, [5]exported["exported"]: bool});
 ::differential_datalog::decl_struct_into_record!(VariableDecl, ["variable_decl::VariableDecl"]<>, stmt, file, kind, pattern, value, exported);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(VariableDecl, <>, stmt: types__ast::StmtId, file: types__ast::FileId, kind: VariableDeclKind, pattern: ddlog_std::Option<types__ast::IPattern>, value: ddlog_std::Option<types__ast::ExprId>, exported: bool);
 impl ::std::fmt::Display for VariableDecl {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            VariableDecl{stmt,file,kind,pattern,value,exported} => {
+            VariableDecl {
+                stmt,
+                file,
+                kind,
+                pattern,
+                value,
+                exported,
+            } => {
                 __formatter.write_str("variable_decl::VariableDecl{")?;
                 ::std::fmt::Debug::fmt(stmt, __formatter)?;
                 __formatter.write_str(",")?;
@@ -105,24 +109,24 @@ impl ::std::fmt::Debug for VariableDecl {
 pub enum VariableDeclKind {
     VarDeclVar,
     VarDeclLet,
-    VarDeclConst
+    VarDeclConst,
 }
-impl abomonation::Abomonation for VariableDeclKind{}
+impl abomonation::Abomonation for VariableDeclKind {}
 ::differential_datalog::decl_enum_from_record!(VariableDeclKind["variable_decl::VariableDeclKind"]<>, VarDeclVar["variable_decl::VarDeclVar"][0]{}, VarDeclLet["variable_decl::VarDeclLet"][0]{}, VarDeclConst["variable_decl::VarDeclConst"][0]{});
 ::differential_datalog::decl_enum_into_record!(VariableDeclKind<>, VarDeclVar["variable_decl::VarDeclVar"]{}, VarDeclLet["variable_decl::VarDeclLet"]{}, VarDeclConst["variable_decl::VarDeclConst"]{});
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_enum!(VariableDeclKind<>, VarDeclVar{}, VarDeclLet{}, VarDeclConst{});
 impl ::std::fmt::Display for VariableDeclKind {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            VariableDeclKind::VarDeclVar{} => {
+            VariableDeclKind::VarDeclVar {} => {
                 __formatter.write_str("variable_decl::VarDeclVar{")?;
                 __formatter.write_str("}")
-            },
-            VariableDeclKind::VarDeclLet{} => {
+            }
+            VariableDeclKind::VarDeclLet {} => {
                 __formatter.write_str("variable_decl::VarDeclLet{")?;
                 __formatter.write_str("}")
-            },
-            VariableDeclKind::VarDeclConst{} => {
+            }
+            VariableDeclKind::VarDeclConst {} => {
                 __formatter.write_str("variable_decl::VarDeclConst{")?;
                 __formatter.write_str("}")
             }
@@ -136,23 +140,37 @@ impl ::std::fmt::Debug for VariableDeclKind {
 }
 impl ::std::default::Default for VariableDeclKind {
     fn default() -> Self {
-        VariableDeclKind::VarDeclVar{}
+        VariableDeclKind::VarDeclVar {}
     }
 }
-pub static __Arng_variable_decl_VariableDecl_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                    name: std::borrow::Cow::from(r###"(variable_decl::VariableDecl{.stmt=(_0: ast::StmtId), .file=(_1: ast::FileId), .kind=(_: variable_decl::VariableDeclKind), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(ddlog_std::Some{.x=(_: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: variable_decl::VariableDecl) /*join*/"###),
-                                                                                                                                     afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                     {
-                                                                                                                                         let __cloned = __v.clone();
-                                                                                                                                         match < VariableDecl>::from_ddvalue(__v) {
-                                                                                                                                             VariableDecl{stmt: ref _0, file: ref _1, kind: _, pattern: _, value: ddlog_std::Option::Some{x: _}, exported: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                             _ => None
-                                                                                                                                         }.map(|x|(x,__cloned))
-                                                                                                                                     }
-                                                                                                                                     __f},
-                                                                                                                                     queryable: false
-                                                                                                                                 });
-pub static __Rule_variable_decl_VariableDecl_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=stmt, .file=file, .kind=(variable_decl::VarDeclVar{}: variable_decl::VariableDeclKind), .pattern=pattern, .value=value, .exported=exported}: variable_decl::VariableDecl)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(pattern: ddlog_std::Option<ast::IPattern>), .value=(value: ddlog_std::Option<ast::ExprId>), .exported=(exported: bool)}: inputs::VarDecl)]. */
+pub static __Arng_variable_decl_VariableDecl_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(variable_decl::VariableDecl{.stmt=(_0: ast::StmtId), .file=(_1: ast::FileId), .kind=(_: variable_decl::VariableDeclKind), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(ddlog_std::Some{.x=(_: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: variable_decl::VariableDecl) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <VariableDecl>::from_ddvalue(__v) {
+                    VariableDecl {
+                        stmt: ref _0,
+                        file: ref _1,
+                        kind: _,
+                        pattern: _,
+                        value: ddlog_std::Option::Some { x: _ },
+                        exported: _,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Rule_variable_decl_VariableDecl_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=stmt, .file=file, .kind=(variable_decl::VarDeclVar{}: variable_decl::VariableDeclKind), .pattern=pattern, .value=value, .exported=exported}: variable_decl::VariableDecl)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(pattern: ddlog_std::Option<ast::IPattern>), .value=(value: ddlog_std::Option<ast::ExprId>), .exported=(exported: bool)}: inputs::VarDecl)]. */
                                                                                                                           program::Rule::CollectionRule {
                                                                                                                               description: std::borrow::Cow::from("variable_decl::VariableDecl(.stmt=stmt, .file=file, .kind=variable_decl::VarDeclVar{}, .pattern=pattern, .value=value, .exported=exported) :- inputs::VarDecl(.stmt_id=stmt, .file=file, .pattern=pattern, .value=value, .exported=exported)."),
                                                                                                                               rel: 57,
@@ -169,8 +187,11 @@ pub static __Rule_variable_decl_VariableDecl_0 : ::once_cell::sync::Lazy<program
                                                                                                                                               __f},
                                                                                                                                               next: Box::new(None)
                                                                                                                                           })
-                                                                                                                          });
-pub static __Rule_variable_decl_VariableDecl_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=stmt, .file=file, .kind=(variable_decl::VarDeclLet{}: variable_decl::VariableDeclKind), .pattern=pattern, .value=value, .exported=exported}: variable_decl::VariableDecl)] :- inputs::LetDecl[(inputs::LetDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(pattern: ddlog_std::Option<ast::IPattern>), .value=(value: ddlog_std::Option<ast::ExprId>), .exported=(exported: bool)}: inputs::LetDecl)]. */
+                                                                                                                          },
+    );
+pub static __Rule_variable_decl_VariableDecl_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=stmt, .file=file, .kind=(variable_decl::VarDeclLet{}: variable_decl::VariableDeclKind), .pattern=pattern, .value=value, .exported=exported}: variable_decl::VariableDecl)] :- inputs::LetDecl[(inputs::LetDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(pattern: ddlog_std::Option<ast::IPattern>), .value=(value: ddlog_std::Option<ast::ExprId>), .exported=(exported: bool)}: inputs::LetDecl)]. */
                                                                                                                           program::Rule::CollectionRule {
                                                                                                                               description: std::borrow::Cow::from("variable_decl::VariableDecl(.stmt=stmt, .file=file, .kind=variable_decl::VarDeclLet{}, .pattern=pattern, .value=value, .exported=exported) :- inputs::LetDecl(.stmt_id=stmt, .file=file, .pattern=pattern, .value=value, .exported=exported)."),
                                                                                                                               rel: 43,
@@ -187,8 +208,11 @@ pub static __Rule_variable_decl_VariableDecl_1 : ::once_cell::sync::Lazy<program
                                                                                                                                               __f},
                                                                                                                                               next: Box::new(None)
                                                                                                                                           })
-                                                                                                                          });
-pub static __Rule_variable_decl_VariableDecl_2 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=stmt, .file=file, .kind=(variable_decl::VarDeclConst{}: variable_decl::VariableDeclKind), .pattern=pattern, .value=value, .exported=exported}: variable_decl::VariableDecl)] :- inputs::ConstDecl[(inputs::ConstDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(pattern: ddlog_std::Option<ast::IPattern>), .value=(value: ddlog_std::Option<ast::ExprId>), .exported=(exported: bool)}: inputs::ConstDecl)]. */
+                                                                                                                          },
+    );
+pub static __Rule_variable_decl_VariableDecl_2: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* variable_decl::VariableDecl[(variable_decl::VariableDecl{.stmt=stmt, .file=file, .kind=(variable_decl::VarDeclConst{}: variable_decl::VariableDeclKind), .pattern=pattern, .value=value, .exported=exported}: variable_decl::VariableDecl)] :- inputs::ConstDecl[(inputs::ConstDecl{.stmt_id=(stmt: ast::StmtId), .file=(file: ast::FileId), .pattern=(pattern: ddlog_std::Option<ast::IPattern>), .value=(value: ddlog_std::Option<ast::ExprId>), .exported=(exported: bool)}: inputs::ConstDecl)]. */
                                                                                                                           program::Rule::CollectionRule {
                                                                                                                               description: std::borrow::Cow::from("variable_decl::VariableDecl(.stmt=stmt, .file=file, .kind=variable_decl::VarDeclConst{}, .pattern=pattern, .value=value, .exported=exported) :- inputs::ConstDecl(.stmt_id=stmt, .file=file, .pattern=pattern, .value=value, .exported=exported)."),
                                                                                                                               rel: 19,
@@ -205,4 +229,5 @@ pub static __Rule_variable_decl_VariableDecl_2 : ::once_cell::sync::Lazy<program
                                                                                                                                               __f},
                                                                                                                                               next: Box::new(None)
                                                                                                                                           })
-                                                                                                                          });
+                                                                                                                          },
+    );

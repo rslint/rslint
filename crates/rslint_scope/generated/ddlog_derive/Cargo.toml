@@ -9,5 +9,9 @@ proc-macro = true
 
 [dependencies]
 syn = "1.0.48"
-quote = "1.0.7"
+quote = "1.0.8"
 proc-macro2 = "1.0.24"
+
+[dev-dependencies]
+trybuild = "1.0.38"
+differential_datalog = { path = "../differential_datalog" }

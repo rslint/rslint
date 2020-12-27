@@ -42,7 +42,7 @@ optional = false
 path = "debug"
 
 [dependencies.differential-dataflow]
-branch = "ddlog-1"
+branch = "ddlog-2"
 features = []
 git = "https://github.com/ddlog-dev/differential-dataflow"
 optional = false
@@ -73,7 +73,7 @@ optional = false
 version = "0.2"
 
 [dependencies.timely]
-branch = "ddlog-1"
+branch = "ddlog-2"
 features = []
 git = "https://github.com/ddlog-dev/timely-dataflow"
 optional = false

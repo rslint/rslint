@@ -10,7 +10,6 @@
     overflowing_literals,
     unreachable_patterns,
     unused_variables,
-    clippy::unknown_clippy_lints,
     clippy::missing_safety_doc,
     clippy::match_single_binding,
     clippy::ptr_arg,
@@ -42,41 +41,44 @@ use ::timely::dataflow::scopes;
 use ::timely::worker;
 
 //use ::serde::de::DeserializeOwned;
-use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::ddval::DDValConvert;
+use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
-
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
-
 
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct FunctionLevelScope {
     pub scope: types__ast::ScopeId,
     pub nearest: types__ast::ScopeId,
     pub file: types__ast::FileId,
-    pub id: types__ast::AnyId
+    pub id: types__ast::AnyId,
 }
-impl abomonation::Abomonation for FunctionLevelScope{}
+impl abomonation::Abomonation for FunctionLevelScope {}
 ::differential_datalog::decl_struct_from_record!(FunctionLevelScope["scopes::FunctionLevelScope"]<>, ["scopes::FunctionLevelScope"][4]{[0]scope["scope"]: types__ast::ScopeId, [1]nearest["nearest"]: types__ast::ScopeId, [2]file["file"]: types__ast::FileId, [3]id["id"]: types__ast::AnyId});
 ::differential_datalog::decl_struct_into_record!(FunctionLevelScope, ["scopes::FunctionLevelScope"]<>, scope, nearest, file, id);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(FunctionLevelScope, <>, scope: types__ast::ScopeId, nearest: types__ast::ScopeId, file: types__ast::FileId, id: types__ast::AnyId);
 impl ::std::fmt::Display for FunctionLevelScope {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            FunctionLevelScope{scope,nearest,file,id} => {
+            FunctionLevelScope {
+                scope,
+                nearest,
+                file,
+                id,
+            } => {
                 __formatter.write_str("scopes::FunctionLevelScope{")?;
                 ::std::fmt::Debug::fmt(scope, __formatter)?;
                 __formatter.write_str(",")?;
@@ -99,16 +101,20 @@ impl ::std::fmt::Debug for FunctionLevelScope {
 pub struct IsHoistable {
     pub file: types__ast::FileId,
     pub id: types__ast::AnyId,
-    pub hoistable: bool
+    pub hoistable: bool,
 }
-impl abomonation::Abomonation for IsHoistable{}
+impl abomonation::Abomonation for IsHoistable {}
 ::differential_datalog::decl_struct_from_record!(IsHoistable["scopes::IsHoistable"]<>, ["scopes::IsHoistable"][3]{[0]file["file"]: types__ast::FileId, [1]id["id"]: types__ast::AnyId, [2]hoistable["hoistable"]: bool});
 ::differential_datalog::decl_struct_into_record!(IsHoistable, ["scopes::IsHoistable"]<>, file, id, hoistable);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(IsHoistable, <>, file: types__ast::FileId, id: types__ast::AnyId, hoistable: bool);
 impl ::std::fmt::Display for IsHoistable {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            IsHoistable{file,id,hoistable} => {
+            IsHoistable {
+                file,
+                id,
+                hoistable,
+            } => {
                 __formatter.write_str("scopes::IsHoistable{")?;
                 ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str(",")?;
@@ -128,16 +134,16 @@ impl ::std::fmt::Debug for IsHoistable {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct NeedsScopeChildren {
     pub scope: types__ast::ScopeId,
-    pub file: types__ast::FileId
+    pub file: types__ast::FileId,
 }
-impl abomonation::Abomonation for NeedsScopeChildren{}
+impl abomonation::Abomonation for NeedsScopeChildren {}
 ::differential_datalog::decl_struct_from_record!(NeedsScopeChildren["scopes::NeedsScopeChildren"]<>, ["scopes::NeedsScopeChildren"][2]{[0]scope["scope"]: types__ast::ScopeId, [1]file["file"]: types__ast::FileId});
 ::differential_datalog::decl_struct_into_record!(NeedsScopeChildren, ["scopes::NeedsScopeChildren"]<>, scope, file);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NeedsScopeChildren, <>, scope: types__ast::ScopeId, file: types__ast::FileId);
 impl ::std::fmt::Display for NeedsScopeChildren {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            NeedsScopeChildren{scope,file} => {
+            NeedsScopeChildren { scope, file } => {
                 __formatter.write_str("scopes::NeedsScopeChildren{")?;
                 ::std::fmt::Debug::fmt(scope, __formatter)?;
                 __formatter.write_str(",")?;
@@ -155,16 +161,16 @@ impl ::std::fmt::Debug for NeedsScopeChildren {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct NeedsScopeParents {
     pub scope: types__ast::ScopeId,
-    pub file: types__ast::FileId
+    pub file: types__ast::FileId,
 }
-impl abomonation::Abomonation for NeedsScopeParents{}
+impl abomonation::Abomonation for NeedsScopeParents {}
 ::differential_datalog::decl_struct_from_record!(NeedsScopeParents["scopes::NeedsScopeParents"]<>, ["scopes::NeedsScopeParents"][2]{[0]scope["scope"]: types__ast::ScopeId, [1]file["file"]: types__ast::FileId});
 ::differential_datalog::decl_struct_into_record!(NeedsScopeParents, ["scopes::NeedsScopeParents"]<>, scope, file);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NeedsScopeParents, <>, scope: types__ast::ScopeId, file: types__ast::FileId);
 impl ::std::fmt::Display for NeedsScopeParents {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            NeedsScopeParents{scope,file} => {
+            NeedsScopeParents { scope, file } => {
                 __formatter.write_str("scopes::NeedsScopeParents{")?;
                 ::std::fmt::Debug::fmt(scope, __formatter)?;
                 __formatter.write_str(",")?;
@@ -183,16 +189,20 @@ impl ::std::fmt::Debug for NeedsScopeParents {
 pub struct ScopeFamily {
     pub parent: types__ast::ScopeId,
     pub child: types__ast::ScopeId,
-    pub file: types__ast::FileId
+    pub file: types__ast::FileId,
 }
-impl abomonation::Abomonation for ScopeFamily{}
+impl abomonation::Abomonation for ScopeFamily {}
 ::differential_datalog::decl_struct_from_record!(ScopeFamily["scopes::ScopeFamily"]<>, ["scopes::ScopeFamily"][3]{[0]parent["parent"]: types__ast::ScopeId, [1]child["child"]: types__ast::ScopeId, [2]file["file"]: types__ast::FileId});
 ::differential_datalog::decl_struct_into_record!(ScopeFamily, ["scopes::ScopeFamily"]<>, parent, child, file);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ScopeFamily, <>, parent: types__ast::ScopeId, child: types__ast::ScopeId, file: types__ast::FileId);
 impl ::std::fmt::Display for ScopeFamily {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            ScopeFamily{parent,child,file} => {
+            ScopeFamily {
+                parent,
+                child,
+                file,
+            } => {
                 __formatter.write_str("scopes::ScopeFamily{")?;
                 ::std::fmt::Debug::fmt(parent, __formatter)?;
                 __formatter.write_str(",")?;
@@ -213,16 +223,16 @@ impl ::std::fmt::Debug for ScopeFamily {
 pub struct ScopeOfId {
     pub id: types__ast::AnyId,
     pub file: types__ast::FileId,
-    pub scope: types__ast::ScopeId
+    pub scope: types__ast::ScopeId,
 }
-impl abomonation::Abomonation for ScopeOfId{}
+impl abomonation::Abomonation for ScopeOfId {}
 ::differential_datalog::decl_struct_from_record!(ScopeOfId["scopes::ScopeOfId"]<>, ["scopes::ScopeOfId"][3]{[0]id["id"]: types__ast::AnyId, [1]file["file"]: types__ast::FileId, [2]scope["scope"]: types__ast::ScopeId});
 ::differential_datalog::decl_struct_into_record!(ScopeOfId, ["scopes::ScopeOfId"]<>, id, file, scope);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ScopeOfId, <>, id: types__ast::AnyId, file: types__ast::FileId, scope: types__ast::ScopeId);
 impl ::std::fmt::Display for ScopeOfId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            ScopeOfId{id,file,scope} => {
+            ScopeOfId { id, file, scope } => {
                 __formatter.write_str("scopes::ScopeOfId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
                 __formatter.write_str(",")?;
@@ -239,85 +249,140 @@ impl ::std::fmt::Debug for ScopeOfId {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-pub static __Arng_scopes_FunctionLevelScope_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                   name: std::borrow::Cow::from(r###"(scopes::FunctionLevelScope{.scope=(_0: ast::ScopeId), .nearest=(_: ast::ScopeId), .file=(_1: ast::FileId), .id=(_: ast::AnyId)}: scopes::FunctionLevelScope) /*join*/"###),
-                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                    {
-                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                        match < FunctionLevelScope>::from_ddvalue(__v) {
-                                                                                                                                            FunctionLevelScope{scope: ref _0, nearest: _, file: ref _1, id: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }.map(|x|(x,__cloned))
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    queryable: false
-                                                                                                                                });
-pub static __Arng_scopes_NeedsScopeChildren_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                   name: std::borrow::Cow::from(r###"(scopes::NeedsScopeChildren{.scope=(_0: ast::ScopeId), .file=(_1: ast::FileId)}: scopes::NeedsScopeChildren) /*join*/"###),
-                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                    {
-                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                        match < NeedsScopeChildren>::from_ddvalue(__v) {
-                                                                                                                                            NeedsScopeChildren{scope: ref _0, file: ref _1} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }.map(|x|(x,__cloned))
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    queryable: false
-                                                                                                                                });
-pub static __Arng_scopes_NeedsScopeParents_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                  name: std::borrow::Cow::from(r###"(scopes::NeedsScopeParents{.scope=(_0: ast::ScopeId), .file=(_1: ast::FileId)}: scopes::NeedsScopeParents) /*join*/"###),
-                                                                                                                                   afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                   {
-                                                                                                                                       let __cloned = __v.clone();
-                                                                                                                                       match < NeedsScopeParents>::from_ddvalue(__v) {
-                                                                                                                                           NeedsScopeParents{scope: ref _0, file: ref _1} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                           _ => None
-                                                                                                                                       }.map(|x|(x,__cloned))
-                                                                                                                                   }
-                                                                                                                                   __f},
-                                                                                                                                   queryable: false
-                                                                                                                               });
-pub static __Arng_scopes_ScopeFamily_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                            name: std::borrow::Cow::from(r###"(scopes::ScopeFamily{.parent=(_0: ast::ScopeId), .child=(_: ast::ScopeId), .file=(_1: ast::FileId)}: scopes::ScopeFamily) /*join*/"###),
-                                                                                                                             afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                             {
-                                                                                                                                 let __cloned = __v.clone();
-                                                                                                                                 match < ScopeFamily>::from_ddvalue(__v) {
-                                                                                                                                     ScopeFamily{parent: ref _0, child: _, file: ref _1} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                     _ => None
-                                                                                                                                 }.map(|x|(x,__cloned))
-                                                                                                                             }
-                                                                                                                             __f},
-                                                                                                                             queryable: false
-                                                                                                                         });
-pub static __Arng_scopes_ScopeFamily_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                            name: std::borrow::Cow::from(r###"(scopes::ScopeFamily{.parent=(_: ast::ScopeId), .child=(_0: ast::ScopeId), .file=(_1: ast::FileId)}: scopes::ScopeFamily) /*join*/"###),
-                                                                                                                             afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                             {
-                                                                                                                                 let __cloned = __v.clone();
-                                                                                                                                 match < ScopeFamily>::from_ddvalue(__v) {
-                                                                                                                                     ScopeFamily{parent: _, child: ref _0, file: ref _1} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                     _ => None
-                                                                                                                                 }.map(|x|(x,__cloned))
-                                                                                                                             }
-                                                                                                                             __f},
-                                                                                                                             queryable: false
-                                                                                                                         });
-pub static __Arng_scopes_ScopeFamily_2 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                            name: std::borrow::Cow::from(r###"(scopes::ScopeFamily{.parent=_0, .child=(_: ast::ScopeId), .file=_1}: scopes::ScopeFamily) /*join*/"###),
-                                                                                                                             afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                             {
-                                                                                                                                 let __cloned = __v.clone();
-                                                                                                                                 match < ScopeFamily>::from_ddvalue(__v) {
-                                                                                                                                     ScopeFamily{parent: ref _0, child: _, file: ref _1} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                     _ => None
-                                                                                                                                 }.map(|x|(x,__cloned))
-                                                                                                                             }
-                                                                                                                             __f},
-                                                                                                                             queryable: true
-                                                                                                                         });
-pub static __Rule_scopes_FunctionLevelScope_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdFile{.file=file}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(scope: ast::ScopeId), .config=(_: config::Config)}: inputs::File)]. */
+pub static __Arng_scopes_FunctionLevelScope_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(scopes::FunctionLevelScope{.scope=(_0: ast::ScopeId), .nearest=(_: ast::ScopeId), .file=(_1: ast::FileId), .id=(_: ast::AnyId)}: scopes::FunctionLevelScope) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <FunctionLevelScope>::from_ddvalue(__v) {
+                    FunctionLevelScope {
+                        scope: ref _0,
+                        nearest: _,
+                        file: ref _1,
+                        id: _,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_scopes_NeedsScopeChildren_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(scopes::NeedsScopeChildren{.scope=(_0: ast::ScopeId), .file=(_1: ast::FileId)}: scopes::NeedsScopeChildren) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NeedsScopeChildren>::from_ddvalue(__v) {
+                    NeedsScopeChildren {
+                        scope: ref _0,
+                        file: ref _1,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_scopes_NeedsScopeParents_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(scopes::NeedsScopeParents{.scope=(_0: ast::ScopeId), .file=(_1: ast::FileId)}: scopes::NeedsScopeParents) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NeedsScopeParents>::from_ddvalue(__v) {
+                    NeedsScopeParents {
+                        scope: ref _0,
+                        file: ref _1,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_scopes_ScopeFamily_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(scopes::ScopeFamily{.parent=(_0: ast::ScopeId), .child=(_: ast::ScopeId), .file=(_1: ast::FileId)}: scopes::ScopeFamily) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <ScopeFamily>::from_ddvalue(__v) {
+                    ScopeFamily {
+                        parent: ref _0,
+                        child: _,
+                        file: ref _1,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_scopes_ScopeFamily_1: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(scopes::ScopeFamily{.parent=(_: ast::ScopeId), .child=(_0: ast::ScopeId), .file=(_1: ast::FileId)}: scopes::ScopeFamily) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <ScopeFamily>::from_ddvalue(__v) {
+                    ScopeFamily {
+                        parent: _,
+                        child: ref _0,
+                        file: ref _1,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_scopes_ScopeFamily_2: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(scopes::ScopeFamily{.parent=_0, .child=(_: ast::ScopeId), .file=_1}: scopes::ScopeFamily) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <ScopeFamily>::from_ddvalue(__v) {
+                    ScopeFamily {
+                        parent: ref _0,
+                        child: _,
+                        file: ref _1,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: true,
+    });
+pub static __Rule_scopes_FunctionLevelScope_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdFile{.file=file}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(scope: ast::ScopeId), .config=(_: config::Config)}: inputs::File)]. */
                                                                                                                          program::Rule::CollectionRule {
                                                                                                                              description: std::borrow::Cow::from("scopes::FunctionLevelScope(.scope=scope, .nearest=scope, .file=file, .id=ast::AnyIdFile{.file=file}) :- inputs::File(.id=file, .kind=_, .top_level_scope=scope, .config=_)."),
                                                                                                                              rel: 29,
@@ -334,8 +399,11 @@ pub static __Rule_scopes_FunctionLevelScope_0 : ::once_cell::sync::Lazy<program:
                                                                                                                                              __f},
                                                                                                                                              next: Box::new(None)
                                                                                                                                          })
-                                                                                                                         });
-pub static __Rule_scopes_FunctionLevelScope_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=body, .nearest=body, .file=file, .id=(ast::AnyIdFunc{.func=func}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Function[(inputs::Function{.id=(func: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(body: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]. */
+                                                                                                                         },
+    );
+pub static __Rule_scopes_FunctionLevelScope_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=body, .nearest=body, .file=file, .id=(ast::AnyIdFunc{.func=func}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Function[(inputs::Function{.id=(func: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(body: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]. */
                                                                                                                          program::Rule::CollectionRule {
                                                                                                                              description: std::borrow::Cow::from("scopes::FunctionLevelScope(.scope=body, .nearest=body, .file=file, .id=ast::AnyIdFunc{.func=func}) :- inputs::Function(.id=func, .file=file, .name=_, .scope=_, .body=body, .exported=_)."),
                                                                                                                              rel: 34,
@@ -352,8 +420,11 @@ pub static __Rule_scopes_FunctionLevelScope_1 : ::once_cell::sync::Lazy<program:
                                                                                                                                              __f},
                                                                                                                                              next: Box::new(None)
                                                                                                                                          })
-                                                                                                                         });
-pub static __Rule_scopes_FunctionLevelScope_2 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdClass{.class=class}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], var body = FlatMap(((vec::filter_map: function(ddlog_std::Vec<ast::IClassElement>, function(internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>):ddlog_std::Vec<ast::StmtId>)(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{((ast::body: function(ast::ClassElement):ddlog_std::Option<ast::StmtId>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))})))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
+                                                                                                                         },
+    );
+pub static __Rule_scopes_FunctionLevelScope_2: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdClass{.class=class}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Class[(inputs::Class{.id=(class: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Class)], var body = FlatMap(((vec::filter_map: function(ddlog_std::Vec<ast::IClassElement>, function(internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>):ddlog_std::Vec<ast::StmtId>)(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{((ast::body: function(ast::ClassElement):ddlog_std::Option<ast::StmtId>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))})))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
                                                                                                                          program::Rule::CollectionRule {
                                                                                                                              description: std::borrow::Cow::from("scopes::FunctionLevelScope(.scope=scope, .nearest=scope, .file=file, .id=ast::AnyIdClass{.class=class}) :- inputs::Class(.id=class, .file=file, .name=_, .parent=_, .elements=ddlog_std::Some{.x=elements}, .scope=_, .exported=_), var body = FlatMap((vec::filter_map(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{(ast::body((internment::ival(elem))))})))), inputs::Statement(.id=body, .file=file, .kind=_, .scope=scope, .span=_)."),
                                                                                                                              rel: 17,
@@ -410,8 +481,11 @@ pub static __Rule_scopes_FunctionLevelScope_2 : ::once_cell::sync::Lazy<program:
                                                                                                                                                                                     })
                                                                                                                                                                  }))
                                                                                                                                          })
-                                                                                                                         });
-pub static __Rule_scopes_FunctionLevelScope_3 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdExpr{.expr=expr}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::ClassExpr[(inputs::ClassExpr{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>)}: inputs::ClassExpr)], var body = FlatMap(((vec::filter_map: function(ddlog_std::Vec<ast::IClassElement>, function(internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>):ddlog_std::Vec<ast::StmtId>)(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{((ast::body: function(ast::ClassElement):ddlog_std::Option<ast::StmtId>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))})))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
+                                                                                                                         },
+    );
+pub static __Rule_scopes_FunctionLevelScope_3: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdExpr{.expr=expr}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::ClassExpr[(inputs::ClassExpr{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .elements=(ddlog_std::Some{.x=(elements: ddlog_std::Vec<ast::IClassElement>)}: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>)}: inputs::ClassExpr)], var body = FlatMap(((vec::filter_map: function(ddlog_std::Vec<ast::IClassElement>, function(internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>):ddlog_std::Vec<ast::StmtId>)(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{((ast::body: function(ast::ClassElement):ddlog_std::Option<ast::StmtId>)(((internment::ival: function(internment::Intern<ast::ClassElement>):ast::ClassElement)(elem))))})))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
                                                                                                                          program::Rule::CollectionRule {
                                                                                                                              description: std::borrow::Cow::from("scopes::FunctionLevelScope(.scope=scope, .nearest=scope, .file=file, .id=ast::AnyIdExpr{.expr=expr}) :- inputs::ClassExpr(.expr_id=expr, .file=file, .elements=ddlog_std::Some{.x=elements}), var body = FlatMap((vec::filter_map(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{(ast::body((internment::ival(elem))))})))), inputs::Statement(.id=body, .file=file, .kind=_, .scope=scope, .span=_)."),
                                                                                                                              rel: 18,
@@ -468,11 +542,14 @@ pub static __Rule_scopes_FunctionLevelScope_3 : ::once_cell::sync::Lazy<program:
                                                                                                                                                                                     })
                                                                                                                                                                  }))
                                                                                                                                          })
-                                                                                                                         });
-pub static __Rule_scopes_FunctionLevelScope_4 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdExpr{.expr=expr}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
+                                                                                                                         },
+    );
+pub static __Rule_scopes_FunctionLevelScope_4: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdExpr{.expr=expr}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
                                                                                                                          program::Rule::ArrangementRule {
                                                                                                                              description: std::borrow::Cow::from( "scopes::FunctionLevelScope(.scope=scope, .nearest=scope, .file=file, .id=ast::AnyIdExpr{.expr=expr}) :- inputs::InlineFunc(.expr_id=expr, .file=file, .name=_, .body=ddlog_std::Some{.x=body}), inputs::Statement(.id=body, .file=file, .kind=_, .scope=scope, .span=_)."),
-                                                                                                                             arr: ( 39, 0),
+                                                                                                                             arr: ( 39, 1),
                                                                                                                              xform: XFormArrangement::Join{
                                                                                                                                         description: std::borrow::Cow::from("inputs::InlineFunc(.expr_id=expr, .file=file, .name=_, .body=ddlog_std::Some{.x=body}), inputs::Statement(.id=body, .file=file, .kind=_, .scope=scope, .span=_)"),
                                                                                                                                         ffun: None,
@@ -492,8 +569,11 @@ pub static __Rule_scopes_FunctionLevelScope_4 : ::once_cell::sync::Lazy<program:
                                                                                                                                         __f},
                                                                                                                                         next: Box::new(None)
                                                                                                                                     }
-                                                                                                                         });
-pub static __Rule_scopes_FunctionLevelScope_5 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdExpr{.expr=expr}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Property[(inputs::Property{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .key=(_: ddlog_std::Option<ast::PropertyKey>), .val=(ddlog_std::Some{.x=(val: ast::PropertyVal)}: ddlog_std::Option<ast::PropertyVal>)}: inputs::Property)], ((ddlog_std::Some{.x=(var body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>) = ((ast::body: function(ast::PropertyVal):ddlog_std::Option<ast::StmtId>)(val))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
+                                                                                                                         },
+    );
+pub static __Rule_scopes_FunctionLevelScope_5: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdExpr{.expr=expr}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Property[(inputs::Property{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .key=(_: ddlog_std::Option<ast::PropertyKey>), .val=(ddlog_std::Some{.x=(val: ast::PropertyVal)}: ddlog_std::Option<ast::PropertyVal>)}: inputs::Property)], ((ddlog_std::Some{.x=(var body: ast::StmtId)}: ddlog_std::Option<ast::StmtId>) = ((ast::body: function(ast::PropertyVal):ddlog_std::Option<ast::StmtId>)(val))), inputs::Statement[(inputs::Statement{.id=(body: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
                                                                                                                          program::Rule::CollectionRule {
                                                                                                                              description: std::borrow::Cow::from("scopes::FunctionLevelScope(.scope=scope, .nearest=scope, .file=file, .id=ast::AnyIdExpr{.expr=expr}) :- inputs::Property(.expr_id=expr, .file=file, .key=_, .val=ddlog_std::Some{.x=val}), (ddlog_std::Some{.x=var body} = (ast::body(val))), inputs::Statement(.id=body, .file=file, .kind=_, .scope=scope, .span=_)."),
                                                                                                                              rel: 46,
@@ -529,8 +609,11 @@ pub static __Rule_scopes_FunctionLevelScope_5 : ::once_cell::sync::Lazy<program:
                                                                                                                                                                 next: Box::new(None)
                                                                                                                                                             })
                                                                                                                                          })
-                                                                                                                         });
-pub static __Rule_scopes_FunctionLevelScope_6 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdExpr{.expr=expr}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Arrow[(inputs::Arrow{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .body=(ddlog_std::Some{.x=((_: ddlog_std::Either<ast::ExprId,ast::StmtId>), (scope: ast::ScopeId))}: ddlog_std::Option<(ddlog_std::Either<ast::ExprId,ast::StmtId>, ast::ScopeId)>)}: inputs::Arrow)]. */
+                                                                                                                         },
+    );
+pub static __Rule_scopes_FunctionLevelScope_6: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=scope, .nearest=scope, .file=file, .id=(ast::AnyIdExpr{.expr=expr}: ast::AnyId)}: scopes::FunctionLevelScope)] :- inputs::Arrow[(inputs::Arrow{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .body=(ddlog_std::Some{.x=((_: ddlog_std::Either<ast::ExprId,ast::StmtId>), (scope: ast::ScopeId))}: ddlog_std::Option<(ddlog_std::Either<ast::ExprId,ast::StmtId>, ast::ScopeId)>)}: inputs::Arrow)]. */
                                                                                                                          program::Rule::CollectionRule {
                                                                                                                              description: std::borrow::Cow::from("scopes::FunctionLevelScope(.scope=scope, .nearest=scope, .file=file, .id=ast::AnyIdExpr{.expr=expr}) :- inputs::Arrow(.expr_id=expr, .file=file, .body=ddlog_std::Some{.x=(_, scope)})."),
                                                                                                                              rel: 9,
@@ -547,11 +630,14 @@ pub static __Rule_scopes_FunctionLevelScope_6 : ::once_cell::sync::Lazy<program:
                                                                                                                                              __f},
                                                                                                                                              next: Box::new(None)
                                                                                                                                          })
-                                                                                                                         });
-pub static __Rule_scopes_FunctionLevelScope_7 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=child, .nearest=scope, .file=file, .id=id}: scopes::FunctionLevelScope)] :- scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=(parent: ast::ScopeId), .nearest=(scope: ast::ScopeId), .file=(file: ast::FileId), .id=(id: ast::AnyId)}: scopes::FunctionLevelScope)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)], var __group = (scope, id).group_by((child, file)), (((var scope: ast::ScopeId), (var id: ast::AnyId)) = ((group::arg_max: function(ddlog_std::Group<(ast::ScopeId, ast::FileId),(ast::ScopeId, ast::AnyId)>, function((ast::ScopeId, ast::AnyId)):ast::ScopeId):(ast::ScopeId, ast::AnyId))(__group, (function(scope: (ast::ScopeId, ast::AnyId)):ast::ScopeId{(scope.0)})))). */
+                                                                                                                         },
+    );
+pub static __Rule_scopes_FunctionLevelScope_7: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=child, .nearest=scope, .file=file, .id=id}: scopes::FunctionLevelScope)] :- scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=(parent: ast::ScopeId), .nearest=(scope: ast::ScopeId), .file=(file: ast::FileId), .id=(id: ast::AnyId)}: scopes::FunctionLevelScope)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)], var __group = (scope, id).group_by((child, file)), (((var scope: ast::ScopeId), (var id: ast::AnyId)) = ((group::arg_max: function(ddlog_std::Group<(ast::ScopeId, ast::FileId),(ast::ScopeId, ast::AnyId)>, function((ast::ScopeId, ast::AnyId)):ast::ScopeId):(ast::ScopeId, ast::AnyId))(__group, (function(scope: (ast::ScopeId, ast::AnyId)):ast::ScopeId{(scope.0)})))). */
                                                                                                                          program::Rule::ArrangementRule {
                                                                                                                              description: std::borrow::Cow::from( "scopes::FunctionLevelScope(.scope=child, .nearest=scope, .file=file, .id=id) :- scopes::FunctionLevelScope(.scope=parent, .nearest=scope, .file=file, .id=id), inputs::InputScope(.parent=parent, .child=child, .file=file), var __group = (scope, id).group_by((child, file)), ((var scope, var id) = (group::arg_max(__group, (function(scope: (ast::ScopeId, ast::AnyId)):ast::ScopeId{(scope.0)}))))."),
-                                                                                                                             arr: ( 79, 0),
+                                                                                                                             arr: ( 80, 0),
                                                                                                                              xform: XFormArrangement::Join{
                                                                                                                                         description: std::borrow::Cow::from("scopes::FunctionLevelScope(.scope=parent, .nearest=scope, .file=file, .id=id), inputs::InputScope(.parent=parent, .child=child, .file=file)"),
                                                                                                                                         ffun: None,
@@ -622,8 +708,11 @@ pub static __Rule_scopes_FunctionLevelScope_7 : ::once_cell::sync::Lazy<program:
                                                                                                                                                                                })
                                                                                                                                                             }))
                                                                                                                                     }
-                                                                                                                         });
-pub static __Rule_scopes_ScopeOfId_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdFile{.file=id}: ast::AnyId), .file=id, .scope=scope}: scopes::ScopeOfId)] :- inputs::File[(inputs::File{.id=(id: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(scope: ast::ScopeId), .config=(_: config::Config)}: inputs::File)]. */
+                                                                                                                         },
+    );
+pub static __Rule_scopes_ScopeOfId_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdFile{.file=id}: ast::AnyId), .file=id, .scope=scope}: scopes::ScopeOfId)] :- inputs::File[(inputs::File{.id=(id: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(scope: ast::ScopeId), .config=(_: config::Config)}: inputs::File)]. */
                                                                                                                 program::Rule::CollectionRule {
                                                                                                                     description: std::borrow::Cow::from("scopes::ScopeOfId(.id=ast::AnyIdFile{.file=id}, .file=id, .scope=scope) :- inputs::File(.id=id, .kind=_, .top_level_scope=scope, .config=_)."),
                                                                                                                     rel: 29,
@@ -640,8 +729,11 @@ pub static __Rule_scopes_ScopeOfId_0 : ::once_cell::sync::Lazy<program::Rule> = 
                                                                                                                                     __f},
                                                                                                                                     next: Box::new(None)
                                                                                                                                 })
-                                                                                                                });
-pub static __Rule_scopes_ScopeOfId_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdFunc{.func=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(scope: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]. */
+                                                                                                                },
+    );
+pub static __Rule_scopes_ScopeOfId_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdFunc{.func=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(scope: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]. */
                                                                                                                 program::Rule::CollectionRule {
                                                                                                                     description: std::borrow::Cow::from("scopes::ScopeOfId(.id=ast::AnyIdFunc{.func=id}, .file=file, .scope=scope) :- inputs::Function(.id=id, .file=file, .name=_, .scope=scope, .body=_, .exported=_)."),
                                                                                                                     rel: 34,
@@ -658,8 +750,11 @@ pub static __Rule_scopes_ScopeOfId_1 : ::once_cell::sync::Lazy<program::Rule> = 
                                                                                                                                     __f},
                                                                                                                                     next: Box::new(None)
                                                                                                                                 })
-                                                                                                                });
-pub static __Rule_scopes_ScopeOfId_2 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdClass{.class=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Class[(inputs::Class{.id=(id: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(scope: ast::ScopeId), .exported=(_: bool)}: inputs::Class)]. */
+                                                                                                                },
+    );
+pub static __Rule_scopes_ScopeOfId_2: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdClass{.class=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Class[(inputs::Class{.id=(id: ast::ClassId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(scope: ast::ScopeId), .exported=(_: bool)}: inputs::Class)]. */
                                                                                                                 program::Rule::CollectionRule {
                                                                                                                     description: std::borrow::Cow::from("scopes::ScopeOfId(.id=ast::AnyIdClass{.class=id}, .file=file, .scope=scope) :- inputs::Class(.id=id, .file=file, .name=_, .parent=_, .elements=_, .scope=scope, .exported=_)."),
                                                                                                                     rel: 17,
@@ -676,8 +771,11 @@ pub static __Rule_scopes_ScopeOfId_2 : ::once_cell::sync::Lazy<program::Rule> = 
                                                                                                                                     __f},
                                                                                                                                     next: Box::new(None)
                                                                                                                                 })
-                                                                                                                });
-pub static __Rule_scopes_ScopeOfId_3 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Statement[(inputs::Statement{.id=(id: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
+                                                                                                                },
+    );
+pub static __Rule_scopes_ScopeOfId_3: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Statement[(inputs::Statement{.id=(id: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
                                                                                                                 program::Rule::CollectionRule {
                                                                                                                     description: std::borrow::Cow::from("scopes::ScopeOfId(.id=ast::AnyIdStmt{.stmt=id}, .file=file, .scope=scope) :- inputs::Statement(.id=id, .file=file, .kind=_, .scope=scope, .span=_)."),
                                                                                                                     rel: 48,
@@ -694,8 +792,11 @@ pub static __Rule_scopes_ScopeOfId_3 : ::once_cell::sync::Lazy<program::Rule> = 
                                                                                                                                     __f},
                                                                                                                                     next: Box::new(None)
                                                                                                                                 })
-                                                                                                                });
-pub static __Rule_scopes_ScopeOfId_4 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdExpr{.expr=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Expression[(inputs::Expression{.id=(id: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]. */
+                                                                                                                },
+    );
+pub static __Rule_scopes_ScopeOfId_4: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdExpr{.expr=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::Expression[(inputs::Expression{.id=(id: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]. */
                                                                                                                 program::Rule::CollectionRule {
                                                                                                                     description: std::borrow::Cow::from("scopes::ScopeOfId(.id=ast::AnyIdExpr{.expr=id}, .file=file, .scope=scope) :- inputs::Expression(.id=id, .file=file, .kind=_, .scope=scope, .span=_)."),
                                                                                                                     rel: 28,
@@ -712,8 +813,11 @@ pub static __Rule_scopes_ScopeOfId_4 : ::once_cell::sync::Lazy<program::Rule> = 
                                                                                                                                     __f},
                                                                                                                                     next: Box::new(None)
                                                                                                                                 })
-                                                                                                                });
-pub static __Rule_scopes_ScopeOfId_5 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdImport{.import_=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::ImportDecl[(inputs::ImportDecl{.id=(id: ast::ImportId), .file=(file: ast::FileId), .clause=(_: ast::ImportClause)}: inputs::ImportDecl)], inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(scope: ast::ScopeId), .config=(_: config::Config)}: inputs::File)]. */
+                                                                                                                },
+    );
+pub static __Rule_scopes_ScopeOfId_5: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::ScopeOfId[(scopes::ScopeOfId{.id=(ast::AnyIdImport{.import_=id}: ast::AnyId), .file=file, .scope=scope}: scopes::ScopeOfId)] :- inputs::ImportDecl[(inputs::ImportDecl{.id=(id: ast::ImportId), .file=(file: ast::FileId), .clause=(_: ast::ImportClause)}: inputs::ImportDecl)], inputs::File[(inputs::File{.id=(file: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(scope: ast::ScopeId), .config=(_: config::Config)}: inputs::File)]. */
                                                                                                                 program::Rule::ArrangementRule {
                                                                                                                     description: std::borrow::Cow::from( "scopes::ScopeOfId(.id=ast::AnyIdImport{.import_=id}, .file=file, .scope=scope) :- inputs::ImportDecl(.id=id, .file=file, .clause=_), inputs::File(.id=file, .kind=_, .top_level_scope=scope, .config=_)."),
                                                                                                                     arr: ( 38, 0),
@@ -736,8 +840,11 @@ pub static __Rule_scopes_ScopeOfId_5 : ::once_cell::sync::Lazy<program::Rule> = 
                                                                                                                                __f},
                                                                                                                                next: Box::new(None)
                                                                                                                            }
-                                                                                                                });
-pub static __Rule_scopes_IsHoistable_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::IsHoistable[(scopes::IsHoistable{.file=file, .id=(ast::AnyIdFunc{.func=id}: ast::AnyId), .hoistable=true}: scopes::IsHoistable)] :- inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]. */
+                                                                                                                },
+    );
+pub static __Rule_scopes_IsHoistable_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::IsHoistable[(scopes::IsHoistable{.file=file, .id=(ast::AnyIdFunc{.func=id}: ast::AnyId), .hoistable=true}: scopes::IsHoistable)] :- inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]. */
                                                                                                                   program::Rule::CollectionRule {
                                                                                                                       description: std::borrow::Cow::from("scopes::IsHoistable(.file=file, .id=ast::AnyIdFunc{.func=id}, .hoistable=true) :- inputs::Function(.id=id, .file=file, .name=_, .scope=_, .body=_, .exported=_)."),
                                                                                                                       rel: 34,
@@ -754,8 +861,11 @@ pub static __Rule_scopes_IsHoistable_0 : ::once_cell::sync::Lazy<program::Rule> 
                                                                                                                                       __f},
                                                                                                                                       next: Box::new(None)
                                                                                                                                   })
-                                                                                                                  });
-pub static __Rule_scopes_IsHoistable_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::IsHoistable[(scopes::IsHoistable{.file=file, .id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId), .hoistable=true}: scopes::IsHoistable)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(id: ast::StmtId), .file=(file: ast::FileId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::VarDecl)]. */
+                                                                                                                  },
+    );
+pub static __Rule_scopes_IsHoistable_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::IsHoistable[(scopes::IsHoistable{.file=file, .id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId), .hoistable=true}: scopes::IsHoistable)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(id: ast::StmtId), .file=(file: ast::FileId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::VarDecl)]. */
                                                                                                                   program::Rule::CollectionRule {
                                                                                                                       description: std::borrow::Cow::from("scopes::IsHoistable(.file=file, .id=ast::AnyIdStmt{.stmt=id}, .hoistable=true) :- inputs::VarDecl(.stmt_id=id, .file=file, .pattern=_, .value=_, .exported=_)."),
                                                                                                                       rel: 57,
@@ -772,11 +882,14 @@ pub static __Rule_scopes_IsHoistable_1 : ::once_cell::sync::Lazy<program::Rule> 
                                                                                                                                       __f},
                                                                                                                                       next: Box::new(None)
                                                                                                                                   })
-                                                                                                                  });
-pub static __Rule_scopes_ScopeFamily_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeFamily[(scopes::ScopeFamily{.parent=parent, .child=child, .file=file}: scopes::ScopeFamily)] :- scopes::NeedsScopeChildren[(scopes::NeedsScopeChildren{.scope=(parent: ast::ScopeId), .file=(file: ast::FileId)}: scopes::NeedsScopeChildren)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)], (parent != child). */
+                                                                                                                  },
+    );
+pub static __Rule_scopes_ScopeFamily_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::ScopeFamily[(scopes::ScopeFamily{.parent=parent, .child=child, .file=file}: scopes::ScopeFamily)] :- scopes::NeedsScopeChildren[(scopes::NeedsScopeChildren{.scope=(parent: ast::ScopeId), .file=(file: ast::FileId)}: scopes::NeedsScopeChildren)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)], (parent != child). */
                                                                                                                   program::Rule::ArrangementRule {
                                                                                                                       description: std::borrow::Cow::from( "scopes::ScopeFamily(.parent=parent, .child=child, .file=file) :- scopes::NeedsScopeChildren(.scope=parent, .file=file), inputs::InputScope(.parent=parent, .child=child, .file=file), (parent != child)."),
-                                                                                                                      arr: ( 81, 0),
+                                                                                                                      arr: ( 82, 0),
                                                                                                                       xform: XFormArrangement::Join{
                                                                                                                                  description: std::borrow::Cow::from("scopes::NeedsScopeChildren(.scope=parent, .file=file), inputs::InputScope(.parent=parent, .child=child, .file=file)"),
                                                                                                                                  ffun: None,
@@ -797,11 +910,14 @@ pub static __Rule_scopes_ScopeFamily_0 : ::once_cell::sync::Lazy<program::Rule> 
                                                                                                                                  __f},
                                                                                                                                  next: Box::new(None)
                                                                                                                              }
-                                                                                                                  });
-pub static __Rule_scopes_ScopeFamily_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeFamily[(scopes::ScopeFamily{.parent=parent, .child=child, .file=file}: scopes::ScopeFamily)] :- scopes::NeedsScopeParents[(scopes::NeedsScopeParents{.scope=(child: ast::ScopeId), .file=(file: ast::FileId)}: scopes::NeedsScopeParents)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)], (parent != child). */
+                                                                                                                  },
+    );
+pub static __Rule_scopes_ScopeFamily_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::ScopeFamily[(scopes::ScopeFamily{.parent=parent, .child=child, .file=file}: scopes::ScopeFamily)] :- scopes::NeedsScopeParents[(scopes::NeedsScopeParents{.scope=(child: ast::ScopeId), .file=(file: ast::FileId)}: scopes::NeedsScopeParents)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)], (parent != child). */
                                                                                                                   program::Rule::ArrangementRule {
                                                                                                                       description: std::borrow::Cow::from( "scopes::ScopeFamily(.parent=parent, .child=child, .file=file) :- scopes::NeedsScopeParents(.scope=child, .file=file), inputs::InputScope(.parent=parent, .child=child, .file=file), (parent != child)."),
-                                                                                                                      arr: ( 82, 0),
+                                                                                                                      arr: ( 83, 0),
                                                                                                                       xform: XFormArrangement::Join{
                                                                                                                                  description: std::borrow::Cow::from("scopes::NeedsScopeParents(.scope=child, .file=file), inputs::InputScope(.parent=parent, .child=child, .file=file)"),
                                                                                                                                  ffun: None,
@@ -822,15 +938,18 @@ pub static __Rule_scopes_ScopeFamily_1 : ::once_cell::sync::Lazy<program::Rule> 
                                                                                                                                  __f},
                                                                                                                                  next: Box::new(None)
                                                                                                                              }
-                                                                                                                  });
-pub static __Rule_scopes_ScopeFamily_2 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeFamily[(scopes::ScopeFamily{.parent=parent, .child=child, .file=file}: scopes::ScopeFamily)] :- inputs::InputScope[(inputs::InputScope{.parent=(interum: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)], scopes::ScopeFamily[(scopes::ScopeFamily{.parent=(parent: ast::ScopeId), .child=(interum: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ScopeFamily)], (parent != child). */
+                                                                                                                  },
+    );
+pub static __Rule_scopes_ScopeFamily_2: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* scopes::ScopeFamily[(scopes::ScopeFamily{.parent=parent, .child=child, .file=file}: scopes::ScopeFamily)] :- inputs::InputScope[(inputs::InputScope{.parent=(interum: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)], scopes::ScopeFamily[(scopes::ScopeFamily{.parent=(parent: ast::ScopeId), .child=(interum: ast::ScopeId), .file=(file: ast::FileId)}: scopes::ScopeFamily)], (parent != child). */
                                                                                                                   program::Rule::ArrangementRule {
                                                                                                                       description: std::borrow::Cow::from( "scopes::ScopeFamily(.parent=parent, .child=child, .file=file) :- inputs::InputScope(.parent=interum, .child=child, .file=file), scopes::ScopeFamily(.parent=parent, .child=interum, .file=file), (parent != child)."),
                                                                                                                       arr: ( 41, 1),
                                                                                                                       xform: XFormArrangement::Join{
                                                                                                                                  description: std::borrow::Cow::from("inputs::InputScope(.parent=interum, .child=child, .file=file), scopes::ScopeFamily(.parent=parent, .child=interum, .file=file)"),
                                                                                                                                  ffun: None,
-                                                                                                                                 arrangement: (83,1),
+                                                                                                                                 arrangement: (84,1),
                                                                                                                                  jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                  {
                                                                                                                                      let (ref interum, ref child, ref file) = match *<types__inputs::InputScope>::from_ddvalue_ref(__v1) {
@@ -847,4 +966,5 @@ pub static __Rule_scopes_ScopeFamily_2 : ::once_cell::sync::Lazy<program::Rule> 
                                                                                                                                  __f},
                                                                                                                                  next: Box::new(None)
                                                                                                                              }
-                                                                                                                  });
+                                                                                                                  },
+    );

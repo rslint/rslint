@@ -10,7 +10,6 @@
     overflowing_literals,
     unreachable_patterns,
     unused_variables,
-    clippy::unknown_clippy_lints,
     clippy::missing_safety_doc,
     clippy::match_single_binding,
     clippy::ptr_arg,
@@ -42,40 +41,42 @@ use ::timely::dataflow::scopes;
 use ::timely::worker;
 
 //use ::serde::de::DeserializeOwned;
-use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::ddval::DDValConvert;
+use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
-
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
 
-
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct TypeofUndef {
     pub whole_expr: types__ast::ExprId,
     pub undefined_expr: types__ast::ExprId,
-    pub file: types__ast::FileId
+    pub file: types__ast::FileId,
 }
-impl abomonation::Abomonation for TypeofUndef{}
+impl abomonation::Abomonation for TypeofUndef {}
 ::differential_datalog::decl_struct_from_record!(TypeofUndef["outputs::typeof_undef::TypeofUndef"]<>, ["outputs::typeof_undef::TypeofUndef"][3]{[0]whole_expr["whole_expr"]: types__ast::ExprId, [1]undefined_expr["undefined_expr"]: types__ast::ExprId, [2]file["file"]: types__ast::FileId});
 ::differential_datalog::decl_struct_into_record!(TypeofUndef, ["outputs::typeof_undef::TypeofUndef"]<>, whole_expr, undefined_expr, file);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(TypeofUndef, <>, whole_expr: types__ast::ExprId, undefined_expr: types__ast::ExprId, file: types__ast::FileId);
 impl ::std::fmt::Display for TypeofUndef {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            TypeofUndef{whole_expr,undefined_expr,file} => {
+            TypeofUndef {
+                whole_expr,
+                undefined_expr,
+                file,
+            } => {
                 __formatter.write_str("outputs::typeof_undef::TypeofUndef{")?;
                 ::std::fmt::Debug::fmt(whole_expr, __formatter)?;
                 __formatter.write_str(",")?;
@@ -96,16 +97,20 @@ impl ::std::fmt::Debug for TypeofUndef {
 pub struct WithinTypeofExpr {
     pub type_of: types__ast::ExprId,
     pub expr: types__ast::ExprId,
-    pub file: types__ast::FileId
+    pub file: types__ast::FileId,
 }
-impl abomonation::Abomonation for WithinTypeofExpr{}
+impl abomonation::Abomonation for WithinTypeofExpr {}
 ::differential_datalog::decl_struct_from_record!(WithinTypeofExpr["outputs::typeof_undef::WithinTypeofExpr"]<>, ["outputs::typeof_undef::WithinTypeofExpr"][3]{[0]type_of["type_of"]: types__ast::ExprId, [1]expr["expr"]: types__ast::ExprId, [2]file["file"]: types__ast::FileId});
 ::differential_datalog::decl_struct_into_record!(WithinTypeofExpr, ["outputs::typeof_undef::WithinTypeofExpr"]<>, type_of, expr, file);
 #[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(WithinTypeofExpr, <>, type_of: types__ast::ExprId, expr: types__ast::ExprId, file: types__ast::FileId);
 impl ::std::fmt::Display for WithinTypeofExpr {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            WithinTypeofExpr{type_of,expr,file} => {
+            WithinTypeofExpr {
+                type_of,
+                expr,
+                file,
+            } => {
                 __formatter.write_str("outputs::typeof_undef::WithinTypeofExpr{")?;
                 ::std::fmt::Debug::fmt(type_of, __formatter)?;
                 __formatter.write_str(",")?;
@@ -122,45 +127,76 @@ impl ::std::fmt::Debug for WithinTypeofExpr {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-pub static __Arng_outputs_typeof_undef_WithinTypeofExpr_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                               name: std::borrow::Cow::from(r###"(outputs::typeof_undef::WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(_: ast::ExprId), .file=(_0: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr) /*join*/"###),
-                                                                                                                                                afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                                {
-                                                                                                                                                    let __cloned = __v.clone();
-                                                                                                                                                    match < WithinTypeofExpr>::from_ddvalue(__v) {
-                                                                                                                                                        WithinTypeofExpr{type_of: _, expr: _, file: ref _0} => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                                                        _ => None
-                                                                                                                                                    }.map(|x|(x,__cloned))
-                                                                                                                                                }
-                                                                                                                                                __f},
-                                                                                                                                                queryable: false
-                                                                                                                                            });
-pub static __Arng_outputs_typeof_undef_WithinTypeofExpr_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set{
-                                                                                                                                                name: std::borrow::Cow::from(r###"(outputs::typeof_undef::WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(_0: ast::ExprId), .file=(_1: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr) /*antijoin*/"###),
-                                                                                                                                                fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                                                {
-                                                                                                                                                    match < WithinTypeofExpr>::from_ddvalue(__v) {
-                                                                                                                                                        WithinTypeofExpr{type_of: _, expr: ref _0, file: ref _1} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                                        _ => None
-                                                                                                                                                    }
-                                                                                                                                                }
-                                                                                                                                                __f},
-                                                                                                                                                distinct: true
-                                                                                                                                            });
-pub static __Arng_outputs_typeof_undef_WithinTypeofExpr_2 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                               name: std::borrow::Cow::from(r###"(outputs::typeof_undef::WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(_0: ast::ExprId), .file=(_1: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr) /*join*/"###),
-                                                                                                                                                afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                                {
-                                                                                                                                                    let __cloned = __v.clone();
-                                                                                                                                                    match < WithinTypeofExpr>::from_ddvalue(__v) {
-                                                                                                                                                        WithinTypeofExpr{type_of: _, expr: ref _0, file: ref _1} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                                        _ => None
-                                                                                                                                                    }.map(|x|(x,__cloned))
-                                                                                                                                                }
-                                                                                                                                                __f},
-                                                                                                                                                queryable: false
-                                                                                                                                            });
-pub static __Rule_outputs_typeof_undef_WithinTypeofExpr_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=type_of, .expr=expr, .file=file}: outputs::typeof_undef::WithinTypeofExpr)] :- __Prefix_4[((file: ast::FileId), (config: config::Config))], inputs::UnaryOp[(inputs::UnaryOp{.expr_id=(type_of: ast::ExprId), .file=(file: ast::FileId), .op=(ddlog_std::Some{.x=(ast::UnaryTypeof{}: ast::UnaryOperand)}: ddlog_std::Option<ast::UnaryOperand>), .expr=(ddlog_std::Some{.x=(expr: ast::ExprId)}: ddlog_std::Option<ast::ExprId>)}: inputs::UnaryOp)]. */
+pub static __Arng_outputs_typeof_undef_WithinTypeofExpr_0: ::once_cell::sync::Lazy<
+    program::Arrangement,
+> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+    name: std::borrow::Cow::from(
+        r###"(outputs::typeof_undef::WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(_: ast::ExprId), .file=(_0: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr) /*join*/"###,
+    ),
+    afun: {
+        fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+            let __cloned = __v.clone();
+            match <WithinTypeofExpr>::from_ddvalue(__v) {
+                WithinTypeofExpr {
+                    type_of: _,
+                    expr: _,
+                    file: ref _0,
+                } => Some(((*_0).clone()).into_ddvalue()),
+                _ => None,
+            }
+            .map(|x| (x, __cloned))
+        }
+        __f
+    },
+    queryable: false,
+});
+pub static __Arng_outputs_typeof_undef_WithinTypeofExpr_1: ::once_cell::sync::Lazy<
+    program::Arrangement,
+> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set {
+    name: std::borrow::Cow::from(
+        r###"(outputs::typeof_undef::WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(_0: ast::ExprId), .file=(_1: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr) /*antijoin*/"###,
+    ),
+    fmfun: {
+        fn __f(__v: DDValue) -> Option<DDValue> {
+            match <WithinTypeofExpr>::from_ddvalue(__v) {
+                WithinTypeofExpr {
+                    type_of: _,
+                    expr: ref _0,
+                    file: ref _1,
+                } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                _ => None,
+            }
+        }
+        __f
+    },
+    distinct: true,
+});
+pub static __Arng_outputs_typeof_undef_WithinTypeofExpr_2: ::once_cell::sync::Lazy<
+    program::Arrangement,
+> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+    name: std::borrow::Cow::from(
+        r###"(outputs::typeof_undef::WithinTypeofExpr{.type_of=(_: ast::ExprId), .expr=(_0: ast::ExprId), .file=(_1: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr) /*join*/"###,
+    ),
+    afun: {
+        fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+            let __cloned = __v.clone();
+            match <WithinTypeofExpr>::from_ddvalue(__v) {
+                WithinTypeofExpr {
+                    type_of: _,
+                    expr: ref _0,
+                    file: ref _1,
+                } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                _ => None,
+            }
+            .map(|x| (x, __cloned))
+        }
+        __f
+    },
+    queryable: false,
+});
+pub static __Rule_outputs_typeof_undef_WithinTypeofExpr_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=type_of, .expr=expr, .file=file}: outputs::typeof_undef::WithinTypeofExpr)] :- __Prefix_4[((file: ast::FileId), (config: config::Config))], inputs::UnaryOp[(inputs::UnaryOp{.expr_id=(type_of: ast::ExprId), .file=(file: ast::FileId), .op=(ddlog_std::Some{.x=(ast::UnaryTypeof{}: ast::UnaryOperand)}: ddlog_std::Option<ast::UnaryOperand>), .expr=(ddlog_std::Some{.x=(expr: ast::ExprId)}: ddlog_std::Option<ast::ExprId>)}: inputs::UnaryOp)]. */
                                                                                                                                      program::Rule::ArrangementRule {
                                                                                                                                          description: std::borrow::Cow::from( "outputs::typeof_undef::WithinTypeofExpr(.type_of=type_of, .expr=expr, .file=file) :- __Prefix_4[(file, config)], inputs::UnaryOp(.expr_id=type_of, .file=file, .op=ddlog_std::Some{.x=ast::UnaryTypeof{}}, .expr=ddlog_std::Some{.x=expr})."),
                                                                                                                                          arr: ( 3, 0),
@@ -183,8 +219,11 @@ pub static __Rule_outputs_typeof_undef_WithinTypeofExpr_0 : ::once_cell::sync::L
                                                                                                                                                     __f},
                                                                                                                                                     next: Box::new(None)
                                                                                                                                                 }
-                                                                                                                                     });
-pub static __Rule_outputs_typeof_undef_WithinTypeofExpr_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=type_of, .expr=grouped, .file=file}: outputs::typeof_undef::WithinTypeofExpr)] :- __Prefix_2[((file: ast::FileId), (config: config::Config), (type_of: ast::ExprId), (expr: ast::ExprId))], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprGrouping{.inner=(ddlog_std::Some{.x=(grouped: ast::ExprId)}: ddlog_std::Option<ast::ExprId>)}: ast::ExprKind), .scope=(_: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]. */
+                                                                                                                                     },
+    );
+pub static __Rule_outputs_typeof_undef_WithinTypeofExpr_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=type_of, .expr=grouped, .file=file}: outputs::typeof_undef::WithinTypeofExpr)] :- __Prefix_2[((file: ast::FileId), (config: config::Config), (type_of: ast::ExprId), (expr: ast::ExprId))], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprGrouping{.inner=(ddlog_std::Some{.x=(grouped: ast::ExprId)}: ddlog_std::Option<ast::ExprId>)}: ast::ExprKind), .scope=(_: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]. */
                                                                                                                                      program::Rule::ArrangementRule {
                                                                                                                                          description: std::borrow::Cow::from( "outputs::typeof_undef::WithinTypeofExpr(.type_of=type_of, .expr=grouped, .file=file) :- __Prefix_2[(file, config, type_of, expr)], inputs::Expression(.id=expr, .file=file, .kind=ast::ExprGrouping{.inner=ddlog_std::Some{.x=grouped}}, .scope=_, .span=_)."),
                                                                                                                                          arr: ( 2, 0),
@@ -207,8 +246,11 @@ pub static __Rule_outputs_typeof_undef_WithinTypeofExpr_1 : ::once_cell::sync::L
                                                                                                                                                     __f},
                                                                                                                                                     next: Box::new(None)
                                                                                                                                                 }
-                                                                                                                                     });
-pub static __Rule_outputs_typeof_undef_WithinTypeofExpr_2 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=type_of, .expr=last, .file=file}: outputs::typeof_undef::WithinTypeofExpr)] :- __Prefix_2[((file: ast::FileId), (config: config::Config), (type_of: ast::ExprId), (expr: ast::ExprId))], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprSequence{.exprs=(sequence: ddlog_std::Vec<ast::ExprId>)}: ast::ExprKind), .scope=(_: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], ((ddlog_std::Some{.x=(var last: ast::ExprId)}: ddlog_std::Option<ast::ExprId>) = ((vec::last: function(ddlog_std::Vec<ast::ExprId>):ddlog_std::Option<ast::ExprId>)(sequence))). */
+                                                                                                                                     },
+    );
+pub static __Rule_outputs_typeof_undef_WithinTypeofExpr_2: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=type_of, .expr=last, .file=file}: outputs::typeof_undef::WithinTypeofExpr)] :- __Prefix_2[((file: ast::FileId), (config: config::Config), (type_of: ast::ExprId), (expr: ast::ExprId))], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprSequence{.exprs=(sequence: ddlog_std::Vec<ast::ExprId>)}: ast::ExprKind), .scope=(_: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], ((ddlog_std::Some{.x=(var last: ast::ExprId)}: ddlog_std::Option<ast::ExprId>) = ((vec::last: function(ddlog_std::Vec<ast::ExprId>):ddlog_std::Option<ast::ExprId>)(sequence))). */
                                                                                                                                      program::Rule::ArrangementRule {
                                                                                                                                          description: std::borrow::Cow::from( "outputs::typeof_undef::WithinTypeofExpr(.type_of=type_of, .expr=last, .file=file) :- __Prefix_2[(file, config, type_of, expr)], inputs::Expression(.id=expr, .file=file, .kind=ast::ExprSequence{.exprs=sequence}, .scope=_, .span=_), (ddlog_std::Some{.x=var last} = (vec::last(sequence)))."),
                                                                                                                                          arr: ( 2, 0),
@@ -235,8 +277,11 @@ pub static __Rule_outputs_typeof_undef_WithinTypeofExpr_2 : ::once_cell::sync::L
                                                                                                                                                     __f},
                                                                                                                                                     next: Box::new(None)
                                                                                                                                                 }
-                                                                                                                                     });
-pub static __Rule_outputs_typeof_undef_TypeofUndef_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::typeof_undef::TypeofUndef[(outputs::typeof_undef::TypeofUndef{.whole_expr=whole_expr, .undefined_expr=undefined_expr, .file=file}: outputs::typeof_undef::TypeofUndef)] :- __Prefix_4[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(undefined_expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(undefined_expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=(whole_expr: ast::ExprId), .expr=(undefined_expr: ast::ExprId), .file=(file: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::NameInScope)]. */
+                                                                                                                                     },
+    );
+pub static __Rule_outputs_typeof_undef_TypeofUndef_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* outputs::typeof_undef::TypeofUndef[(outputs::typeof_undef::TypeofUndef{.whole_expr=whole_expr, .undefined_expr=undefined_expr, .file=file}: outputs::typeof_undef::TypeofUndef)] :- __Prefix_4[((file: ast::FileId), (config: config::Config))], inputs::NameRef[(inputs::NameRef{.expr_id=(undefined_expr: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(undefined_expr: ast::ExprId), .file=(file: ast::FileId), .kind=(ast::ExprNameRef{}: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(span: ast::Span)}: inputs::Expression)], outputs::typeof_undef::WithinTypeofExpr[(outputs::typeof_undef::WithinTypeofExpr{.type_of=(whole_expr: ast::ExprId), .expr=(undefined_expr: ast::ExprId), .file=(file: ast::FileId)}: outputs::typeof_undef::WithinTypeofExpr)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::NameInScope)]. */
                                                                                                                                 program::Rule::ArrangementRule {
                                                                                                                                     description: std::borrow::Cow::from( "outputs::typeof_undef::TypeofUndef(.whole_expr=whole_expr, .undefined_expr=undefined_expr, .file=file) :- __Prefix_4[(file, config)], inputs::NameRef(.expr_id=undefined_expr, .file=file, .value=name), inputs::Expression(.id=undefined_expr, .file=file, .kind=ast::ExprNameRef{}, .scope=scope, .span=span), outputs::typeof_undef::WithinTypeofExpr(.type_of=whole_expr, .expr=undefined_expr, .file=file), not name_in_scope::NameInScope(.file=file, .name=name, .scope=scope, .declared=_)."),
                                                                                                                                     arr: ( 3, 0),
@@ -330,4 +375,5 @@ pub static __Rule_outputs_typeof_undef_TypeofUndef_0 : ::once_cell::sync::Lazy<p
                                                                                                                                                                                       })
                                                                                                                                                                    }))
                                                                                                                                            }
-                                                                                                                                });
+                                                                                                                                },
+    );
