@@ -809,7 +809,6 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     let mut offset = has_accessibility as usize;
     let declare = p.nth_src(offset) == "declare";
     offset += declare as usize;
-
     if declare && !has_accessibility {
         if p.nth_at(offset, T![?]) {
             offset += 1;
@@ -838,7 +837,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
             p.bump_any();
             m.complete(p, ERROR);
         }
-    }
+    };
 
     if has_accessibility {
         if p.nth_at(offset, T![?]) {
@@ -876,7 +875,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     let is_static = p.nth_src(offset) == "static";
     if is_static {
         offset += 1;
-    }
+    };
 
     if is_static {
         if p.nth_at(offset, T![?]) {
@@ -941,8 +940,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
         } else {
             p.rewind(check);
         }
-    }
-
+    };
     let generator_range = p.cur_tok().range;
     if p.eat(T![*]) {
         let is_constructor = p.cur_src() == "constructor";
@@ -968,7 +966,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
         }
         args_body(&mut *guard);
         return Some(m.complete(&mut *guard, METHOD));
-    }
+    };
 
     if p.cur_src() == "async"
         && !p.nth_at(1, T![?])
@@ -1011,7 +1009,6 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     let is_constructor = p.cur_src() == "constructor";
     let key = class_prop_name(p);
     let opt = maybe_opt(p);
-
     if is_method(p, 0) {
         if let Some(range) = readonly_range.clone() {
             let err = p
@@ -1086,7 +1083,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     let is_constructor =
         kind != CLASS_PROP && key.map(|x| p.span_text(x.range(p))) == Some("constructor");
 
-    if is_prop(p, 0) {
+    if is_prop(p, 0) && key.is_some() {
         return Some(make_prop(p, m, kind, declare, is_constructor, opt));
     }
 
@@ -1113,7 +1110,6 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     let err = p
         .err_builder("expected `;`, a property, or a method for a class body, but found none")
         .primary(p.cur_tok().range, "");
-
     p.err_recover(
         err,
         token_set![T![;], T![ident], T![async], T![yield], T!['}'], T![#]],

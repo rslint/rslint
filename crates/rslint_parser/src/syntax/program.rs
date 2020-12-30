@@ -205,9 +205,7 @@ fn imported_binding(p: &mut Parser) {
         in_generator: false,
         ..p.state.clone()
     });
-    let m = p.start();
     binding_identifier(p);
-    m.complete(p, NAME);
 }
 
 pub fn export_decl(p: &mut Parser) -> CompletedMarker {

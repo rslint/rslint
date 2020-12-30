@@ -18,7 +18,7 @@ MODULE@0..74
       L_CURLY@27..28 "{"
       R_CURLY@28..29 "}"
   WHITESPACE@29..30 "\n"
-  CLASS_DECL@30..74
+  CLASS_DECL@30..71
     CLASS_KW@30..35 "class"
     WHITESPACE@35..36 " "
     EXTENDS_KW@36..43 "extends"
@@ -27,10 +27,9 @@ MODULE@0..74
       L_CURLY@44..45 "{"
       R_CURLY@45..46 "}"
     WHITESPACE@46..47 "\n"
-    CLASS_BODY@47..74
-      CLASS_PROP@47..52
-        ERROR@47..52
-          CLASS_KW@47..52 "class"
+    CLASS_BODY@47..71
+      NAME@47..52
+        IDENT@47..52 "class"
       WHITESPACE@52..53 "\n"
       ERROR@53..58
         CLASS_KW@53..58 "class"
@@ -41,20 +40,17 @@ MODULE@0..74
       ERROR@63..64
         L_CURLY@63..64 "{"
       WHITESPACE@64..65 " "
-      SETTER@65..74
+      CLASS_PROP@65..68
         NAME@65..68
           IDENT@65..68 "set"
-        WHITESPACE@68..69 " "
-        PARAMETER_LIST@69..74
-          ERROR@69..70
-            L_CURLY@69..70 "{"
-          ERROR@70..71
-            R_CURLY@70..71 "}"
-          WHITESPACE@71..72 " "
-          ERROR@72..73
-            R_CURLY@72..73 "}"
-          WHITESPACE@73..74 "\n"
-          ERROR@74..74
+      WHITESPACE@68..69 " "
+      ERROR@69..70
+        L_CURLY@69..70 "{"
+      R_CURLY@70..71 "}"
+  WHITESPACE@71..72 " "
+  ERROR@72..73
+    R_CURLY@72..73 "}"
+  WHITESPACE@73..74 "\n"
 --
 error[SyntaxError]: class declarations must have a name
   ┌─ class_decl_err.js:1:7
@@ -84,32 +80,11 @@ error[SyntaxError]: expected `'{'` but instead found `class`
   │ ^^^^^ unexpected
 
 --
-error[SyntaxError]: Expected an identifier, but found none
-  ┌─ class_decl_err.js:4:1
-  │
-4 │ class
-  │ ^^^^^
-
---
-error[SyntaxError]: class fields are unsupported
-  ┌─ class_decl_err.js:4:1
-  │
-4 │ class
-  │ ^^^^^
-
---
-error[SyntaxError]: Expected an identifier, but found none
+error[SyntaxError]: expected `;`, a property, or a method for a class body, but found none
   ┌─ class_decl_err.js:5:1
   │
 5 │ class foo { set {} }
   │ ^^^^^
-
---
-error[SyntaxError]: expected `;`, a property, or a method for a class body, but found none
-  ┌─ class_decl_err.js:5:7
-  │
-5 │ class foo { set {} }
-  │       ^^^
 
 --
 error[SyntaxError]: expected `;`, a property, or a method for a class body, but found none
@@ -119,74 +94,39 @@ error[SyntaxError]: expected `;`, a property, or a method for a class body, but 
   │           ^
 
 --
-error[SyntaxError]: Expected an identifier, but found none
+error[SyntaxError]: expected a semicolon for a class property, but found none
+  ┌─ class_decl_err.js:5:13
+  │
+5 │ class foo { set {} }
+  │             ^^^^
+
+--
+error[SyntaxError]: class fields are unsupported
+  ┌─ class_decl_err.js:5:13
+  │
+5 │ class foo { set {} }
+  │             ^^^
+
+--
+error[SyntaxError]: Expected an identifier or keyword
+  ┌─ class_decl_err.js:5:17
+  │
+5 │ class foo { set {} }
+  │                 ^ Expected an identifier or keyword here
+
+--
+error[SyntaxError]: expected `;`, a property, or a method for a class body, but found none
   ┌─ class_decl_err.js:5:17
   │
 5 │ class foo { set {} }
   │                 ^
 
 --
-error[SyntaxError]: expected `'('` but instead found `{`
-  ┌─ class_decl_err.js:5:17
-  │
-5 │ class foo { set {} }
-  │                 ^ unexpected
-
---
-error[SyntaxError]: Expected an identifier or pattern, but found none
-  ┌─ class_decl_err.js:5:17
-  │
-5 │ class foo { set {} }
-  │                 ^
-
---
-error[SyntaxError]: expected `,` but instead found `}`
-  ┌─ class_decl_err.js:5:18
-  │
-5 │ class foo { set {} }
-  │                  ^ unexpected
-
---
-error[SyntaxError]: Expected an identifier or pattern, but found none
-  ┌─ class_decl_err.js:5:18
-  │
-5 │ class foo { set {} }
-  │                  ^
-
---
-error[SyntaxError]: expected `,` but instead found `}`
+error[SyntaxError]: Expected a statement or declaration, but found none
   ┌─ class_decl_err.js:5:20
   │
 5 │ class foo { set {} }
-  │                    ^ unexpected
-
---
-error[SyntaxError]: Expected an identifier or pattern, but found none
-  ┌─ class_decl_err.js:5:20
-  │
-5 │ class foo { set {} }
-  │                    ^
-
---
-error[SyntaxError]: expected `')'` but instead the file ends
-  ┌─ class_decl_err.js:6:1
-  │
-6 │ 
-  │ ^ the file ends here
-
---
-error[SyntaxError]: expected a block statement but instead found ``
-  ┌─ class_decl_err.js:6:1
-  │
-6 │ 
-  │ ^
-
---
-error[SyntaxError]: expected `'}'` but instead the file ends
-  ┌─ class_decl_err.js:6:1
-  │
-6 │ 
-  │ ^ the file ends here
+  │                    ^ Expected a statement or declaration here
 
 --
 class {}
