@@ -755,6 +755,7 @@ fn declarator(
     p.state.should_record_names = is_const.is_some() || is_let;
     let pat_m = p.start();
     let pat = pattern(p, false)?;
+    pat.undo_completion(p).abandon(p);
     p.state.should_record_names = false;
     let kind = pat.kind();
 
