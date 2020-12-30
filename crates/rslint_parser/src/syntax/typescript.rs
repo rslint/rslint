@@ -40,6 +40,53 @@ macro_rules! no_recover {
     };
 }
 
+pub(crate) fn abstract_readonly_modifiers(
+    p: &mut Parser,
+) -> (Option<Range<usize>>, Option<Range<usize>>) {
+    let (mut abstract_, mut readonly) = (None, None);
+    for _ in 0..2 {
+        match p.cur_src() {
+            "abstract" if abstract_.is_none() => {
+                abstract_ = ts_modifier(p, &["abstract"]);
+                if abstract_.is_none() {
+                    return (abstract_, readonly);
+                }
+            }
+            "readonly" if readonly.is_none() => {
+                readonly = ts_modifier(p, &["readonly"]);
+                if readonly.is_none() {
+                    return (abstract_, readonly);
+                }
+            }
+            _ => return (abstract_, readonly),
+        }
+    }
+    (abstract_, readonly)
+}
+
+pub fn ts_modifier(p: &mut Parser, modifiers: &[&'static str]) -> Option<Range<usize>> {
+    if !modifiers.contains(&p.cur_src()) {
+        return None;
+    }
+
+    let range = p.cur_tok().range;
+
+    if p.has_linebreak_before_n(1)
+        || token_set![T!['('], T![')'], T![:], T![=], T![?]].contains(p.nth(1))
+    {
+        return None;
+    }
+
+    let kind = match p.cur_src() {
+        "abstract" => T![abstract],
+        "readonly" => T![readonly],
+        _ => unreachable!("unknown modifier"),
+    };
+    p.bump_remap(kind);
+
+    Some(range)
+}
+
 pub(crate) fn maybe_ts_type_annotation(p: &mut Parser) -> Option<Range<usize>> {
     if p.at(T![:]) {
         let maybe_err = p.start();
@@ -1211,10 +1258,13 @@ pub fn ts_predicate(p: &mut Parser) -> Option<CompletedMarker> {
 }
 
 pub(crate) fn maybe_eat_incorrect_modifier(p: &mut Parser) -> Option<CompletedMarker> {
-    if matches!(p.cur_src(), "public" | "private" | "protected" | "readonly") {
+    let maybe_err = p.start();
+    if matches!(p.cur_src(), "public" | "private" | "protected") {
         let m = p.start();
         p.bump_any();
         Some(m.complete(p, ERROR))
+    } else if ts_modifier(p, &["readonly"]).is_some() {
+        Some(maybe_err.complete(p, ERROR))
     } else {
         None
     }

@@ -9,6 +9,7 @@ use super::stmt::{block_items, semi, var_decl};
 use super::typescript::*;
 use crate::{SyntaxKind::*, *};
 
+#[macro_export]
 macro_rules! at_ident_name {
     ($p:expr) => {
         ($p.at_ts(token_set![T![ident], T![await], T![yield]]) || $p.cur().is_keyword())
@@ -355,6 +356,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
 
     if !only_ty && !exports_ns && p.eat(T![default]) {
         if p.cur_src() == "abstract" && p.nth_at(1, T![class]) {
+            p.state.decorators_were_valid = true;
             let inner = p.start();
             if !p.typescript() {
                 let err = p
@@ -368,7 +370,14 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
             } else {
                 p.bump_remap(T![abstract]);
             }
-            class_decl(p, false).undo_completion(p).abandon(p);
+            let decl = class_decl(
+                &mut *p.with_state(ParserState {
+                    in_default: true,
+                    ..p.state.clone()
+                }),
+                false,
+            );
+            decl.undo_completion(p).abandon(p);
             inner.complete(p, CLASS_DECL);
             return m.complete(p, EXPORT_DEFAULT_DECL);
         }
@@ -381,11 +390,19 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
         }
 
         if p.at(T![class]) {
-            class_decl(p, false);
+            p.state.decorators_were_valid = true;
+            class_decl(
+                &mut *p.with_state(ParserState {
+                    in_default: true,
+                    ..p.state.clone()
+                }),
+                false,
+            );
             return m.complete(p, EXPORT_DEFAULT_DECL);
         }
 
         if p.at(T![async]) && p.nth_at(1, T![function]) && !p.has_linebreak_before_n(1) {
+            p.state.decorators_were_valid = true;
             let mut guard = p.with_state(ParserState {
                 in_async: true,
                 ..p.state.clone()
@@ -406,12 +423,14 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
     }
 
     if !only_ty && p.at(T![class]) {
+        p.state.decorators_were_valid = true;
         class_decl(p, false);
     } else if !only_ty
         && p.at(T![async])
         && p.nth_at(1, T![function])
         && !p.has_linebreak_before_n(1)
     {
+        p.state.decorators_were_valid = true;
         let mut guard = p.with_state(ParserState {
             in_async: true,
             ..p.state.clone()
@@ -420,6 +439,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
         guard.bump_any();
         function_decl(&mut *guard, inner, false);
     } else if !only_ty && p.at(T![function]) {
+        p.state.decorators_were_valid = true;
         let m = p.start();
         function_decl(p, m, false);
     } else if !only_ty && p.at(T![const]) && p.nth_src(1) == "enum" {

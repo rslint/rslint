@@ -65,11 +65,15 @@ pub fn semi(p: &mut Parser, err_range: Range<usize>) {
 }
 
 /// A generic statement such as a block, if, while, with, etc
-pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option<CompletedMarker> {
+pub fn stmt(
+    p: &mut Parser,
+    recovery_set: impl Into<Option<TokenSet>>,
+    decorator: Option<CompletedMarker>,
+) -> Option<CompletedMarker> {
     let decorator = if p.at(T![@]) {
         decorators(p).into_iter().next() // should be always Some
     } else {
-        None
+        decorator
     };
     let res = match p.cur() {
         T![;] => empty_stmt(p),
@@ -260,7 +264,7 @@ fn expr_stmt(p: &mut Parser, decorator: Option<CompletedMarker>) -> Option<Compl
 
             let m = expr.precede(p);
             p.bump_any();
-            stmt(p, None);
+            stmt(p, None, None);
             return Some(m.complete(p, LABELLED_STMT));
         }
 
@@ -481,6 +485,13 @@ pub(crate) fn block_items(
             break;
         }
 
+        let decorator = if p.at(T![@]) {
+            decorators(p).into_iter().next()
+        } else {
+            None
+        };
+        let mut is_import_export = false;
+
         let complete = match p.cur() {
             // test_err import_decl_not_top_level
             // {
@@ -489,7 +500,14 @@ pub(crate) fn block_items(
 
             // make sure we dont try parsing import.meta or import() as declarations
             T![import] if !token_set![T![.], T!['(']].contains(p.nth(1)) => {
+                is_import_export = true;
                 let mut m = import_decl(p);
+                if let Some(decorator) = decorator {
+                    let kind = m.kind();
+                    let new = decorator.precede(p);
+                    m.undo_completion(p);
+                    m = new.complete(p, kind)
+                }
                 if !p.state.is_module && !p.typescript() {
                     let err = p
                         .err_builder("Illegal use of an import declaration outside of a module")
@@ -513,7 +531,14 @@ pub(crate) fn block_items(
             //  export { pain } from "life";
             // }
             T![export] => {
+                is_import_export = true;
                 let mut m = export_decl(p);
+                if let Some(decorator) = decorator {
+                    let kind = m.kind();
+                    let new = decorator.precede(p);
+                    m.undo_completion(p);
+                    m = new.complete(p, kind)
+                }
                 if !p.state.is_module && !p.typescript() {
                     let err = p
                         .err_builder("Illegal use of an export declaration outside of a module")
@@ -532,8 +557,19 @@ pub(crate) fn block_items(
                 }
                 Some(m)
             }
-            _ => stmt(p, recovery_set),
+            _ => stmt(p, recovery_set, decorator),
         };
+
+        if let Some(decorator) =
+            decorator.filter(|_| !p.state.decorators_were_valid && is_import_export)
+        {
+            let err = p
+                .err_builder("decorators are not valid in this position")
+                .primary(decorator.range(p), "");
+
+            p.error(err);
+        }
+        p.state.decorators_were_valid = false;
 
         // Directives are the longest sequence of string literals, so
         // ```
@@ -601,9 +637,9 @@ pub fn if_stmt(p: &mut Parser) -> CompletedMarker {
         ..p.state.clone()
     }));
     // allows us to recover from `if (true) else {}`
-    stmt(p, STMT_RECOVERY_SET.union(token_set![T![else]]));
+    stmt(p, STMT_RECOVERY_SET.union(token_set![T![else]]), None);
     if p.eat(T![else]) {
-        stmt(p, None);
+        stmt(p, None, None);
     }
     m.complete(p, IF_STMT)
 }
@@ -613,7 +649,7 @@ pub fn with_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![with]);
     condition(p);
-    stmt(p, None);
+    stmt(p, None, None);
 
     let mut complete = m.complete(p, WITH_STMT);
     if p.state.strict.is_some() {
@@ -647,6 +683,7 @@ pub fn while_stmt(p: &mut Parser) -> CompletedMarker {
             continue_allowed: true,
             ..p.state.clone()
         }),
+        None,
         None,
     );
     m.complete(p, WHILE_STMT)
@@ -791,7 +828,7 @@ pub fn do_stmt(p: &mut Parser) -> CompletedMarker {
     let start = p.cur_tok().range.start;
     p.expect(T![do]);
     p.state.iteration_stmt(true);
-    stmt(p, None);
+    stmt(p, None, None);
     p.state.iteration_stmt(false);
     p.expect(T![while]);
     condition(p);
@@ -910,6 +947,7 @@ pub fn for_stmt(p: &mut Parser) -> CompletedMarker {
             ..p.state.clone()
         }),
         None,
+        None,
     );
     m.complete(p, kind)
 }
@@ -926,7 +964,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
             // including the statement list following it
             let end = p.cur_tok().range.end;
             while !p.at_ts(token_set![T![default], T![case], T!['}'], EOF]) {
-                stmt(p, None);
+                stmt(p, None, None);
             }
             m.complete(p, DEFAULT_CLAUSE);
             return Some(start..end);
@@ -936,7 +974,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
             expr(p);
             p.expect(T![:]);
             while !p.at_ts(token_set![T![default], T![case], T!['}'], EOF]) {
-                stmt(p, None);
+                stmt(p, None, None);
             }
             m.complete(p, CASE_CLAUSE);
         }

@@ -742,6 +742,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct TsIndexSignature {
+            decorators: [TsDecorator],
             T![readonly],
             T!['['],
             pat: SinglePattern,
@@ -868,6 +869,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct ExportDecl {
+            decorators: [TsDecorator],
             T![export],
             T![type],
             decl: Decl
@@ -894,6 +896,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct ExportDefaultDecl {
+            decorators: [TsDecorator],
             T![export],
             T![type],
             T![default],
@@ -1094,6 +1097,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct FnDecl {
+            decorators: [TsDecorator],
             T![ident],
             T![async],
             T![function],
@@ -1154,6 +1158,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct Getter {
+            decorators: [TsDecorator],
             /* get */
             key: PropName,
             T!['('],
@@ -1162,6 +1167,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct Setter {
+            decorators: [TsDecorator],
             /* set */
             key: PropName,
             parameters: ParameterList,
@@ -1284,6 +1290,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct ArrayPattern {
+            decorators: [TsDecorator],
             T!['['],
             elements: [Pattern],
             T![']'],
@@ -1293,6 +1300,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct ObjectPattern {
+            decorators: [TsDecorator],
             T!['{'],
             elements: [ObjectPatternProp],
             T!['}'],
@@ -1302,6 +1310,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct RestPattern {
+            decorators: [TsDecorator],
             T![...],
             pat: Pattern,
             T![:],
@@ -1309,6 +1318,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct AssignPattern {
+            decorators: [TsDecorator],
             key: Pattern,
             T![:],
             ty: TsType,
@@ -1329,6 +1339,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct SinglePattern {
+            decorators: [TsDecorator],
             name: Name,
             T![?],
             T![!],
@@ -1365,6 +1376,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct Method {
+            decorators: [TsDecorator],
             T![static],
             T![async],
             T![*],
@@ -1379,6 +1391,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         struct TsAccessibility { /* modifier */ }
 
         struct PrivateProp {
+            decorators: [TsDecorator],
             T![declare],
             T![abstract],
             T![static],
@@ -1392,6 +1405,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct ClassProp {
+            decorators: [TsDecorator],
             T![declare],
             T![abstract],
             T![static],
@@ -1405,6 +1419,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct Constructor {
+            decorators: [TsDecorator],
             accessibility: TsAccessibility,
             name: PropName,
             type_params: TsTypeParams,
@@ -1419,6 +1434,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
         }
 
         struct ClassDecl {
+            decorators: [TsDecorator],
             T![abstract],
             T![class],
             name: Name,
@@ -1513,7 +1529,9 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             PrivateProp,
             ClassProp,
             Constructor,
-            TsIndexSignature
+            TsIndexSignature,
+            Getter,
+            Setter
         }
 
         enum ImportClause {

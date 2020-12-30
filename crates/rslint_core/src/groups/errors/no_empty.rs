@@ -41,7 +41,15 @@ declare_lint! {
     pub allow_empty_catch: bool
 }
 
-const IGNORED: [SyntaxKind; 6] = [FN_DECL, FN_EXPR, ARROW_EXPR, GETTER, SETTER, METHOD];
+const IGNORED: [SyntaxKind; 7] = [
+    FN_DECL,
+    FN_EXPR,
+    ARROW_EXPR,
+    GETTER,
+    SETTER,
+    METHOD,
+    CONSTRUCTOR,
+];
 
 #[typetag::serde]
 impl CstRule for NoEmpty {
@@ -109,6 +117,7 @@ rule_tests! {
         // foo   
         }",
         "if (foo) { /* */ }",
-        "switch (bar) { /* */ }"
+        "switch (bar) { /* */ }",
+        "class Foo { constructor() {} }"
     }
 }

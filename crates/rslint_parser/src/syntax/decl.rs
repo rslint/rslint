@@ -120,7 +120,7 @@ fn class_prop_name(p: &mut Parser) -> Option<CompletedMarker> {
         identifier_name(p);
         Some(m.complete(p, PRIVATE_NAME))
     } else {
-        object_prop_name(p, true)
+        object_prop_name(p, false)
     }
 }
 
@@ -136,7 +136,10 @@ fn args_body(p: &mut Parser) {
             ty.err_if_not_ts(p, "return types can only be used in TypeScript files");
         }
     }
+    fn_body(p);
+}
 
+fn fn_body(p: &mut Parser) {
     // omitting the body is allowed in ts
     if p.typescript() && !p.at(T!['{']) && is_semi(p, 0) {
         p.eat(T![;]);
@@ -305,10 +308,9 @@ fn constructor_param_pat(p: &mut Parser) -> Option<CompletedMarker> {
     } else {
         false
     };
-    let has_readonly = if p.cur_src() == "readonly" {
-        let range = p.cur_tok().range;
-        let maybe_err = p.start();
-        p.bump_remap(T![readonly]);
+
+    let maybe_err = p.start();
+    let has_readonly = if let Some(range) = ts_modifier(p, &["readonly"]) {
         if !p.typescript() {
             let err = p
                 .err_builder("readonly modifiers can only be used in TypeScript files")
@@ -321,6 +323,7 @@ fn constructor_param_pat(p: &mut Parser) -> Option<CompletedMarker> {
         }
         true
     } else {
+        maybe_err.abandon(p);
         false
     };
 
@@ -359,7 +362,13 @@ fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarke
             p.expect(T![,]);
         }
 
-        if p.at(T![...]) {
+        let decorator = if p.at(T![@]) {
+            decorators(p).into_iter().next()
+        } else {
+            None
+        };
+
+        let marker = if p.at(T![...]) {
             let m = p.start();
             p.bump_any();
             pattern(p, true);
@@ -399,7 +408,7 @@ fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarke
                 p.error(err);
                 m.complete(p, ERROR);
             }
-            m.complete(p, REST_PATTERN);
+            let complete = m.complete(p, REST_PATTERN);
 
             // FIXME: this should be handled better, we should keep trying to parse params but issue an error for each one
             // which would allow for better recovery from `foo, ...bar, foo`
@@ -414,7 +423,7 @@ fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarke
 
                 p.error(err);
             }
-            break;
+            Some(complete)
         } else {
             let func = if constructor_params {
                 constructor_param_pat
@@ -433,6 +442,7 @@ fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarke
 
                     p.error(err);
                 }
+                Some(res)
             } else {
                 p.err_recover_no_err(
                     token_set![
@@ -446,7 +456,15 @@ fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarke
                     ],
                     true,
                 );
+                None
             }
+        };
+
+        if let (Some(res), Some(decorator)) = (marker, decorator) {
+            let kind = res.kind();
+            let m = decorator.precede(p);
+            res.undo_completion(p).abandon(p);
+            m.complete(p, kind);
         }
     }
 
@@ -486,29 +504,50 @@ pub fn class_decl(p: &mut Parser, expr: bool) -> CompletedMarker {
         ..p.state.clone()
     });
 
-    if !guard.at(T!['{']) && !guard.at(T![extends]) {
-        // needed to please the borrow checker
-        let name = guard.cur_src().to_owned();
-        let range = guard.cur_tok().range;
-        if binding_identifier(&mut *guard).is_some()
-            && guard.typescript()
-            && DISALLOWED_TYPE_NAMES.contains(&name.as_str())
-        {
-            let err = guard
-                .err_builder(&format!(
-                    "`{}` cannot be used as a class name because it is already reserved as a type",
-                    name
-                ))
-                .primary(range, "");
-
-            guard.error(err);
+    let idt = if (guard.at_ts(token_set![T![await], T![yield], T![ident]])
+        && guard.cur_src() != "implements")
+        || (guard.typescript() && guard.at(T![this]))
+    {
+        if guard.at(T![this]) {
+            let m = guard.start();
+            guard.bump_remap(T![ident]);
+            Some(m.complete(&mut *guard, NAME))
+        } else {
+            binding_identifier(&mut *guard)
         }
-    } else if !expr {
+    } else {
+        None
+    };
+
+    if idt.is_none() && !expr && !guard.state.in_default {
         let err = guard
             .err_builder("class declarations must have a name")
             .primary(guard.cur_tok().range, "");
 
         guard.error(err);
+    }
+
+    if let Some(idt) = idt {
+        let text = guard.span_text(idt.range(&*guard));
+        if guard.typescript() && DISALLOWED_TYPE_NAMES.contains(&text) {
+            let err = guard
+                .err_builder(&format!(
+                    "`{}` cannot be used as a class name because it is already reserved as a type",
+                    text
+                ))
+                .primary(idt.range(&*guard), "");
+
+            guard.error(err);
+        }
+    }
+
+    if guard.at(T![<]) {
+        if let Some(mut complete) = ts_type_params(&mut *guard) {
+            complete.err_if_not_ts(
+                &mut *guard,
+                "classes can only have type parameters in TypeScript files",
+            );
+        }
     }
 
     if guard.at(T![<]) {
@@ -645,7 +684,7 @@ fn is_semi(p: &Parser, offset: usize) -> bool {
 fn is_prop(p: &Parser, offset: usize) -> bool {
     (p.at(T![?]) && is_prop(p, offset + 1))
         || token_set![T![!], T![:], T![=], T!['}']].contains(p.nth(offset))
-        || is_semi(p, offset)
+        || is_semi(p, offset + 1)
 }
 
 fn make_prop(
@@ -732,9 +771,6 @@ fn consume_leading_tokens(
     static_: bool,
     dont_remap_static: bool,
 ) {
-    if declare {
-        p.bump_remap(T![declare]);
-    }
     if accessibility {
         let kind = match p.cur_src() {
             "public" => PUBLIC_KW,
@@ -756,6 +792,9 @@ fn consume_leading_tokens(
             p.bump_remap(kind);
         }
     }
+    if declare {
+        p.bump_remap(T![declare]);
+    }
     if static_ && !dont_remap_static {
         p.bump_remap(STATIC_KW);
     } else if static_ && dont_remap_static {
@@ -765,12 +804,11 @@ fn consume_leading_tokens(
 
 fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
-    let declare = p.cur_src() == "declare";
-    let mut offset = declare as usize;
-    let has_accessibility = matches!(p.nth_src(offset), "public" | "private" | "protected");
-    if has_accessibility {
-        offset += 1;
-    }
+    decorators(p);
+    let has_accessibility = matches!(p.cur_src(), "public" | "private" | "protected");
+    let mut offset = has_accessibility as usize;
+    let declare = p.nth_src(offset) == "declare";
+    offset += declare as usize;
 
     if declare && !has_accessibility {
         if p.nth_at(offset, T![?]) {
@@ -782,13 +820,13 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
             maybe_opt(p);
             args_body(p);
             return Some(m.complete(p, METHOD));
-        } else if is_prop(p, offset) {
+        } else if is_prop(p, offset - 1) {
             p.bump_any();
             let opt = maybe_opt(p);
             return Some(make_prop(p, m, CLASS_PROP, false, false, opt));
         } else {
             let msg = if p.typescript() {
-                "a `declare` modifier cannot be applied to a class method"
+                "a `declare` modifier cannot be applied to a class element"
             } else {
                 "`declare` modifiers can only be used in TypeScript files"
             };
@@ -825,7 +863,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
             maybe_opt(p);
             args_body(p);
             return Some(m.complete(p, METHOD));
-        } else if is_prop(p, offset) {
+        } else if is_prop(p, offset - 1) {
             if declare {
                 p.bump_remap(T![declare]);
             }
@@ -849,42 +887,34 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
             maybe_opt(p);
             args_body(p);
             return Some(m.complete(p, METHOD));
-        } else if is_prop(p, offset) {
+        } else if is_prop(p, offset - 1) {
             consume_leading_tokens(p, declare, has_accessibility, is_static, true);
             let opt = maybe_opt(p);
             return Some(make_prop(p, m, CLASS_PROP, declare, false, opt));
         }
     }
     consume_leading_tokens(p, declare, has_accessibility, is_static, false);
-    let has_modifier = matches!(p.cur_src(), "abstract" | "readonly")
-        && !{
-            let mut local_offset = 1;
-            if p.nth_at(local_offset, T![?]) {
-                local_offset += 1;
-            }
-            is_method(p, local_offset)
-        };
-    let is_abstract = has_modifier && p.cur_src() == "abstract";
+
     let maybe_err = p.start();
-    let readonly_range =
-        Some(p.cur_tok().range).filter(|_| has_modifier && p.cur_src() == "readonly");
+    let (abstract_range, readonly_range) = abstract_readonly_modifiers(p);
+    let has_modifier = abstract_range
+        .clone()
+        .or_else(|| readonly_range.clone())
+        .is_some();
+
     if has_modifier {
-        let kind = match p.cur_src() {
-            "abstract" => T![abstract],
-            "readonly" => T![readonly],
-            _ => unreachable!(),
-        };
-        let range = p.cur_tok().range;
+        let range = abstract_range
+            .clone()
+            .or_else(|| readonly_range.clone())
+            .unwrap();
         if !p.typescript() {
             let err = p
-                .err_builder(&format!(
-                    "`{}` can only be used in TypeScript files",
-                    p.cur_src()
-                ))
+                .err_builder(
+                    "`abstract` and `readonly` modifiers can only be used in TypeScript files",
+                )
                 .primary(range, "");
 
             p.error(err);
-            p.bump_remap(kind);
             maybe_err.complete(p, ERROR);
         } else {
             maybe_err.abandon(p);
@@ -895,17 +925,12 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
 
     if !is_static && !has_accessibility {
         let check = p.checkpoint();
-        if is_abstract {
+        if let Some(range) = abstract_range.clone() {
             let err = p
                 .err_builder("the `abstract` modifier cannot be used on index signatures")
-                .primary(p.cur_tok().range, "");
+                .primary(range, "");
 
             p.error(err);
-            let m = p.start();
-            p.bump_any();
-            m.complete(p, ERROR);
-        } else if readonly_range.is_some() {
-            p.bump_remap(T![readonly]);
         }
         if let Some(mut sig) = try_parse_index_signature(p, m.clone()) {
             sig.err_if_not_ts(
@@ -945,7 +970,6 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
         return Some(m.complete(&mut *guard, METHOD));
     }
 
-    // async foo()`
     if p.cur_src() == "async"
         && !p.nth_at(1, T![?])
         && !is_method(p, 1)
@@ -989,7 +1013,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
     let opt = maybe_opt(p);
 
     if is_method(p, 0) {
-        if let Some(range) = readonly_range {
+        if let Some(range) = readonly_range.clone() {
             let err = p
                 .err_builder("class methods cannot be readonly")
                 .primary(range, "");
@@ -1025,7 +1049,9 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
 
                 p.error(err);
             }
-            block_stmt(p, true, None);
+
+            fn_body(p);
+
             // FIXME(RDambrosio016): if there is no body we need to issue errors for any assign patterns
 
             // TODO(RDambrosio016): ideally the following errors should just point to the modifiers
@@ -1039,9 +1065,10 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
             }
 
             if has_modifier {
-                let err = p
-                    .err_builder("constructors cannot have modifiers")
-                    .primary(complete.range(p), "");
+                let err = p.err_builder("constructors cannot have modifiers").primary(
+                    abstract_range.or_else(|| readonly_range.clone()).unwrap(),
+                    "",
+                );
 
                 p.error(err);
             }
@@ -1067,7 +1094,7 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
 
     if let Some(key) = key.filter(|x| x.kind() != PRIVATE_NAME) {
         if matches!(p.span_text(key.range(p)), "get" | "set") && !next_line_generator {
-            let getter = p.cur_src() == "get";
+            let getter = p.span_text(key.range(p)) == "get";
             class_prop_name(p);
 
             if let Some(range) = readonly_range {

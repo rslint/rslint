@@ -536,6 +536,7 @@ pub struct TsIndexSignature {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsIndexSignature {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn readonly_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![readonly])
     }
@@ -740,6 +741,7 @@ pub struct ExportDecl {
     pub(crate) syntax: SyntaxNode,
 }
 impl ExportDecl {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn export_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![export]) }
     pub fn type_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![type]) }
     pub fn decl(&self) -> Option<Decl> { support::child(&self.syntax) }
@@ -776,6 +778,7 @@ pub struct ExportDefaultDecl {
     pub(crate) syntax: SyntaxNode,
 }
 impl ExportDefaultDecl {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn export_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![export]) }
     pub fn type_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![type]) }
     pub fn default_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![default]) }
@@ -1098,6 +1101,7 @@ pub struct FnDecl {
     pub(crate) syntax: SyntaxNode,
 }
 impl FnDecl {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
     pub fn async_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![async]) }
     pub fn function_token(&self) -> Option<SyntaxToken> {
@@ -1206,6 +1210,7 @@ pub struct Getter {
     pub(crate) syntax: SyntaxNode,
 }
 impl Getter {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn key(&self) -> Option<PropName> { support::child(&self.syntax) }
     pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
     pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
@@ -1217,6 +1222,7 @@ pub struct Setter {
     pub(crate) syntax: SyntaxNode,
 }
 impl Setter {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn key(&self) -> Option<PropName> { support::child(&self.syntax) }
     pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
@@ -1393,6 +1399,7 @@ pub struct ArrayPattern {
     pub(crate) syntax: SyntaxNode,
 }
 impl ArrayPattern {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn l_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['[']) }
     pub fn elements(&self) -> AstChildren<Pattern> { support::children(&self.syntax) }
     pub fn r_brack_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![']']) }
@@ -1406,6 +1413,7 @@ pub struct ObjectPattern {
     pub(crate) syntax: SyntaxNode,
 }
 impl ObjectPattern {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
     pub fn elements(&self) -> AstChildren<ObjectPatternProp> { support::children(&self.syntax) }
     pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
@@ -1419,6 +1427,7 @@ pub struct RestPattern {
     pub(crate) syntax: SyntaxNode,
 }
 impl RestPattern {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn dotdotdot_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [...]) }
     pub fn pat(&self) -> Option<Pattern> { support::child(&self.syntax) }
     pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
@@ -1430,6 +1439,7 @@ pub struct AssignPattern {
     pub(crate) syntax: SyntaxNode,
 }
 impl AssignPattern {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn key(&self) -> Option<Pattern> { support::child(&self.syntax) }
     pub fn colon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [:]) }
     pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
@@ -1461,6 +1471,7 @@ pub struct SinglePattern {
     pub(crate) syntax: SyntaxNode,
 }
 impl SinglePattern {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn name(&self) -> Option<Name> { support::child(&self.syntax) }
     pub fn question_mark_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T ! [?])
@@ -1516,6 +1527,7 @@ pub struct Method {
     pub(crate) syntax: SyntaxNode,
 }
 impl Method {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn static_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![static]) }
     pub fn async_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![async]) }
     pub fn star_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [*]) }
@@ -1538,6 +1550,7 @@ pub struct PrivateProp {
     pub(crate) syntax: SyntaxNode,
 }
 impl PrivateProp {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn declare_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![declare]) }
     pub fn abstract_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![abstract])
@@ -1559,6 +1572,7 @@ pub struct ClassProp {
     pub(crate) syntax: SyntaxNode,
 }
 impl ClassProp {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn declare_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![declare]) }
     pub fn abstract_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![abstract])
@@ -1580,6 +1594,7 @@ pub struct Constructor {
     pub(crate) syntax: SyntaxNode,
 }
 impl Constructor {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn accessibility(&self) -> Option<TsAccessibility> { support::child(&self.syntax) }
     pub fn name(&self) -> Option<PropName> { support::child(&self.syntax) }
     pub fn type_params(&self) -> Option<TsTypeParams> { support::child(&self.syntax) }
@@ -1602,6 +1617,7 @@ pub struct ClassDecl {
     pub(crate) syntax: SyntaxNode,
 }
 impl ClassDecl {
+    pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn abstract_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![abstract])
     }
@@ -1729,6 +1745,8 @@ pub enum ClassElement {
     ClassProp(ClassProp),
     Constructor(Constructor),
     TsIndexSignature(TsIndexSignature),
+    Getter(Getter),
+    Setter(Setter),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -3814,11 +3832,24 @@ impl From<Constructor> for ClassElement {
 impl From<TsIndexSignature> for ClassElement {
     fn from(node: TsIndexSignature) -> ClassElement { ClassElement::TsIndexSignature(node) }
 }
+impl From<Getter> for ClassElement {
+    fn from(node: Getter) -> ClassElement { ClassElement::Getter(node) }
+}
+impl From<Setter> for ClassElement {
+    fn from(node: Setter) -> ClassElement { ClassElement::Setter(node) }
+}
 impl AstNode for ClassElement {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
             kind,
-            EMPTY_STMT | METHOD | PRIVATE_PROP | CLASS_PROP | CONSTRUCTOR | TS_INDEX_SIGNATURE
+            EMPTY_STMT
+                | METHOD
+                | PRIVATE_PROP
+                | CLASS_PROP
+                | CONSTRUCTOR
+                | TS_INDEX_SIGNATURE
+                | GETTER
+                | SETTER
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3829,6 +3860,8 @@ impl AstNode for ClassElement {
             CLASS_PROP => ClassElement::ClassProp(ClassProp { syntax }),
             CONSTRUCTOR => ClassElement::Constructor(Constructor { syntax }),
             TS_INDEX_SIGNATURE => ClassElement::TsIndexSignature(TsIndexSignature { syntax }),
+            GETTER => ClassElement::Getter(Getter { syntax }),
+            SETTER => ClassElement::Setter(Setter { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3841,6 +3874,8 @@ impl AstNode for ClassElement {
             ClassElement::ClassProp(it) => &it.syntax,
             ClassElement::Constructor(it) => &it.syntax,
             ClassElement::TsIndexSignature(it) => &it.syntax,
+            ClassElement::Getter(it) => &it.syntax,
+            ClassElement::Setter(it) => &it.syntax,
         }
     }
 }
