@@ -482,12 +482,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
 
         let mut first = true;
 
-        // TODO: make something like `p.at_ident_name()`
-        while !p.at(EOF)
-            && (p.at(T![,])
-                || (token_set![T![async], T![yield], T![yield]].contains(p.cur())
-                    || p.cur().is_keyword()))
-        {
+        while (!p.at(EOF) && p.at(T![,])) || crate::at_ident_name!(p) {
             if first {
                 first = false;
             } else if p.eat(T![,]) && p.at(T!['}']) {

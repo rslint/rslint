@@ -690,6 +690,7 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
     let mut spread_range = None;
     let mut trailing_comma_marker = None;
     let mut had_comma = false;
+    let mut params_marker = None;
 
     let mut temp = p.with_state(ParserState {
         potential_arrow_start: true,
@@ -722,7 +723,13 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
                 }
                 break;
             }
-            assign_expr(&mut *temp);
+            let expr = assign_expr(&mut *temp);
+            if expr.is_some() && temp.at(T![:]) {
+                temp.rewind(checkpoint);
+                params_marker = Some(formal_parameters(&mut *temp));
+                break;
+            }
+
             let sub_m = temp.start();
             if temp.eat(T![,]) {
                 if temp.at(T![')']) {
@@ -746,7 +753,7 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
     drop(temp);
     // if we are in a ternary expression, then we need to try and see if parsing as an arrow worked
     // if it did then we just return it, otherwise it should be interpreted as a grouping expr
-    if p.state.in_cond_expr && p.at(T![:]) {
+    if p.state.in_cond_expr && p.at(T![:]) && params_marker.is_none() {
         let func = |p: &mut Parser| {
             let p = &mut *p.with_state(ParserState {
                 no_recovery: true,
@@ -754,22 +761,26 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
             });
             p.rewind(checkpoint);
             formal_parameters(p);
-            p.bump_any();
-            ts_type(p)?;
+            if p.at(T![:]) {
+                if let Some(mut ret) = ts_type_or_type_predicate_ann(p, T![:]) {
+                    ret.err_if_not_ts(
+                        p,
+                        "arrow functions can only have return types in TypeScript files",
+                    );
+                }
+            }
             p.expect_no_recover(T![=>])?;
             arrow_body(p)?;
             Some(())
         };
         // we can't just rewind the parser, since the function rewinds, and cloning and replacing the
         // events does not work apparently, therefore we need to clone the entire parser
-        let mut cloned = p.clone();
-        if func(&mut cloned).is_some() {
-            let mut complete = m.complete(p, ARROW_EXPR);
-            complete.err_if_not_ts(
-                p,
-                "arrow functions can only have return types in TypeScript files",
-            );
-            return complete;
+        let cloned = p.clone();
+        if func(p).is_some() {
+            let c = m.complete(p, ARROW_EXPR);
+            return c;
+        } else {
+            *p = cloned;
         }
     }
     let has_ret_type = !p.state.in_cond_expr && p.at(T![:]) && !p.state.in_case_cond;
@@ -777,7 +788,7 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
     // This is an arrow expr, so we rewind the parser and reparse as parameters
     // This is kind of inefficient but in the grand scheme of things it does not matter
     // FIXME: verify that this logic is correct
-    if (p.at(T![=>]) && !p.has_linebreak_before_n(0)) || has_ret_type {
+    if (p.at(T![=>]) && !p.has_linebreak_before_n(0)) || has_ret_type || params_marker.is_some() {
         if !can_be_arrow && !p.at(T![:]) {
             let err = p
                 .err_builder("Unexpected token `=>`")
@@ -785,22 +796,19 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
 
             p.error(err);
         } else {
-            // Rewind the parser so we can reparse as formal parameters
-            p.rewind(checkpoint);
-            formal_parameters(p);
+            if params_marker.is_none() {
+                // Rewind the parser so we can reparse as formal parameters
+                p.rewind(checkpoint);
+                formal_parameters(p);
+            }
 
-            let maybe_err_m = p.start();
-            if p.eat(T![:]) {
-                ts_type(p);
-                let complete = maybe_err_m.complete(p, ERROR);
-                if !p.typescript() {
-                    let err = p
-                        .err_builder("functions may only have return types in TypeScript files")
-                        .primary(complete.range(p), "");
-
-                    p.error(err);
-                } else {
-                    complete.undo_completion(p).abandon(p);
+            if p.at(T![:]) {
+                let complete = ts_type_or_type_predicate_ann(p, T![:]);
+                if let Some(mut complete) = complete {
+                    complete.err_if_not_ts(
+                        p,
+                        "arrow functions can only have return types in TypeScript files",
+                    );
                 }
             }
 
@@ -808,6 +816,15 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
             arrow_body(p);
             return m.complete(p, ARROW_EXPR);
         }
+    }
+
+    if let Some(params) = params_marker {
+        let err = p
+            .err_builder("grouping expressions cannot contain parameters")
+            .primary(params.range(p), "");
+
+        p.error(err);
+        return m.complete(p, ERROR);
     }
 
     if is_empty {
@@ -945,20 +962,13 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                         p.bump_remap(T![ident]);
                         m.complete(p, NAME);
                     }
-                    let maybe_err_m = p.start();
-                    if p.eat(T![:]) {
-                        ts_type(p);
-                        let complete = maybe_err_m.complete(p, ERROR);
-                        if !p.typescript() {
-                            let err = p
-                                .err_builder(
-                                    "functions may only have return types in TypeScript files",
-                                )
-                                .primary(complete.range(p), "");
-
-                            p.error(err);
-                        } else {
-                            complete.undo_completion(p).abandon(p);
+                    if p.at(T![:]) {
+                        let complete = ts_type_or_type_predicate_ann(p, T![:]);
+                        if let Some(mut complete) = complete {
+                            complete.err_if_not_ts(
+                                p,
+                                "arrow functions can only have return types in TypeScript files",
+                            );
                         }
                     }
                     p.expect(T![=>]);
