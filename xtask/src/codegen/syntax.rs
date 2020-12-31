@@ -1,14 +1,13 @@
 //! Generate SyntaxKind definitions as well as typed AST definitions for nodes and tokens.
 //! This is derived from rust-analyzer/xtask/codegen
 
-use proc_macro2::{Punct, Spacing};
-use quote::{format_ident, quote};
-
 use crate::{
     ast::{AstSrc, Field, FieldSrc, KindsSrc, AST_SRC, KINDS_SRC},
     codegen::{self, update, Mode},
     project_root, Result,
 };
+use proc_macro2::{Punct, Spacing};
+use quote::{format_ident, quote};
 
 pub fn generate_syntax(mode: Mode) -> Result<()> {
     let syntax_kinds_file = project_root().join(codegen::SYNTAX_KINDS);
@@ -65,6 +64,7 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
         .map(|node| {
             let name = format_ident!("{}", node.name);
             let kind = format_ident!("{}", to_upper_snake_case(node.name));
+            let doc = node.doc;
 
             let methods = node.fields.iter().map(|field| {
                 let method_name = field.method_name();
@@ -92,7 +92,7 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
             });
             (
                 quote! {
-                    #[pretty_doc_comment_placeholder_workaround]
+                    #[doc = #doc]
                     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
                     pub struct #name {
                         pub(crate) syntax: SyntaxNode,
@@ -131,10 +131,11 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
                 .iter()
                 .map(|name| format_ident!("{}", to_upper_snake_case(&name.to_string())))
                 .collect();
+            let doc = en.doc;
 
             (
                 quote! {
-                    #[pretty_doc_comment_placeholder_workaround]
+                    #[doc = #doc]
                     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
                     pub enum #name {
                         #(#variants(#variants),)*
@@ -210,13 +211,7 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
         .replace("T ! [ ", "T![")
         .replace(" ] )", "])");
 
-    let mut res = String::with_capacity(ast.len() * 2);
-
-    for chunk in ast.split("# [ pretty_doc_comment_placeholder_workaround ]") {
-        res.push_str(chunk);
-    }
-
-    let pretty = crate::reformat(res)?;
+    let pretty = crate::reformat(ast)?;
     Ok(pretty)
 }
 
@@ -366,6 +361,7 @@ fn generate_syntax_kinds(grammar: KindsSrc<'_>) -> Result<String> {
             #([#all_keywords_idents] => { $crate::SyntaxKind::#all_keywords };)*
             [ident] => { $crate::SyntaxKind::IDENT };
             [shebang] => { $crate::SyntaxKind::SHEBANG };
+            [#] => { $crate::SyntaxKind::HASH };
         }
     };
 
@@ -435,6 +431,10 @@ impl Field<'_> {
                     "=>" => "fat_arrow",
                     ":" => "colon",
                     "?" => "question_mark",
+                    "+" => "plus",
+                    "-" => "minus",
+                    "#" => "hash",
+                    "@" => "at",
                     _ => name,
                 };
                 format_ident!("{}_token", name)

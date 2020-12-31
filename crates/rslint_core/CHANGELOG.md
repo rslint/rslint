@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Moved util from a file to its own directory
 - Implemented a new directive parser which allows hover and auto-completion in lsp
+- Removed the `module` parameter from `lint_file` and replaced it with `syntax: Syntax`
 
 ## [0.2.1] - 2020-10-21
 

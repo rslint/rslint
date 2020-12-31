@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use rslint_core::CstRuleStore;
 use rslint_lexer::Lexer;
-use rslint_parser::parse_text;
+use rslint_parser::{parse_text, Syntax};
 
 const ENGINE_262_URL: &str = "https://engine262.js.org/engine262/engine262.js";
 
@@ -14,7 +14,13 @@ fn tokenize(source: &str) {
 }
 
 fn lint(source: &str) {
-    let _ = rslint_core::lint_file(0, source, false, &CstRuleStore::new().builtins(), false);
+    let _ = rslint_core::lint_file(
+        0,
+        source,
+        Syntax::default(),
+        &CstRuleStore::new().builtins(),
+        false,
+    );
 }
 
 fn bench_source(c: &mut Criterion, name: &str, source: &str) {

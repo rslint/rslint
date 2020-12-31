@@ -281,13 +281,6 @@ impl Specifier {
 }
 
 impl WildcardImport {
-    pub fn as_token(&self) -> Option<SyntaxToken> {
-        self.syntax()
-            .children_with_tokens()
-            .filter_map(|x| x.into_token())
-            .nth(1)
-    }
-
     pub fn alias(&self) -> Option<Name> {
         self.syntax().children().find_map(|x| x.try_to())
     }
@@ -347,6 +340,9 @@ pub enum ModuleItem {
     ExportDefaultExpr(ExportDefaultExpr),
     ExportWildcard(ExportWildcard),
     ExportDecl(ExportDecl),
+    TsImportEqualsDecl(TsImportEqualsDecl),
+    TsExportAssignment(TsExportAssignment),
+    TsNamespaceExportDecl(TsNamespaceExportDecl),
     Stmt(Stmt),
 }
 
@@ -360,6 +356,8 @@ impl AstNode for ModuleItem {
                 | EXPORT_DEFAULT_EXPR
                 | EXPORT_WILDCARD
                 | EXPORT_DECL
+                | TS_IMPORT_EQUALS_DECL
+                | TS_NAMESPACE_EXPORT_DECL
         ) || Stmt::can_cast(kind)
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -370,6 +368,11 @@ impl AstNode for ModuleItem {
             EXPORT_DEFAULT_EXPR => ModuleItem::ExportDefaultExpr(ExportDefaultExpr { syntax }),
             EXPORT_WILDCARD => ModuleItem::ExportWildcard(ExportWildcard { syntax }),
             EXPORT_DECL => ModuleItem::ExportDecl(ExportDecl { syntax }),
+            TS_IMPORT_EQUALS_DECL => ModuleItem::TsImportEqualsDecl(TsImportEqualsDecl { syntax }),
+            TS_EXPORT_ASSIGNMENT => ModuleItem::TsExportAssignment(TsExportAssignment { syntax }),
+            TS_NAMESPACE_EXPORT_DECL => {
+                ModuleItem::TsNamespaceExportDecl(TsNamespaceExportDecl { syntax })
+            }
             _ => ModuleItem::Stmt(Stmt::cast(syntax)?),
         };
         Some(res)
@@ -383,6 +386,42 @@ impl AstNode for ModuleItem {
             ModuleItem::ExportWildcard(it) => &it.syntax,
             ModuleItem::ExportDecl(it) => &it.syntax,
             ModuleItem::Stmt(it) => &it.syntax(),
+            ModuleItem::TsImportEqualsDecl(it) => &it.syntax,
+            ModuleItem::TsExportAssignment(it) => &it.syntax,
+            ModuleItem::TsNamespaceExportDecl(it) => &it.syntax,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ConstructorParamOrPat {
+    TsConstructorParam(TsConstructorParam),
+    Pattern(Pattern),
+}
+
+impl AstNode for ConstructorParamOrPat {
+    fn can_cast(kind: SyntaxKind) -> bool {
+        if kind == TS_CONSTRUCTOR_PARAM {
+            true
+        } else {
+            Pattern::can_cast(kind)
+        }
+    }
+
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if syntax.kind() == TS_CONSTRUCTOR_PARAM {
+            Some(ConstructorParamOrPat::TsConstructorParam(
+                TsConstructorParam::cast(syntax).unwrap(),
+            ))
+        } else {
+            Some(ConstructorParamOrPat::Pattern(Pattern::cast(syntax)?))
+        }
+    }
+
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            ConstructorParamOrPat::TsConstructorParam(it) => it.syntax(),
+            ConstructorParamOrPat::Pattern(it) => it.syntax(),
         }
     }
 }
@@ -400,5 +439,11 @@ mod tests {
             .unwrap()
             .let_token()
             .is_some());
+    }
+}
+
+impl TsEnumMember {
+    pub fn string_token(&self) -> Option<SyntaxToken> {
+        support::token(&self.syntax, STRING)
     }
 }

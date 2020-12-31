@@ -41,6 +41,14 @@ pub struct ParserState {
     pub expr_recovery_set: TokenSet,
     pub should_record_names: bool,
     pub name_map: HashMap<String, Range<usize>>,
+    /// Whether the parser is in a conditional expr (ternary expr)
+    pub in_cond_expr: bool,
+    pub in_case_cond: bool,
+    pub(crate) no_recovery: bool,
+    pub in_declare: bool,
+    pub in_binding_list_for_signature: bool,
+    pub decorators_were_valid: bool,
+    pub in_default: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -68,20 +76,18 @@ impl Default for ParserState {
             expr_recovery_set: EXPR_RECOVERY_SET,
             name_map: HashMap::with_capacity(3),
             should_record_names: false,
+            in_cond_expr: false,
+            in_case_cond: false,
+            no_recovery: false,
+            in_declare: false,
+            in_binding_list_for_signature: false,
+            decorators_were_valid: false,
+            in_default: false,
         }
     }
 }
 
 impl ParserState {
-    pub fn module() -> Self {
-        Self {
-            strict: Some(StrictMode::Module),
-            is_module: true,
-            expr_recovery_set: EXPR_RECOVERY_SET,
-            ..Default::default()
-        }
-    }
-
     /// Check for duplicate defaults and update state
     pub fn check_default(
         &mut self,
@@ -121,7 +127,7 @@ impl ParserState {
                     err = err.secondary(prev_range, "strict mode is previous declared here");
                 }
                 StrictMode::Module => {
-                    err = err.note("modules are always strict mode");
+                    err = err.footer_note("modules are always strict mode");
                 }
                 StrictMode::Class(prev_range) => {
                     err = err.secondary(prev_range, "class bodies are always strict mode");

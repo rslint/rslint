@@ -9,7 +9,8 @@ MODULE@0..28
       L_CURLY@10..11 "{"
       WHITESPACE@11..13 "\n "
       SETTER@13..25
-        IDENT@13..16 "set"
+        NAME@13..16
+          IDENT@13..16 "set"
         WHITESPACE@16..17 " "
         NAME@17..20
           IDENT@17..20 "bar"

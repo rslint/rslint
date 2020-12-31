@@ -2,13 +2,14 @@ MODULE@0..32
   VAR_DECL@0..8
     VAR_KW@0..3 "var"
     WHITESPACE@3..4 " "
-    DECLARATOR@4..7
+    DECLARATOR@4..8
       SINGLE_PATTERN@4..5
         NAME@4..5
           IDENT@4..5 "a"
       WHITESPACE@5..6 " "
       EQ@6..7 "="
-    SEMICOLON@7..8 ";"
+      ERROR@7..8
+        SEMICOLON@7..8 ";"
   WHITESPACE@8..9 "\n"
   VAR_DECL@9..20
     CONST_KW@9..14 "const"
@@ -38,11 +39,11 @@ MODULE@0..32
     SEMICOLON@30..31 ";"
   WHITESPACE@31..32 "\n"
 --
-error[SyntaxError]: Expected an expression, but found none
+error[SyntaxError]: expected an expression, but found `;` instead
   ┌─ var_decl_err.js:1:8
   │
 1 │ var a =;
-  │        ^ Expected an expression here
+  │        ^
 
 --
 error[SyntaxError]: Expected a semicolon or an implicit semicolon after a statement, but found none

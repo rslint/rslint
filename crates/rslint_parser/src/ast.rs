@@ -8,6 +8,7 @@
 mod expr_ext;
 mod generated;
 mod stmt_ext;
+mod ts_ext;
 
 use crate::{syntax_node::*, util::SyntaxNodeExt, SmolStr, SyntaxKind, TextRange};
 use std::marker::PhantomData;
@@ -16,6 +17,7 @@ pub use self::{
     expr_ext::*,
     generated::{nodes::*, tokens::*},
     stmt_ext::*,
+    ts_ext::*,
 };
 
 /// The main trait to go from untyped `SyntaxNode`  to a typed ast. The

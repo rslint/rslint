@@ -7,6 +7,11 @@
 //! Do not use this to learn how to lex JavaScript, this is just needlessly fast and demonic because i can't control myself :)
 //!
 //! basic ANSI syntax highlighting is also offered through the `highlight` feature.
+//!
+//! # Warning ⚠️
+//!
+//! `>>` and `>>>` are not emitted as single tokens, they are emitted as multiple `>` tokens. This is because of
+//! TypeScript parsing and productions such as `T<U<N>>`
 
 #[macro_use]
 mod token;
@@ -737,10 +742,7 @@ impl<'src> Lexer<'src> {
         let start = self.cur;
         self.next();
         if start != 0 {
-            let err =
-                Diagnostic::error(self.file_id, "", "`#` must be at the beginning of the file")
-                    .primary(start..(start + 1), "but it's found here");
-            return (Token::new(SyntaxKind::ERROR_TOKEN, 1), Some(err));
+            return (Token::new(T![#], 1), None);
         }
 
         if let Some(b'!') = self.bytes.get(1) {
@@ -799,11 +801,11 @@ impl<'src> Lexer<'src> {
                 }
                 tok!(COMMENT, self.cur - start)
             }
+            _ if self.state.expr_allowed => self.read_regex(),
             Some(b'=') => {
                 self.advance(2);
                 tok!(SLASHEQ, self.cur - start)
             }
-            _ if self.state.expr_allowed => self.read_regex(),
             _ => self.eat(tok![/]),
         }
     }
@@ -1001,19 +1003,18 @@ impl<'src> Lexer<'src> {
     fn resolve_greater_than(&mut self) -> LexerReturn {
         match self.next() {
             Some(b'>') => {
-                let next = self.next().copied();
-                if let Some(b'>') = next {
-                    if let Some(b'=') = self.next() {
-                        self.next();
+                if let Some(b'>') = self.bytes.get(self.cur + 1).copied() {
+                    if let Some(b'=') = self.bytes.get(self.cur + 2).copied() {
+                        self.advance(3);
                         tok!(USHREQ, 4)
                     } else {
-                        tok!(USHR, 3)
+                        tok!(>)
                     }
-                } else if next == Some(b'=') {
-                    self.next();
+                } else if self.bytes.get(self.cur + 1).copied() == Some(b'=') {
+                    self.advance(2);
                     tok!(SHREQ, 2)
                 } else {
-                    tok!(SHR, 2)
+                    tok!(>)
                 }
             }
             Some(b'=') => {
@@ -1261,6 +1262,7 @@ impl<'src> Lexer<'src> {
                     }
                 }
             }
+            AT_ => self.eat(tok![@]),
             _ => {
                 let err = Diagnostic::error(
                     self.file_id,
@@ -1388,6 +1390,7 @@ enum Dispatch {
     EQL,
     MOR,
     QST,
+    AT_,
     BTO,
     BSL,
     BTC,
@@ -1424,7 +1427,7 @@ static DISPATCHER: [Dispatch; 256] = [
     ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, ERR, // 1
     WHS, EXL, QOT, HAS, IDT, PRC, AMP, QOT, PNO, PNC, MUL, PLS, COM, MIN, PRD, SLH, // 2
     ZER, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LSS, EQL, MOR, QST, // 3
-    ERR, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, // 4
+    AT_, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, // 4
     IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, BTO, BSL, BTC, CRT, IDT, // 5
     TPL, L_A, L_B, L_C, L_D, L_E, L_F, IDT, IDT, L_I, IDT, IDT, IDT, IDT, L_N, IDT, // 6
     IDT, IDT, L_R, L_S, L_T, IDT, L_V, L_W, IDT, L_Y, IDT, BEO, PIP, BEC, TLD, ERR, // 7

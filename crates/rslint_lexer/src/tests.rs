@@ -827,7 +827,7 @@ fn shebang() {
     assert_lex! {
         "0#!/bin/deno",
         NUMBER:1,
-        ERROR_TOKEN:1,
+        HASH:1,
         BANG:1,
         REGEX:9
     }
@@ -1009,5 +1009,19 @@ fn fuzz_fail_7() {
         "/\u{0}/ª\u{80}",
         REGEX:5,
         WHITESPACE:2
+    }
+}
+
+#[test]
+fn at_token() {
+    assert_lex! {
+        "@",
+        AT:1
+    }
+
+    assert_lex! {
+        "@foo",
+        AT:1,
+        IDENT:3
     }
 }

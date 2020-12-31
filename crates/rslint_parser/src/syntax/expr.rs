@@ -3,16 +3,17 @@
 //!
 //! See the [ECMAScript spec](https://www.ecma-international.org/ecma-262/5.1/#sec-11).
 
-use super::decl::{arrow_body, class_decl, formal_parameters, function_decl, method};
+use super::decl::{
+    arrow_body, class_decl, formal_parameters, function_decl, maybe_private_name, method,
+};
 use super::pat::pattern;
+use super::typescript::*;
 use super::util::*;
 use crate::{SyntaxKind::*, *};
 
 pub const LITERAL: TokenSet = token_set![TRUE_KW, FALSE_KW, NUMBER, STRING, NULL_KW, REGEX];
 
-// TODO: We might want to add semicolon to this
-pub const EXPR_RECOVERY_SET: TokenSet =
-    token_set![VAR_KW, SEMICOLON, R_PAREN, L_PAREN, L_BRACK, R_BRACK, SEMICOLON];
+pub const EXPR_RECOVERY_SET: TokenSet = token_set![VAR_KW, R_PAREN, L_PAREN, L_BRACK, R_BRACK];
 
 pub const ASSIGN_TOKENS: TokenSet = token_set![
     T![=],
@@ -83,10 +84,35 @@ pub fn literal(p: &mut Parser) -> Option<CompletedMarker> {
 
 /// An assignment expression such as `foo += bar` or `foo = 5`.
 pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
+    if p.at(T![<])
+        && (token_set![T![ident], T![await], T![yield]].contains(p.nth(1)) || p.nth(1).is_keyword())
+    {
+        let res = try_parse_ts(p, |p| {
+            let m = p.start();
+            ts_type_params(p)?;
+            let res = assign_expr_base(p);
+            if res.map(|x| x.kind()) != Some(ARROW_EXPR) {
+                m.abandon(p);
+                None
+            } else {
+                res.unwrap().undo_completion(p).abandon(p);
+                Some(m.complete(p, ARROW_EXPR))
+            }
+        });
+        if let Some(mut res) = res {
+            res.err_if_not_ts(p, "type parameters can only be used in TypeScript files");
+            return Some(res);
+        }
+    }
+    assign_expr_base(p)
+}
+
+fn assign_expr_base(p: &mut Parser) -> Option<CompletedMarker> {
     if p.state.in_generator && p.at(T![yield]) {
         return Some(yield_expr(p));
     }
-    if p.state.in_async && p.at(T![await]) {
+    // FIXME: this shouldnt allow await in sync functions
+    if (p.state.in_async || p.syntax.top_level_await) && p.at(T![await]) {
         let m = p.start();
         p.bump_any();
         unary_expr(p);
@@ -98,15 +124,15 @@ pub fn assign_expr(p: &mut Parser) -> Option<CompletedMarker> {
         ..p.state.clone()
     });
 
-    let token_cur = guard.token_pos();
-    let event_cur = guard.cur_event_pos();
+    let checkpoint = guard.checkpoint();
     let target = conditional_expr(&mut *guard)?;
-    assign_expr_recursive(&mut *guard, target, token_cur, event_cur)
+    assign_expr_recursive(&mut *guard, target, checkpoint)
 }
 
 pub(crate) fn is_valid_target(p: &mut Parser, marker: &CompletedMarker) -> bool {
     match marker.kind() {
-        DOT_EXPR | BRACKET_EXPR | NAME_REF => true,
+        DOT_EXPR | BRACKET_EXPR | NAME_REF | PRIVATE_PROP_ACCESS | TS_CONST_ASSERTION
+        | TS_ASSERTION | TS_NON_NULL => true,
         GROUPING_EXPR => {
             // avoid parsing the marker because it is incredibly expensive and this is a hot path
             for (idx, event) in p.events[marker.start_pos as usize..].iter().enumerate() {
@@ -116,8 +142,21 @@ pub(crate) fn is_valid_target(p: &mut Parser, marker: &CompletedMarker) -> bool 
                         kind: SyntaxKind::GROUPING_EXPR,
                         ..
                     } => {}
+                    Event::Start {
+                        kind: SyntaxKind::TOMBSTONE,
+                        ..
+                    } => {}
                     Event::Start { kind, .. } => {
-                        return matches!(kind, DOT_EXPR | BRACKET_EXPR | NAME_REF);
+                        return matches!(
+                            kind,
+                            DOT_EXPR
+                                | BRACKET_EXPR
+                                | NAME_REF
+                                | PRIVATE_PROP_ACCESS
+                                | TS_CONST_ASSERTION
+                                | TS_ASSERTION
+                                | TS_NON_NULL
+                        );
                     }
                     _ => {}
                 }
@@ -149,19 +188,35 @@ fn check_assign_target_from_marker(p: &mut Parser, marker: &CompletedMarker) {
 fn assign_expr_recursive(
     p: &mut Parser,
     mut target: CompletedMarker,
-    token_cur: usize,
-    event_cur: usize,
+    checkpoint: Checkpoint,
 ) -> Option<CompletedMarker> {
     // TODO: dont always reparse as pattern since it will yield wonky errors for `(foo = true) = bar`
     if p.at_ts(ASSIGN_TOKENS) {
         if p.at(T![=]) {
             if !is_valid_target(p, &target) && target.kind() != TEMPLATE {
-                p.rewind(token_cur);
-                p.drain_events(p.cur_event_pos() - event_cur);
-                target = pattern(p)?;
+                p.rewind(checkpoint);
+                target = pattern(p, false)?;
             }
         } else {
-            check_assign_target_from_marker(p, &target);
+            if !is_valid_target(p, &target) {
+                let err = p
+                    .err_builder(&format!(
+                        "Invalid assignment to `{}`",
+                        p.source(target.range(p)).trim()
+                    ))
+                    .primary(target.range(p), "This expression cannot be assigned to");
+
+                p.error(err);
+            }
+            let text = p.source(target.range(p));
+            if (text == "eval" || text == "arguments") && p.state.strict.is_some() && p.typescript()
+            {
+                let err = p
+                    .err_builder("`eval` and `arguments` cannot be assigned to")
+                    .primary(target.range(p), "");
+
+                p.error(err);
+            }
         }
         let m = target.precede(p);
         p.bump_any();
@@ -201,7 +256,10 @@ pub fn conditional_expr(p: &mut Parser) -> Option<CompletedMarker> {
     if p.at(T![?]) {
         let m = lhs?.precede(p);
         p.bump_any();
-        assign_expr(p);
+        assign_expr(&mut *p.with_state(ParserState {
+            in_cond_expr: true,
+            ..p.state.clone()
+        }));
         p.expect(T![:]);
         assign_expr(p);
         return Some(m.complete(p, COND_EXPR));
@@ -236,11 +294,29 @@ fn binary_expr_recursive(
     left: Option<CompletedMarker>,
     min_prec: u8,
 ) -> Option<CompletedMarker> {
-    let precedence = match p.cur() {
+    if 7 > min_prec && !p.has_linebreak_before_n(0) && p.cur_src() == "as" {
+        let m = left.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
+        p.bump_any();
+        let mut res = if p.eat(T![const]) {
+            m.complete(p, TS_CONST_ASSERTION)
+        } else {
+            ts_type(p);
+            m.complete(p, TS_ASSERTION)
+        };
+        res.err_if_not_ts(p, "type assertions can only be used in TypeScript files");
+        return binary_expr_recursive(p, Some(res), min_prec);
+    }
+    let kind = match p.cur() {
+        T![>] if p.nth_at(1, T![>]) && p.nth_at(2, T![>]) => T![>>>],
+        T![>] if p.nth_at(1, T![>]) => T![>>],
+        k => k,
+    };
+
+    let precedence = match kind {
         T![in] if p.state.include_in => 7,
         T![instanceof] => 7,
         _ => {
-            if let Some(prec) = get_precedence(p.cur()) {
+            if let Some(prec) = get_precedence(kind) {
                 prec
             } else {
                 return left;
@@ -252,17 +328,23 @@ fn binary_expr_recursive(
         return left;
     }
 
-    let op = p.cur();
+    let op = kind;
     let op_tok = p.cur_tok();
 
     let m = left.map(|m| m.precede(p)).unwrap_or_else(|| p.start());
-    p.bump_any();
+    if op == T![>>] {
+        p.bump_multiple(2, T![>>]);
+    } else if op == T![>>>] {
+        p.bump_multiple(3, T![>>>]);
+    } else {
+        p.bump_any();
+    }
 
     // This is a hack to allow us to effectively recover from `foo + / bar`
-    let right = if get_precedence(p.cur()).is_some() && !p.at_ts(token_set![T![-], T![+]]) {
+    let right = if get_precedence(p.cur()).is_some() && !p.at_ts(token_set![T![-], T![+], T![<]]) {
         let err = p.err_builder(&format!("Expected an expression for the right hand side of a `{}`, but found an operator instead", p.token_src(&op_tok)))
-            .secondary(op_tok, "This operator requires a right hand side value")
-            .primary(p.cur_tok(), "But this operator was encountered instead");
+            .secondary(op_tok.range, "This operator requires a right hand side value")
+            .primary(p.cur_tok().range, "But this operator was encountered instead");
 
         p.error(err);
         None
@@ -322,7 +404,25 @@ pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMar
             return Some(subscripts(p, complete, true));
         }
 
-        member_or_new_expr(p, new_expr)?;
+        let complete = member_or_new_expr(p, new_expr)?;
+        if complete.kind() == ARROW_EXPR {
+            return Some(complete);
+        }
+
+        if p.at(T![<]) {
+            if let Some(mut complete) = try_parse_ts(p, |p| {
+                let compl = ts_type_args(p);
+                if !p.at(T!['(']) {
+                    return None;
+                }
+                compl
+            }) {
+                complete.err_if_not_ts(
+                    p,
+                    "`new` expressions can only have type arguments in TypeScript files",
+                );
+            }
+        }
 
         if !new_expr || p.at(T!['(']) {
             args(p);
@@ -370,6 +470,7 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
     // foo()?.baz[].
     // BAR`b
     let mut lhs = optional_chain(p, lhs);
+    let mut should_try_parsing_ts = true;
     while !p.at(EOF) {
         match p.cur() {
             T!['('] if !no_call => {
@@ -381,6 +482,41 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
             }
             T!['['] => lhs = bracket_expr(p, lhs, false),
             T![.] => lhs = dot_expr(p, lhs, false),
+            T![!] if !p.has_linebreak_before_n(0) => {
+                lhs = {
+                    // FIXME(RDambrosio016): we need to tell the lexer that an expression is not
+                    // allowed here, but we have no way of doing that currently because we get all of the
+                    // tokens ahead of time, therefore we need to switch to using the lexer as an iterator
+                    // which isn't as simple as it sounds :)
+                    let m = lhs.precede(p);
+                    p.bump_any();
+                    let mut comp = m.complete(p, TS_NON_NULL);
+                    comp.err_if_not_ts(
+                        p,
+                        "non-null assertions can only be used in TypeScript files",
+                    );
+                    comp
+                }
+            }
+            T![<] if p.typescript() && should_try_parsing_ts => {
+                let res = try_parse_ts(p, |p| {
+                    let m = lhs.precede(p);
+                    // TODO: handle generic async arrow function expressions
+                    ts_type_args(p)?;
+                    if !no_call && p.at(T!['(']) {
+                        args(p);
+                        Some(m.complete(p, CALL_EXPR))
+                    } else if p.at(BACKTICK) {
+                        m.abandon(p);
+                        Some(template(p, Some(lhs)))
+                    } else {
+                        None
+                    }
+                });
+                if res.is_none() {
+                    should_try_parsing_ts = false;
+                }
+            }
             BACKTICK => lhs = template(p, Some(lhs)),
             _ => return lhs,
         }
@@ -439,13 +575,34 @@ pub fn optional_chain(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
 // foo?.bar
 pub fn dot_expr(p: &mut Parser, lhs: CompletedMarker, optional_chain: bool) -> CompletedMarker {
     let m = lhs.precede(p);
-    if optional_chain {
-        p.expect(T![?.]);
+    let range = if optional_chain {
+        Some(p.cur_tok().range).filter(|_| p.expect(T![?.]))
     } else {
         p.expect(T![.]);
+        None
+    };
+    if let Some(priv_range) = maybe_private_name(p).filter(|x| x.kind() == PRIVATE_NAME) {
+        if !p.syntax.class_fields {
+            let err = p
+                .err_builder("private identifiers are unsupported")
+                .primary(priv_range.range(p), "");
+
+            p.error(err);
+            return m.complete(p, ERROR);
+        }
+        if let Some(range) = range {
+            let err = p
+                .err_builder("optional chaining cannot contain private identifiers")
+                .primary(range, "");
+
+            p.error(err);
+            m.complete(p, ERROR)
+        } else {
+            m.complete(p, PRIVATE_PROP_ACCESS)
+        }
+    } else {
+        m.complete(p, DOT_EXPR)
     }
-    identifier_name(p);
-    m.complete(p, DOT_EXPR)
 }
 
 /// An array expression for property access or indexing, such as `foo[0]` or `foo?.["bar"]`
@@ -527,13 +684,13 @@ pub fn args(p: &mut Parser) -> CompletedMarker {
 // (5 + 5) => {}
 pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarker {
     let m = p.start();
+    let checkpoint = p.checkpoint();
     let start = p.cur_tok().range.start;
-    let token_cur = p.token_pos();
-    let event_cur = p.cur_event_pos();
     p.expect(T!['(']);
     let mut spread_range = None;
     let mut trailing_comma_marker = None;
     let mut had_comma = false;
+    let mut params_marker = None;
 
     let mut temp = p.with_state(ParserState {
         potential_arrow_start: true,
@@ -549,7 +706,7 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
             if temp.at(T![...]) {
                 let m = temp.start();
                 temp.bump_any();
-                pattern(&mut *temp);
+                pattern(&mut *temp, false);
                 let complete = m.complete(&mut *temp, REST_PATTERN);
                 spread_range = Some(complete.range(&*temp));
                 if !temp.eat(T![')']) {
@@ -566,16 +723,25 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
                 }
                 break;
             }
-            assign_expr(&mut *temp);
+            let expr = assign_expr(&mut *temp);
+            if expr.is_some() && temp.at(T![:]) {
+                temp.rewind(checkpoint);
+                params_marker = Some(formal_parameters(&mut *temp));
+                break;
+            }
+
             let sub_m = temp.start();
             if temp.eat(T![,]) {
                 if temp.at(T![')']) {
                     trailing_comma_marker = Some(sub_m.complete(&mut *temp, ERROR));
                     temp.bump_any();
                     break;
+                } else {
+                    sub_m.abandon(&mut *temp);
                 }
                 had_comma = true;
             } else {
+                sub_m.abandon(&mut *temp);
                 if had_comma {
                     expr_m.complete(&mut *temp, SEQUENCE_EXPR);
                 }
@@ -585,27 +751,80 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
         }
     }
     drop(temp);
+    // if we are in a ternary expression, then we need to try and see if parsing as an arrow worked
+    // if it did then we just return it, otherwise it should be interpreted as a grouping expr
+    if p.state.in_cond_expr && p.at(T![:]) && params_marker.is_none() {
+        let func = |p: &mut Parser| {
+            let p = &mut *p.with_state(ParserState {
+                no_recovery: true,
+                ..p.state.clone()
+            });
+            p.rewind(checkpoint);
+            formal_parameters(p);
+            if p.at(T![:]) {
+                if let Some(mut ret) = ts_type_or_type_predicate_ann(p, T![:]) {
+                    ret.err_if_not_ts(
+                        p,
+                        "arrow functions can only have return types in TypeScript files",
+                    );
+                }
+            }
+            p.expect_no_recover(T![=>])?;
+            arrow_body(p)?;
+            Some(())
+        };
+        // we can't just rewind the parser, since the function rewinds, and cloning and replacing the
+        // events does not work apparently, therefore we need to clone the entire parser
+        let cloned = p.clone();
+        if func(p).is_some() {
+            let c = m.complete(p, ARROW_EXPR);
+            return c;
+        } else {
+            *p = cloned;
+        }
+    }
+    let has_ret_type = !p.state.in_cond_expr && p.at(T![:]) && !p.state.in_case_cond;
 
     // This is an arrow expr, so we rewind the parser and reparse as parameters
     // This is kind of inefficient but in the grand scheme of things it does not matter
-    // since the parser is already crazy fast
-    if p.at(T![=>]) && !p.has_linebreak_before_n(0) {
-        if !can_be_arrow {
+    // FIXME: verify that this logic is correct
+    if (p.at(T![=>]) && !p.has_linebreak_before_n(0)) || has_ret_type || params_marker.is_some() {
+        if !can_be_arrow && !p.at(T![:]) {
             let err = p
                 .err_builder("Unexpected token `=>`")
-                .primary(p.cur_tok(), "an arrow expression is not allowed here");
+                .primary(p.cur_tok().range, "an arrow expression is not allowed here");
 
             p.error(err);
         } else {
-            // Rewind the parser so we can reparse as formal parameters
-            p.rewind(token_cur);
-            p.drain_events(p.cur_event_pos() - event_cur);
-            formal_parameters(p);
+            if params_marker.is_none() {
+                // Rewind the parser so we can reparse as formal parameters
+                p.rewind(checkpoint);
+                formal_parameters(p);
+            }
+
+            if p.at(T![:]) {
+                let complete = ts_type_or_type_predicate_ann(p, T![:]);
+                if let Some(mut complete) = complete {
+                    complete.err_if_not_ts(
+                        p,
+                        "arrow functions can only have return types in TypeScript files",
+                    );
+                }
+            }
 
             p.bump_any();
             arrow_body(p);
             return m.complete(p, ARROW_EXPR);
         }
+    }
+
+    if let Some(params) = params_marker {
+        let err = p
+            .err_builder("grouping expressions cannot contain parameters")
+            .primary(params.range(p), "");
+
+        p.error(err);
+        return m.complete(p, ERROR);
     }
 
     if is_empty {
@@ -703,7 +922,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             // let b = async function foo() {};
             if p.nth_at(1, T![function]) {
                 let m = p.start();
-                p.bump_any();
+                p.bump_remap(T![async]);
                 let mut complete = function_decl(
                     &mut *p.with_state(ParserState {
                         in_async: true,
@@ -725,7 +944,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                     // async (foo, bar, ...baz) => foo
                     // async (yield) => {}
                     let m = p.start();
-                    p.bump_any();
+                    p.bump_remap(T![async]);
                     if p.at(T!['(']) {
                         formal_parameters(p);
                     } else {
@@ -734,6 +953,15 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                         // let a = async await => {}
                         p.bump_remap(T![ident]);
                         m.complete(p, NAME);
+                    }
+                    if p.at(T![:]) {
+                        let complete = ts_type_or_type_predicate_ann(p, T![:]);
+                        if let Some(mut complete) = complete {
+                            complete.err_if_not_ts(
+                                p,
+                                "arrow functions can only have return types in TypeScript files",
+                            );
+                        }
                     }
                     p.expect(T![=>]);
                     arrow_body(&mut *p.with_state(ParserState {
@@ -804,14 +1032,14 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                             "Expected `meta` following an import keyword, but found `{}`",
                             p.token_src(&p.cur_tok())
                         ))
-                        .primary(p.cur_tok(), "");
+                        .primary(p.cur_tok().range, "");
 
                     p.err_and_bump(err);
                     m.complete(p, ERROR)
                 } else {
                     let err = p
                         .err_builder("Expected `meta` following an import keyword, but found none")
-                        .primary(p.cur_tok(), "");
+                        .primary(p.cur_tok().range, "");
 
                     p.error(err);
                     m.complete(p, ERROR)
@@ -859,7 +1087,7 @@ pub fn identifier_reference(p: &mut Parser) -> Option<CompletedMarker> {
         _ => {
             let err = p
                 .err_builder("Expected an identifier, but found none")
-                .primary(p.cur_tok(), "");
+                .primary(p.cur_tok().range, "");
 
             p.err_recover(err, p.state.expr_recovery_set, true);
             None
@@ -1031,7 +1259,7 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
             // let b = {
             //  foo() {},
             // }
-            if p.at(T!['(']) {
+            if p.at(T!['(']) || p.at(T![<]) {
                 method(p, m, None)
             } else {
                 // test_err object_expr_error_prop_name
@@ -1087,11 +1315,39 @@ pub fn lhs_expr(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     let lhs = member_or_new_expr(p, true)?;
-    Some(if p.at(T!['(']) {
-        subscripts(p, lhs, false)
+    if lhs.kind() == ARROW_EXPR {
+        return Some(lhs);
+    }
+
+    let m = lhs.precede(p);
+    let type_args = if p.at(T![<]) {
+        let checkpoint = p.checkpoint();
+        let mut complete = try_parse_ts(p, |p| ts_type_args(p));
+        if !p.at(T!['(']) {
+            p.rewind(checkpoint);
+            None
+        } else {
+            if let Some(ref mut comp) = complete {
+                comp.err_if_not_ts(p, "type arguments can only be used in TypeScript files");
+            }
+            complete
+        }
     } else {
-        lhs
-    })
+        None
+    };
+
+    if p.at(T!['(']) {
+        args(p);
+        let lhs = m.complete(p, CALL_EXPR);
+        return Some(subscripts(p, lhs, false));
+    }
+
+    if type_args.is_some() {
+        p.expect(T!['(']);
+    }
+
+    m.abandon(p);
+    Some(lhs)
 }
 
 /// A postifx expression, either `LHSExpr [no linebreak] ++` or `LHSExpr [no linebreak] --`.
@@ -1128,6 +1384,25 @@ pub fn unary_expr(p: &mut Parser) -> Option<CompletedMarker> {
     const UNARY_SINGLE: TokenSet =
         token_set![T![delete], T![void], T![typeof], T![+], T![-], T![~], T![!]];
 
+    if p.at(T![<]) {
+        let m = p.start();
+        p.bump_any();
+        if p.eat(T![const]) {
+            p.expect(T![>]);
+            unary_expr(p);
+            let mut res = m.complete(p, TS_CONST_ASSERTION);
+            res.err_if_not_ts(p, "const assertions can only be used in TypeScript files");
+            return Some(res);
+        } else {
+            ts_type(p);
+            p.expect(T![>]);
+            unary_expr(p);
+            let mut res = m.complete(p, TS_ASSERTION);
+            res.err_if_not_ts(p, "type assertions can only be used in TypeScript files");
+            return Some(res);
+        }
+    }
+
     if p.at(T![++]) {
         let m = p.start();
         p.bump(T![++]);
@@ -1147,8 +1422,21 @@ pub fn unary_expr(p: &mut Parser) -> Option<CompletedMarker> {
 
     if p.at_ts(UNARY_SINGLE) {
         let m = p.start();
+        let op = p.cur();
         p.bump_any();
-        unary_expr(p)?;
+        let res = unary_expr(p)?;
+        if op == T![delete] && p.typescript() {
+            match res.kind() {
+                DOT_EXPR | BRACKET_EXPR => {}
+                _ => {
+                    let err = p
+                        .err_builder("the target for a delete operator must be a property access")
+                        .primary(res.range(p), "");
+
+                    p.error(err);
+                }
+            }
+        }
         return Some(m.complete(p, UNARY_EXPR));
     }
 

@@ -6,10 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Removed
+
+- Removed `new_module`
+- Removed `syntax::program::script` and `syntax::program::module` in favor of just `ast::program::parse`
+
+### Changed
+
+- Made `cur_event_pos` and `token_pos` private in favor of a specialized checkpoint struct
+- Changed `rewind` to take a Checkpoint
+
 ### Added
+
+#### 🌟 Added TypeScript support 🌟
 
 - Added `util::contains_js_whitespace`
 - Added parser benchmarks
+- Added `syntax::typescript`
+- Added the `stop_on_r_curly` parameter to `block_items`
+- Added `Syntax`
+- Added a new parameter to `Parser::new`
 
 ### Fixed
 
@@ -22,6 +38,7 @@ finally{}
 ```
 
 - Fixed `let_token` in VarDecl not working when there is trivia attached to it
+- Fixed infinite recursion with `[[;]]`
 
 ### Changed
 
@@ -32,6 +49,7 @@ finally{}
 - Improved the throughput of the parser by 1050%+
 - Improved the speed of the parser by 130%+
 - Stopped using `parse_marker` in many places
+- Switched the backing of `TokenSet` from `u128` to `[u128; 2]` to accomodate tokens with a value over 128
 
 ## [0.2.1] - 2020-10-20
 
@@ -42,10 +60,12 @@ finally{}
 ### Added
 
 - Added handling of shebang where the parser consumes shebang if exists at the start
+- Added a Checkpoint struct to easily backtrack (rewind) the parser
 
 ### Fixed
 
 - Fixed handling of `/=` and `>>=`
+- Fixed `parse_marker` panicking on preceded markers which are later abandoned
 - Fixed arrow expr parameters sometimes being `NAME_REF` instead of `NAME`
 
 ## [0.2.0] - 2020-10-8

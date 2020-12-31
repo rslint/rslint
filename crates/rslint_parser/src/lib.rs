@@ -59,7 +59,6 @@
 mod parser;
 #[macro_use]
 mod token_set;
-mod diagnostics;
 mod event;
 mod lossless_tree_sink;
 mod lossy_tree_sink;
@@ -79,13 +78,12 @@ pub mod util;
 
 pub use crate::{
     ast::{AstNode, AstToken},
-    diagnostics::ErrorBuilder,
     event::{process, Event},
     lossless_tree_sink::LosslessTreeSink,
     lossy_tree_sink::LossyTreeSink,
     numbers::{parse_js_num, BigInt, JsNum},
     parse::*,
-    parser::{CompletedMarker, Marker, Parser},
+    parser::{Checkpoint, CompletedMarker, Marker, Parser},
     state::{ParserState, StrictMode},
     syntax_node::*,
     token_set::TokenSet,
@@ -134,6 +132,9 @@ pub trait TreeSink {
 
     /// Emit errors
     fn errors(&mut self, errors: Vec<ParserError>);
+
+    /// Consume multiple tokens and glue them into one kind
+    fn consume_multiple_tokens(&mut self, amount: u8, kind: SyntaxKind);
 }
 
 /// Matches a `SyntaxNode` against an `ast` type.
@@ -161,4 +162,83 @@ macro_rules! match_ast {
         $( if let Some($it) = ast::$ast::cast($node.clone()) { $res } else )*
         { $catch_all }
     }};
+}
+
+/// A structure describing the syntax features the parser will accept. The
+/// default is an ECMAScript 2021 Script without any proposals.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Syntax {
+    pub file_kind: FileKind,
+    pub top_level_await: bool,
+    pub global_return: bool,
+    pub class_fields: bool,
+    pub decorators: bool,
+}
+
+impl Syntax {
+    pub fn new(file_kind: FileKind) -> Self {
+        let mut this = Self {
+            file_kind,
+            ..Default::default()
+        };
+        if file_kind == FileKind::TypeScript {
+            this = this.typescript();
+        }
+        this
+    }
+
+    pub fn top_level_await(mut self) -> Self {
+        self.top_level_await = true;
+        self
+    }
+
+    pub fn global_return(mut self) -> Self {
+        self.global_return = true;
+        self
+    }
+
+    pub fn class_fields(mut self) -> Self {
+        self.class_fields = true;
+        self
+    }
+
+    pub fn decorators(mut self) -> Self {
+        self.decorators = true;
+        self
+    }
+
+    pub fn script(mut self) -> Self {
+        self.file_kind = FileKind::Script;
+        self
+    }
+
+    pub fn module(mut self) -> Self {
+        self.file_kind = FileKind::Module;
+        self
+    }
+
+    pub fn typescript(mut self) -> Self {
+        self.file_kind = FileKind::TypeScript;
+        self.class_fields().decorators().top_level_await()
+    }
+}
+
+/// The kind of file we are parsing
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FileKind {
+    Script,
+    Module,
+    TypeScript,
+}
+
+impl Default for FileKind {
+    fn default() -> Self {
+        FileKind::Script
+    }
+}
+
+impl From<FileKind> for Syntax {
+    fn from(kind: FileKind) -> Self {
+        Syntax::new(kind)
+    }
 }

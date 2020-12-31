@@ -3,6 +3,8 @@
 //! the parser yields events like `Start node`, `Error`, etc.
 //! These events are then applied to a `TreeSink`.
 
+use rslint_errors::Diagnostic;
+use std::borrow::BorrowMut;
 use std::cell::Cell;
 use std::ops::Range;
 
@@ -23,7 +25,8 @@ use crate::*;
 ///     LosslessTreeSink,
 ///     SyntaxNode,
 ///     process,
-///     AstNode
+///     AstNode,
+///     Syntax
 /// };
 ///
 /// let source = "(delete b)";
@@ -38,7 +41,7 @@ use crate::*;
 /// // and giving raw tokens to allow the parser to turn completed markers into syntax nodes
 /// let token_source = TokenSource::new(source, &tokens);
 ///
-/// let mut parser = Parser::new(token_source, 0);
+/// let mut parser = Parser::new(token_source, 0, Syntax::default());
 ///
 /// // Use one of the syntax parsing functions to parse an expression.
 /// // This adds node and token events to the parser which are then used to make a node.
@@ -73,6 +76,7 @@ use crate::*;
 ///
 /// assert_eq!(typed_expr.inner().unwrap().syntax().text(), "delete b");
 /// ```
+#[derive(Clone)]
 pub struct Parser<'t> {
     pub file_id: usize,
     tokens: TokenSource<'t>,
@@ -81,32 +85,34 @@ pub struct Parser<'t> {
     // We use a cell so we dont need &mut self on `nth()`
     steps: Cell<u32>,
     pub state: ParserState,
-    errors: Vec<ParserError>,
+    pub syntax: Syntax,
+    pub errors: Vec<ParserError>,
 }
 
 impl<'t> Parser<'t> {
-    /// Make a new parser configured to parse a script
-    pub fn new(tokens: TokenSource<'t>, file_id: usize) -> Parser<'t> {
+    /// Make a new parser
+    pub fn new(tokens: TokenSource<'t>, file_id: usize, syntax: Syntax) -> Parser<'t> {
+        let mut state = ParserState::default();
+        // TODO(RDambrosio016): Does TypeScript imply Module/Strict?
+        state.is_module = syntax.file_kind == FileKind::Module;
+        state.strict = if syntax.file_kind == FileKind::Module {
+            Some(StrictMode::Module)
+        } else {
+            None
+        };
         Parser {
             file_id,
             tokens,
             events: vec![],
             steps: Cell::new(0),
-            state: ParserState::default(),
+            state,
+            syntax,
             errors: vec![],
         }
     }
 
-    /// Make a new parser configured to parse a module
-    pub fn new_module(tokens: TokenSource<'t>, file_id: usize) -> Parser<'t> {
-        Parser {
-            file_id,
-            tokens,
-            events: vec![],
-            steps: Cell::new(0),
-            state: ParserState::module(),
-            errors: vec![],
-        }
+    pub(crate) fn typescript(&self) -> bool {
+        self.syntax.file_kind == FileKind::TypeScript
     }
 
     /// Get the source code of a token
@@ -133,17 +139,13 @@ impl<'t> Parser<'t> {
     }
 
     /// Look ahead at a token and get its kind, **The max lookahead is 4**.  
-    ///
-    /// # Panics
-    /// This method panics if the lookahead is higher than `4`,
-    /// or if the parser has run this method more than 10m times, as it is a sign of infinite recursion
     pub fn nth(&self, n: usize) -> SyntaxKind {
-        assert!(n <= 4);
-
         let steps = self.steps.get();
         assert!(
             steps <= 10_000_000,
-            "The parser seems to be recursing forever"
+            "The parser seems to be recursing forever on the token \n{:#?} {}",
+            self.tokens.lookahead_nth(n),
+            self.cur_src()
         );
         self.steps.set(steps + 1);
 
@@ -151,17 +153,13 @@ impl<'t> Parser<'t> {
     }
 
     /// Look ahead at a token, **The max lookahead is 4**.  
-    ///
-    /// # Panics
-    /// This method panics if the lookahead is higher than `4`,
-    /// or if the parser has run this method more than 10m times, as it is a sign of infinite recursion
     pub fn nth_tok(&self, n: usize) -> Token {
-        assert!(n <= 4);
-
         let steps = self.steps.get();
         assert!(
             steps <= 10_000_000,
-            "The parser seems to be recursing forever"
+            "The parser seems to be recursing forever on the token \n{:#?} {}",
+            self.tokens.lookahead_nth(n),
+            self.cur_src()
         );
         self.steps.set(steps + 1);
 
@@ -193,24 +191,29 @@ impl<'t> Parser<'t> {
         error: impl Into<ParserError>,
         recovery: TokenSet,
         include_braces: bool,
-    ) {
+    ) -> Option<()> {
+        if self.state.no_recovery {
+            return None;
+        }
+
         match self.cur() {
             T!['{'] | T!['}'] if include_braces => {
                 self.error(error);
-                return;
+                return Some(());
             }
             _ => (),
         }
 
         if self.at_ts(recovery) {
             self.error(error);
-            return;
+            return Some(());
         }
 
         let m = self.start();
         self.error(error);
         self.bump_any();
         m.complete(self, SyntaxKind::ERROR);
+        Some(())
     }
 
     /// Recover from an error but don't add an error to the events
@@ -265,8 +268,8 @@ impl<'t> Parser<'t> {
     }
 
     /// Make a new error builder with `error` severity
-    pub fn err_builder(&self, message: &str) -> ErrorBuilder {
-        ErrorBuilder::error(self.file_id, message)
+    pub fn err_builder(&self, message: &str) -> Diagnostic {
+        Diagnostic::error(self.file_id, "SyntaxError", message)
     }
 
     /// Add an error
@@ -299,6 +302,13 @@ impl<'t> Parser<'t> {
         self.tokens
             .source()
             .get(self.nth_tok(0).range)
+            .expect("Parser source and tokens mismatch")
+    }
+
+    pub fn nth_src(&self, n: usize) -> &str {
+        self.tokens
+            .source()
+            .get(self.nth_tok(n).range)
             .expect("Parser source and tokens mismatch")
     }
 
@@ -370,18 +380,34 @@ impl<'t> Parser<'t> {
         &self.tokens.source()[range]
     }
 
-    /// Rewind the token position back to a former position
-    pub fn rewind(&mut self, pos: usize) {
-        self.tokens.rewind(pos)
+    /// Rewind the parser back to a previous position in time
+    pub fn rewind(&mut self, checkpoint: Checkpoint) {
+        let Checkpoint {
+            token_pos,
+            event_pos,
+            errors_pos,
+        } = checkpoint;
+        self.tokens.rewind(token_pos);
+        self.drain_events(self.cur_event_pos() - event_pos);
+        self.errors.truncate(errors_pos);
+    }
+
+    /// Get a checkpoint representing the progress of the parser at this point in time
+    pub fn checkpoint(&self) -> Checkpoint {
+        Checkpoint {
+            token_pos: self.token_pos(),
+            event_pos: self.cur_event_pos(),
+            errors_pos: self.errors.len(),
+        }
     }
 
     /// Get the current index of the last event
-    pub fn cur_event_pos(&self) -> usize {
+    fn cur_event_pos(&self) -> usize {
         self.events.len().saturating_sub(1)
     }
 
     /// Remove `amount` events from the parser
-    pub fn drain_events(&mut self, amount: usize) {
+    fn drain_events(&mut self, amount: usize) {
         self.events.truncate(self.events.len() - amount);
     }
 
@@ -391,8 +417,8 @@ impl<'t> Parser<'t> {
     }
 
     /// Make a new error builder with warning severity
-    pub fn warning_builder(&self, message: &str) -> ErrorBuilder {
-        ErrorBuilder::warning(self.file_id, message)
+    pub fn warning_builder(&self, message: &str) -> Diagnostic {
+        Diagnostic::warning(self.file_id, "SyntaxError", message)
     }
 
     /// Bump and add an error event
@@ -402,16 +428,98 @@ impl<'t> Parser<'t> {
         m.complete(self, SyntaxKind::ERROR);
         self.error(err);
     }
+
+    pub fn err_if_not_ts(&mut self, mut marker: impl BorrowMut<CompletedMarker>, err: &str) {
+        if self.typescript() {
+            return;
+        }
+        let borrow = marker.borrow_mut();
+        borrow.change_kind(self, SyntaxKind::ERROR);
+        let err = self.err_builder(err).primary(borrow.range(self), "");
+
+        self.error(err);
+    }
+
+    /// Try running a parser function and backtrack if any errors occured
+    pub fn try_parse<F>(&mut self, func: F) -> Option<CompletedMarker>
+    where
+        F: FnOnce(&mut Parser) -> Option<CompletedMarker>,
+    {
+        let checkpoint = self.checkpoint();
+        let res = func(self);
+        if checkpoint.errors_pos != self.errors.len() {
+            self.rewind(checkpoint);
+            return None;
+        }
+        if res.is_none() {
+            self.rewind(checkpoint);
+        }
+        res
+    }
+
+    pub(crate) fn expect_no_recover(&mut self, kind: SyntaxKind) -> Option<bool> {
+        if self.state.no_recovery {
+            Some(true).filter(|_| self.eat(kind))
+        } else {
+            Some(self.expect(kind))
+        }
+    }
+
+    pub fn span_text(&self, span: impl rslint_errors::Span) -> &str {
+        &self.tokens.source()[span.as_range()]
+    }
+
+    pub(crate) fn bump_multiple(&mut self, amount: u8, kind: SyntaxKind) {
+        self.push_event(Event::MultipleTokens { amount, kind });
+        for _ in 0..amount {
+            self.tokens.bump();
+        }
+    }
+
+    pub fn marker_vec_range(&self, markers: &[CompletedMarker]) -> Range<usize> {
+        let start = markers
+            .first()
+            .map(|x| usize::from(x.range(self).start()))
+            .unwrap_or_default();
+        let end = markers
+            .last()
+            .map(|x| usize::from(x.range(self).end()))
+            .unwrap_or_default();
+        start..end
+    }
+
+    pub fn expr_with_semi_recovery(&mut self, assign: bool) -> Option<CompletedMarker> {
+        let func = if assign {
+            syntax::expr::assign_expr
+        } else {
+            syntax::expr::expr
+        };
+
+        if self.at(T![;]) {
+            let m = self.start();
+            let err = self
+                .err_builder("expected an expression, but found `;` instead")
+                .primary(self.cur_tok().range, "");
+
+            self.error(err);
+            self.bump_any();
+            m.complete(self, SyntaxKind::ERROR);
+            return None;
+        }
+
+        func(self)
+    }
 }
 
 /// A structure signifying the start of parsing of a syntax tree node
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Marker {
     /// The index in the events list
     pub pos: u32,
     /// The byte index where the node starts
     pub start: usize,
     pub old_start: u32,
+    pub(crate) child_idx: Option<usize>,
 }
 
 impl Marker {
@@ -420,6 +528,7 @@ impl Marker {
             pos,
             start,
             old_start: pos,
+            child_idx: None,
         }
     }
 
@@ -447,7 +556,8 @@ impl Marker {
         p.push_event(Event::Finish {
             end: p.tokens.last_tok().map(|t| t.range.end).unwrap_or(0),
         });
-        CompletedMarker::new(self.pos, finish_pos, kind).old_start(self.old_start)
+        let new = CompletedMarker::new(self.pos, finish_pos, kind);
+        new.old_start(self.old_start)
     }
 
     /// Abandons the syntax tree node. All its children
@@ -461,6 +571,17 @@ impl Marker {
                     forward_parent: None,
                     ..
                 }) => (),
+                _ => unreachable!(),
+            }
+        }
+        if let Some(idx) = self.child_idx {
+            match p.events[idx] {
+                Event::Start {
+                    ref mut forward_parent,
+                    ..
+                } => {
+                    *forward_parent = None;
+                }
                 _ => unreachable!(),
             }
         }
@@ -548,7 +669,7 @@ impl CompletedMarker {
     /// then mark `NEWSTART` as `START`'s parent with saving its relative
     /// distance to `NEWSTART` into forward_parent(=2 in this case);
     pub fn precede(self, p: &mut Parser) -> Marker {
-        let new_pos = p.start();
+        let mut new_pos = p.start();
         let idx = self.start_pos as usize;
         match p.events[idx] {
             Event::Start {
@@ -559,6 +680,7 @@ impl CompletedMarker {
             }
             _ => unreachable!(),
         }
+        new_pos.child_idx = Some(self.start_pos as usize);
         new_pos.old_start(self.old_start as u32)
     }
 
@@ -589,4 +711,16 @@ impl CompletedMarker {
     pub fn kind(&self) -> SyntaxKind {
         self.kind
     }
+
+    pub fn err_if_not_ts(&mut self, p: &mut Parser, err: &str) {
+        p.err_if_not_ts(self, err);
+    }
+}
+
+/// A structure signifying the Parser progress at one point in time
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Checkpoint {
+    pub token_pos: usize,
+    pub event_pos: usize,
+    pub errors_pos: usize,
 }

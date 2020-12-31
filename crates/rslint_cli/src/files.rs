@@ -4,7 +4,7 @@ use crate::lint_warn;
 use hashbrown::HashMap;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rslint_errors::file::{FileId, Files};
-use rslint_parser::{parse_module, parse_text, SyntaxNode};
+use rslint_parser::{parse_with_syntax, FileKind, SyntaxNode};
 use std::fs::read_to_string;
 use std::ops::Range;
 use std::path::PathBuf;
@@ -17,7 +17,7 @@ static FILE_ID_COUNTER: AtomicUsize = AtomicUsize::new(1);
 /// A list of ignored-by-default directory/file names
 const IGNORED: [&str; 1] = ["node_modules"];
 /// A list of the extension of files linted
-const LINTED_FILES: [&str; 2] = ["js", "mjs"];
+const LINTED_FILES: [&str; 3] = ["js", "mjs", "ts"];
 
 /// The structure for managing IO to and from the core runner.
 /// The walker uses multithreaded IO, spawning a thread for every file being loaded.
@@ -130,7 +130,7 @@ impl FileWalker {
     }
 }
 
-/// A structure representing either a concrete (in-disk) or virtual (temporary/non-disk) js or mjs file.
+/// A structure representing either a concrete (in-disk) or virtual (temporary/non-disk) js, ts, or mjs file.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct JsFile {
     pub source: String,
@@ -141,29 +141,24 @@ pub struct JsFile {
 
     /// The codespan id assigned to this file used to refer back to it.
     pub id: usize,
-    /// Whether this is a js or mjs file (script vs module).
-    pub kind: JsFileKind,
+    /// The kind of file this is.
+    pub kind: FileKind,
     /// The cached line start locations in this file.
     pub line_starts: Vec<usize>,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub enum JsFileKind {
-    Script,
-    Module,
 }
 
 impl JsFile {
     pub fn new_concrete(source: String, path: PathBuf) -> Self {
         let id = FILE_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
-        let kind = if path
+        let ext = path
             .extension()
-            .map_or("".into(), |ext| ext.to_string_lossy())
-            == "mjs"
-        {
-            JsFileKind::Module
-        } else {
-            JsFileKind::Script
+            .map_or("".into(), |ext| ext.to_string_lossy());
+
+        let kind = match ext.as_ref() {
+            "mjs" => FileKind::Module,
+            "js" => FileKind::Script,
+            "ts" => FileKind::TypeScript,
+            _ => panic!("tried to make jsfile with extensions outside of `mjs`, `js`, or `ts`"),
         };
         let line_starts = Self::line_starts(&source).collect();
 
@@ -221,10 +216,6 @@ impl JsFile {
     /// Parse this file into a syntax node, ignoring any errors produced. This
     /// will use `parse_module` for `.mjs` and `parse_text` for `.js`
     pub fn parse(&self) -> SyntaxNode {
-        if self.kind == JsFileKind::Module {
-            parse_module(&self.source, self.id).syntax()
-        } else {
-            parse_text(&self.source, self.id).syntax()
-        }
+        parse_with_syntax(&self.source, self.id, self.kind.into()).syntax()
     }
 }

@@ -12,4 +12,5 @@ pub mod expr;
 pub mod pat;
 pub mod program;
 pub mod stmt;
+pub mod typescript;
 pub mod util;

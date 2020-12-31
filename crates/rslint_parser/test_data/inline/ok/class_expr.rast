@@ -36,7 +36,7 @@ MODULE@0..72
         CLASS_BODY@36..57
           L_CURLY@36..37 "{"
           WHITESPACE@37..39 "\n "
-          METHOD@39..55
+          CONSTRUCTOR@39..55
             NAME@39..50
               IDENT@39..50 "constructor"
             PARAMETER_LIST@50..52

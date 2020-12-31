@@ -1,7 +1,7 @@
 MODULE@0..83
   EXPR_STMT@0..30
     ARROW_EXPR@0..30
-      IDENT@0..5 "async"
+      ASYNC_KW@0..5 "async"
       WHITESPACE@5..6 " "
       PARAMETER_LIST@6..8
         L_PAREN@6..7 "("

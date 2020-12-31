@@ -2,10 +2,11 @@
 //!
 //! See the [ECMAScript spec](https://www.ecma-international.org/ecma-262/5.1/#sec-12).
 
-use super::decl::{class_decl, function_decl};
+use super::decl::{class_decl, decorators, function_decl};
 use super::expr::{assign_expr, expr, primary_expr, EXPR_RECOVERY_SET, STARTS_EXPR};
 use super::pat::*;
 use super::program::{export_decl, import_decl};
+use super::typescript::*;
 use super::util::{check_for_stmt_declarators, check_label_use, check_lhs};
 use crate::{SyntaxKind::*, *};
 
@@ -64,13 +65,27 @@ pub fn semi(p: &mut Parser, err_range: Range<usize>) {
 }
 
 /// A generic statement such as a block, if, while, with, etc
-pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option<CompletedMarker> {
-    Some(match p.cur() {
+pub fn stmt(
+    p: &mut Parser,
+    recovery_set: impl Into<Option<TokenSet>>,
+    decorator: Option<CompletedMarker>,
+) -> Option<CompletedMarker> {
+    let decorator = if p.at(T![@]) {
+        decorators(p).into_iter().next() // should be always Some
+    } else {
+        decorator
+    };
+    let res = match p.cur() {
         T![;] => empty_stmt(p),
-        T!['{'] => return block_stmt(p, false, recovery_set),
+        T!['{'] => block_stmt(p, false, recovery_set).unwrap(), // It is only ever None if there is no `{`,
         T![if] => if_stmt(p),
         T![with] => with_stmt(p),
         T![while] => while_stmt(p),
+        t if (t == T![const] && p.nth_at(1, T![enum])) || t == T![enum] => {
+            let mut res = ts_enum(p);
+            res.err_if_not_ts(p, "enums can only be declared in TypeScript files");
+            res
+        }
         T![var] | T![const] => var_decl(p, false),
         T![for] => for_stmt(p),
         T![do] => do_stmt(p),
@@ -82,17 +97,29 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
         T![throw] => throw_stmt(p),
         T![debugger] => debugger_stmt(p),
         T![function] => {
-            let m = p.start();
+            p.state.decorators_were_valid = true;
+            let m = decorator.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
             // TODO: Should we change this to fn_expr if there is no name?
             function_decl(p, m, true)
         }
-        T![class] => class_decl(p, false),
+        T![class] => {
+            p.state.decorators_were_valid = true;
+            let complete = class_decl(p, false);
+            if let Some(decorator) = decorator {
+                let new = decorator.precede(p);
+                complete.undo_completion(p);
+                new.complete(p, CLASS_DECL)
+            } else {
+                complete
+            }
+        }
         T![ident]
             if p.cur_src() == "async"
                 && p.nth_at(1, T![function])
                 && !p.has_linebreak_before_n(1) =>
         {
-            let m = p.start();
+            p.state.decorators_were_valid = true;
+            let m = decorator.map(|x| x.precede(p)).unwrap_or_else(|| p.start());
             p.bump_any();
             function_decl(
                 &mut *p.with_state(ParserState {
@@ -103,52 +130,20 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
                 true,
             )
         }
+
         T![ident] if p.cur_src() == "let" && FOLLOWS_LET.contains(p.nth(1)) => var_decl(p, false),
-        _ if p.at_ts(STARTS_EXPR) => {
-            let start = p.cur_tok().range.start;
-            let mut expr = expr(p)?;
-            // Labelled stmt
-            if expr.kind() == NAME_REF && p.at(T![:]) {
-                expr.change_kind(p, NAME);
-                // Its not possible to have a name without an inner ident token
-                let range = p.events[expr.start_pos as usize..].iter().find_map(|x| {
-                    match x {
-                        Event::Token { kind: T![ident], range } => Some(range),
-                        _ => None
-                    }
-                })
-                    .expect("Tried to get the ident of a name node, but there was no ident. This is erroneous");
+        // TODO: handle `<T>() => {};` with less of a hack
+        _ if p.at_ts(STARTS_EXPR) || p.at(T![<]) => {
+            let complete = expr_stmt(p, decorator);
+            if let Some(decorator) = decorator.filter(|_| !p.state.decorators_were_valid) {
+                let err = p
+                    .err_builder("decorators are not valid in this position")
+                    .primary(decorator.range(p), "");
 
-                let text_range =
-                    TextRange::new((range.start as u32).into(), (range.end as u32).into());
-                let text = p.source(text_range);
-                if let Some(range) = p.state.labels.get(text) {
-                    let err = p
-                        .err_builder("Duplicate statement labels are not allowed")
-                        .secondary(
-                            range.to_owned(),
-                            &format!("`{}` is first used as a label here", text),
-                        )
-                        .primary(
-                            p.cur_tok().range,
-                            &format!("a second use of `{}` here is not allowed", text),
-                        );
-
-                    p.error(err);
-                } else {
-                    let string = text.to_string();
-                    p.state.labels.insert(string, range.to_owned());
-                }
-
-                let m = expr.precede(p);
-                p.bump_any();
-                stmt(p, None);
-                m.complete(p, LABELLED_STMT)
-            } else {
-                let m = expr.precede(p);
-                semi(p, start..p.cur_tok().range.end);
-                m.complete(p, EXPR_STMT)
+                p.error(err);
             }
+            p.state.decorators_were_valid = false;
+            return complete;
         }
         _ => {
             let err = p
@@ -167,7 +162,119 @@ pub fn stmt(p: &mut Parser, recovery_set: impl Into<Option<TokenSet>>) -> Option
             p.err_recover(err, recovery_set.into().unwrap_or(STMT_RECOVERY_SET), false);
             return None;
         }
-    })
+    };
+
+    if let Some(decorator) = decorator.filter(|_| !p.state.decorators_were_valid) {
+        let err = p
+            .err_builder("decorators are not valid in this position")
+            .primary(decorator.range(p), "");
+
+        p.error(err);
+    }
+    p.state.decorators_were_valid = false;
+
+    Some(res)
+}
+
+fn expr_stmt(p: &mut Parser, decorator: Option<CompletedMarker>) -> Option<CompletedMarker> {
+    let start = p.cur_tok().range.start;
+    // this is *technically* wrong because it would be an expr stmt in js but for our purposes
+    // we treat these as always being ts declarations since ambiguity is inefficient in this style of
+    // parsing and it results in better errors usually
+    if matches!(
+        p.cur_src(),
+        "declare" | "abstract" | "enum" | "interface" | "namespace" | "type"
+    ) && !p.nth_at(1, T![:])
+        && !p.nth_at(1, T![.])
+    {
+        if let Some(mut res) = ts_expr_stmt(p) {
+            if let Some(decorator) = decorator {
+                let kind = res.kind();
+                let m = decorator.precede(p);
+                res.undo_completion(p);
+                res = m.complete(p, kind);
+            }
+            res.err_if_not_ts(
+                p,
+                "TypeScript declarations can only be used in TypeScript files",
+            );
+            return Some(res);
+        }
+    }
+
+    // module and global are special because its used normally in js a lot so we cant assume its a ts module decl
+    if p.cur_src() == "module" || (p.cur_src() == "global" && p.nth_at(1, T!['{'])) {
+        if let Some(mut res) = try_parse_ts(p, |p| ts_expr_stmt(p)) {
+            res.err_if_not_ts(
+                p,
+                "TypeScript declarations can only be used in TypeScript files",
+            );
+            return Some(res);
+        }
+    }
+    if p.typescript()
+        && matches!(p.cur_src(), "public" | "private" | "protected")
+        && p.nth_src(1) == "interface"
+    {
+        let err = p
+            .err_builder("interface declarations cannot have accessibility modifiers")
+            .primary(p.cur_tok().range, "")
+            .secondary(p.nth_tok(1).range, "");
+
+        p.error(err);
+        let m = p.start();
+        p.bump_any();
+        ts_interface(p);
+        m.complete(p, ERROR);
+    }
+
+    let mut expr = p.expr_with_semi_recovery(false)?;
+    // Labelled stmt
+    if expr.kind() == NAME_REF && p.at(T![:]) {
+        expr.change_kind(p, NAME);
+        // Its not possible to have a name without an inner ident token
+        let range = p.events[expr.start_pos as usize..]
+            .iter()
+            .find_map(|x| match x {
+                Event::Token {
+                    kind: T![ident],
+                    range,
+                } => Some(range),
+                _ => None,
+            })
+            .expect(
+                "Tried to get the ident of a name node, but there was no ident. This is erroneous",
+            );
+
+        let text_range = TextRange::new((range.start as u32).into(), (range.end as u32).into());
+        let text = p.source(text_range);
+        if let Some(range) = p.state.labels.get(text) {
+            let err = p
+                .err_builder("Duplicate statement labels are not allowed")
+                .secondary(
+                    range.to_owned(),
+                    &format!("`{}` is first used as a label here", text),
+                )
+                .primary(
+                    p.cur_tok().range,
+                    &format!("a second use of `{}` here is not allowed", text),
+                );
+
+            p.error(err);
+        } else {
+            let string = text.to_string();
+            p.state.labels.insert(string, range.to_owned());
+        }
+
+        let m = expr.precede(p);
+        p.bump_any();
+        stmt(p, None, None);
+        return Some(m.complete(p, LABELLED_STMT));
+    }
+
+    let m = expr.precede(p);
+    semi(p, start..p.cur_tok().range.end);
+    Some(m.complete(p, EXPR_STMT))
 }
 
 /// A debugger statement such as `debugger;`
@@ -205,7 +312,7 @@ pub fn throw_stmt(p: &mut Parser) -> CompletedMarker {
 
         p.error(err);
     } else {
-        expr(p);
+        p.expr_with_semi_recovery(false);
     }
     semi(p, start..p.cur_tok().range.end);
     m.complete(p, THROW_STMT)
@@ -258,7 +365,12 @@ pub fn continue_stmt(p: &mut Parser) -> CompletedMarker {
     p.expect(T![continue]);
     let end = if !p.has_linebreak_before_n(0) && p.at(T![ident]) {
         let end = p.cur_tok().range.end;
-        let label = primary_expr(p).unwrap();
+        let mut guard = p.with_state(ParserState {
+            expr_recovery_set: EXPR_RECOVERY_SET.union(token_set![T![;]]),
+            ..p.state.clone()
+        });
+        let label = primary_expr(&mut *guard).unwrap();
+        drop(guard);
         check_label_use(p, &label);
         end
     } else {
@@ -293,12 +405,12 @@ pub fn return_stmt(p: &mut Parser) -> CompletedMarker {
     let start = p.cur_tok().range.start;
     p.expect(T![return]);
     if !p.has_linebreak_before_n(0) && p.at_ts(STARTS_EXPR) {
-        expr(p);
+        p.expr_with_semi_recovery(false);
     }
     semi(p, start..p.cur_tok().range.end);
     let complete = m.complete(p, RETURN_STMT);
 
-    if !p.state.in_function {
+    if !p.state.in_function && !p.syntax.global_return {
         let err = p
             .err_builder("Illegal return statement outside of a function")
             .primary(complete.range(p), "");
@@ -339,16 +451,20 @@ pub fn block_stmt(
         return None;
     }
     let m = p.start();
-    p.bump(T!['{']);
-    block_items(p, function_body, false, recovery_set);
-    p.expect(T!['}']);
-    Some(m.complete(p, BLOCK_STMT))
+    let mut guard = p.with_state(ParserState {
+        in_function: p.state.in_function || function_body,
+        ..p.state.clone()
+    });
+    guard.bump(T!['{']);
+    block_items(&mut *guard, function_body, false, true, recovery_set);
+    guard.expect(T!['}']);
+    Some(m.complete(&mut *guard, BLOCK_STMT))
 }
 
 pub fn block_stmt_unchecked(p: &mut Parser, function_body: bool) -> CompletedMarker {
     let m = p.start();
     p.bump(T!['{']);
-    block_items(p, function_body, false, None);
+    block_items(p, function_body, false, true, None);
     p.expect(T!['}']);
     m.complete(p, BLOCK_STMT)
 }
@@ -359,6 +475,7 @@ pub(crate) fn block_items(
     p: &mut Parser,
     directives: bool,
     top_level: bool,
+    stop_on_r_curly: bool,
     recovery_set: impl Into<Option<TokenSet>>,
 ) {
     let old = p.state.clone();
@@ -367,9 +484,16 @@ pub(crate) fn block_items(
     let mut could_be_directive = directives;
 
     while !p.at(EOF) {
-        if !top_level && p.at(T!['}']) {
+        if stop_on_r_curly && p.at(T!['}']) {
             break;
         }
+
+        let decorator = if p.at(T![@]) {
+            decorators(p).into_iter().next()
+        } else {
+            None
+        };
+        let mut is_import_export = false;
 
         let complete = match p.cur() {
             // test_err import_decl_not_top_level
@@ -379,8 +503,15 @@ pub(crate) fn block_items(
 
             // make sure we dont try parsing import.meta or import() as declarations
             T![import] if !token_set![T![.], T!['(']].contains(p.nth(1)) => {
+                is_import_export = true;
                 let mut m = import_decl(p);
-                if !p.state.is_module {
+                if let Some(decorator) = decorator {
+                    let kind = m.kind();
+                    let new = decorator.precede(p);
+                    m.undo_completion(p);
+                    m = new.complete(p, kind)
+                }
+                if !p.state.is_module && !p.typescript() {
                     let err = p
                         .err_builder("Illegal use of an import declaration outside of a module")
                         .primary(m.range(p), "not allowed inside scripts");
@@ -403,8 +534,15 @@ pub(crate) fn block_items(
             //  export { pain } from "life";
             // }
             T![export] => {
+                is_import_export = true;
                 let mut m = export_decl(p);
-                if !p.state.is_module {
+                if let Some(decorator) = decorator {
+                    let kind = m.kind();
+                    let new = decorator.precede(p);
+                    m.undo_completion(p);
+                    m = new.complete(p, kind)
+                }
+                if !p.state.is_module && !p.typescript() {
                     let err = p
                         .err_builder("Illegal use of an export declaration outside of a module")
                         .primary(m.range(p), "not allowed inside scripts");
@@ -422,8 +560,19 @@ pub(crate) fn block_items(
                 }
                 Some(m)
             }
-            _ => stmt(p, recovery_set),
+            _ => stmt(p, recovery_set, decorator),
         };
+
+        if let Some(decorator) =
+            decorator.filter(|_| !p.state.decorators_were_valid && is_import_export)
+        {
+            let err = p
+                .err_builder("decorators are not valid in this position")
+                .primary(decorator.range(p), "");
+
+            p.error(err);
+        }
+        p.state.decorators_were_valid = false;
 
         // Directives are the longest sequence of string literals, so
         // ```
@@ -491,9 +640,9 @@ pub fn if_stmt(p: &mut Parser) -> CompletedMarker {
         ..p.state.clone()
     }));
     // allows us to recover from `if (true) else {}`
-    stmt(p, STMT_RECOVERY_SET.union(token_set![T![else]]));
+    stmt(p, STMT_RECOVERY_SET.union(token_set![T![else]]), None);
     if p.eat(T![else]) {
-        stmt(p, None);
+        stmt(p, None, None);
     }
     m.complete(p, IF_STMT)
 }
@@ -503,7 +652,7 @@ pub fn with_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![with]);
     condition(p);
-    stmt(p, None);
+    stmt(p, None, None);
 
     let mut complete = m.complete(p, WITH_STMT);
     if p.state.strict.is_some() {
@@ -537,6 +686,7 @@ pub fn while_stmt(p: &mut Parser) -> CompletedMarker {
             continue_allowed: true,
             ..p.state.clone()
         }),
+        None,
         None,
     );
     m.complete(p, WHILE_STMT)
@@ -573,7 +723,7 @@ pub fn var_decl(p: &mut Parser, no_semi: bool) -> CompletedMarker {
                 .err_builder(
                     "Expected `var`, `let`, or `const` for a variable declaration, but found none",
                 )
-                .primary(p.cur_tok(), "");
+                .primary(p.cur_tok().range, "");
 
             p.error(err);
         }
@@ -603,34 +753,70 @@ fn declarator(
     is_const: &Option<Range<usize>>,
     for_stmt: bool,
     is_let: bool,
-) -> CompletedMarker {
+) -> Option<CompletedMarker> {
     let m = p.start();
     p.state.should_record_names = is_const.is_some() || is_let;
-    let pat = pattern(p);
+    let pat_m = p.start();
+    let pat = pattern(p, false)?;
+    pat.undo_completion(p).abandon(p);
     p.state.should_record_names = false;
+    let kind = pat.kind();
 
-    if p.eat(T![=]) {
-        assign_expr(p);
-    } else if let Some(ref marker) = pat {
-        if marker.kind() != SINGLE_PATTERN && !for_stmt {
+    let cur = p.cur_tok().range;
+    let opt = p.eat(T![!]);
+    if opt && !p.typescript() {
+        let err = p
+            .err_builder("definite assignment assertions can only be used in TypeScript files")
+            .primary(cur, "");
+
+        p.error(err);
+    }
+
+    if p.eat(T![:]) {
+        let start = p.cur_tok().range.start;
+        let ty = ts_type(p);
+        let end = ty
+            .map(|x| usize::from(x.range(p).end()))
+            .unwrap_or(p.cur_tok().range.start);
+        if !p.typescript() {
             let err = p
-                .err_builder("Object and Array patterns require initializers")
-                .primary(
-                    marker.range(p),
-                    "this pattern is declared, but it is not given an initialized value",
-                );
+                .err_builder("type annotations can only be used in TypeScript files")
+                .primary(start..end, "");
 
             p.error(err);
-        } else if is_const.is_some() && !for_stmt {
+        }
+        if p.typescript() && for_stmt {
             let err = p
-                .err_builder("Const var declarations must have an initialized value")
-                .primary(marker.range(p), "this variable needs to be initialized");
+                .err_builder("`for` statement declarators cannot have a type annotation")
+                .primary(start..end, "");
 
             p.error(err);
         }
     }
 
-    m.complete(p, DECLARATOR)
+    let marker = pat_m.complete(p, kind);
+
+    if p.eat(T![=]) {
+        p.expr_with_semi_recovery(true);
+    } else if marker.kind() != SINGLE_PATTERN && !for_stmt && !p.state.in_declare {
+        let err = p
+            .err_builder("Object and Array patterns require initializers")
+            .primary(
+                marker.range(p),
+                "this pattern is declared, but it is not given an initialized value",
+            );
+
+        p.error(err);
+    // FIXME: does ts allow const var declarations without initializers in .d.ts files?
+    } else if is_const.is_some() && !for_stmt && !p.state.in_declare {
+        let err = p
+            .err_builder("Const var declarations must have an initialized value")
+            .primary(marker.range(p), "this variable needs to be initialized");
+
+        p.error(err);
+    }
+
+    Some(m.complete(p, DECLARATOR))
 }
 
 // A do.. while statement, such as `do {} while (true)`
@@ -646,7 +832,7 @@ pub fn do_stmt(p: &mut Parser) -> CompletedMarker {
     let start = p.cur_tok().range.start;
     p.expect(T![do]);
     p.state.iteration_stmt(true);
-    stmt(p, None);
+    stmt(p, None, None);
     p.state.iteration_stmt(false);
     p.expect(T![while]);
     condition(p);
@@ -698,6 +884,12 @@ fn for_head(p: &mut Parser) -> SyntaxKind {
 
             if let Some(ref expr) = complete {
                 check_lhs(p, p.parse_marker(expr), &complete.unwrap());
+                if p.typescript() && matches!(expr.kind(), ARRAY_EXPR | OBJECT_EXPR) {
+                    let err = p.err_builder("the left hand side of a `for..in` or `for..of` statement cannot be a destructuring pattern")
+                        .primary(expr.range(p), "");
+
+                    p.error(err);
+                }
             }
 
             return for_each_head(p, is_in);
@@ -759,6 +951,7 @@ pub fn for_stmt(p: &mut Parser) -> CompletedMarker {
             ..p.state.clone()
         }),
         None,
+        None,
     );
     m.complete(p, kind)
 }
@@ -775,7 +968,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
             // including the statement list following it
             let end = p.cur_tok().range.end;
             while !p.at_ts(token_set![T![default], T![case], T!['}'], EOF]) {
-                stmt(p, None);
+                stmt(p, None, None);
             }
             m.complete(p, DEFAULT_CLAUSE);
             return Some(start..end);
@@ -785,7 +978,7 @@ fn switch_clause(p: &mut Parser) -> Option<Range<usize>> {
             expr(p);
             p.expect(T![:]);
             while !p.at_ts(token_set![T![default], T![case], T!['}'], EOF]) {
-                stmt(p, None);
+                stmt(p, None, None);
             }
             m.complete(p, CASE_CLAUSE);
         }
@@ -860,7 +1053,38 @@ fn catch_clause(p: &mut Parser) {
     p.expect(T![catch]);
 
     if p.eat(T!['(']) {
-        pattern(p);
+        let m = p.start();
+        let kind = pattern(p, false).map(|x| x.kind());
+        if p.at(T![:]) {
+            let start = p.cur_tok().range.start;
+            p.bump_any();
+            let ty = ts_type(p);
+            if !matches!(
+                ty.as_ref().map(|x| p.span_text(x.range(p))),
+                Some("unknown") | Some("any")
+            ) && p.typescript()
+                && ty.is_some()
+            {
+                let err = p.err_builder("type annotations for catch parameters can only be `unknown` or `any` if specified")
+                    .primary(ty.as_ref().unwrap().range(p), "");
+
+                p.error(err);
+            }
+
+            let end = ty
+                .map(|x| usize::from(x.range(p).end()))
+                .unwrap_or(p.cur_tok().range.start);
+            m.complete(p, kind.filter(|_| p.typescript()).unwrap_or(ERROR));
+            if !p.typescript() {
+                let err = p
+                    .err_builder("type annotations can only be used in TypeScript files")
+                    .primary(start..end, "");
+
+                p.error(err);
+            }
+        } else {
+            m.abandon(p);
+        }
         p.expect(T![')']);
     }
 
