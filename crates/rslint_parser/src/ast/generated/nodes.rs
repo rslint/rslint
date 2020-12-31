@@ -117,13 +117,22 @@ pub struct TsLiteral {
 impl TsLiteral {
     pub fn lit(&self) -> Option<Literal> { support::child(&self.syntax) }
 }
-#[doc = " A type represented by a literal template\n"]
+#[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TsTemplate {
     pub(crate) syntax: SyntaxNode,
 }
 impl TsTemplate {
-    pub fn template(&self) -> Option<Template> { support::child(&self.syntax) }
+    pub fn elements(&self) -> AstChildren<TsTemplateElement> { support::children(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsTemplateElement {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsTemplateElement {
+    pub fn ty(&self) -> Option<TsType> { support::child(&self.syntax) }
+    pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
 }
 #[doc = " A type guard which performs a runtime check to guarantee the type of something in a scope\n\n ```ts\n function isFish(pet: Fish | Bird): pet is Fish {\n    return (pet as Fish).swim !== undefined;\n }\n ```\n\n It could also be an assertion function:\n\n ```ts\n function check(cond: any): asserts condition { /* */ }\n ```\n\n <https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-7.html#assertion-functions>\n <https://www.typescriptlang.org/docs/handbook/advanced-types.html#user-defined-type-guards>\n"]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -673,6 +682,15 @@ impl TsDecorator {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TsInfer {
+    pub(crate) syntax: SyntaxNode,
+}
+impl TsInfer {
+    pub fn infer_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![infer]) }
+    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Script {
     pub(crate) syntax: SyntaxNode,
 }
@@ -1212,8 +1230,7 @@ pub struct Getter {
 impl Getter {
     pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
     pub fn key(&self) -> Option<PropName> { support::child(&self.syntax) }
-    pub fn l_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['(']) }
-    pub fn r_paren_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![')']) }
+    pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
 }
 #[doc = ""]
@@ -1846,6 +1863,7 @@ pub enum TsType {
     TsConstructorType(TsConstructorType),
     TsConditionalType(TsConditionalType),
     TsObjectType(TsObjectType),
+    TsInfer(TsInfer),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -2024,6 +2042,17 @@ impl AstNode for TsLiteral {
 }
 impl AstNode for TsTemplate {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_TEMPLATE }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsTemplateElement {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_TEMPLATE_ELEMENT }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -2563,6 +2592,17 @@ impl AstNode for TsNamespaceExportDecl {
 }
 impl AstNode for TsDecorator {
     fn can_cast(kind: SyntaxKind) -> bool { kind == TS_DECORATOR }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
+impl AstNode for TsInfer {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == TS_INFER }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -4313,6 +4353,9 @@ impl From<TsConditionalType> for TsType {
 impl From<TsObjectType> for TsType {
     fn from(node: TsObjectType) -> TsType { TsType::TsObjectType(node) }
 }
+impl From<TsInfer> for TsType {
+    fn from(node: TsInfer) -> TsType { TsType::TsInfer(node) }
+}
 impl AstNode for TsType {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
@@ -4347,6 +4390,7 @@ impl AstNode for TsType {
                 | TS_CONSTRUCTOR_TYPE
                 | TS_CONDITIONAL_TYPE
                 | TS_OBJECT_TYPE
+                | TS_INFER
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -4381,6 +4425,7 @@ impl AstNode for TsType {
             TS_CONSTRUCTOR_TYPE => TsType::TsConstructorType(TsConstructorType { syntax }),
             TS_CONDITIONAL_TYPE => TsType::TsConditionalType(TsConditionalType { syntax }),
             TS_OBJECT_TYPE => TsType::TsObjectType(TsObjectType { syntax }),
+            TS_INFER => TsType::TsInfer(TsInfer { syntax }),
             _ => return None,
         };
         Some(res)
@@ -4417,6 +4462,7 @@ impl AstNode for TsType {
             TsType::TsConstructorType(it) => &it.syntax,
             TsType::TsConditionalType(it) => &it.syntax,
             TsType::TsObjectType(it) => &it.syntax,
+            TsType::TsInfer(it) => &it.syntax,
         }
     }
 }
@@ -4676,6 +4722,11 @@ impl std::fmt::Display for TsTemplate {
         std::fmt::Display::fmt(self.syntax(), f)
     }
 }
+impl std::fmt::Display for TsTemplateElement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
 impl std::fmt::Display for TsPredicate {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
@@ -4917,6 +4968,11 @@ impl std::fmt::Display for TsNamespaceExportDecl {
     }
 }
 impl std::fmt::Display for TsDecorator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for TsInfer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

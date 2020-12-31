@@ -391,7 +391,6 @@ pub fn paren_expr(p: &mut Parser) -> CompletedMarker {
 // new Foo(bar, baz, 6 + 6, foo[bar] + (foo) => {} * foo?.bar)
 pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMarker> {
     if p.at(T![new]) {
-        let tok_range = p.cur_tok().range;
         // We must start the marker here and not outside or else we make
         // a needless node if the node ends up just being a primary expr
         let m = p.start();
@@ -411,16 +410,17 @@ pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMar
         }
 
         if p.at(T![<]) {
-            let mut args =
-                ts_type_args(p).expect("ts_type_args returned None despite no_recovery=false");
-            args.err_if_not_ts(p, "type arguments are only allowed in TypeScript files");
-            if !p.at(T!['(']) {
-                // TODO: add a "consider adding adding parentheses after the expression" suggestion once rslint_errors lands
-                let err = p
-                    .err_builder("`new` expressions with type arguments must have an argument list")
-                    .primary(tok_range.start..args.range(p).end().into(), "");
-
-                p.error(err);
+            if let Some(mut complete) = try_parse_ts(p, |p| {
+                let compl = ts_type_args(p);
+                if !p.at(T!['(']) {
+                    return None;
+                }
+                compl
+            }) {
+                complete.err_if_not_ts(
+                    p,
+                    "`new` expressions can only have type arguments in TypeScript files",
+                );
             }
         }
 
@@ -936,7 +936,7 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
             } else {
                 // `async a => {}` and `async (a) => {}`
                 if p.state.potential_arrow_start
-                    && token_set![T![ident], T![yield], T!['('], T![<]].contains(p.nth(1))
+                    && token_set![T![ident], T![yield], T!['(']].contains(p.nth(1))
                 {
                     // test async_arrow_expr
                     // let a = async foo => {}
@@ -945,14 +945,6 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                     // async (yield) => {}
                     let m = p.start();
                     p.bump_remap(T![async]);
-                    if p.at(T![<]) {
-                        ts_type_params(p)
-                            .expect("ts_type_param returned None despite no_recovery=false")
-                            .err_if_not_ts(
-                                p,
-                                "type parameters may only be used in TypeScript files",
-                            );
-                    }
                     if p.at(T!['(']) {
                         formal_parameters(p);
                     } else {

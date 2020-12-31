@@ -1,9 +1,8 @@
 //! TypeScript specific functions.
 
 use super::decl::*;
-use super::expr::{assign_expr, identifier_name, lhs_expr, literal, template};
+use super::expr::{assign_expr, identifier_name, lhs_expr, literal};
 use super::stmt::{block_items, semi, var_decl};
-use crate::ast::Template;
 use crate::{SyntaxKind::*, *};
 
 pub const BASE_TS_RECOVERY_SET: TokenSet = token_set![
@@ -165,6 +164,14 @@ pub(crate) fn ts_declare(p: &mut Parser) -> Option<CompletedMarker> {
             p.bump_remap(T![declare]);
             var_decl(p, false).undo_completion(p).abandon(p);
             m.complete(p, VAR_DECL)
+        }
+        _ if p.nth_src(1) == "global" => {
+            let m = p.start();
+            p.bump_remap(T![declare]);
+            if let Some(complete) = ts_ambient_external_module_decl(p, false) {
+                complete.undo_completion(p).abandon(p);
+            }
+            m.complete(p, TS_MODULE_DECL)
         }
         _ => {
             let checkpoint = p.checkpoint();
@@ -512,7 +519,6 @@ pub fn ts_signature_member(p: &mut Parser, construct_sig: bool) -> Option<Comple
         no_recover!(p, ts_type_params(p));
     }
 
-    p.expect(T!['(']);
     formal_parameters(&mut *p.with_state(ParserState {
         in_binding_list_for_signature: true,
         ..p.state.clone()
@@ -597,13 +603,16 @@ pub fn try_parse_ts(
     p: &mut Parser,
     func: impl FnOnce(&mut Parser) -> Option<CompletedMarker>,
 ) -> Option<CompletedMarker> {
-    let checkpoint = p.checkpoint();
+    // FIXME: simply rewinding doesnt work for `new A < T;` and it makes the parser enter unreachable
+    // code, and i really cant be bothered to debug incorrect event code because i don't have enough sanity
+    // left in me
+    let old = p.to_owned();
     let res = func(&mut *p.with_state(ParserState {
         no_recovery: true,
         ..p.state.clone()
     }));
     if res.is_none() {
-        p.rewind(checkpoint);
+        *p = old;
     }
     res
 }
@@ -725,6 +734,8 @@ fn skip_parameter_start(p: &mut Parser) -> bool {
                 counter += 1;
             } else if p.eat(T!['}']) {
                 counter -= 1;
+            } else {
+                p.bump_any();
             }
         }
         return true;
@@ -738,6 +749,8 @@ fn skip_parameter_start(p: &mut Parser) -> bool {
                 counter += 1;
             } else if p.eat(T![']']) {
                 counter -= 1;
+            } else {
+                p.bump_any();
             }
         }
         return true;
@@ -789,7 +802,10 @@ pub fn ts_type_operator_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
         no_recover!(p, ts_type_operator_or_higher(p));
         Some(m.complete(p, TS_TYPE_OPERATOR))
     } else if p.cur_src() == "infer" {
-        todo!("infer")
+        let m = p.start();
+        p.bump_remap(T![infer]);
+        identifier_name(p);
+        Some(m.complete(p, TS_INFER))
     } else {
         // FIXME: readonly should apparently be handled here?
         // but the previous matches should have accounted for it 🤔
@@ -817,17 +833,14 @@ pub fn ts_array_type_or_higher(p: &mut Parser) -> Option<CompletedMarker> {
 pub fn ts_tuple(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
     p.expect_no_recover(T!['['])?;
-    let mut opt = None;
-    let mut maybe_invalid_rest_elems: Vec<(bool, TextRange)> = vec![];
-    let mut last_was_rest = false;
 
     while !p.at(EOF) && !p.at(T![']']) {
         let m = p.start();
         let rest_range = p.cur_tok().range;
         let rest = p.eat(T![...]);
-        let name = if (p.at_ts(token_set![T![ident], T![await], T![yield]]) || p.cur().is_keyword())
+        let name = if crate::at_ident_name!(p)
             && !DISALLOWED_TYPE_NAMES.contains(&p.cur_src())
-            && p.nth_at(1, T![:])
+            && (p.nth_at(1, T![:]) || (p.nth_at(1, T![?]) && p.nth_at(2, T![:])))
         {
             identifier_name(p);
             true
@@ -841,10 +854,10 @@ pub fn ts_tuple(p: &mut Parser) -> Option<CompletedMarker> {
             p.expect(T![:]);
         }
         no_recover!(p, ts_type(p));
-        let compl = m.complete(p, TS_TUPLE_ELEMENT);
-        if is_opt {
-            opt = Some(compl.range(p));
+        if !name && p.at(T![?]) {
+            p.eat(T![?]);
         }
+        m.complete(p, TS_TUPLE_ELEMENT);
         if is_opt && rest {
             let err = p
                 .err_builder("a tuple element cannot be both rest and optional")
@@ -853,40 +866,10 @@ pub fn ts_tuple(p: &mut Parser) -> Option<CompletedMarker> {
 
             p.error(err);
         }
-        if let Some(range) = opt.filter(|_| !is_opt) {
-            let err = p
-                .err_builder("a required tuple element cannot follow an optional element")
-                .secondary(range, "")
-                .primary(compl.range(p), "");
-
-            p.error(err);
-        }
-        if rest {
-            if last_was_rest {
-                maybe_invalid_rest_elems.last_mut().unwrap().0 = true;
-            }
-            maybe_invalid_rest_elems.push((false, compl.range(p)));
-            last_was_rest = true;
-        } else {
-            maybe_invalid_rest_elems
-                .iter_mut()
-                .for_each(|(b, _)| *b = true);
-            last_was_rest = false;
-        }
         p.eat(T![,]);
     }
 
     p.expect_no_recover(T![']'])?;
-    for elem in maybe_invalid_rest_elems
-        .into_iter()
-        .filter_map(|(b, r)| Some(r).filter(|_| b))
-    {
-        let err = p
-            .err_builder("a rest element in a tuple must appear as the last element")
-            .primary(elem, "");
-
-        p.error(err);
-    }
     Some(m.complete(p, TS_TUPLE))
 }
 
@@ -930,19 +913,25 @@ pub fn ts_non_array_type(p: &mut Parser) -> Option<CompletedMarker> {
             Some(literal(p).unwrap().precede(p).complete(p, TS_LITERAL))
         }
         BACKTICK => {
-            let complete = template(p, None);
-            // TODO: we can do this more efficiently by just looking at each event
-            let parsed = p.parse_marker::<Template>(&complete);
-            for elem in parsed.elements() {
-                let err = p
-                    .err_builder(
-                        "template literals used as TypeScript types may not contain expressions",
-                    )
-                    .primary(elem.range(), "");
+            let m = p.start();
+            p.bump_any();
 
-                p.error(err);
+            while !p.at(EOF) && !p.at(BACKTICK) {
+                match p.cur() {
+                    TEMPLATE_CHUNK => p.bump_any(),
+                    DOLLARCURLY => {
+                        let e = p.start();
+                        p.bump_any();
+                        ts_type(p);
+                        p.expect(T!['}']);
+                        e.complete(p, TS_TEMPLATE_ELEMENT);
+                    },
+                    t => unreachable!("Anything not template chunk or dollarcurly should have been eaten by the lexer, but {:?} was found", t),
+                }
             }
-            Some(complete.precede(p).complete(p, TS_TEMPLATE))
+
+            p.eat(BACKTICK);
+            Some(m.complete(p, TS_TEMPLATE))
         }
         T![-] => {
             let m = p.start();
@@ -1204,7 +1193,7 @@ pub fn ts_mapped_type(p: &mut Parser) -> Option<CompletedMarker> {
 }
 
 fn is_mapped_type_start(p: &Parser) -> bool {
-    if (p.nth_at(1, T![+]) || p.nth_at(1, T![+])) && p.nth_src(1) == "readonly" {
+    if (p.nth_at(1, T![+]) || p.nth_at(1, T![-])) && p.nth_src(2) == "readonly" {
         return true;
     }
     let mut cur = 1;

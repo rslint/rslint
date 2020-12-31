@@ -1,1 +1,1 @@
-type MyType = ({ theme }: any) => any
+type MyType = ({ theme }: any) => any;

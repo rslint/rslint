@@ -198,80 +198,83 @@ fn expr_stmt(p: &mut Parser, decorator: Option<CompletedMarker>) -> Option<Compl
                 p,
                 "TypeScript declarations can only be used in TypeScript files",
             );
-            Some(res)
-        } else {
-            None
+            return Some(res);
         }
-    } else {
-        // module and global are special because its used normally in js a lot so we cant assume its a ts module decl
-        if p.cur_src() == "module" || (p.cur_src() == "global" && p.nth_at(1, T!['{'])) {
-            if let Some(mut res) = try_parse_ts(p, |p| ts_expr_stmt(p)) {
-                res.err_if_not_ts(
-                    p,
-                    "TypeScript declarations can only be used in TypeScript files",
-                );
-                return Some(res);
-            }
+    }
+
+    // module and global are special because its used normally in js a lot so we cant assume its a ts module decl
+    if p.cur_src() == "module" || (p.cur_src() == "global" && p.nth_at(1, T!['{'])) {
+        if let Some(mut res) = try_parse_ts(p, |p| ts_expr_stmt(p)) {
+            res.err_if_not_ts(
+                p,
+                "TypeScript declarations can only be used in TypeScript files",
+            );
+            return Some(res);
         }
-        if p.typescript()
-            && matches!(p.cur_src(), "public" | "private" | "protected")
-            && p.nth_src(1) == "interface"
-        {
+    }
+    if p.typescript()
+        && matches!(p.cur_src(), "public" | "private" | "protected")
+        && p.nth_src(1) == "interface"
+    {
+        let err = p
+            .err_builder("interface declarations cannot have accessibility modifiers")
+            .primary(p.cur_tok().range, "")
+            .secondary(p.nth_tok(1).range, "");
+
+        p.error(err);
+        let m = p.start();
+        p.bump_any();
+        ts_interface(p);
+        m.complete(p, ERROR);
+    }
+
+    let mut expr = p.expr_with_semi_recovery(false)?;
+    // Labelled stmt
+    if expr.kind() == NAME_REF && p.at(T![:]) {
+        expr.change_kind(p, NAME);
+        // Its not possible to have a name without an inner ident token
+        let range = p.events[expr.start_pos as usize..]
+            .iter()
+            .find_map(|x| match x {
+                Event::Token {
+                    kind: T![ident],
+                    range,
+                } => Some(range),
+                _ => None,
+            })
+            .expect(
+                "Tried to get the ident of a name node, but there was no ident. This is erroneous",
+            );
+
+        let text_range = TextRange::new((range.start as u32).into(), (range.end as u32).into());
+        let text = p.source(text_range);
+        if let Some(range) = p.state.labels.get(text) {
             let err = p
-                .err_builder("interface declarations cannot have accessibility modifiers")
-                .primary(p.cur_tok().range, "")
-                .secondary(p.nth_tok(1).range, "");
+                .err_builder("Duplicate statement labels are not allowed")
+                .secondary(
+                    range.to_owned(),
+                    &format!("`{}` is first used as a label here", text),
+                )
+                .primary(
+                    p.cur_tok().range,
+                    &format!("a second use of `{}` here is not allowed", text),
+                );
 
             p.error(err);
-            let m = p.start();
-            p.bump_any();
-            ts_interface(p);
-            m.complete(p, ERROR);
-        }
-
-        let mut expr = p.expr_with_semi_recovery(false)?;
-        // Labelled stmt
-        if expr.kind() == NAME_REF && p.at(T![:]) {
-            expr.change_kind(p, NAME);
-            // Its not possible to have a name without an inner ident token
-            let range = p.events[expr.start_pos as usize..].iter().find_map(|x| {
-            match x {
-                Event::Token { kind: T![ident], range } => Some(range),
-                _ => None
-            }
-        })
-            .expect("Tried to get the ident of a name node, but there was no ident. This is erroneous");
-
-            let text_range = TextRange::new((range.start as u32).into(), (range.end as u32).into());
-            let text = p.source(text_range);
-            if let Some(range) = p.state.labels.get(text) {
-                let err = p
-                    .err_builder("Duplicate statement labels are not allowed")
-                    .secondary(
-                        range.to_owned(),
-                        &format!("`{}` is first used as a label here", text),
-                    )
-                    .primary(
-                        p.cur_tok().range,
-                        &format!("a second use of `{}` here is not allowed", text),
-                    );
-
-                p.error(err);
-            } else {
-                let string = text.to_string();
-                p.state.labels.insert(string, range.to_owned());
-            }
-
-            let m = expr.precede(p);
-            p.bump_any();
-            stmt(p, None, None);
-            return Some(m.complete(p, LABELLED_STMT));
+        } else {
+            let string = text.to_string();
+            p.state.labels.insert(string, range.to_owned());
         }
 
         let m = expr.precede(p);
-        semi(p, start..p.cur_tok().range.end);
-        Some(m.complete(p, EXPR_STMT))
+        p.bump_any();
+        stmt(p, None, None);
+        return Some(m.complete(p, LABELLED_STMT));
     }
+
+    let m = expr.precede(p);
+    semi(p, start..p.cur_tok().range.end);
+    Some(m.complete(p, EXPR_STMT))
 }
 
 /// A debugger statement such as `debugger;`
@@ -1054,11 +1057,13 @@ fn catch_clause(p: &mut Parser) {
         let kind = pattern(p, false).map(|x| x.kind());
         if p.at(T![:]) {
             let start = p.cur_tok().range.start;
+            p.bump_any();
             let ty = ts_type(p);
             if !matches!(
                 ty.as_ref().map(|x| p.span_text(x.range(p))),
                 Some("unknown") | Some("any")
             ) && p.typescript()
+                && ty.is_some()
             {
                 let err = p.err_builder("type annotations for catch parameters can only be `unknown` or `any` if specified")
                     .primary(ty.as_ref().unwrap().range(p), "");

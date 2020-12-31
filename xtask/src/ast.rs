@@ -133,6 +133,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "assert",
         "module",
         "global",
+        "infer",
     ],
     literals: &["NUMBER", "STRING", "REGEX"],
     tokens: &[
@@ -266,8 +267,8 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_TYPE_REF",
         "TS_QUALIFIED_PATH",
         "TS_TYPE_NAME",
-        // TODO: we should combine template into Literal
         "TS_TEMPLATE",
+        "TS_TEMPLATE_ELEMENT",
         "TS_MAPPED_TYPE",
         "TS_MAPPED_TYPE_PARAM",
         "TS_MAPPED_TYPE_READONLY",
@@ -313,6 +314,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "TS_EXPORT_ASSIGNMENT",
         "TS_NAMESPACE_EXPORT_DECL",
         "TS_DECORATOR",
+        "TS_INFER",
     ],
 };
 
@@ -436,8 +438,19 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             /* - for numbers */
             lit: Literal
         }
-        /// A type represented by a literal template
-        struct TsTemplate { template: Template }
+
+        struct TsTemplate {
+            /* backtick */
+            elements: [TsTemplateElement],
+            /* chunks */
+            /* backtick */
+        }
+
+        struct TsTemplateElement {
+            /* dollarcurly */
+            ty: TsType,
+            T!['}']
+        }
 
         /// A type guard which performs a runtime check to guarantee the type of something in a scope
         ///
@@ -828,6 +841,11 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             expr: Expr,
         }
 
+        struct TsInfer {
+            T![infer],
+            T![ident]
+        }
+
         // --------------------------------------------------
         struct Script {
             T![shebang],
@@ -1161,8 +1179,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             decorators: [TsDecorator],
             /* get */
             key: PropName,
-            T!['('],
-            T![')'],
+            parameters: ParameterList,
             body: BlockStmt,
         }
 
@@ -1655,7 +1672,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             TsFnType,
             TsConstructorType,
             TsConditionalType,
-            TsObjectType
+            TsObjectType,
+            TsInfer
         }
 
         enum TsThisOrName {
