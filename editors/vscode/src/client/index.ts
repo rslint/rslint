@@ -28,6 +28,7 @@ export async function launch(context: vscode.ExtensionContext): Promise<lspClien
       fileEvents: [
         vscode.workspace.createFileSystemWatcher("**/*.js"),
         vscode.workspace.createFileSystemWatcher("**/*.mjs"),
+        vscode.workspace.createFileStstemWatcher("**/*.ts"),
         vscode.workspace.createFileSystemWatcher("**/rslintrc.toml"),
       ],
     },
