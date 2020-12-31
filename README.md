@@ -1,88 +1,134 @@
-# RSLint
+<div align="center">
+  <h1><code>RSLint</code></h1>
 
-A (WIP) JavaScript linter written in Rust designed to be as fast as possible, customizable, and easy to use.
+  <p>
+    <strong>A fast, customizable, and easy to use 
+    <a href="https://www.javascript.com/">JavaScript</a></strong> and
+    <a href="https://typescriptlang.org/">TypeScript</a> linter
+  </p>
 
-[User Documentation](https://rslint.org/guide/) | [Dev Documentation](https://rslint.org/dev/) | [Rustdoc Documentation](https://docs.rs/rslint_core) | [Website](http://rslint.org)
+  <p>
+    <a href="https://github.com/rslint/rslint/actions?query=workflow%3ARust"><img src="https://github.com/rslint/rslint/workflows/Rust/badge.svg" alt="build status" /></a>
+    <a href="https://docs.rs/rslint_core"><img src="https://docs.rs/rslint_core/badge.svg" alt="Documentation Status" /></a>
+    <a href="https://crates.io/crates/rslint_core"><img src="https://img.shields.io/crates/v/rslint_core.svg"/></a>
+  </p>
 
-## Docs and Installation
+  <h3>
+    <a href="https://rslint.org/guide/">Guide</a>
+    <span> | </span>
+    <a href="https://rslint.org/dev/">Contributing</a>
+    <span> | </span>
+    <a href="https://rslint.org/">Website</a>
+    <span> | </span>
+    <a href="https://rslint.org/rules/">Linter Rules</a>
+  </h3>
 
-Please see the [website](https://rslint.org) for installation instructions and documentation.
+<strong>⚠️ RSLint is in early development and should not be used in production, expect bugs! 🐛</strong>
 
-## Currently known big issues
+</div>
 
-- Optional chaining is not parsed correctly
-- A lot of error recoveries do not work and result in infinite recursion
+## Installation
 
-### Financial Contributors
+### Through Cargo
 
-Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/rslint/contribute)]
+```sh
+$ cargo install rslint_cli
+$ rslint --help
+```
 
-#### Individuals
+### Prebuilt Binaries
 
-<a href="https://opencollective.com/rslint"><img src="https://opencollective.com/rslint/individuals.svg?width=890"></a>
+We publish prebuilt binaries for Windows, Linux, and MacOS for every release which you can find [here](https://github.com/rslint/rslint/releases).
 
-#### Sponsors
+### Build From Source
 
-Support this project with your organization. Your logo will show up here with a link to your website. [[Become a sponsor](https://opencollective.com/rslint/contribute)]
+```sh
+$ git clone https://github.com/rslint/rslint.git
+$ cd rslint
+$ cargo run --release -- --help
+```
 
-## Differences from other linters
+## Usage
 
-### Implemented
+To use the linter simply pass files to lint to the CLI:
 
-- Unbeatably fast
-- Highly parallelized (files linted in parallel, rules run in parallel, nodes could be traversed in parallel in the future)
-- Rich, cross-platform, colored diagnostics with secondary labels, primary labels, and notes
-- Lossless untyped node and token driven linting allowing easy traversal of the syntax tree from any node
-- Automatic docgen for rule documentation removing the need for writing rustdoc docs and user facing docs
-- Distinctly grouped rules
-- Rule examples generated from tests
-- Easy macros for generating rule declarations and config fields
-- No need for dealing with script/module or ecma versions, linter deduces source type and assumes latest syntax
-- No need for a configuration file
-- Completely error tolerant and fast parser
-- Lossless tree used for stylistic linting
-- TOML config (json will be allowed too), (TOML implemented, json not yet)
-- Incremental reparsing and native file watching support (WIP, see #16)
+```sh
+$ echo "let a = foo.hasOwnProperty('bar');" > foo.js
+$ rslint ./foo.js
+error[no-prototype-builtins]: do not access the object property `hasOwnProperty` directly from `foo`
+  ┌─ ./foo.js:1:9
+  │
+1 │ let a = foo.hasOwnProperty('bar');
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  │
+help: get the function from the prototype of `Object` and call it
+  │
+1 │ let a = Object.prototype.hasOwnProperty.call(foo, 'bar');
+  │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  │
+  ╧ note: the method may be shadowed and cause random bugs and denial of service vulnerabilities
 
-### Planned
+Outcome: 1 fail, 0 warn, 0 success
 
-- Global config
-- SSR-like templates for node matching and autofix
-- Autofix without requiring reruns of all rules
-- WASM builds
+help: for more information about the errors try the explain command: `rslint explain <rules>`
+```
 
-## Speed
+The RSLint CLI works without a configuration file and will select reccomended non-stylistic rules to run.
 
-RSLint is designed to be the fastest JavaScript linter ever made, it accomplishes this in various ways:
+## Features
 
-- Using a custom fast parser which retains whitespace
-- Using a lookup table and trie based lexer for parsing
-- Using separate distinct threads for splitting up IO bound tasks such as loading files
-- Linting each file in parallel
-- Running each rule from every group in parallel over the concrete syntax tree
-- (WIP) linting each untyped node in parallel
-- (WIP) Incrementaly reparsing and relinting files
-- (WIP) Having native file watching support using incremental parsing
+**Speed**. RSLint uses parallelism to utilize multiple threads to speed up linting on top of being compiled to
+native code.
 
-## Roadmap
+**Low memory footprint**. RSLint's syntax tree utilizes interning and other ways of drastically reducing memory usage
+while linting.
 
-RSLint's goal is to provide extremely fast and user friendly linting for the whole js ecosystem. There are tons of things to do to bring it up to par with existing linters. This is a list of planned features and things to do ranked in order of highest to lowest priority (this is by no definition final, things will change):
+**Sensible defaults**. The CLI assumes reccomended non-stylistic rules if no configuration file is specified and ignores directories such as
+`node_modules`.
 
-- [ ] Scope analysis (WIP)
-- [x] Tests for parser, including test262
-- [ ] Implementation of ESLint reccomended rules
-- [x] Benchmarks
-- [ ] Markdown support
-- [x] Config files (partially done)
-- [x] Rule options
-- [x] Prebuilt binary generation
-- [ ] Npm package (needs a build script to pull a prebuilt binary)
-- [ ] JSX Support
-- [ ] TS Support
-- [x] Autofix
-- [ ] JS Plugins
-- [ ] WASM Plugins
-- [x] Documentation website
+**Error recovery**. RSLint's custom parser can recover from syntax errors and produce a usable syntax tree even when whole parts of
+a statement are missing. Allowing accurate on-the-fly linting as you type.
+
+**No confusing options**. ECMAScript version for the parser does not have to be configured, the parser assumes latest syntax and
+assumes scripts for `*.js` and modules for `*.mjs`.
+
+**Native TypeScript support**. `*.ts` files are automatically linted, no configuration for different parsers or rules is required.
+
+**Rule groups**. Rules are grouped by scope for ease of configuration, understanding, and a cleaner file structure for the project.
+
+**Understandable errors**. Each error emitted by the linter points out the area in the source code in an understandable and clean manner as well as contains labels, notes, and suggestions to explain how to fix each issue. There is also an alternative formatter similar to ESLint's formatter available using the `-F` flag or the `formatter` key in the config.
+
+**Strongly typed rule configuration**. RSLint ships a JSON schema and links it for `rslintrc.json` to provide autocompletion for the config file in Visual Studio Code. The JSON Schema describes rule config options in full, allowing easy configuration. Moreover, RSLint's language server protocol implementation provides autocompletion for `rslintrc.toml` files too.
+
+**Powerful directives**. Directives (commands through comments) use a parser based around the internal JavaScript lexer with instructions, allowing us to provide:
+
+- Autocompletion for directives such as `// rslint-ignore no-empty` in the language server protocol.
+- Hover support for directives to offer information on a command on hover.
+- Understandable errors for incorrect directives.
+
+**Standalone**. RSLint is compiled to a single standalone binary, it does not require Node, v8, or any other runtime. RSLint can run on any platform which can be targeted by LLVM.
+
+**Powerful autofix**. Automatic fixes for some errors are provided and can be applied through the `--fix` flag or actions in the IDE. Fixes can even be applied if the file contains syntax errors through the `--dirty` flag.
+
+**Built-in documentation**. RSLint contains rule documentation in its binary, allowing it to show documentation in the terminal through the explain subcommand, e.g. `rslint explain no-empty, for-direction`.
+
+## Internal Features
+
+**Clean and clear project layout**. The RSLint project is laid out in a monorepo and each crate has a distinct job, each crate can be used in other Rust projects and each crate has good documentation and a good API.
+
+**Easy rule declaration**. Rules are declared using a `declare_lint!` macro. The macro accepts doc comments, a struct name, the group name, a rule code, and configuration options. The macro generates a struct definition and a `Rule` implementation and processes the doc comments into the documentation for the struct as well as into a static string used in the `docs()` method on each rule. Everything is concise and kept in one place.
+
+**Full fidelity syntax tree**. Unlike ESTree, RSLint's custom syntax tree retains:
+
+- All whitespace
+- All comments
+- All tokens
+
+Allowing it to have powerful analysis without having to rely on separate structures such as ESLint's `SourceCode`.
+
+**Untyped Syntax Tree**. RSLint's syntax tree is made of untyped nodes and untyped tokens at the low level, this allows for powerful, efficient traversal through the tree, e.g. `if_stmt.cons()?.child_with_ast::<SwitchStmt>()`.
+
+**Easy APIs**. RSLint uses easy to use builders for its complex errors, as well as builders for autofix. Everything is laid out to minimize the effort required to implement rules.
 
 ## License
 
