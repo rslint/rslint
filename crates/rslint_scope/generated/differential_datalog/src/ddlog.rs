@@ -3,7 +3,6 @@ use std::fmt::Debug;
 use std::iter::Iterator;
 use std::ops::Deref;
 
-use crate::callback::Callback;
 use crate::ddval::DDValue;
 use crate::program::IdxId;
 use crate::program::RelId;
@@ -41,10 +40,9 @@ pub trait DDlog: Debug {
         + Into<Update<DDValue>>;
 
     /// Run the program.
-    fn run<F>(workers: usize, do_store: bool, cb: F) -> Result<(Self, DeltaMap<DDValue>), String>
+    fn run(workers: usize, do_store: bool) -> Result<(Self, DeltaMap<DDValue>), String>
     where
-        Self: Sized,
-        F: Callback;
+        Self: Sized;
 
     /// Start a transaction.
     fn transaction_start(&self) -> Result<(), String>;

@@ -557,6 +557,7 @@ name = "ddlog_bigint"
 version = "0.1.0"
 dependencies = [
  "abomonation",
+ "ddlog_derive",
  "ddlog_rt",
  "differential-dataflow",
  "differential_datalog",
@@ -579,6 +580,8 @@ dependencies = [
  "differential_datalog",
  "proc-macro2",
  "quote",
+ "serde",
+ "serde_json",
  "syn",
  "trybuild",
 ]
@@ -588,6 +591,7 @@ name = "ddlog_log"
 version = "0.1.0"
 dependencies = [
  "abomonation",
+ "ddlog_derive",
  "differential-dataflow",
  "differential_datalog",
  "erased-serde",
@@ -607,6 +611,7 @@ name = "ddlog_rt"
 version = "0.1.0"
 dependencies = [
  "abomonation",
+ "ddlog_derive",
  "differential-dataflow",
  "differential_datalog",
  "erased-serde",
@@ -627,6 +632,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_rt",
  "differential-dataflow",
  "differential_datalog",
@@ -648,6 +654,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_rt",
  "ddlog_std",
  "differential-dataflow",
@@ -690,6 +697,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "byteorder 0.4.2",
+ "crossbeam-channel 0.5.0",
  "csv",
  "differential-dataflow",
  "erased-serde",
@@ -1179,6 +1187,7 @@ dependencies = [
  "abomonation",
  "arc-interner",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_rt",
  "ddlog_std",
  "differential-dataflow",
@@ -2190,6 +2199,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "cpuprofiler",
+ "crossbeam-channel 0.5.0",
  "ddlog_bigint",
  "ddlog_log",
  "ddlog_rt",
@@ -2992,6 +3002,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3027,6 +3038,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3087,6 +3099,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3112,6 +3125,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3142,6 +3156,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3175,6 +3190,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3201,6 +3217,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3233,6 +3250,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3259,6 +3277,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",
@@ -3290,6 +3309,7 @@ version = "0.1.0"
 dependencies = [
  "abomonation",
  "ddlog_bigint",
+ "ddlog_derive",
  "ddlog_log",
  "ddlog_rt",
  "ddlog_std",

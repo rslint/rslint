@@ -1,5 +1,2 @@
 [dependencies.schemars]
 version = "0.8.0"
-
-[dependencies.ddlog_derive]
-path = "../../ddlog_derive"

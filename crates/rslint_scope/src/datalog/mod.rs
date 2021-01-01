@@ -15,7 +15,6 @@ use ddlog_std::tuple2;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
     program::{IdxId, RelId, Update},
-    record::Record,
     DDlog, DeltaMap,
 };
 use inputs::{
@@ -57,8 +56,7 @@ static_assertions::assert_impl_all!(Datalog: Send, Sync);
 
 impl Datalog {
     pub fn new() -> DatalogResult<Self> {
-        let (hddlog, _init_state) =
-            HDDlog::run(DATALOG_WORKERS, false, |_: usize, _: &Record, _: isize| {})?;
+        let (hddlog, _init_state) = HDDlog::run(DATALOG_WORKERS, false)?;
         let this = Self {
             hddlog,
             transaction_lock: Mutex::new(()),

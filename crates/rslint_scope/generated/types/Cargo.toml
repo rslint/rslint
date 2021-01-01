@@ -21,6 +21,11 @@ features = []
 optional = false
 path = "ddlog_bigint"
 
+[dependencies.ddlog_derive]
+features = []
+optional = false
+path = "../ddlog_derive"
+
 [dependencies.ddlog_log]
 features = []
 optional = false

@@ -17,12 +17,13 @@ mod timestamp;
 mod update;
 mod worker;
 
-pub use arrange::{concatenate_collections, diff_distinct};
+pub use arrange::diff_distinct;
 pub use timestamp::{TSNested, TupleTS, TS};
 pub use update::Update;
 
 use crate::{ddval::*, profile::*, record::Mutator};
 use arrange::{antijoin_arranged, ArrangedCollection, Arrangements, A};
+use crossbeam_channel::{Receiver, Sender};
 use fnv::{FnvHashMap, FnvHashSet};
 use std::{
     borrow::Cow,
@@ -31,10 +32,9 @@ use std::{
     iter,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc::{self, Receiver, Sender},
         Arc, Barrier, Mutex,
     },
-    thread::{self, JoinHandle},
+    thread::{self, JoinHandle, Thread},
 };
 use timestamp::{TSAtomic, ToTupleTS};
 use worker::{DDlogWorker, ProfilingData};
@@ -170,22 +170,22 @@ pub struct RecursiveRelation {
     pub distinct: bool,
 }
 
-pub trait CBFn: FnMut(RelId, &DDValue, Weight) + Send {
-    fn clone_boxed(&self) -> Box<dyn CBFn>;
+pub trait RelationCallback: Fn(RelId, &DDValue, Weight) + Send + Sync {
+    fn clone_boxed(&self) -> Box<dyn RelationCallback>;
 }
 
-impl<T> CBFn for T
+impl<T> RelationCallback for T
 where
-    T: 'static + Send + Clone + FnMut(RelId, &DDValue, Weight),
+    T: Fn(RelId, &DDValue, Weight) + Clone + Send + Sync + ?Sized + 'static,
 {
-    fn clone_boxed(&self) -> Box<dyn CBFn> {
+    fn clone_boxed(&self) -> Box<dyn RelationCallback> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<dyn CBFn> {
+impl Clone for Box<dyn RelationCallback> {
     fn clone(&self) -> Self {
-        self.as_ref().clone_boxed()
+        self.clone_boxed()
     }
 }
 
@@ -234,7 +234,7 @@ pub struct Relation {
     /// along with relation id uniquely identifies the arrangement (see `ArrId`).
     pub arrangements: Vec<Arrangement>,
     /// Callback invoked when an element is added or removed from relation.
-    pub change_cb: Option<Arc<Mutex<Box<dyn CBFn>>>>,
+    pub change_cb: Option<Arc<dyn RelationCallback + 'static>>,
 }
 
 /// A Datalog relation or rule can depend on other relations and their
@@ -752,27 +752,28 @@ enum Reply {
 
 impl Program {
     /// Instantiate the program with `nworkers` timely threads.
-    pub fn run(&self, nworkers: usize) -> Result<RunningProgram, String> {
+    pub fn run(&self, number_workers: usize) -> Result<RunningProgram, String> {
         // Setup channels to communicate with the dataflow.
         // We use async channels to avoid deadlocks when workers are parked in
         // `step_or_park`.  This has the downside of introducing an unbounded buffer
         // that is only guaranteed to be fully flushed when the transaction commits.
-        let (request_send, request_recv): (Vec<_>, Vec<_>) =
-            (0..nworkers).map(|_| mpsc::channel::<Msg>()).unzip();
-        let request_recv: Arc<Mutex<Vec<Option<_>>>> =
-            Arc::new(Mutex::new(request_recv.into_iter().map(Some).collect()));
+        let (request_send, request_recv): (Vec<_>, Vec<_>) = (0..number_workers)
+            .map(|_| crossbeam_channel::unbounded::<Msg>())
+            .unzip();
+        let request_recv = Arc::from(request_recv);
 
         // Channels for responses from worker threads.
-        let (reply_send, reply_recv): (Vec<_>, Vec<_>) =
-            (0..nworkers).map(|_| mpsc::channel::<Reply>()).unzip();
-        let reply_send: Arc<Mutex<Vec<Option<_>>>> =
-            Arc::new(Mutex::new(reply_send.into_iter().map(Some).collect()));
+        let (reply_send, reply_recv): (Vec<_>, Vec<_>) = (0..number_workers)
+            .map(|_| crossbeam_channel::unbounded::<Reply>())
+            .unzip();
+        let reply_send = Arc::from(reply_send);
 
-        let (prof_send, prof_recv) = mpsc::sync_channel::<ProfMsg>(PROF_MSG_BUF_SIZE);
+        let (prof_send, prof_recv) = crossbeam_channel::bounded(PROF_MSG_BUF_SIZE);
 
         // Channel used by workers 1..n to send their thread handles to worker 0.
-        let (thandle_send, thandle_recv) = mpsc::sync_channel::<(usize, thread::Thread)>(0);
-        let thandle_recv = Arc::new(Mutex::new(thandle_recv));
+        let (thread_handle_send, thread_handle_recv) =
+            crossbeam_channel::bounded::<(usize, Thread)>(0);
+        let thread_handle_recv = Arc::new(thread_handle_recv);
 
         // Profile data structure
         let profile = Arc::new(Mutex::new(Profile::new()));
@@ -787,7 +788,7 @@ impl Program {
 
         // Shared timestamp managed by worker 0 and read by all other workers
         let frontier_ts = TSAtomic::new(0);
-        let progress_barrier = Arc::new(Barrier::new(nworkers));
+        let progress_barrier = Arc::new(Barrier::new(number_workers));
 
         // Clone the program so that it can be moved into the timely computation
         let program = Arc::new(self.clone());
@@ -795,22 +796,25 @@ impl Program {
 
         // Start up timely computation.
         let worker_guards = timely::execute(
-            Configuration::Process(nworkers),
+            Configuration::Process(number_workers),
             move |worker: &mut Worker<Allocator>| -> Result<_, String> {
-                let worker = DDlogWorker::new(
+                let mut worker = DDlogWorker::new(
                     worker,
                     program.clone(),
                     &frontier_ts,
-                    nworkers,
+                    number_workers,
                     progress_barrier.clone(),
                     profiling.clone(),
-                    request_recv.clone(),
-                    reply_send.clone(),
-                    thandle_send.clone(),
-                    thandle_recv.clone(),
+                    Arc::clone(&request_recv),
+                    Arc::clone(&reply_send),
+                    thread_handle_send.clone(),
+                    thread_handle_recv.clone(),
                 );
 
-                worker.run()
+                worker.run()?;
+                worker.cleanup();
+
+                Ok(())
             },
         )
         .map_err(|err| format!("Failed to start timely computation: {:?}", err))?;
@@ -883,11 +887,14 @@ impl Program {
 
     /// This thread function is always invoked whether or not profiling is on. If it isn't, the
     /// thread will blocks on the channel read as no message will ever arrive.
-    fn prof_thread_func(chan: mpsc::Receiver<ProfMsg>, profile: Arc<Mutex<Profile>>) {
+    fn prof_thread_func(channel: Receiver<Vec<ProfMsg>>, profile: Arc<Mutex<Profile>>) {
         loop {
-            match chan.recv() {
-                Ok(msg) => {
-                    profile.lock().unwrap().update(&msg);
+            match channel.recv() {
+                Ok(messages) => {
+                    let mut profile = profile.lock().unwrap();
+                    for message in messages {
+                        profile.update(&message);
+                    }
                 }
                 _ => return,
             }

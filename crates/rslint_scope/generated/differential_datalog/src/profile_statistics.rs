@@ -42,6 +42,7 @@ impl Default for CSVEventType {
 }
 
 /// Map from (worker_id, op_id) to start time for timely events.
+#[repr(transparent)]
 struct StartTimeKeeper<K> {
     start_times: HashMap<K, Duration>,
 }

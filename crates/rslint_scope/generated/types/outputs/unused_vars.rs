@@ -40,39 +40,39 @@ use ::timely::communication;
 use ::timely::dataflow::scopes;
 use ::timely::worker;
 
-//use ::serde::de::DeserializeOwned;
-use ::differential_datalog::ddval::DDValConvert;
+use ::ddlog_derive::{FromRecord, IntoRecord, Mutator};
 use ::differential_datalog::ddval::DDValue;
+use ::differential_datalog::ddval::DDValConvert;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
+
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
 
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "outputs::unused_vars::FunctionBodyScope")]
 pub struct FunctionBodyScope {
     pub file: types__ast::FileId,
     pub id: types__ast::AnyId,
-    pub body: types__ast::ScopeId,
+    pub body: types__ast::ScopeId
 }
-impl abomonation::Abomonation for FunctionBodyScope {}
-::differential_datalog::decl_struct_from_record!(FunctionBodyScope["outputs::unused_vars::FunctionBodyScope"]<>, ["outputs::unused_vars::FunctionBodyScope"][3]{[0]file["file"]: types__ast::FileId, [1]id["id"]: types__ast::AnyId, [2]body["body"]: types__ast::ScopeId});
-::differential_datalog::decl_struct_into_record!(FunctionBodyScope, ["outputs::unused_vars::FunctionBodyScope"]<>, file, id, body);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(FunctionBodyScope, <>, file: types__ast::FileId, id: types__ast::AnyId, body: types__ast::ScopeId);
+impl abomonation::Abomonation for FunctionBodyScope{}
 impl ::std::fmt::Display for FunctionBodyScope {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            FunctionBodyScope { file, id, body } => {
+            FunctionBodyScope{file,id,body} => {
                 __formatter.write_str("outputs::unused_vars::FunctionBodyScope{")?;
                 ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str(",")?;
@@ -89,26 +89,19 @@ impl ::std::fmt::Debug for FunctionBodyScope {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "outputs::unused_vars::UnusedVariables")]
 pub struct UnusedVariables {
     pub name: types__ast::Name,
     pub declared: types__ast::AnyId,
     pub span: types__ast::Span,
-    pub file: types__ast::FileId,
+    pub file: types__ast::FileId
 }
-impl abomonation::Abomonation for UnusedVariables {}
-::differential_datalog::decl_struct_from_record!(UnusedVariables["outputs::unused_vars::UnusedVariables"]<>, ["outputs::unused_vars::UnusedVariables"][4]{[0]name["name"]: types__ast::Name, [1]declared["declared"]: types__ast::AnyId, [2]span["span"]: types__ast::Span, [3]file["file"]: types__ast::FileId});
-::differential_datalog::decl_struct_into_record!(UnusedVariables, ["outputs::unused_vars::UnusedVariables"]<>, name, declared, span, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(UnusedVariables, <>, name: types__ast::Name, declared: types__ast::AnyId, span: types__ast::Span, file: types__ast::FileId);
+impl abomonation::Abomonation for UnusedVariables{}
 impl ::std::fmt::Display for UnusedVariables {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            UnusedVariables {
-                name,
-                declared,
-                span,
-                file,
-            } => {
+            UnusedVariables{name,declared,span,file} => {
                 __formatter.write_str("outputs::unused_vars::UnusedVariables{")?;
                 ::std::fmt::Debug::fmt(name, __formatter)?;
                 __formatter.write_str(",")?;
@@ -127,32 +120,20 @@ impl ::std::fmt::Debug for UnusedVariables {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-pub static __Arng_outputs_unused_vars_FunctionBodyScope_0: ::once_cell::sync::Lazy<
-    program::Arrangement,
-> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
-    name: std::borrow::Cow::from(
-        r###"(outputs::unused_vars::FunctionBodyScope{.file=(_0: ast::FileId), .id=(_1: ast::AnyId), .body=(_: ast::ScopeId)}: outputs::unused_vars::FunctionBodyScope) /*join*/"###,
-    ),
-    afun: {
-        fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
-            let __cloned = __v.clone();
-            match <FunctionBodyScope>::from_ddvalue(__v) {
-                FunctionBodyScope {
-                    file: ref _0,
-                    id: ref _1,
-                    body: _,
-                } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                _ => None,
-            }
-            .map(|x| (x, __cloned))
-        }
-        __f
-    },
-    queryable: false,
-});
-pub static __Rule_outputs_unused_vars_FunctionBodyScope_0: ::once_cell::sync::Lazy<program::Rule> =
-    ::once_cell::sync::Lazy::new(
-        || /* outputs::unused_vars::FunctionBodyScope[(outputs::unused_vars::FunctionBodyScope{.file=file, .id=(ast::AnyIdFunc{.func=id}: ast::AnyId), .body=body}: outputs::unused_vars::FunctionBodyScope)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(body: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]. */
+pub static __Arng_outputs_unused_vars_FunctionBodyScope_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                               name: std::borrow::Cow::from(r###"(outputs::unused_vars::FunctionBodyScope{.file=(_0: ast::FileId), .id=(_1: ast::AnyId), .body=(_: ast::ScopeId)}: outputs::unused_vars::FunctionBodyScope) /*join*/"###),
+                                                                                                                                                afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                                {
+                                                                                                                                                    let __cloned = __v.clone();
+                                                                                                                                                    match < FunctionBodyScope>::from_ddvalue(__v) {
+                                                                                                                                                        FunctionBodyScope{file: ref _0, id: ref _1, body: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                                                                                                                                                        _ => None
+                                                                                                                                                    }.map(|x|(x,__cloned))
+                                                                                                                                                }
+                                                                                                                                                __f},
+                                                                                                                                                queryable: false
+                                                                                                                                            });
+pub static __Rule_outputs_unused_vars_FunctionBodyScope_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::unused_vars::FunctionBodyScope[(outputs::unused_vars::FunctionBodyScope{.file=file, .id=(ast::AnyIdFunc{.func=id}: ast::AnyId), .body=body}: outputs::unused_vars::FunctionBodyScope)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(body: ast::ScopeId), .exported=(_: bool)}: inputs::Function)]. */
                                                                                                                                      program::Rule::ArrangementRule {
                                                                                                                                          description: std::borrow::Cow::from( "outputs::unused_vars::FunctionBodyScope(.file=file, .id=ast::AnyIdFunc{.func=id}, .body=body) :- config::EnableNoUnusedVars(.file=file, .config=config), inputs::Function(.id=id, .file=file, .name=_, .scope=_, .body=body, .exported=_)."),
                                                                                                                                          arr: ( 7, 0),
@@ -175,11 +156,8 @@ pub static __Rule_outputs_unused_vars_FunctionBodyScope_0: ::once_cell::sync::La
                                                                                                                                                     __f},
                                                                                                                                                     next: Box::new(None)
                                                                                                                                                 }
-                                                                                                                                     },
-    );
-pub static __Rule_outputs_unused_vars_FunctionBodyScope_1: ::once_cell::sync::Lazy<program::Rule> =
-    ::once_cell::sync::Lazy::new(
-        || /* outputs::unused_vars::FunctionBodyScope[(outputs::unused_vars::FunctionBodyScope{.file=file, .id=(ast::AnyIdExpr{.expr=id}: ast::AnyId), .body=body}: outputs::unused_vars::FunctionBodyScope)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], inputs::Arrow[(inputs::Arrow{.expr_id=(id: ast::ExprId), .file=(file: ast::FileId), .body=(ddlog_std::Some{.x=((_: ddlog_std::Either<ast::ExprId,ast::StmtId>), (body: ast::ScopeId))}: ddlog_std::Option<(ddlog_std::Either<ast::ExprId,ast::StmtId>, ast::ScopeId)>)}: inputs::Arrow)]. */
+                                                                                                                                     });
+pub static __Rule_outputs_unused_vars_FunctionBodyScope_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::unused_vars::FunctionBodyScope[(outputs::unused_vars::FunctionBodyScope{.file=file, .id=(ast::AnyIdExpr{.expr=id}: ast::AnyId), .body=body}: outputs::unused_vars::FunctionBodyScope)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], inputs::Arrow[(inputs::Arrow{.expr_id=(id: ast::ExprId), .file=(file: ast::FileId), .body=(ddlog_std::Some{.x=((_: ddlog_std::Either<ast::ExprId,ast::StmtId>), (body: ast::ScopeId))}: ddlog_std::Option<(ddlog_std::Either<ast::ExprId,ast::StmtId>, ast::ScopeId)>)}: inputs::Arrow)]. */
                                                                                                                                      program::Rule::ArrangementRule {
                                                                                                                                          description: std::borrow::Cow::from( "outputs::unused_vars::FunctionBodyScope(.file=file, .id=ast::AnyIdExpr{.expr=id}, .body=body) :- config::EnableNoUnusedVars(.file=file, .config=config), inputs::Arrow(.expr_id=id, .file=file, .body=ddlog_std::Some{.x=(_, body)})."),
                                                                                                                                          arr: ( 7, 0),
@@ -202,11 +180,8 @@ pub static __Rule_outputs_unused_vars_FunctionBodyScope_1: ::once_cell::sync::La
                                                                                                                                                     __f},
                                                                                                                                                     next: Box::new(None)
                                                                                                                                                 }
-                                                                                                                                     },
-    );
-pub static __Rule_outputs_unused_vars_FunctionBodyScope_2: ::once_cell::sync::Lazy<program::Rule> =
-    ::once_cell::sync::Lazy::new(
-        || /* outputs::unused_vars::FunctionBodyScope[(outputs::unused_vars::FunctionBodyScope{.file=file, .id=(ast::AnyIdExpr{.expr=id}: ast::AnyId), .body=body}: outputs::unused_vars::FunctionBodyScope)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(id: ast::ExprId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body_id: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Statement[(inputs::Statement{.id=(body_id: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(body: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
+                                                                                                                                     });
+pub static __Rule_outputs_unused_vars_FunctionBodyScope_2 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::unused_vars::FunctionBodyScope[(outputs::unused_vars::FunctionBodyScope{.file=file, .id=(ast::AnyIdExpr{.expr=id}: ast::AnyId), .body=body}: outputs::unused_vars::FunctionBodyScope)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], inputs::InlineFunc[(inputs::InlineFunc{.expr_id=(id: ast::ExprId), .file=(file: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .body=(ddlog_std::Some{.x=(body_id: ast::StmtId)}: ddlog_std::Option<ast::StmtId>)}: inputs::InlineFunc)], inputs::Statement[(inputs::Statement{.id=(body_id: ast::StmtId), .file=(file: ast::FileId), .kind=(_: ast::StmtKind), .scope=(body: ast::ScopeId), .span=(_: ast::Span)}: inputs::Statement)]. */
                                                                                                                                      program::Rule::ArrangementRule {
                                                                                                                                          description: std::borrow::Cow::from( "outputs::unused_vars::FunctionBodyScope(.file=file, .id=ast::AnyIdExpr{.expr=id}, .body=body) :- config::EnableNoUnusedVars(.file=file, .config=config), inputs::InlineFunc(.expr_id=id, .file=file, .name=_, .body=ddlog_std::Some{.x=body_id}), inputs::Statement(.id=body_id, .file=file, .kind=_, .scope=body, .span=_)."),
                                                                                                                                          arr: ( 7, 0),
@@ -253,11 +228,8 @@ pub static __Rule_outputs_unused_vars_FunctionBodyScope_2: ::once_cell::sync::La
                                                                                                                                                                                            })
                                                                                                                                                                         }))
                                                                                                                                                 }
-                                                                                                                                     },
-    );
-pub static __Rule_outputs_unused_vars_UnusedVariables_0: ::once_cell::sync::Lazy<program::Rule> =
-    ::once_cell::sync::Lazy::new(
-        || /* outputs::unused_vars::UnusedVariables[(outputs::unused_vars::UnusedVariables{.name=name, .declared=declared, .span=span, .file=file}: outputs::unused_vars::UnusedVariables)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=false, .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (regex::regex_set_match((config::ignored_patterns(((ddlog_std::deref: function(ddlog_std::Ref<config::NoUnusedVarsConfig>):config::NoUnusedVarsConfig)(config)))), ((internment::ival: function(internment::Intern<string>):string)(name))))), (not (ast::is_global(declared))), not is_exported::IsExported[(is_exported::IsExported{.file=(file: ast::FileId), .id=(declared: ast::AnyId)}: is_exported::IsExported)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(var_decls::hoisted_scope(scope)), .declared=(declared: ast::AnyId)}: name_in_scope::NameInScope)]. */
+                                                                                                                                     });
+pub static __Rule_outputs_unused_vars_UnusedVariables_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::unused_vars::UnusedVariables[(outputs::unused_vars::UnusedVariables{.name=name, .declared=declared, .span=span, .file=file}: outputs::unused_vars::UnusedVariables)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=false, .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (regex::regex_set_match((config::ignored_patterns(((ddlog_std::deref: function(ddlog_std::Ref<config::NoUnusedVarsConfig>):config::NoUnusedVarsConfig)(config)))), ((internment::ival: function(internment::Intern<string>):string)(name))))), (not (ast::is_global(declared))), not is_exported::IsExported[(is_exported::IsExported{.file=(file: ast::FileId), .id=(declared: ast::AnyId)}: is_exported::IsExported)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(var_decls::hoisted_scope(scope)), .declared=(declared: ast::AnyId)}: name_in_scope::NameInScope)]. */
                                                                                                                                    program::Rule::ArrangementRule {
                                                                                                                                        description: std::borrow::Cow::from( "outputs::unused_vars::UnusedVariables(.name=name, .declared=declared, .span=span, .file=file) :- config::EnableNoUnusedVars(.file=file, .config=config), var_decls::VariableDeclarations(.file=file, .name=name, .scope=scope, .declared_in=declared, .meta=(&var_decls::VariableMeta{.is_function_argument=false, .implicitly_declared=false, .declaration_span=ddlog_std::Some{.x=span}})), (not (regex::regex_set_match((config::ignored_patterns((ddlog_std::deref(config)))), (internment::ival(name))))), (not (ast::is_global(declared))), not is_exported::IsExported(.file=file, .id=declared), not name_in_scope::NameInScope(.file=file, .name=name, .scope=(var_decls::hoisted_scope(scope)), .declared=declared)."),
                                                                                                                                        arr: ( 7, 0),
@@ -322,11 +294,8 @@ pub static __Rule_outputs_unused_vars_UnusedVariables_0: ::once_cell::sync::Lazy
                                                                                                                                                                                          })
                                                                                                                                                                       }))
                                                                                                                                               }
-                                                                                                                                   },
-    );
-pub static __Rule_outputs_unused_vars_UnusedVariables_1: ::once_cell::sync::Lazy<program::Rule> =
-    ::once_cell::sync::Lazy::new(
-        || /* outputs::unused_vars::UnusedVariables[(outputs::unused_vars::UnusedVariables{.name=name, .declared=declared, .span=span, .file=file}: outputs::unused_vars::UnusedVariables)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=true, .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (regex::regex_set_match((config::ignored_patterns(((ddlog_std::deref: function(ddlog_std::Ref<config::NoUnusedVarsConfig>):config::NoUnusedVarsConfig)(config)))), ((internment::ival: function(internment::Intern<string>):string)(name))))), outputs::unused_vars::FunctionBodyScope[(outputs::unused_vars::FunctionBodyScope{.file=(file: ast::FileId), .id=(declared: ast::AnyId), .body=(body_scope: ast::ScopeId)}: outputs::unused_vars::FunctionBodyScope)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(body_scope: ast::ScopeId), .declared=(declared: ast::AnyId)}: name_in_scope::NameInScope)]. */
+                                                                                                                                   });
+pub static __Rule_outputs_unused_vars_UnusedVariables_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::unused_vars::UnusedVariables[(outputs::unused_vars::UnusedVariables{.name=name, .declared=declared, .span=span, .file=file}: outputs::unused_vars::UnusedVariables)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=true, .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (regex::regex_set_match((config::ignored_patterns(((ddlog_std::deref: function(ddlog_std::Ref<config::NoUnusedVarsConfig>):config::NoUnusedVarsConfig)(config)))), ((internment::ival: function(internment::Intern<string>):string)(name))))), outputs::unused_vars::FunctionBodyScope[(outputs::unused_vars::FunctionBodyScope{.file=(file: ast::FileId), .id=(declared: ast::AnyId), .body=(body_scope: ast::ScopeId)}: outputs::unused_vars::FunctionBodyScope)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(body_scope: ast::ScopeId), .declared=(declared: ast::AnyId)}: name_in_scope::NameInScope)]. */
                                                                                                                                    program::Rule::ArrangementRule {
                                                                                                                                        description: std::borrow::Cow::from( "outputs::unused_vars::UnusedVariables(.name=name, .declared=declared, .span=span, .file=file) :- config::EnableNoUnusedVars(.file=file, .config=config), var_decls::VariableDeclarations(.file=file, .name=name, .scope=_, .declared_in=declared, .meta=(&var_decls::VariableMeta{.is_function_argument=true, .implicitly_declared=false, .declaration_span=ddlog_std::Some{.x=span}})), (not (regex::regex_set_match((config::ignored_patterns((ddlog_std::deref(config)))), (internment::ival(name))))), outputs::unused_vars::FunctionBodyScope(.file=file, .id=declared, .body=body_scope), not name_in_scope::NameInScope(.file=file, .name=name, .scope=body_scope, .declared=declared)."),
                                                                                                                                        arr: ( 7, 0),
@@ -400,11 +369,8 @@ pub static __Rule_outputs_unused_vars_UnusedVariables_1: ::once_cell::sync::Lazy
                                                                                                                                                                                          })
                                                                                                                                                                       }))
                                                                                                                                               }
-                                                                                                                                   },
-    );
-pub static __Rule_outputs_unused_vars_UnusedVariables_2: ::once_cell::sync::Lazy<program::Rule> =
-    ::once_cell::sync::Lazy::new(
-        || /* outputs::unused_vars::UnusedVariables[(outputs::unused_vars::UnusedVariables{.name=name, .declared=declared, .span=span, .file=file}: outputs::unused_vars::UnusedVariables)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: var_decls::DeclarationScope), .declared_in=(declared@ (ast::AnyIdGlobal{.global=(_: ast::GlobalId)}: ast::AnyId)), .meta=((&(var_decls::VariableMeta{.is_function_argument=false, .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (regex::regex_set_match((config::ignored_patterns(((ddlog_std::deref: function(ddlog_std::Ref<config::NoUnusedVarsConfig>):config::NoUnusedVarsConfig)(config)))), ((internment::ival: function(internment::Intern<string>):string)(name))))), not is_exported::IsExported[(is_exported::IsExported{.file=(file: ast::FileId), .id=(declared: ast::AnyId)}: is_exported::IsExported)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(var_decls::unhoisted_scope(scope)), .declared=(declared: ast::AnyId)}: name_in_scope::NameInScope)]. */
+                                                                                                                                   });
+pub static __Rule_outputs_unused_vars_UnusedVariables_2 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::unused_vars::UnusedVariables[(outputs::unused_vars::UnusedVariables{.name=name, .declared=declared, .span=span, .file=file}: outputs::unused_vars::UnusedVariables)] :- config::EnableNoUnusedVars[(config::EnableNoUnusedVars{.file=(file: ast::FileId), .config=(config: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(scope: var_decls::DeclarationScope), .declared_in=(declared@ (ast::AnyIdGlobal{.global=(_: ast::GlobalId)}: ast::AnyId)), .meta=((&(var_decls::VariableMeta{.is_function_argument=false, .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (regex::regex_set_match((config::ignored_patterns(((ddlog_std::deref: function(ddlog_std::Ref<config::NoUnusedVarsConfig>):config::NoUnusedVarsConfig)(config)))), ((internment::ival: function(internment::Intern<string>):string)(name))))), not is_exported::IsExported[(is_exported::IsExported{.file=(file: ast::FileId), .id=(declared: ast::AnyId)}: is_exported::IsExported)], not name_in_scope::NameInScope[(name_in_scope::NameInScope{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(var_decls::unhoisted_scope(scope)), .declared=(declared: ast::AnyId)}: name_in_scope::NameInScope)]. */
                                                                                                                                    program::Rule::ArrangementRule {
                                                                                                                                        description: std::borrow::Cow::from( "outputs::unused_vars::UnusedVariables(.name=name, .declared=declared, .span=span, .file=file) :- config::EnableNoUnusedVars(.file=file, .config=config), var_decls::VariableDeclarations(.file=file, .name=name, .scope=scope, .declared_in=(declared@ ast::AnyIdGlobal{.global=_}), .meta=(&var_decls::VariableMeta{.is_function_argument=false, .implicitly_declared=false, .declaration_span=ddlog_std::Some{.x=span}})), (not (regex::regex_set_match((config::ignored_patterns((ddlog_std::deref(config)))), (internment::ival(name))))), not is_exported::IsExported(.file=file, .id=declared), not name_in_scope::NameInScope(.file=file, .name=name, .scope=(var_decls::unhoisted_scope(scope)), .declared=declared)."),
                                                                                                                                        arr: ( 7, 0),
@@ -471,5 +437,4 @@ pub static __Rule_outputs_unused_vars_UnusedVariables_2: ::once_cell::sync::Lazy
                                                                                                                                                                                          })
                                                                                                                                                                       }))
                                                                                                                                               }
-                                                                                                                                   },
-    );
+                                                                                                                                   });

@@ -40,45 +40,40 @@ use ::timely::communication;
 use ::timely::dataflow::scopes;
 use ::timely::worker;
 
-//use ::serde::de::DeserializeOwned;
-use ::differential_datalog::ddval::DDValConvert;
+use ::ddlog_derive::{FromRecord, IntoRecord, Mutator};
 use ::differential_datalog::ddval::DDValue;
+use ::differential_datalog::ddval::DDValConvert;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
+
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
 
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "outputs::no_shadow::DeclarationInDescendent")]
 pub struct DeclarationInDescendent {
     pub file: types__ast::FileId,
     pub scope: types__ast::ScopeId,
     pub name: types__ast::Name,
-    pub id: types__ast::AnyId,
+    pub id: types__ast::AnyId
 }
-impl abomonation::Abomonation for DeclarationInDescendent {}
-::differential_datalog::decl_struct_from_record!(DeclarationInDescendent["outputs::no_shadow::DeclarationInDescendent"]<>, ["outputs::no_shadow::DeclarationInDescendent"][4]{[0]file["file"]: types__ast::FileId, [1]scope["scope"]: types__ast::ScopeId, [2]name["name"]: types__ast::Name, [3]id["id"]: types__ast::AnyId});
-::differential_datalog::decl_struct_into_record!(DeclarationInDescendent, ["outputs::no_shadow::DeclarationInDescendent"]<>, file, scope, name, id);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(DeclarationInDescendent, <>, file: types__ast::FileId, scope: types__ast::ScopeId, name: types__ast::Name, id: types__ast::AnyId);
+impl abomonation::Abomonation for DeclarationInDescendent{}
 impl ::std::fmt::Display for DeclarationInDescendent {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            DeclarationInDescendent {
-                file,
-                scope,
-                name,
-                id,
-            } => {
+            DeclarationInDescendent{file,scope,name,id} => {
                 __formatter.write_str("outputs::no_shadow::DeclarationInDescendent{")?;
                 ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str(",")?;
@@ -97,28 +92,20 @@ impl ::std::fmt::Debug for DeclarationInDescendent {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "outputs::no_shadow::NoShadow")]
 pub struct NoShadow {
     pub variable: types__ast::Name,
     pub original: ddlog_std::tuple2<types__ast::AnyId, types__ast::Span>,
     pub shadower: ddlog_std::tuple2<types__ast::AnyId, types__ast::Span>,
     pub implicit: bool,
-    pub file: types__ast::FileId,
+    pub file: types__ast::FileId
 }
-impl abomonation::Abomonation for NoShadow {}
-::differential_datalog::decl_struct_from_record!(NoShadow["outputs::no_shadow::NoShadow"]<>, ["outputs::no_shadow::NoShadow"][5]{[0]variable["variable"]: types__ast::Name, [1]original["original"]: ddlog_std::tuple2<types__ast::AnyId, types__ast::Span>, [2]shadower["shadower"]: ddlog_std::tuple2<types__ast::AnyId, types__ast::Span>, [3]implicit["implicit"]: bool, [4]file["file"]: types__ast::FileId});
-::differential_datalog::decl_struct_into_record!(NoShadow, ["outputs::no_shadow::NoShadow"]<>, variable, original, shadower, implicit, file);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(NoShadow, <>, variable: types__ast::Name, original: ddlog_std::tuple2<types__ast::AnyId, types__ast::Span>, shadower: ddlog_std::tuple2<types__ast::AnyId, types__ast::Span>, implicit: bool, file: types__ast::FileId);
+impl abomonation::Abomonation for NoShadow{}
 impl ::std::fmt::Display for NoShadow {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            NoShadow {
-                variable,
-                original,
-                shadower,
-                implicit,
-                file,
-            } => {
+            NoShadow{variable,original,shadower,implicit,file} => {
                 __formatter.write_str("outputs::no_shadow::NoShadow{")?;
                 ::std::fmt::Debug::fmt(variable, __formatter)?;
                 __formatter.write_str(",")?;
@@ -139,24 +126,18 @@ impl ::std::fmt::Debug for NoShadow {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "outputs::no_shadow::ScopeOfDecl")]
 pub struct ScopeOfDecl {
     pub file: types__ast::FileId,
     pub scope: types__ast::ScopeId,
-    pub declared: types__ast::AnyId,
+    pub declared: types__ast::AnyId
 }
-impl abomonation::Abomonation for ScopeOfDecl {}
-::differential_datalog::decl_struct_from_record!(ScopeOfDecl["outputs::no_shadow::ScopeOfDecl"]<>, ["outputs::no_shadow::ScopeOfDecl"][3]{[0]file["file"]: types__ast::FileId, [1]scope["scope"]: types__ast::ScopeId, [2]declared["declared"]: types__ast::AnyId});
-::differential_datalog::decl_struct_into_record!(ScopeOfDecl, ["outputs::no_shadow::ScopeOfDecl"]<>, file, scope, declared);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(ScopeOfDecl, <>, file: types__ast::FileId, scope: types__ast::ScopeId, declared: types__ast::AnyId);
+impl abomonation::Abomonation for ScopeOfDecl{}
 impl ::std::fmt::Display for ScopeOfDecl {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            ScopeOfDecl {
-                file,
-                scope,
-                declared,
-            } => {
+            ScopeOfDecl{file,scope,declared} => {
                 __formatter.write_str("outputs::no_shadow::ScopeOfDecl{")?;
                 ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str(",")?;
@@ -173,103 +154,59 @@ impl ::std::fmt::Debug for ScopeOfDecl {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-pub static __Arng_outputs_no_shadow_ScopeOfDecl_0: ::once_cell::sync::Lazy<program::Arrangement> =
-    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
-        name: std::borrow::Cow::from(
-            r###"(outputs::no_shadow::ScopeOfDecl{.file=(_0: ast::FileId), .scope=(_: ast::ScopeId), .declared=(_1: ast::AnyId)}: outputs::no_shadow::ScopeOfDecl) /*join*/"###,
-        ),
-        afun: {
-            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
-                let __cloned = __v.clone();
-                match <ScopeOfDecl>::from_ddvalue(__v) {
-                    ScopeOfDecl {
-                        file: ref _0,
-                        scope: _,
-                        declared: ref _1,
-                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                    _ => None,
-                }
-                .map(|x| (x, __cloned))
-            }
-            __f
-        },
-        queryable: false,
-    });
-pub static __Arng_outputs_no_shadow_ScopeOfDecl_1: ::once_cell::sync::Lazy<program::Arrangement> =
-    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
-        name: std::borrow::Cow::from(
-            r###"(outputs::no_shadow::ScopeOfDecl{.file=(_0: ast::FileId), .scope=(_: ast::ScopeId), .declared=(_: ast::AnyId)}: outputs::no_shadow::ScopeOfDecl) /*join*/"###,
-        ),
-        afun: {
-            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
-                let __cloned = __v.clone();
-                match <ScopeOfDecl>::from_ddvalue(__v) {
-                    ScopeOfDecl {
-                        file: ref _0,
-                        scope: _,
-                        declared: _,
-                    } => Some(((*_0).clone()).into_ddvalue()),
-                    _ => None,
-                }
-                .map(|x| (x, __cloned))
-            }
-            __f
-        },
-        queryable: false,
-    });
-pub static __Arng_outputs_no_shadow_DeclarationInDescendent_0: ::once_cell::sync::Lazy<
-    program::Arrangement,
-> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
-    name: std::borrow::Cow::from(
-        r###"(outputs::no_shadow::DeclarationInDescendent{.file=(_1: ast::FileId), .scope=(_0: ast::ScopeId), .name=(_: internment::Intern<string>), .id=(_: ast::AnyId)}: outputs::no_shadow::DeclarationInDescendent) /*join*/"###,
-    ),
-    afun: {
-        fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
-            let __cloned = __v.clone();
-            match <DeclarationInDescendent>::from_ddvalue(__v) {
-                DeclarationInDescendent {
-                    file: ref _1,
-                    scope: ref _0,
-                    name: _,
-                    id: _,
-                } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                _ => None,
-            }
-            .map(|x| (x, __cloned))
-        }
-        __f
-    },
-    queryable: false,
-});
-pub static __Arng_outputs_no_shadow_DeclarationInDescendent_1: ::once_cell::sync::Lazy<
-    program::Arrangement,
-> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
-    name: std::borrow::Cow::from(
-        r###"(outputs::no_shadow::DeclarationInDescendent{.file=(_0: ast::FileId), .scope=(_1: ast::ScopeId), .name=(_2: internment::Intern<string>), .id=(_: ast::AnyId)}: outputs::no_shadow::DeclarationInDescendent) /*join*/"###,
-    ),
-    afun: {
-        fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
-            let __cloned = __v.clone();
-            match <DeclarationInDescendent>::from_ddvalue(__v) {
-                DeclarationInDescendent {
-                    file: ref _0,
-                    scope: ref _1,
-                    name: ref _2,
-                    id: _,
-                } => Some(
-                    (ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue(),
-                ),
-                _ => None,
-            }
-            .map(|x| (x, __cloned))
-        }
-        __f
-    },
-    queryable: false,
-});
-pub static __Rule_outputs_no_shadow_ScopeOfDecl_0: ::once_cell::sync::Lazy<program::Rule> =
-    ::once_cell::sync::Lazy::new(
-        || /* outputs::no_shadow::ScopeOfDecl[(outputs::no_shadow::ScopeOfDecl{.file=file, .scope=scope, .declared=declared}: outputs::no_shadow::ScopeOfDecl)] :- __Prefix_8[((file: ast::FileId), (config: config::Config))], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(_: internment::Intern<string>), .scope=(var_decls::Unhoistable{.scope=(scope: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (ast::is_global(declared))). */
+pub static __Arng_outputs_no_shadow_ScopeOfDecl_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                       name: std::borrow::Cow::from(r###"(outputs::no_shadow::ScopeOfDecl{.file=(_0: ast::FileId), .scope=(_: ast::ScopeId), .declared=(_1: ast::AnyId)}: outputs::no_shadow::ScopeOfDecl) /*join*/"###),
+                                                                                                                                        afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                        {
+                                                                                                                                            let __cloned = __v.clone();
+                                                                                                                                            match < ScopeOfDecl>::from_ddvalue(__v) {
+                                                                                                                                                ScopeOfDecl{file: ref _0, scope: _, declared: ref _1} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                                                                                                                                                _ => None
+                                                                                                                                            }.map(|x|(x,__cloned))
+                                                                                                                                        }
+                                                                                                                                        __f},
+                                                                                                                                        queryable: false
+                                                                                                                                    });
+pub static __Arng_outputs_no_shadow_ScopeOfDecl_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                       name: std::borrow::Cow::from(r###"(outputs::no_shadow::ScopeOfDecl{.file=(_0: ast::FileId), .scope=(_: ast::ScopeId), .declared=(_: ast::AnyId)}: outputs::no_shadow::ScopeOfDecl) /*join*/"###),
+                                                                                                                                        afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                        {
+                                                                                                                                            let __cloned = __v.clone();
+                                                                                                                                            match < ScopeOfDecl>::from_ddvalue(__v) {
+                                                                                                                                                ScopeOfDecl{file: ref _0, scope: _, declared: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                                _ => None
+                                                                                                                                            }.map(|x|(x,__cloned))
+                                                                                                                                        }
+                                                                                                                                        __f},
+                                                                                                                                        queryable: false
+                                                                                                                                    });
+pub static __Arng_outputs_no_shadow_DeclarationInDescendent_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                                   name: std::borrow::Cow::from(r###"(outputs::no_shadow::DeclarationInDescendent{.file=(_1: ast::FileId), .scope=(_0: ast::ScopeId), .name=(_: internment::Intern<string>), .id=(_: ast::AnyId)}: outputs::no_shadow::DeclarationInDescendent) /*join*/"###),
+                                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                                    {
+                                                                                                                                                        let __cloned = __v.clone();
+                                                                                                                                                        match < DeclarationInDescendent>::from_ddvalue(__v) {
+                                                                                                                                                            DeclarationInDescendent{file: ref _1, scope: ref _0, name: _, id: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                                                                                                                                                            _ => None
+                                                                                                                                                        }.map(|x|(x,__cloned))
+                                                                                                                                                    }
+                                                                                                                                                    __f},
+                                                                                                                                                    queryable: false
+                                                                                                                                                });
+pub static __Arng_outputs_no_shadow_DeclarationInDescendent_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                                   name: std::borrow::Cow::from(r###"(outputs::no_shadow::DeclarationInDescendent{.file=(_0: ast::FileId), .scope=(_1: ast::ScopeId), .name=(_2: internment::Intern<string>), .id=(_: ast::AnyId)}: outputs::no_shadow::DeclarationInDescendent) /*join*/"###),
+                                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                                    {
+                                                                                                                                                        let __cloned = __v.clone();
+                                                                                                                                                        match < DeclarationInDescendent>::from_ddvalue(__v) {
+                                                                                                                                                            DeclarationInDescendent{file: ref _0, scope: ref _1, name: ref _2, id: _} => Some((ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
+                                                                                                                                                            _ => None
+                                                                                                                                                        }.map(|x|(x,__cloned))
+                                                                                                                                                    }
+                                                                                                                                                    __f},
+                                                                                                                                                    queryable: false
+                                                                                                                                                });
+pub static __Rule_outputs_no_shadow_ScopeOfDecl_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::no_shadow::ScopeOfDecl[(outputs::no_shadow::ScopeOfDecl{.file=file, .scope=scope, .declared=declared}: outputs::no_shadow::ScopeOfDecl)] :- __Prefix_8[((file: ast::FileId), (config: config::Config))], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(_: internment::Intern<string>), .scope=(var_decls::Unhoistable{.scope=(scope: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (ast::is_global(declared))). */
                                                                                                                              program::Rule::ArrangementRule {
                                                                                                                                  description: std::borrow::Cow::from( "outputs::no_shadow::ScopeOfDecl(.file=file, .scope=scope, .declared=declared) :- __Prefix_8[(file, config)], var_decls::VariableDeclarations(.file=file, .name=_, .scope=var_decls::Unhoistable{.scope=scope}, .declared_in=declared, .meta=_), (not (ast::is_global(declared)))."),
                                                                                                                                  arr: ( 6, 0),
@@ -293,11 +230,8 @@ pub static __Rule_outputs_no_shadow_ScopeOfDecl_0: ::once_cell::sync::Lazy<progr
                                                                                                                                             __f},
                                                                                                                                             next: Box::new(None)
                                                                                                                                         }
-                                                                                                                             },
-    );
-pub static __Rule_outputs_no_shadow_ScopeOfDecl_1: ::once_cell::sync::Lazy<program::Rule> =
-    ::once_cell::sync::Lazy::new(
-        || /* outputs::no_shadow::ScopeOfDecl[(outputs::no_shadow::ScopeOfDecl{.file=file, .scope=scope, .declared=declared}: outputs::no_shadow::ScopeOfDecl)] :- __Prefix_8[((file: ast::FileId), (config: config::Config))], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(_: internment::Intern<string>), .scope=(var_decls::Hoistable{.hoisted=(hoisted_scope: ast::ScopeId), .unhoisted=(unhoisted_scope: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (ast::is_global(declared))), ((var scope: ast::ScopeId) = if (config::no_shadow_hoisting(config)) {
+                                                                                                                             });
+pub static __Rule_outputs_no_shadow_ScopeOfDecl_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::no_shadow::ScopeOfDecl[(outputs::no_shadow::ScopeOfDecl{.file=file, .scope=scope, .declared=declared}: outputs::no_shadow::ScopeOfDecl)] :- __Prefix_8[((file: ast::FileId), (config: config::Config))], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(_: internment::Intern<string>), .scope=(var_decls::Hoistable{.hoisted=(hoisted_scope: ast::ScopeId), .unhoisted=(unhoisted_scope: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], (not (ast::is_global(declared))), ((var scope: ast::ScopeId) = if (config::no_shadow_hoisting(config)) {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      hoisted_scope
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  } else {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        unhoisted_scope
@@ -333,12 +267,8 @@ pub static __Rule_outputs_no_shadow_ScopeOfDecl_1: ::once_cell::sync::Lazy<progr
                                                                                                                                             __f},
                                                                                                                                             next: Box::new(None)
                                                                                                                                         }
-                                                                                                                             },
-    );
-pub static __Rule_outputs_no_shadow_DeclarationInDescendent_0: ::once_cell::sync::Lazy<
-    program::Rule,
-> = ::once_cell::sync::Lazy::new(
-    || /* outputs::no_shadow::DeclarationInDescendent[(outputs::no_shadow::DeclarationInDescendent{.file=file, .scope=scope, .name=name, .id=id}: outputs::no_shadow::DeclarationInDescendent)] :- outputs::no_shadow::ScopeOfDecl[(outputs::no_shadow::ScopeOfDecl{.file=(file: ast::FileId), .scope=(scope: ast::ScopeId), .declared=(id: ast::AnyId)}: outputs::no_shadow::ScopeOfDecl)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(id: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)]. */
+                                                                                                                             });
+pub static __Rule_outputs_no_shadow_DeclarationInDescendent_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::no_shadow::DeclarationInDescendent[(outputs::no_shadow::DeclarationInDescendent{.file=file, .scope=scope, .name=name, .id=id}: outputs::no_shadow::DeclarationInDescendent)] :- outputs::no_shadow::ScopeOfDecl[(outputs::no_shadow::ScopeOfDecl{.file=(file: ast::FileId), .scope=(scope: ast::ScopeId), .declared=(id: ast::AnyId)}: outputs::no_shadow::ScopeOfDecl)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(id: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)]. */
                                                                                                                                          program::Rule::ArrangementRule {
                                                                                                                                              description: std::borrow::Cow::from( "outputs::no_shadow::DeclarationInDescendent(.file=file, .scope=scope, .name=name, .id=id) :- outputs::no_shadow::ScopeOfDecl(.file=file, .scope=scope, .declared=id), var_decls::VariableDeclarations(.file=file, .name=name, .scope=_, .declared_in=id, .meta=_)."),
                                                                                                                                              arr: ( 67, 0),
@@ -361,12 +291,8 @@ pub static __Rule_outputs_no_shadow_DeclarationInDescendent_0: ::once_cell::sync
                                                                                                                                                         __f},
                                                                                                                                                         next: Box::new(None)
                                                                                                                                                     }
-                                                                                                                                         },
-);
-pub static __Rule_outputs_no_shadow_DeclarationInDescendent_1: ::once_cell::sync::Lazy<
-    program::Rule,
-> = ::once_cell::sync::Lazy::new(
-    || /* outputs::no_shadow::DeclarationInDescendent[(outputs::no_shadow::DeclarationInDescendent{.file=file, .scope=parent, .name=name, .id=id}: outputs::no_shadow::DeclarationInDescendent)] :- outputs::no_shadow::DeclarationInDescendent[(outputs::no_shadow::DeclarationInDescendent{.file=(file: ast::FileId), .scope=(child: ast::ScopeId), .name=(name: internment::Intern<string>), .id=(id: ast::AnyId)}: outputs::no_shadow::DeclarationInDescendent)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)]. */
+                                                                                                                                         });
+pub static __Rule_outputs_no_shadow_DeclarationInDescendent_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::no_shadow::DeclarationInDescendent[(outputs::no_shadow::DeclarationInDescendent{.file=file, .scope=parent, .name=name, .id=id}: outputs::no_shadow::DeclarationInDescendent)] :- outputs::no_shadow::DeclarationInDescendent[(outputs::no_shadow::DeclarationInDescendent{.file=(file: ast::FileId), .scope=(child: ast::ScopeId), .name=(name: internment::Intern<string>), .id=(id: ast::AnyId)}: outputs::no_shadow::DeclarationInDescendent)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId), .file=(file: ast::FileId)}: inputs::InputScope)]. */
                                                                                                                                          program::Rule::ArrangementRule {
                                                                                                                                              description: std::borrow::Cow::from( "outputs::no_shadow::DeclarationInDescendent(.file=file, .scope=parent, .name=name, .id=id) :- outputs::no_shadow::DeclarationInDescendent(.file=file, .scope=child, .name=name, .id=id), inputs::InputScope(.parent=parent, .child=child, .file=file)."),
                                                                                                                                              arr: ( 65, 0),
@@ -389,11 +315,8 @@ pub static __Rule_outputs_no_shadow_DeclarationInDescendent_1: ::once_cell::sync
                                                                                                                                                         __f},
                                                                                                                                                         next: Box::new(None)
                                                                                                                                                     }
-                                                                                                                                         },
-);
-pub static __Rule_outputs_no_shadow_NoShadow_0: ::once_cell::sync::Lazy<program::Rule> =
-    ::once_cell::sync::Lazy::new(
-        || /* outputs::no_shadow::NoShadow[(outputs::no_shadow::NoShadow{.variable=name, .original=(shadowed_id, shadowed_span), .shadower=(shadower_id, shadower_span), .implicit=false, .file=file}: outputs::no_shadow::NoShadow)] :- __Prefix_8[((file: ast::FileId), (config: config::Config))], outputs::no_shadow::ScopeOfDecl[(outputs::no_shadow::ScopeOfDecl{.file=(file: ast::FileId), .scope=(shadowed_scope: ast::ScopeId), .declared=(shadowed_id: ast::AnyId)}: outputs::no_shadow::ScopeOfDecl)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(shadowed_scope_raw: var_decls::DeclarationScope), .declared_in=(shadowed_id: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=(_: bool), .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(shadowed_span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], outputs::no_shadow::DeclarationInDescendent[(outputs::no_shadow::DeclarationInDescendent{.file=(file: ast::FileId), .scope=(shadowed_scope: ast::ScopeId), .name=(name: internment::Intern<string>), .id=(shadower_id: ast::AnyId)}: outputs::no_shadow::DeclarationInDescendent)], (shadowed_id != shadower_id), var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(shadower_scope_raw: var_decls::DeclarationScope), .declared_in=(shadower_id: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=(_: bool), .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(shadower_span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], match (((config::no_shadow_hoisting(config)), (var_decls::is_hoistable(shadower_scope_raw)), (var_decls::is_hoistable(shadowed_scope_raw)))) {
+                                                                                                                                         });
+pub static __Rule_outputs_no_shadow_NoShadow_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* outputs::no_shadow::NoShadow[(outputs::no_shadow::NoShadow{.variable=name, .original=(shadowed_id, shadowed_span), .shadower=(shadower_id, shadower_span), .implicit=false, .file=file}: outputs::no_shadow::NoShadow)] :- __Prefix_8[((file: ast::FileId), (config: config::Config))], outputs::no_shadow::ScopeOfDecl[(outputs::no_shadow::ScopeOfDecl{.file=(file: ast::FileId), .scope=(shadowed_scope: ast::ScopeId), .declared=(shadowed_id: ast::AnyId)}: outputs::no_shadow::ScopeOfDecl)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(shadowed_scope_raw: var_decls::DeclarationScope), .declared_in=(shadowed_id: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=(_: bool), .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(shadowed_span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], outputs::no_shadow::DeclarationInDescendent[(outputs::no_shadow::DeclarationInDescendent{.file=(file: ast::FileId), .scope=(shadowed_scope: ast::ScopeId), .name=(name: internment::Intern<string>), .id=(shadower_id: ast::AnyId)}: outputs::no_shadow::DeclarationInDescendent)], (shadowed_id != shadower_id), var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.file=(file: ast::FileId), .name=(name: internment::Intern<string>), .scope=(shadower_scope_raw: var_decls::DeclarationScope), .declared_in=(shadower_id: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=(_: bool), .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(shadower_span: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], match (((config::no_shadow_hoisting(config)), (var_decls::is_hoistable(shadower_scope_raw)), (var_decls::is_hoistable(shadowed_scope_raw)))) {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              (true, true, true) -> (shadower_span < shadowed_span),
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              (true, false, true) -> (shadower_span < shadowed_span),
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              (true, true, false) -> (shadower_span < shadowed_span),
@@ -506,5 +429,4 @@ pub static __Rule_outputs_no_shadow_NoShadow_0: ::once_cell::sync::Lazy<program:
                                                                                                                                                                                 })
                                                                                                                                                              }))
                                                                                                                                      }
-                                                                                                                          },
-    );
+                                                                                                                          });

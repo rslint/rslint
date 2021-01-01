@@ -1,12 +1,12 @@
-use super::{add_trait_bounds, get_rename, IdentOrIndex};
+use super::{add_trait_bounds, get_rename};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
-    parse_quote, spanned::Spanned, Data, DataEnum, DataStruct, DeriveInput, Error, Ident,
-    ImplGenerics, Index, Result, TypeGenerics, WhereClause,
+    parse_quote, spanned::Spanned, Attribute, Data, DataEnum, DataStruct, DeriveInput, Error,
+    Fields, FieldsNamed, FieldsUnnamed, Ident, ImplGenerics, Index, Result, TypeGenerics,
+    WhereClause,
 };
 
-// TODO: Add the `positional = {true, false}` attribute to make a positional record
 pub fn into_record_inner(input: DeriveInput) -> Result<TokenStream> {
     // The name of the struct
     let struct_ident = input.ident;
@@ -53,44 +53,41 @@ fn into_record_struct(
         Option<&WhereClause>,
     ),
 ) -> Result<TokenStream> {
-    // Generate the records for each field of the struct
-    let struct_fields = derive_struct
-        .fields
-        .into_iter()
-        .enumerate()
-        .map(|(idx, field)| {
-            let field_span = field.span();
-            // Tuple structs have no field names, but instead use the tuple indexes
-            let field_ident = field.ident.map_or_else(
-                || IdentOrIndex::Index(Index { index: idx as u32, span: field_span }),
-                IdentOrIndex::Ident,
-            );
-            let field_type = field.ty;
+    // Generate the code converting the fields of the struct into a record
+    let (guard, generated_record) = match derive_struct.fields {
+        Fields::Named(struct_elements) => {
+            let (record, element_idents) =
+                named_struct_record(&struct_record_name, &struct_elements)?;
+            let guard = quote! {
+                let #struct_ident { #( #element_idents ),* } = self;
+            };
 
-            // Use the given rename provided by `#[ddlog(rename = "...")]` or `#[ddlog(into_record = "...")]`
-            // as the name of the field, defaulting to the field's ident if none is given
-            let field_record_name = get_rename("IntoRecord", "into_record", field.attrs.iter())?
-                .unwrap_or_else(|| field_ident.to_string());
+            (guard, record)
+        }
 
-            // Generate the field name and convert the field's value into a record
-            Ok(quote! {
-                (
-                    std::borrow::Cow::Borrowed(#field_record_name),
-                    <#field_type as differential_datalog::record::IntoRecord>::into_record(self.#field_ident),
-                ),
-            })
-        })
-        .collect::<Result<TokenStream>>()?;
+        Fields::Unnamed(tuple_elements) => {
+            let (record, element_indices) =
+                tuple_struct_record(&struct_record_name, &tuple_elements);
+            let guard = quote! {
+                let #struct_ident(#( #element_indices ),*) = self;
+            };
 
-    // Generate the actual code
+            (guard, record)
+        }
+
+        Fields::Unit => {
+            let record = unit_struct_record(&struct_record_name);
+
+            (TokenStream::new(), record)
+        }
+    };
+
     Ok(quote! {
         #[automatically_derived]
         impl #impl_generics differential_datalog::record::IntoRecord for #struct_ident #type_generics #where_clause {
             fn into_record(self) -> differential_datalog::record::Record {
-                differential_datalog::record::Record::NamedStruct(
-                    std::borrow::Cow::Borrowed(#struct_record_name),
-                    std::vec![#struct_fields],
-                )
+                #guard
+                #generated_record
             }
         }
     })
@@ -107,69 +104,45 @@ fn into_record_enum(
     ),
 ) -> Result<TokenStream> {
     // Generate the code for turning variants into records
-    let variants = derive_enum
+    let generated_variants = derive_enum
         .variants
         .into_iter()
         .map(|variant| {
-            let variant_ident = variant.ident;
+            let variant_ident = &variant.ident;
+            let variant_record_name =
+                rename_variant(variant_ident, &enum_record_name, variant.attrs.iter())?;
 
-            // Use the given rename provided by `#[ddlog(rename = "...")]` or `#[ddlog(into_record = "...")]`
-            // as the name of the variant, defaulting to the variant's ident if none is given
-            let variant_record_name = get_rename("IntoRecord", "into_record", variant.attrs.iter())?
-                .map_or_else(
-                    || format!("{}::{}", enum_record_name, variant_ident),
-                    |rename| format!("{}::{}", enum_record_name, rename),
-                );
+            let (match_guard, generated_record) = match variant.fields {
+                Fields::Named(struct_elements) => {
+                    let (record, element_idents) =
+                        named_struct_record(&variant_record_name, &struct_elements)?;
+                    let guard = quote! {
+                        #enum_ident::#variant_ident { #( #element_idents ),* }
+                    };
 
-            // Tuple structs have no field names, but instead use the tuple indexes
-            let field_idents = variant
-                .fields
-                .clone()
-                .into_iter()
-                .enumerate()
-                .map(|(idx, field)| {
-                    let field_span = field.span();
-                    let field_ident = field.ident.clone().map_or_else(
-                        || IdentOrIndex::Index(Index { index: idx as u32, span: field_span }),
-                        IdentOrIndex::Ident,
-                    );
-                    let ident = format_ident!("_{}", field.ident.map_or_else(|| idx.to_string(), |ident| ident.to_string()));
+                    (guard, record)
+                }
 
-                    quote! {
-                        #field_ident: #ident,
-                    }
-                });
+                Fields::Unnamed(tuple_elements) => {
+                    let (record, element_indices) =
+                        tuple_struct_record(&variant_record_name, &tuple_elements);
+                    let guard = quote! {
+                        #enum_ident::#variant_ident(#( #element_indices ),*)
+                    };
 
-            let field_records = variant
-                .fields
-                .into_iter()
-                .enumerate()
-                .map(|(idx, field)| {
-                    // Tuple structs have no field names, but instead use the tuple indexes
-                    let field_name = field.ident.map_or_else(|| idx.to_string(), |ident| ident.to_string());
-                    let field_ident = format_ident!("_{}", field_name);
-                    let field_type = field.ty;
+                    (guard, record)
+                }
 
-                    // If the field is renamed within records then use that as the name to extract
-                    let field_record_name = get_rename("IntoRecord", "into_record", field.attrs.iter())?
-                        .unwrap_or_else(|| field_name.clone());
+                Fields::Unit => {
+                    let record = unit_struct_record(&variant_record_name);
+                    let guard = quote! { #enum_ident::#variant_ident };
 
-                    // Call `FromRecord::from_record()` directly on each field
-                    Ok(quote! {
-                        (
-                            std::borrow::Cow::Borrowed(#field_record_name),
-                            <#field_type as differential_datalog::record::IntoRecord>::into_record(#field_ident),
-                        ),
-                    })
-                })
-                .collect::<Result<TokenStream>>()?;
+                    (guard, record)
+                }
+            };
 
-            // Generate the code for each match arm individually
             Ok(quote! {
-                #enum_ident::#variant_ident { #( #field_idents )* } => differential_datalog::record::Record::NamedStruct(
-                    std::borrow::Cow::Borrowed(#variant_record_name),
-                    vec![#field_records],
-                ),
+                #match_guard => #generated_record,
             })
         })
         .collect::<Result<TokenStream>>()?;
@@ -179,9 +152,103 @@ fn into_record_enum(
         impl #impl_generics differential_datalog::record::IntoRecord for #enum_ident #type_generics #where_clause {
             fn into_record(self) -> differential_datalog::record::Record {
                 match self {
-                    #variants
+                    #generated_variants
                 }
             }
         }
     })
+}
+
+/// Use the given rename provided by `#[ddlog(rename = "...")]` or `#[ddlog(into_record = "...")]`
+/// as the name of the variant, defaulting to the variant's ident if none is given
+fn rename_variant<'a, I>(ident: &Ident, record_name: &str, attrs: I) -> Result<String>
+where
+    I: Iterator<Item = &'a Attribute> + 'a,
+{
+    Ok(get_rename("IntoRecord", "into_record", attrs)?
+        .unwrap_or_else(|| format!("{}::{}", record_name, ident)))
+}
+
+fn named_struct_record<'a>(
+    record_name: &str,
+    struct_elements: &'a FieldsNamed,
+) -> Result<(TokenStream, impl Iterator<Item = &'a Ident> + 'a)> {
+    let elements = struct_elements.named.iter().map(|element| {
+        let element_ident = element.ident.as_ref().expect("all of FieldsNamed's fields have idents");
+        let element_type = &element.ty;
+        let element_record_name = get_rename("IntoRecord", "into_record", element.attrs.iter())?
+            .unwrap_or_else(|| element_ident.to_string());
+
+        Ok(quote! {
+            (
+                std::borrow::Cow::Borrowed(#element_record_name),
+                <#element_type as differential_datalog::record::IntoRecord>::into_record(#element_ident),
+            ),
+        })
+    })
+    .collect::<Result<TokenStream>>()?;
+
+    let record = quote! {
+        differential_datalog::record::Record::NamedStruct(
+            std::borrow::Cow::Borrowed(#record_name),
+            vec![#elements],
+        )
+    };
+
+    let idents = struct_elements.named.iter().map(|element| {
+        element
+            .ident
+            .as_ref()
+            .expect("all of FieldsNamed's fields have idents")
+    });
+
+    Ok((record, idents))
+}
+
+fn tuple_struct_record<'a>(
+    record_name: &str,
+    tuple_elements: &'a FieldsUnnamed,
+) -> (TokenStream, impl Iterator<Item = Ident> + 'a) {
+    let elements = tuple_elements
+        .unnamed
+        .iter()
+        .enumerate()
+        .map(|(idx, element)| {
+            (
+                format_ident!(
+                    "_{}",
+                    Index {
+                        index: idx as u32,
+                        span: element.span(),
+                    }
+                ),
+                element,
+            )
+        });
+
+    let element_records = elements.clone().map(|(index, element)| {
+        let element_type = &element.ty;
+
+        quote! {
+            <#element_type as differential_datalog::record::IntoRecord>::into_record(#index),
+        }
+    });
+
+    let record = quote! {
+        differential_datalog::record::Record::PosStruct(
+            std::borrow::Cow::Borrowed(#record_name),
+            vec![#( #element_records )*],
+        )
+    };
+
+    (record, elements.map(|(index, _)| index))
+}
+
+fn unit_struct_record(record_name: &str) -> TokenStream {
+    quote! {
+        differential_datalog::record::Record::NamedStruct(
+            std::borrow::Cow::Borrowed(#record_name),
+            std::vec::Vec::new(),
+        )
+    }
 }

@@ -12,6 +12,7 @@ use syn::{
 
 mod from_record;
 mod into_record;
+mod mutator;
 
 /// Allows deriving `FromRecord` for structs and enums
 ///
@@ -20,7 +21,9 @@ mod into_record;
 ///
 /// ```rust
 /// # use ddlog_derive::FromRecord;
+/// # use serde::Deserialize;
 ///
+/// # #[derive(Deserialize)]
 /// #[derive(FromRecord)]
 /// #[ddlog(rename = "foo")]
 /// struct Foo {
@@ -59,6 +62,33 @@ pub fn derive_into_record(input: proc_macro::TokenStream) -> proc_macro::TokenSt
     let input = parse_macro_input!(input as DeriveInput);
 
     into_record::into_record_inner(input)
+        .unwrap_or_else(|err| err.to_compile_error())
+        .into()
+}
+
+/// Allows deriving `Mutator` for structs and enums
+///
+/// The struct/enum and individual fields or enum variants can be renamed with the
+/// `#[ddlog(rename = "new name")]` or `#[ddlog(into_record = "new name")]` attributes
+///
+/// ```rust
+/// # use ddlog_derive::{FromRecord, Mutator};
+/// # use serde::Deserialize;
+///
+/// # #[derive(Deserialize)]
+/// #[derive(Mutator, FromRecord)]
+/// #[ddlog(rename = "foo")]
+/// struct Foo {
+///     #[ddlog(rename = "baz")]
+///     bar: u32,
+/// }
+/// ```
+///
+#[proc_macro_derive(Mutator, attributes(ddlog))]
+pub fn derive_mutator(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    mutator::mutator_inner(input)
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
 }

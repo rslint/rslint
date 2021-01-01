@@ -54,10 +54,6 @@ pub struct HDDlog {
     pub replay_file: Option<Mutex<fs::File>>,
 }
 
-// `HDDlog` is not `Send` because `WorkerGuards` are not `Send`.  Remove this
-// unsafe impl once we switcht to a more recent DD.
-unsafe impl Send for HDDlog {}
-
 /* Public API */
 impl HDDlog {
     pub fn print_err(f: Option<extern "C" fn(msg: *const raw::c_char)>, msg: &str) {
@@ -195,12 +191,11 @@ impl DDlog for HDDlog {
     type Convert = DDlogConverter;
     type UpdateSerializer = UpdateSerializer;
 
-    fn run<F>(workers: usize, do_store: bool, cb: F) -> Result<(Self, DeltaMap<DDValue>), String>
+    fn run(workers: usize, do_store: bool) -> Result<(Self, DeltaMap<DDValue>), String>
     where
         Self: Sized,
-        F: Callback,
     {
-        Self::do_run(workers, do_store, CallbackUpdateHandler::new(cb), None)
+        Self::do_run(workers, do_store, None)
     }
 
     fn transaction_start(&self) -> Result<(), String> {
@@ -364,15 +359,11 @@ impl DDlog for HDDlog {
 
 /* Internals */
 impl HDDlog {
-    fn do_run<UH>(
+    fn do_run(
         workers: usize,
         do_store: bool,
-        cb: UH,
         print_err: Option<extern "C" fn(msg: *const raw::c_char)>,
-    ) -> Result<(Self, DeltaMap<DDValue>), String>
-    where
-        UH: UpdateHandler + Send + 'static,
-    {
+    ) -> Result<(Self, DeltaMap<DDValue>), String> {
         let workers = if workers == 0 { 1 } else { workers };
 
         let db: Arc<Mutex<DeltaMap<DDValue>>> = Arc::new(Mutex::new(DeltaMap::new()));
@@ -387,20 +378,15 @@ impl HDDlog {
                  * actually used. */
                 let delta_handler = DeltaUpdateHandler::new(deltadb2);
 
-                let store_handler = if do_store {
-                    Some(ValMapUpdateHandler::new(db2))
+                if do_store {
+                    let handlers: Vec<Box<dyn UpdateHandler>> = vec![
+                        Box::new(delta_handler),
+                        Box::new(ValMapUpdateHandler::new(db2)),
+                    ];
+                    Box::new(ChainedUpdateHandler::new(handlers)) as Box<dyn UpdateHandler>
                 } else {
-                    None
-                };
-
-                let cb_handler = Box::new(cb) as Box<dyn UpdateHandler + Send>;
-                let mut handlers: Vec<Box<dyn UpdateHandler>> = Vec::new();
-                handlers.push(Box::new(delta_handler));
-                if let Some(h) = store_handler {
-                    handlers.push(Box::new(h))
-                };
-                handlers.push(cb_handler);
-                Box::new(ChainedUpdateHandler::new(handlers)) as Box<dyn UpdateHandler>
+                    Box::new(delta_handler) as Box<dyn UpdateHandler>
+                }
             };
             Box::new(ThreadUpdateHandler::new(handler_generator))
         };

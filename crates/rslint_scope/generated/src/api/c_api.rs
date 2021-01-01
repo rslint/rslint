@@ -80,26 +80,10 @@ pub unsafe extern "C" fn ddlog_get_index_name(iid: libc::size_t) -> *const raw::
 pub unsafe extern "C" fn ddlog_run(
     workers: raw::c_uint,
     do_store: bool,
-    cb: Option<ExternCCallback>,
-    cb_arg: libc::uintptr_t,
     print_err: Option<extern "C" fn(msg: *const raw::c_char)>,
     init_state: *mut *mut DeltaMap<DDValue>,
 ) -> *const HDDlog {
-    let result = if let Some(f) = cb {
-        HDDlog::do_run(
-            workers as usize,
-            do_store,
-            ExternCUpdateHandler::new(f, cb_arg),
-            print_err,
-        )
-    } else {
-        HDDlog::do_run(
-            workers as usize,
-            do_store,
-            NullUpdateHandler::new(),
-            print_err,
-        )
-    };
+    let result = HDDlog::do_run(workers as usize, do_store, print_err);
 
     match result {
         Ok((hddlog, init)) => {

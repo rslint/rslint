@@ -40,36 +40,33 @@ use ::timely::communication;
 use ::timely::dataflow::scopes;
 use ::timely::worker;
 
-//use ::serde::de::DeserializeOwned;
-use ::differential_datalog::ddval::DDValConvert;
+use ::ddlog_derive::{FromRecord, IntoRecord, Mutator};
 use ::differential_datalog::ddval::DDValue;
+use ::differential_datalog::ddval::DDValConvert;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
+
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
 
-use ddlog_derive::FromRecord;
-use differential_datalog::{
-    decl_enum_into_record, decl_record_mutator_enum, decl_record_mutator_struct,
-    decl_struct_from_record, decl_struct_into_record, record::Record,
-};
+
 use schemars::JsonSchema;
 use std::fmt::{self, Debug, Display, Formatter};
 use types__regex::RegexSet as DDlogRegexSet;
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub no_shadow: bool,
@@ -150,45 +147,8 @@ impl Display for Config {
     }
 }
 
-decl_struct_into_record!(
-    Config,
-    ["Config"]<>,
-    no_shadow,
-    no_shadow_hoisting,
-    no_undef,
-    no_unused_labels,
-    no_typeof_undef,
-    no_unused_vars,
-    no_use_before_def
-);
-
-// decl_struct_from_record!(
-//     Config["Config"]<>,
-//     ["Config"][7]{
-//         [0] no_shadow["no_shadow"]: bool,
-//         [1] no_shadow_hoisting["no_shadow_hoisting"]: NoShadowHoisting,
-//         [2] no_undef["no_undef"]: bool,
-//         [3] no_unused_labels["no_unused_labels"]: bool,
-//         [4] no_typeof_undef["no_typeof_undef"]: bool,
-//         [5] no_unused_vars["no_unused_vars"]: bool,
-//         [6] no_use_before_def["no_use_before_def"]: bool
-//     }
-// );
-
-#[allow(clippy::assign_op_pattern)]
-decl_record_mutator_struct!(
-    Config, <>,
-    no_shadow: bool,
-    no_shadow_hoisting: NoShadowHoisting,
-    no_undef: bool,
-    no_unused_labels: bool,
-    no_typeof_undef: bool,
-    no_unused_vars: bool,
-    no_use_before_def: bool
-);
-
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator)]
 #[serde(rename_all = "kebab-case")]
 pub enum NoShadowHoisting {
     Never,
@@ -211,42 +171,6 @@ impl Display for NoShadowHoisting {
         }
     }
 }
-
-// impl FromRecord for NoShadowHoisting {
-//     fn from_record(val: &Record) -> Result<Self, String> {
-//         match val {
-//             Record::PosStruct(constr, args) if args.len() == 0 => match constr.as_ref() {
-//                 "Never" => Ok(Self::Never),
-//                 "Always" => Ok(Self::Always),
-//                 "Functions" => Ok(Self::Functions),
-//                 c => Result::Err(format!(
-//                     "unknown constructor {} of type `NoShadowHoisting` in {:?}",
-//                     c, *val,
-//                 )),
-//             },
-//             Record::NamedStruct(constr, args) if args.len() == 0 => match constr.as_ref() {
-//                 "Never" => Ok(Self::Never),
-//                 "Always" => Ok(Self::Always),
-//                 "Functions" => Ok(Self::Functions),
-//                 c => Result::Err(format!(
-//                     "unknown constructor {} of type `NoShadowHoisting` in {:?}",
-//                     c, *val,
-//                 )),
-//             },
-//             v => Err(format!("not an instance of `NoShadowHoisting` {:?}", *v)),
-//         }
-//     }
-// }
-
-decl_enum_into_record!(
-    NoShadowHoisting<>,
-    Never["Never"]{},
-    Always["Always"]{},
-    Functions["Functions"]{}
-);
-
-#[rustfmt::skip]
-decl_record_mutator_enum!(NoShadowHoisting<>, Never {}, Always {}, Functions {});
 
 // DDlog bridge functions
 pub fn no_shadow_enabled(config: &Config) -> bool {
@@ -312,6 +236,7 @@ pub fn no_use_before_def_enabled(config: &Config) -> bool {
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize, FromRecord,
+    IntoRecord, Mutator,
 )]
 #[serde(rename_all = "kebab-case")]
 pub struct NoUnusedVarsConfig {
@@ -349,30 +274,6 @@ impl JsonSchema for NoUnusedVarsConfig {
     }
 }
 
-impl IntoRecord for NoUnusedVarsConfig {
-    fn into_record(self) -> Record {
-        Record::NamedStruct(
-            std::borrow::Cow::from("NoUnusedVarsConfig"),
-            vec![(
-                std::borrow::Cow::from("ignore_patterns"),
-                self.ignored_patterns.into_record(),
-            )],
-        )
-    }
-}
-
-#[allow(clippy::assign_op_pattern)]
-decl_record_mutator_struct!(
-    NoUnusedVarsConfig, <>,
-    ignored_patterns: DDlogRegexSet
-);
-
-// ::differential_datalog::decl_struct_from_record!(
-//     NoUnusedVarsConfig["NoUnusedVarsConfig"]<>,
-//     ["NoUnusedVarsConfig"][1]{
-//         [0]ignore_patterns["ignore_patterns"]: DDlogRegexSet
-//     }
-// );
 
 pub fn ignored_patterns(config: &NoUnusedVarsConfig) -> &DDlogRegexSet {
     config.ignored_patterns()
@@ -380,7 +281,7 @@ pub fn ignored_patterns(config: &NoUnusedVarsConfig) -> &DDlogRegexSet {
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord,
+    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum IgnoreArgs {
@@ -401,7 +302,7 @@ impl Default for IgnoreArgs {
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord,
+    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum CaughtErrors {
@@ -417,19 +318,17 @@ impl Default for CaughtErrors {
     }
 }
 
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "config::EnableNoUnusedVars")]
 pub struct EnableNoUnusedVars {
     pub file: types__ast::FileId,
-    pub config: ddlog_std::Ref<NoUnusedVarsConfig>,
+    pub config: ddlog_std::Ref<NoUnusedVarsConfig>
 }
-impl abomonation::Abomonation for EnableNoUnusedVars {}
-::differential_datalog::decl_struct_from_record!(EnableNoUnusedVars["config::EnableNoUnusedVars"]<>, ["config::EnableNoUnusedVars"][2]{[0]file["file"]: types__ast::FileId, [1]config["config"]: ddlog_std::Ref<NoUnusedVarsConfig>});
-::differential_datalog::decl_struct_into_record!(EnableNoUnusedVars, ["config::EnableNoUnusedVars"]<>, file, config);
-#[rustfmt::skip] ::differential_datalog::decl_record_mutator_struct!(EnableNoUnusedVars, <>, file: types__ast::FileId, config: ddlog_std::Ref<NoUnusedVarsConfig>);
+impl abomonation::Abomonation for EnableNoUnusedVars{}
 impl ::std::fmt::Display for EnableNoUnusedVars {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            EnableNoUnusedVars { file, config } => {
+            EnableNoUnusedVars{file,config} => {
                 __formatter.write_str("config::EnableNoUnusedVars{")?;
                 ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str(",")?;
@@ -454,27 +353,19 @@ impl ::std::fmt::Debug for EnableNoUnusedVars {
 /* fn no_unused_vars_enabled(config: & Config) -> bool */
 /* fn no_use_before_def_enabled(config: & Config) -> bool */
 pub fn __Key_config_EnableNoUnusedVars(__key: &DDValue) -> DDValue {
-    let ref conf = *{ <EnableNoUnusedVars>::from_ddvalue_ref(__key) };
+    let ref conf = *{<EnableNoUnusedVars>::from_ddvalue_ref(__key) };
     (conf.file.clone()).into_ddvalue()
 }
-pub static __Arng_config_EnableNoUnusedVars_0: ::once_cell::sync::Lazy<program::Arrangement> =
-    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
-        name: std::borrow::Cow::from(
-            r###"(config::EnableNoUnusedVars{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars) /*join*/"###,
-        ),
-        afun: {
-            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
-                let __cloned = __v.clone();
-                match <EnableNoUnusedVars>::from_ddvalue(__v) {
-                    EnableNoUnusedVars {
-                        file: ref _0,
-                        config: _,
-                    } => Some(((*_0).clone()).into_ddvalue()),
-                    _ => None,
-                }
-                .map(|x| (x, __cloned))
-            }
-            __f
-        },
-        queryable: false,
-    });
+pub static __Arng_config_EnableNoUnusedVars_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                   name: std::borrow::Cow::from(r###"(config::EnableNoUnusedVars{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars) /*join*/"###),
+                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                    {
+                                                                                                                                        let __cloned = __v.clone();
+                                                                                                                                        match < EnableNoUnusedVars>::from_ddvalue(__v) {
+                                                                                                                                            EnableNoUnusedVars{file: ref _0, config: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                            _ => None
+                                                                                                                                        }.map(|x|(x,__cloned))
+                                                                                                                                    }
+                                                                                                                                    __f},
+                                                                                                                                    queryable: false
+                                                                                                                                });

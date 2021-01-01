@@ -13,16 +13,13 @@ use differential_dataflow::{
         Consolidate, JoinCore, Reduce,
     },
     trace::{BatchReader, Cursor, TraceReader},
-    AsCollection, Collection, Data, ExchangeData,
+    Collection, Data, ExchangeData,
 };
 use fnv::FnvHashMap;
 use num::One;
 use std::ops::{Add, Mul, Neg};
 use timely::{
-    dataflow::{
-        operators::Concatenate,
-        scopes::{Child, Scope, ScopeParent},
-    },
+    dataflow::scopes::{Child, Scope, ScopeParent},
     order::Product,
     progress::{timestamp::Refines, Timestamp},
 };
@@ -163,19 +160,6 @@ where
     arranged
         .as_collection(|k, v| (k.clone(), v.clone()))
         .concat(&semijoin_arranged(arranged, other).negate())
-}
-
-// TODO: remove when `fn concatenate()` in `collection.rs` makes it to a released version of DD
-pub fn concatenate_collections<G, D, R, I>(scope: &mut G, iterator: I) -> Collection<G, D, R>
-where
-    G: Scope,
-    D: Data,
-    R: Monoid,
-    I: IntoIterator<Item = Collection<G, D, R>>,
-{
-    scope
-        .concatenate(iterator.into_iter().map(|x| x.inner))
-        .as_collection()
 }
 
 /// An alternative implementation of `distinct`.

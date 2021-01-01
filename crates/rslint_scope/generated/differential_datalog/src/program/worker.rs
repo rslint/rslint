@@ -3,13 +3,13 @@ use crate::{
     profile::{get_prof_context, with_prof_context, ProfMsg},
     program::{
         arrange::{ArrangedCollection, Arrangements},
-        concatenate_collections,
         timestamp::TSAtomic,
         ArrId, Dep, Msg, ProgNode, Program, Reply, Update, TS,
     },
     program::{RelId, Weight},
     variable::Variable,
 };
+use crossbeam_channel::{Receiver, Sender, TryRecvError};
 use differential_dataflow::{
     input::{Input, InputSession},
     logging::DifferentialEvent,
@@ -22,14 +22,13 @@ use differential_dataflow::{
 };
 use fnv::{FnvBuildHasher, FnvHashMap};
 use std::{
+    cell::RefCell,
     collections::{BTreeMap, BTreeSet, HashMap},
     mem,
     rc::Rc,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc::SyncSender,
-        mpsc::{Receiver, Sender, TryRecvError},
-        Arc, Barrier, Mutex,
+        Arc, Barrier,
     },
     thread::{self, Thread},
     time::Duration,
@@ -41,6 +40,13 @@ use timely::{
     progress::frontier::AntichainRef,
     worker::Worker,
 };
+
+/// The size of each worker's thread-local profiling buffer
+const PROFILING_BUFFER_SIZE: usize = 256;
+
+thread_local! {
+    static WORKER_PROFILING_BUFFER: RefCell<Vec<ProfMsg>> = RefCell::new(Vec::new());
+}
 
 type SessionData = (
     FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
@@ -84,10 +90,10 @@ impl<'a> DDlogWorker<'a> {
         num_workers: usize,
         progress_barrier: Arc<Barrier>,
         profiling: ProfilingData,
-        request_receivers: Arc<Mutex<Vec<Option<Receiver<Msg>>>>>,
-        reply_senders: Arc<Mutex<Vec<Option<Sender<Reply>>>>>,
-        thread_handle_sender: SyncSender<(usize, Thread)>,
-        thread_handle_receiver: Arc<Mutex<Receiver<(usize, Thread)>>>,
+        request_receivers: Arc<[Receiver<Msg>]>,
+        reply_senders: Arc<[Sender<Reply>]>,
+        thread_handle_sender: Sender<(usize, Thread)>,
+        thread_handle_receiver: Arc<Receiver<(usize, Thread)>>,
     ) -> Self {
         let worker_index = worker.index();
 
@@ -101,12 +107,8 @@ impl<'a> DDlogWorker<'a> {
         // If this is worker zero, receive all other worker's thread handles and
         // populate the `peers` map with them
         if worker_index == 0 {
-            let thread_handle_recv = thread_handle_receiver
-                .lock()
-                .expect("failed to lock thread handle receiver");
-
             for _ in 0..num_workers - 1 {
-                let (worker, thread_handle) = thread_handle_recv
+                let (worker, thread_handle) = thread_handle_receiver
                     .recv()
                     .expect("failed to receive thread handle from timely worker");
 
@@ -120,14 +122,6 @@ impl<'a> DDlogWorker<'a> {
                 .expect("failed to send thread handle for a timely worker");
         }
 
-        // Get the request receiver for the current worker
-        let request_receiver = mem::take(&mut request_receivers.lock().unwrap()[worker_index])
-            .expect("failed to get request receiver for a timely worker");
-
-        // Get the reply sender for the current worker
-        let reply_sender = mem::take(&mut reply_senders.lock().unwrap()[worker_index])
-            .expect("failed to get reply sender for a timely worker");
-
         Self {
             worker,
             program,
@@ -135,8 +129,8 @@ impl<'a> DDlogWorker<'a> {
             peers,
             progress_barrier,
             profiling,
-            request_receiver,
-            reply_sender,
+            request_receiver: request_receivers[worker_index].clone(),
+            reply_sender: reply_senders[worker_index].clone(),
         }
     }
 
@@ -167,7 +161,7 @@ impl<'a> DDlogWorker<'a> {
         }
     }
 
-    pub fn run(mut self) -> Result<(), String> {
+    pub fn run(&mut self) -> Result<(), String> {
         // Initialize profiling
         self.init_profiling();
 
@@ -499,6 +493,9 @@ impl<'a> DDlogWorker<'a> {
 
     /// Initialize timely and differential profiling logging hooks
     fn init_profiling(&self) {
+        // Allocate the memory required for each worker's profiling buffer
+        WORKER_PROFILING_BUFFER.with(|buf| buf.borrow_mut().reserve(PROFILING_BUFFER_SIZE));
+
         let profiling = self.profiling.clone();
         self.worker
             .log_register()
@@ -580,7 +577,7 @@ impl<'a> DDlogWorker<'a> {
                             });
 
                         // apply rules
-                        let mut rule_collections: Vec<_> = rel
+                        let rule_collections = rel
                             .rules
                             .iter()
                             .map(|rule| {
@@ -592,13 +589,11 @@ impl<'a> DDlogWorker<'a> {
                                         arrangements2: &FnvHashMap::default(),
                                     },
                                 )
-                            })
-                            .collect();
+                            });
 
-                        rule_collections.push(collection);
                         collection = with_prof_context(
                             &format!("concatenate rules for {}", rel.name),
-                            || concatenate_collections(outer, rule_collections.into_iter()),
+                            || collection.concatenate(rule_collections),
                         );
 
                         // don't distinct input collections, as this is already done by the set_update logic
@@ -781,8 +776,8 @@ impl<'a> DDlogWorker<'a> {
 
             for (relid, collection) in collections {
                 // notify client about changes
-                if let Some(cb) = &program.get_relation(relid).change_cb {
-                    let mut cb = cb.lock().unwrap().clone();
+                if let Some(relation_callback) = &program.get_relation(relid).change_cb {
+                    let relation_callback = relation_callback.clone();
 
                     let consolidated = with_prof_context(
                         &format!("consolidate {}", relid),
@@ -793,7 +788,7 @@ impl<'a> DDlogWorker<'a> {
                         &format!("inspect {}", relid),
                         || consolidated.inspect(move |x| {
                             // assert!(x.2 == 1 || x.2 == -1, "x: {:?}", x);
-                            cb(relid, &x.0, x.2)
+                            (relation_callback)(relid, &x.0, x.2)
                         }),
                     );
 
@@ -820,6 +815,11 @@ impl<'a> DDlogWorker<'a> {
             Ok((sessions, traces))
         })
     }
+
+    pub fn cleanup(&self) {
+        // Flush all remaining profiling messages to the profiling thread
+        WORKER_PROFILING_BUFFER.with(|buf| self.profiling.flush(&mut *buf.borrow_mut()));
+    }
 }
 
 #[derive(Clone)]
@@ -829,7 +829,7 @@ pub struct ProfilingData {
     /// Whether timely profiling is enabled
     timely_enabled: Arc<AtomicBool>,
     /// The channel used to send profiling data to the profiling thread
-    data_channel: SyncSender<ProfMsg>,
+    data_channel: Sender<Vec<ProfMsg>>,
 }
 
 impl ProfilingData {
@@ -837,7 +837,7 @@ impl ProfilingData {
     pub const fn new(
         cpu_enabled: Arc<AtomicBool>,
         timely_enabled: Arc<AtomicBool>,
-        data_channel: SyncSender<ProfMsg>,
+        data_channel: Sender<Vec<ProfMsg>>,
     ) -> Self {
         Self {
             cpu_enabled,
@@ -858,9 +858,30 @@ impl ProfilingData {
 
     /// Record a profiling message
     pub fn record(&self, event: ProfMsg) {
+        WORKER_PROFILING_BUFFER.with(|buf| {
+            let mut buf = buf.borrow_mut();
+
+            // Push the new event to the profiling buffer
+            buf.push(event);
+
+            // Attempt to flush the buffer
+            self.try_flush(&mut *buf);
+        });
+    }
+
+    // Attempt to flush the profiling buffer, only actually flushing if it is full
+    pub fn try_flush(&self, buffer: &mut Vec<ProfMsg>) {
+        if buffer.len() == PROFILING_BUFFER_SIZE {
+            self.flush(buffer)
+        }
+    }
+
+    // Forcibly flush the contents of the profiling buffer, regardless of if it's full or not
+    #[cold]
+    pub fn flush(&self, buffer: &mut Vec<ProfMsg>) {
         // We can safely ignore the result of sending a profiling
         // message to the profiling thread since it doesn't matter
         // if a profiling message is dropped in some way
-        let _ = self.data_channel.send(event);
+        let _ = self.data_channel.send(buffer.drain(..).collect());
     }
 }

@@ -10,6 +10,7 @@ c_api = ["differential_datalog/c_api","ddlog_rt/c_api", "ddlog_std/c_api", "ddlo
 
 [dependencies]
 differential_datalog = { path = "../../../differential_datalog" }
+ddlog_derive = { path = "../../../ddlog_derive" }
 abomonation = "0.7"
 ordered-float = { version = "2.0.0", features = ["serde"] }
 fnv = "1.0.2"

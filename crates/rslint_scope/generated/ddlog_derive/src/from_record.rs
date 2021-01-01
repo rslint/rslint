@@ -109,7 +109,6 @@ fn from_record_struct(
         })
         .collect::<Result<TokenStream>>()?;
 
-    // Generate the actual code
     Ok(quote! {
         #[automatically_derived]
         impl #impl_generics differential_datalog::record::FromRecord for #struct_ident #type_generics #where_clause {
@@ -122,7 +121,7 @@ fn from_record_struct(
                             },
 
                             error => {
-                                std::result::Result::Err(format!(
+                                std::result::Result::Err(std::format!(
                                     "unknown constructor {} of type '{}' in {:?}",
                                     error, #struct_record_name, *record,
                                 ))
@@ -137,7 +136,7 @@ fn from_record_struct(
                             },
 
                             error => {
-                                std::result::Result::Err(format!(
+                                std::result::Result::Err(std::format!(
                                     "unknown constructor {} of type '{}' in {:?}",
                                     error, #struct_record_name, *record,
                                 ))
@@ -145,8 +144,16 @@ fn from_record_struct(
                         }
                     },
 
+                    differential_datalog::record::Record::Serialized(format, serialized) => {
+                        if format == "json" {
+                            serde_json::from_str(serialized.as_str()).map_err(|error| format!("{}", error))
+                        } else {
+                            std::result::Result::Err(std::format!("unsupported serialization format '{}'", format))
+                        }
+                    },
+
                     error => {
-                        std::result::Result::Err(format!("not a struct {:?}", *error))
+                        std::result::Result::Err(std::format!("not a struct {:?}", *error))
                     },
                 }
             }
@@ -177,10 +184,7 @@ fn from_record_enum(
             // Use the given rename provided by `#[ddlog(rename = "...")]` or `#[ddlog(from_record = "...")]`
             // as the name of the variant, defaulting to the variant's ident if none is given
             let variant_record_name = get_rename("FromRecord", "from_record", variant.attrs.iter())?
-                .map_or_else(
-                    || format!("{}::{}", enum_record_name, variant_ident),
-                    |rename| format!("{}::{}", enum_record_name, rename),
-                );
+                .unwrap_or_else(|| format!("{}::{}", enum_record_name, variant_ident));
 
             let positional_fields: TokenStream = variant
                 .fields
@@ -224,10 +228,7 @@ fn from_record_enum(
             // Use the given rename provided by `#[ddlog(rename = "...")]` or `#[ddlog(from_record = "...")]`
             // as the name of the variant, defaulting to the variant's ident if none is given
             let variant_record_name = get_rename("FromRecord", "from_record", variant.attrs.iter())?
-                .map_or_else(
-                    || format!("{}::{}", enum_record_name, variant_ident),
-                    |rename| format!("{}::{}", enum_record_name, rename),
-                );
+                .unwrap_or_else(|| format!("{}::{}", enum_record_name, variant_ident));
 
             let named_fields = variant
                 .fields
@@ -272,7 +273,7 @@ fn from_record_enum(
                             #positional_variants
 
                             error => {
-                                std::result::Result::Err(format!(
+                                std::result::Result::Err(std::format!(
                                     "unknown constructor {} of type '{}' in {:?}",
                                     error, #enum_record_name, *record,
                                 ))
@@ -285,7 +286,7 @@ fn from_record_enum(
                             #named_variants
 
                             error => {
-                                std::result::Result::Err(format!(
+                                std::result::Result::Err(std::format!(
                                     "unknown constructor {} of type '{}' in {:?}",
                                     error, #enum_record_name, *record,
                                 ))
@@ -293,8 +294,16 @@ fn from_record_enum(
                         }
                     },
 
+                    differential_datalog::record::Record::Serialized(format, serialized) => {
+                        if format == "json" {
+                            serde_json::from_str(serialized.as_str()).map_err(|error| format!("{}", error))
+                        } else {
+                            std::result::Result::Err(std::format!("unsupported serialization format '{}'", format))
+                        }
+                    },
+
                     error => {
-                        std::result::Result::Err(format!("not a struct {:?}", *error))
+                        std::result::Result::Err(std::format!("not a struct {:?}", *error))
                     }
                 }
             }

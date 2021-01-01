@@ -25,6 +25,7 @@ num = { version = "0.3", features = ["serde"] }
 sequence_trie = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 erased-serde = "0.3"
+crossbeam-channel = "0.5.0"
 
 [dev-dependencies]
 byteorder = "0.4.2"

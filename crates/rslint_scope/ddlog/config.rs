@@ -1,14 +1,9 @@
-use ddlog_derive::FromRecord;
-use differential_datalog::{
-    decl_enum_into_record, decl_record_mutator_enum, decl_record_mutator_struct,
-    decl_struct_from_record, decl_struct_into_record, record::Record,
-};
 use schemars::JsonSchema;
 use std::fmt::{self, Debug, Display, Formatter};
 use types__regex::RegexSet as DDlogRegexSet;
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub no_shadow: bool,
@@ -89,45 +84,8 @@ impl Display for Config {
     }
 }
 
-decl_struct_into_record!(
-    Config,
-    ["Config"]<>,
-    no_shadow,
-    no_shadow_hoisting,
-    no_undef,
-    no_unused_labels,
-    no_typeof_undef,
-    no_unused_vars,
-    no_use_before_def
-);
-
-// decl_struct_from_record!(
-//     Config["Config"]<>,
-//     ["Config"][7]{
-//         [0] no_shadow["no_shadow"]: bool,
-//         [1] no_shadow_hoisting["no_shadow_hoisting"]: NoShadowHoisting,
-//         [2] no_undef["no_undef"]: bool,
-//         [3] no_unused_labels["no_unused_labels"]: bool,
-//         [4] no_typeof_undef["no_typeof_undef"]: bool,
-//         [5] no_unused_vars["no_unused_vars"]: bool,
-//         [6] no_use_before_def["no_use_before_def"]: bool
-//     }
-// );
-
-#[allow(clippy::assign_op_pattern)]
-decl_record_mutator_struct!(
-    Config, <>,
-    no_shadow: bool,
-    no_shadow_hoisting: NoShadowHoisting,
-    no_undef: bool,
-    no_unused_labels: bool,
-    no_typeof_undef: bool,
-    no_unused_vars: bool,
-    no_use_before_def: bool
-);
-
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator)]
 #[serde(rename_all = "kebab-case")]
 pub enum NoShadowHoisting {
     Never,
@@ -150,42 +108,6 @@ impl Display for NoShadowHoisting {
         }
     }
 }
-
-// impl FromRecord for NoShadowHoisting {
-//     fn from_record(val: &Record) -> Result<Self, String> {
-//         match val {
-//             Record::PosStruct(constr, args) if args.len() == 0 => match constr.as_ref() {
-//                 "Never" => Ok(Self::Never),
-//                 "Always" => Ok(Self::Always),
-//                 "Functions" => Ok(Self::Functions),
-//                 c => Result::Err(format!(
-//                     "unknown constructor {} of type `NoShadowHoisting` in {:?}",
-//                     c, *val,
-//                 )),
-//             },
-//             Record::NamedStruct(constr, args) if args.len() == 0 => match constr.as_ref() {
-//                 "Never" => Ok(Self::Never),
-//                 "Always" => Ok(Self::Always),
-//                 "Functions" => Ok(Self::Functions),
-//                 c => Result::Err(format!(
-//                     "unknown constructor {} of type `NoShadowHoisting` in {:?}",
-//                     c, *val,
-//                 )),
-//             },
-//             v => Err(format!("not an instance of `NoShadowHoisting` {:?}", *v)),
-//         }
-//     }
-// }
-
-decl_enum_into_record!(
-    NoShadowHoisting<>,
-    Never["Never"]{},
-    Always["Always"]{},
-    Functions["Functions"]{}
-);
-
-#[rustfmt::skip]
-decl_record_mutator_enum!(NoShadowHoisting<>, Never {}, Always {}, Functions {});
 
 // DDlog bridge functions
 pub fn no_shadow_enabled(config: &Config) -> bool {
@@ -251,6 +173,7 @@ pub fn no_use_before_def_enabled(config: &Config) -> bool {
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize, FromRecord,
+    IntoRecord, Mutator,
 )]
 #[serde(rename_all = "kebab-case")]
 pub struct NoUnusedVarsConfig {
@@ -288,30 +211,6 @@ impl JsonSchema for NoUnusedVarsConfig {
     }
 }
 
-impl IntoRecord for NoUnusedVarsConfig {
-    fn into_record(self) -> Record {
-        Record::NamedStruct(
-            std::borrow::Cow::from("NoUnusedVarsConfig"),
-            vec![(
-                std::borrow::Cow::from("ignore_patterns"),
-                self.ignored_patterns.into_record(),
-            )],
-        )
-    }
-}
-
-#[allow(clippy::assign_op_pattern)]
-decl_record_mutator_struct!(
-    NoUnusedVarsConfig, <>,
-    ignored_patterns: DDlogRegexSet
-);
-
-// ::differential_datalog::decl_struct_from_record!(
-//     NoUnusedVarsConfig["NoUnusedVarsConfig"]<>,
-//     ["NoUnusedVarsConfig"][1]{
-//         [0]ignore_patterns["ignore_patterns"]: DDlogRegexSet
-//     }
-// );
 
 pub fn ignored_patterns(config: &NoUnusedVarsConfig) -> &DDlogRegexSet {
     config.ignored_patterns()
@@ -319,7 +218,7 @@ pub fn ignored_patterns(config: &NoUnusedVarsConfig) -> &DDlogRegexSet {
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord,
+    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum IgnoreArgs {
@@ -340,7 +239,7 @@ impl Default for IgnoreArgs {
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord,
+    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum CaughtErrors {
