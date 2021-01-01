@@ -3,6 +3,8 @@
 #![deny(clippy::all)]
 #![deny(unsafe_code)]
 
+pub(crate) mod util;
+
 // Core definitions for the RSLint Language Server.
 pub mod core;
 

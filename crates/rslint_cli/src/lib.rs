@@ -17,7 +17,7 @@ pub use rslint_errors::{
 
 use colored::*;
 use rayon::prelude::*;
-use rslint_core::autofix::recursively_apply_fixes;
+use rslint_core::{autofix::recursively_apply_fixes, File};
 use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
 #[allow(unused_imports)]
@@ -67,11 +67,8 @@ fn run_inner(
     let guard = span.enter();
     let mut results = walker
         .files
-        .par_keys()
-        .map(|id| {
-            let file = walker.files.get(id).unwrap();
-            lint_file(*id, &file.source.clone(), file.kind.into(), &store, verbose)
-        })
+        .par_values()
+        .map(|file| lint_file(file, &store, verbose))
         .filter_map(|res| {
             if let Err(diagnostic) = res {
                 emit_diagnostic(&diagnostic, &walker);
@@ -131,7 +128,7 @@ pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty
             .filter(|(_, x)| x.outcome() == Outcome::Warning || x.outcome() == Outcome::Failure)
             .map(|(_, res)| res.diagnostics.len())
             .sum::<usize>();
-        let fixed = recursively_apply_fixes(res);
+        let fixed = recursively_apply_fixes(res, file);
         let new_problem_num = res
             .rule_results
             .iter()
@@ -209,7 +206,7 @@ pub fn tokenize(globs: Vec<String>) {
     for_each_file(
         globs,
         |walker,
-         JsFile {
+         File {
              path,
              name,
              id,
@@ -256,7 +253,7 @@ fn collect_globs(globs: Vec<String>) -> Vec<PathBuf> {
         .collect()
 }
 
-fn for_each_file(globs: Vec<String>, action: impl Fn(&FileWalker, &JsFile)) {
+fn for_each_file(globs: Vec<String>, action: impl Fn(&FileWalker, &File)) {
     let walker = FileWalker::from_glob(collect_globs(globs));
     walker.files.values().for_each(|file| action(&walker, file))
 }

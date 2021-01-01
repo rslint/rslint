@@ -2,14 +2,38 @@
 
 use crate::core::session::Session;
 use anyhow::Result;
+use once_cell::sync::Lazy;
 use rslint_core::{
-    directives::ComponentKind, directives::Instruction, util::levenshtein_distance, CstRuleStore,
-    DirectiveErrorKind,
+    directives::{get_command_descriptors, CommandDescriptor, Instruction},
+    util::levenshtein_distance,
+    CstRuleStore, DirectiveErrorKind,
 };
+use rslint_parser::{util::*, TextRange, TextSize};
 use tower_lsp::lsp_types::{
     CompletionItem, CompletionItemKind, CompletionParams, CompletionResponse, Documentation,
     MarkupContent, MarkupKind,
 };
+
+static DESCRIPTORS: Lazy<Box<[CommandDescriptor]>> = Lazy::new(get_command_descriptors);
+
+fn command_name_completions() -> CompletionResponse {
+    CompletionResponse::Array(
+        DESCRIPTORS
+            .iter()
+            .map(|x| {
+                let mut label = String::with_capacity(7 + x.name.len());
+                label.push_str("rslint-");
+                label.push_str(x.name);
+                CompletionItem {
+                    detail: Some(x.docs.to_string()),
+                    label,
+                    kind: Some(CompletionItemKind::Snippet),
+                    ..Default::default()
+                }
+            })
+            .collect(),
+    )
+}
 
 pub async fn complete(
     session: &Session,
@@ -19,63 +43,62 @@ pub async fn complete(
         .get_document(&params.text_document_position.text_document.uri)
         .await?;
 
-    if !document.directive_errors.is_empty() {
-        let loc = rslint_errors::lsp::position_to_byte_index(
-            &document.files,
-            document.file_id,
-            &params.text_document_position.position,
-        )?;
-        if let Some(err) = document
-            .directive_errors
-            .iter()
-            .find(|x| x.range().end == loc)
-        {
-            return Ok(Some(match err.kind {
-                DirectiveErrorKind::ExpectedCommand => completion_list(
-                    vec![(
-                        "rslint-ignore",
-                        ComponentKind::CommandName("ignore".into())
-                            .documentation()
-                            .unwrap(),
-                    )],
-                    false,
-                ),
-                DirectiveErrorKind::InvalidRule => {
-                    let wrong_text = &document.text[err.range()];
-                    let available_rules = CstRuleStore::new().builtins().rules.into_iter();
+    let loc = rslint_errors::lsp::position_to_byte_index(
+        &document.files,
+        document.file.id,
+        &params.text_document_position.position,
+    )?;
 
-                    let mut list = available_rules
-                        .map(|r| (r.name(), r.docs()))
-                        .collect::<Vec<_>>();
+    if let Some(err) = document
+        .directive_errors
+        .iter()
+        .find(|x| x.range().end == loc)
+    {
+        return Ok(Some(match err.kind {
+            DirectiveErrorKind::ExpectedCommand | DirectiveErrorKind::InvalidCommandName => {
+                command_name_completions()
+            }
+            DirectiveErrorKind::InvalidRule => {
+                let wrong_text = &document.file.source[err.range()];
+                let available_rules = CstRuleStore::new().builtins().rules.into_iter();
 
-                    list.sort_by(|(l_name, _), (r_name, _)| {
-                        levenshtein_distance(wrong_text, l_name)
-                            .cmp(&levenshtein_distance(wrong_text, r_name))
-                    });
-                    completion_list(list, true)
-                }
-                DirectiveErrorKind::ExpectedNotFound(Instruction::RuleName) => completion_list(
-                    CstRuleStore::new()
-                        .builtins()
-                        .rules
-                        .into_iter()
-                        .map(|x| (x.name(), x.docs()))
-                        .collect(),
-                    true,
-                ),
-                DirectiveErrorKind::InvalidCommandName => {
-                    let available = vec![(
-                        "rslint-ignore",
-                        ComponentKind::CommandName("ignore".into())
-                            .documentation()
-                            .unwrap(),
-                    )];
-                    completion_list(available, false)
-                }
-                _ => return Ok(None),
-            }));
+                let mut list = available_rules
+                    .map(|r| (r.name(), r.docs()))
+                    .collect::<Vec<_>>();
+
+                list.sort_by(|(l_name, _), (r_name, _)| {
+                    levenshtein_distance(wrong_text, l_name)
+                        .cmp(&levenshtein_distance(wrong_text, r_name))
+                });
+                completion_list(list, true)
+            }
+            DirectiveErrorKind::ExpectedNotFound(Instruction::RuleName) => completion_list(
+                CstRuleStore::new()
+                    .builtins()
+                    .rules
+                    .into_iter()
+                    .map(|x| (x.name(), x.docs()))
+                    .collect(),
+                true,
+            ),
+            _ => return Ok(None),
+        }));
+    }
+
+    let start = TextSize::from(loc as u32);
+    if let Some(comment) = document
+        .root
+        .covering_element(TextRange::at(start, 0.into()))
+        .into_token()
+    {
+        if let Some(c) = comment.comment() {
+            let content = c.content.trim();
+            if content.len() <= 7 && "rslint-".find(content) == Some(0) {
+                return Ok(Some(command_name_completions()));
+            }
         }
     }
+
     Ok(None)
 }
 

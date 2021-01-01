@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
-use rslint_core::CstRuleStore;
+use rslint_core::{CstRuleStore, File};
 use rslint_lexer::Lexer;
-use rslint_parser::{parse_text, Syntax};
+use rslint_parser::parse_text;
 
 const ENGINE_262_URL: &str = "https://engine262.js.org/engine262/engine262.js";
 
@@ -13,23 +13,17 @@ fn tokenize(source: &str) {
     Lexer::from_str(source, 0).for_each(drop);
 }
 
-fn lint(source: &str) {
-    let _ = rslint_core::lint_file(
-        0,
-        source,
-        Syntax::default(),
-        &CstRuleStore::new().builtins(),
-        false,
-    );
+fn lint(file: &File) {
+    let _ = rslint_core::lint_file(file, &CstRuleStore::new().builtins(), false);
 }
 
-fn bench_source(c: &mut Criterion, name: &str, source: &str) {
-    let mut group = c.benchmark_group(name);
+fn bench_source(c: &mut Criterion, file: &File) {
+    let mut group = c.benchmark_group(&file.name);
     group.sample_size(10);
-    group.throughput(Throughput::Bytes(source.len() as u64));
-    group.bench_function("tokenize", |b| b.iter(|| tokenize(black_box(&source))));
-    group.bench_function("parse", |b| b.iter(|| parse(black_box(&source))));
-    group.bench_function("lint", |b| b.iter(|| lint(black_box(&source))));
+    group.throughput(Throughput::Bytes(file.source.len() as u64));
+    group.bench_function("tokenize", |b| b.iter(|| tokenize(black_box(&file.source))));
+    group.bench_function("parse", |b| b.iter(|| parse(black_box(&file.source))));
+    group.bench_function("lint", |b| b.iter(|| lint(black_box(file))));
     group.finish();
 }
 
@@ -38,7 +32,8 @@ fn engine262(c: &mut Criterion) {
         .call()
         .into_string()
         .expect("failed to get engine262 source code");
-    bench_source(c, "engine262", &source);
+    let file = File::from_string(source, rslint_parser::FileKind::Module, "engine262");
+    bench_source(c, &file);
 }
 
 criterion_group!(benches, engine262);

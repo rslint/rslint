@@ -14,12 +14,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added `RuleCtx::dummy_ctx`
 - Added `Inferable` to define rules which can have their options inferred from nodes
 - Added benchmarks for linting a file
+- Added command descriptors
+- Added `File` from rslint_cli
 
 ### Changed
 
 - Moved util from a file to its own directory
 - Implemented a new directive parser which allows hover and auto-completion in lsp
 - Removed the `module` parameter from `lint_file` and replaced it with `syntax: Syntax`
+- Changed the way directive context is handled
+- Changed lint_file and others to take a `&File` instead of a file id, source, etc.
+
+### Removed
+
+- Removed the `store` field from `LintResult`
 
 ## [0.2.1] - 2020-10-21
 

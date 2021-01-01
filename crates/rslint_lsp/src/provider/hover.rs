@@ -19,7 +19,7 @@ pub async fn on_hover(session: &Session, params: HoverParams) -> Result<Option<H
 
     if let Some(start) = doc
         .files
-        .line_range(doc.file_id, line as usize)
+        .line_range(doc.file.id, line as usize)
         .map(|r| r.start)
     {
         let idx = start + character as usize;
@@ -30,7 +30,7 @@ pub async fn on_hover(session: &Session, params: HoverParams) -> Result<Option<H
         if let Some(documentation) = component.and_then(|c| c.kind.documentation()) {
             let range = rslint_errors::lsp::byte_span_to_range(
                 &doc.files,
-                doc.file_id,
+                doc.file.id,
                 component.unwrap().range.into(),
             )?;
 

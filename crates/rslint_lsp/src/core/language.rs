@@ -3,13 +3,15 @@
 use crate::core::error::Error;
 use std::{convert::TryFrom, path::Path};
 
-/// A language type for a document (e.g., JavaScript (script) or JavaScript (module)).
+/// A language type for a document (e.g., JavaScript (script) or JavaScript (module) or TypeScript).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Language {
     /// A JavaScript (script)
     JavaScriptScript,
     /// JavaScript (module)
     JavaScriptModule,
+    /// TypeScript
+    TypeScript,
 }
 
 /// A language id for a document (e.g., JavaScript (script) or JavaScript (module)).
@@ -21,6 +23,7 @@ impl From<Language> for LanguageId {
         match language {
             Language::JavaScriptScript => LanguageId("javascript".into()),
             Language::JavaScriptModule => LanguageId("javascript".into()),
+            Language::TypeScript => LanguageId("typescript".into()),
         }
     }
 }
@@ -36,6 +39,7 @@ impl TryFrom<&Path> for Language {
         match file_ext {
             "mjs" => Ok(Language::JavaScriptModule),
             "js" => Ok(Language::JavaScriptScript),
+            "ts" => Ok(Language::TypeScript),
             _ => Err(Error::InvalidLanguageExtension(file_ext.into()).into()),
         }
     }
@@ -48,6 +52,7 @@ impl TryFrom<LanguageId> for Language {
         // NOTE: unfortunately there isn't a separate commonly used id for modules, so we just default to module.
         match id.0.as_str() {
             "javascript" => Ok(Language::JavaScriptModule),
+            "typescript" => Ok(Language::TypeScript),
             _ => Err(Error::InvalidLanguageId(id.0).into()),
         }
     }

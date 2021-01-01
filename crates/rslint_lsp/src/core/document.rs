@@ -1,39 +1,11 @@
 //! Core definitions related to documents.
 
 use crate::core::language::{Language, LanguageId};
-use rslint_core::{autofix::Fixer, Directive, DirectiveError, DirectiveParser};
+use rslint_core::{autofix::Fixer, Directive, DirectiveError, DirectiveParser, File};
 use rslint_errors::file::SimpleFiles;
-use rslint_parser::{ast, parse_module, parse_text, GreenNode, Parse, ParserError, SyntaxNode};
+use rslint_parser::{FileKind, SyntaxNode};
 use std::convert::TryFrom;
 use tower_lsp::lsp_types::*;
-
-/// Trait for working with Parse<T> for a document.
-pub trait DocumentParse: Send + Sync {
-    /// The GreenNode for a document.
-    fn green(&self) -> GreenNode;
-    /// The parser diagnostics for a document.
-    fn parser_diagnostics(&self) -> &[ParserError];
-}
-
-impl DocumentParse for Parse<ast::Module> {
-    fn green(&self) -> GreenNode {
-        Parse::green(self.clone())
-    }
-
-    fn parser_diagnostics(&self) -> &[ParserError] {
-        self.errors()
-    }
-}
-
-impl DocumentParse for Parse<ast::Script> {
-    fn green(&self) -> GreenNode {
-        Parse::green(self.clone())
-    }
-
-    fn parser_diagnostics(&self) -> &[ParserError] {
-        self.errors()
-    }
-}
 
 pub struct RuleResult {
     pub diagnostics: Vec<Diagnostic>,
@@ -42,24 +14,23 @@ pub struct RuleResult {
 
 /// The current state of a document.
 pub struct Document {
+    /// The file backing of this document
+    pub file: File,
     /// The files database containing the document.
     pub files: SimpleFiles,
-    /// The file id of the document.
-    pub file_id: usize,
     /// The language type of the document (e.g., JavaScript (script) or JavaScript (module)).
     pub language: Language,
     /// The language id of the document (e.g., "javascript").
     pub language_id: LanguageId,
-    /// The result of parsing a document.
-    pub parse: Box<dyn DocumentParse>,
+    /// The errors from parsing a document.
+    pub parsing_errors: Vec<rslint_errors::Diagnostic>,
     /// All directives in this document.
     pub directives: Vec<Directive>,
-    /// The textual content of the document.
-    pub text: String,
     /// The errors which occured while parsing the directive
     pub directive_errors: Vec<DirectiveError>,
     /// The result of running rules on the document
     pub rule_results: Vec<RuleResult>,
+    pub root: SyntaxNode,
 }
 
 impl Document {
@@ -75,26 +46,28 @@ impl Document {
 
         let mut files = SimpleFiles::new();
         let file_id = files.add(uri.to_string(), text.clone());
-
-        let parse = if language == Language::JavaScriptModule {
-            Box::new(parse_module(&text, file_id)) as Box<dyn DocumentParse>
-        } else {
-            Box::new(parse_text(&text, file_id)) as Box<dyn DocumentParse>
+        let kind = match language {
+            Language::JavaScriptModule => FileKind::Module,
+            Language::JavaScriptScript => FileKind::Script,
+            Language::TypeScript => FileKind::TypeScript,
         };
+        let mut file = File::from_string(text, kind, uri.path());
+        file.id = file_id;
 
-        let res = DirectiveParser::new(SyntaxNode::new_root(parse.green()), file_id)
-            .get_file_directives();
+        let (parsing_errors, root) = file.parse_with_errors();
+
+        let res = DirectiveParser::new(root.clone(), &file).get_file_directives();
 
         let document = Document {
             files,
-            file_id,
+            file,
             language,
             language_id: LanguageId(language_id),
             directives: res.directives,
-            parse,
-            text,
+            parsing_errors,
             directive_errors: res.diagnostics,
             rule_results: vec![],
+            root,
         };
 
         Ok(document)

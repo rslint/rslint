@@ -1,9 +1,10 @@
-use crate::{get_rule_suggestion, CstRuleStore};
+use crate::{get_rule_suggestion, CstRuleStore, File};
 
 use super::{
     commands::Command,
+    get_command_descriptors,
     lexer::{format_kind, Lexer, Token},
-    Component, ComponentKind, Directive, Instruction,
+    CommandDescriptor, Component, ComponentKind, Directive, Instruction,
 };
 use rslint_errors::{file::line_starts, Diagnostic};
 use rslint_lexer::{SyntaxKind, T};
@@ -63,25 +64,25 @@ pub enum DirectiveErrorKind {
     Other,
 }
 
-pub struct DirectiveParser<'store> {
+pub struct DirectiveParser<'store, 'file> {
     /// The root node of a file, `SCRIPT` or `MODULE`.
     root: SyntaxNode,
     line_starts: Box<[usize]>,
-    file_id: usize,
+    file: &'file File,
     store: Option<&'store CstRuleStore>,
-    commands: Box<[Box<[Instruction]>]>,
+    commands: Box<[CommandDescriptor]>,
     no_rewind: bool,
 }
 
-impl<'store> DirectiveParser<'store> {
+impl<'store, 'file> DirectiveParser<'store, 'file> {
     /// Create a new `DirectivesParser` with a root of a file which will
     /// use all default rules to check the rule names of a directive.
     ///
     /// # Panics
     ///
     /// If the given `root` is not `SCRIPT` or `MODULE`.
-    pub fn new(root: SyntaxNode, file_id: usize) -> Self {
-        Self::new_with_store(root, file_id, None)
+    pub fn new(root: SyntaxNode, file: &'file File) -> Self {
+        Self::new_with_store(root, file, None)
     }
 
     /// Create a new `DirectivesParser` with a root of a file and a store of rules.
@@ -91,7 +92,7 @@ impl<'store> DirectiveParser<'store> {
     /// If the given `root` is not `SCRIPT` or `MODULE`.
     pub fn new_with_store(
         root: SyntaxNode,
-        file_id: usize,
+        file: &'file File,
         store: impl Into<Option<&'store CstRuleStore>>,
     ) -> Self {
         assert!(matches!(
@@ -103,14 +104,14 @@ impl<'store> DirectiveParser<'store> {
             line_starts: line_starts(&root.to_string()).collect(),
             store: store.into(),
             root,
-            file_id,
+            file,
             no_rewind: false,
-            commands: Command::instructions(),
+            commands: get_command_descriptors(),
         }
     }
 
     fn err(&self, msg: &str) -> Diagnostic {
-        Diagnostic::error(self.file_id, "directives", msg)
+        Diagnostic::error(self.file.id, "directives", msg)
     }
 
     fn line_of(&self, idx: usize) -> usize {
@@ -134,7 +135,7 @@ impl<'store> DirectiveParser<'store> {
                 _ => continue,
             };
 
-            let directive = self.parse_directive(comment, Some(descendant));
+            let directive = self.parse_directive(comment, Some(descendant), false);
             result.extend(directive);
         }
         result.concat(top_level);
@@ -148,14 +149,19 @@ impl<'store> DirectiveParser<'store> {
             .children_with_tokens()
             .flat_map(|item| item.into_token()?.comment())
             .filter(|comment| comment.content.trim_start().starts_with(DECLARATOR))
-            .map(|comment| self.parse_directive(comment, None))
+            .map(|comment| self.parse_directive(comment, None, true))
             .for_each(|res| result.extend(res));
 
         result
     }
 
     /// Parses a directive, based on all commands inside this `DirectivesParser`.
-    fn parse_directive(&mut self, comment: Comment, node: Option<SyntaxNode>) -> Result<Directive> {
+    fn parse_directive(
+        &mut self,
+        comment: Comment,
+        node: Option<SyntaxNode>,
+        top_level: bool,
+    ) -> Result<Directive> {
         let text = comment
             .content
             .trim_start()
@@ -165,7 +171,7 @@ impl<'store> DirectiveParser<'store> {
         let decl_offset = comment.content.len() - text.len();
         let offset = usize::from(comment.token.text_range().start()) + decl_offset + 1;
 
-        let mut lexer = Lexer::new(text, self.file_id, offset);
+        let mut lexer = Lexer::new(text, self.file.id, offset);
 
         if matches!(
             lexer.peek(),
@@ -187,10 +193,11 @@ impl<'store> DirectiveParser<'store> {
         let cmd = self
             .commands
             .iter()
-            .find(|cmd| matches!(cmd.first(), Some(Instruction::CommandName(name)) if name.eq_ignore_ascii_case(cmd_name)));
+            .find(|cmd| cmd.name.eq_ignore_ascii_case(cmd_name))
+            .map(|x| x.instructions.clone());
 
         let cmd = match cmd {
-            Some(cmd) => cmd.clone(),
+            Some(cmd) => cmd,
             None => {
                 // TODO: Suggest name using `find_best_match_for_name`
                 let d = self
@@ -216,7 +223,7 @@ impl<'store> DirectiveParser<'store> {
         let line = self.line_of(comment.token.text_range().start().into());
         Ok(Directive {
             // TODO: Report error for invalid command.
-            command: Command::parse(&components, line, node),
+            command: Command::parse(&components, line, node, top_level, self.file),
             line,
             comment,
             components,

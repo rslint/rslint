@@ -1,10 +1,69 @@
 //! All directive command implementations.
 
 use super::{Component, ComponentKind, Instruction};
-use crate::CstRule;
+use crate::{CstRule, File};
 use rslint_lexer::SyntaxKind;
 use rslint_parser::SyntaxNode;
-use std::ops::Range;
+
+/// A structure describing a command.
+#[derive(Debug, Clone)]
+pub struct CommandDescriptor {
+    pub instructions: Box<[Instruction]>,
+    pub docs: &'static str,
+    pub name: &'static str,
+}
+
+/// Get all of the possible command descriptors
+pub fn get_command_descriptors() -> Box<[CommandDescriptor]> {
+    vec![
+        ignore_command_descriptor(),
+        disable_command_descriptor(),
+        enable_command_descriptor(),
+    ]
+    .into_boxed_slice()
+}
+
+pub fn ignore_command_descriptor() -> CommandDescriptor {
+    use Instruction::*;
+
+    CommandDescriptor {
+        instructions: vec![
+            CommandName("ignore"),
+            Repetition(Box::new(RuleName), SyntaxKind::COMMA),
+            Optional(vec![
+                Literal("until"),
+                Either(Box::new(Literal("eof")), Box::new(Number)),
+            ]),
+        ]
+        .into_boxed_slice(),
+        docs: "ignore all or some rules on a file or a statement/declaration",
+        name: "ignore",
+    }
+}
+
+pub fn disable_command_descriptor() -> CommandDescriptor {
+    use Instruction::*;
+
+    CommandDescriptor {
+        instructions: vec![
+            CommandName("disable"),
+            Repetition(Box::new(RuleName), SyntaxKind::COMMA),
+        ]
+        .into_boxed_slice(),
+        docs: "disable the linter for some rules or all rules until a matching enable command is found",
+        name: "disable",
+    }
+}
+
+pub fn enable_command_descriptor() -> CommandDescriptor {
+    use Instruction::*;
+
+    CommandDescriptor {
+        instructions: vec![CommandName("enable")].into_boxed_slice(),
+        docs: "enable the linter after a disable command",
+        name: "enable",
+    }
+}
 
 /// All different directive commands.
 #[derive(Debug, Clone)]
@@ -17,30 +76,22 @@ pub enum Command {
     IgnoreNode(SyntaxNode),
     /// Ignore only a subset of rules for a specific `SyntaxNode`.
     IgnoreNodeRules(SyntaxNode, Vec<Box<dyn CstRule>>),
-    /// Ignore all rules in a range of lines.
-    IgnoreUntil(Range<usize>),
-    /// Ignore only a subset of rules in a range of lines.
-    IgnoreUntilRules(Range<usize>, Vec<Box<dyn CstRule>>),
+
+    /// Disable the linter for some rules or all rules from some line until the next enable command
+    Disable(usize, Vec<Box<dyn CstRule>>),
+    /// Enable the linter after a disable command
+    Enable(usize),
 }
 
 impl Command {
-    pub fn instructions() -> Box<[Box<[Instruction]>]> {
-        use Instruction::*;
-
-        vec![vec![
-            CommandName("ignore"),
-            Repetition(Box::new(RuleName), SyntaxKind::COMMA),
-            Optional(vec![
-                Literal("until"),
-                Either(Box::new(Literal("eof")), Box::new(Number)),
-            ]),
-        ]
-        .into_boxed_slice()]
-        .into_boxed_slice()
-    }
-
     /// Takes a parsed `Directive`, and tries to convert it into a `Command`.
-    pub fn parse(components: &[Component], line: usize, node: Option<SyntaxNode>) -> Option<Self> {
+    pub fn parse(
+        components: &[Component],
+        line: usize,
+        node: Option<SyntaxNode>,
+        top_level: bool,
+        file: &File,
+    ) -> Option<Self> {
         let Component { kind, .. } = components.first()?;
         let name = match kind {
             ComponentKind::CommandName(name) => name.as_str(),
@@ -48,7 +99,9 @@ impl Command {
         };
 
         match name {
-            "ignore" => parse_ignore_command(components, line, node),
+            "ignore" => parse_ignore_command(components, node, top_level),
+            "disable" => Some(parse_disable_command(components, line, file)),
+            "enable" => Some(parse_enable_command(line, file)),
             _ => None,
         }
     }
@@ -56,52 +109,43 @@ impl Command {
 
 fn parse_ignore_command(
     components: &[Component],
-    line: usize,
     node: Option<SyntaxNode>,
+    top_level: bool,
 ) -> Option<Command> {
-    // TODO: We can probably warn the user about directives like this:
-    // ```
-    // // rslint-ignore no-empty until eof
-    // if (true) {}
-    // ```
-    // because this will be parsed as a `IgnoreNodeRules` and thus
-    // ignores the `until eof` part, which may not be obivous when looking at it.
-
     if let Some(rules) = components.get(1).and_then(|c| c.kind.repetition()) {
         let rules = rules.iter().flat_map(|c| c.kind.rule()).collect::<Vec<_>>();
 
-        if components
-            .get(2)
-            .and_then(|c| c.kind.literal())
-            .map_or(false, |l| l == "until")
-        {
-            match components.get(3).map(|c| &c.kind)? {
-                ComponentKind::Literal("eof") => {
-                    Some(Command::IgnoreUntilRules(line..usize::max_value(), rules))
-                }
-                ComponentKind::Number(val) => {
-                    Some(Command::IgnoreUntilRules(line..line + *val as usize, rules))
-                }
-                _ => None,
-            }
-        } else if let Some(node) = node {
+        if let Some(node) = node {
             Some(Command::IgnoreNodeRules(node, rules))
         } else {
             Some(Command::IgnoreFileRules(rules))
         }
-    } else if components
-        .get(1)
-        .and_then(|c| c.kind.literal())
-        .map_or(false, |l| l == "until")
-    {
-        match components.get(2).map(|c| &c.kind)? {
-            ComponentKind::Literal("eof") => Some(Command::IgnoreUntil(line..usize::max_value())),
-            ComponentKind::Number(val) => Some(Command::IgnoreUntil(line..line + *val as usize)),
-            _ => None,
-        }
     } else if let Some(node) = node {
         Some(Command::IgnoreNode(node))
-    } else {
+    } else if top_level {
         Some(Command::IgnoreFile)
+    } else {
+        None
     }
+}
+
+fn parse_disable_command(components: &[Component], line: usize, file: &File) -> Command {
+    let line_start = file
+        .line_start(line)
+        .expect("parse_disable_command was given an out of bounds line index");
+
+    if let Some(rules) = components.get(1).and_then(|c| c.kind.repetition()) {
+        let rules = rules.iter().flat_map(|c| c.kind.rule()).collect::<Vec<_>>();
+        Command::Disable(line_start, rules)
+    } else {
+        Command::Disable(line_start, vec![])
+    }
+}
+
+fn parse_enable_command(line: usize, file: &File) -> Command {
+    let line_start = file
+        .line_start(line)
+        .expect("parse_enable_command was given an out of bounds line index");
+
+    Command::Enable(line_start)
 }

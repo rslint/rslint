@@ -1,12 +1,13 @@
 //! Code action support, for example, actions to automatically fix an error.
 
-use crate::core::session::Session;
+use crate::core::{document::Document, session::Session};
 use anyhow::Result;
 use rslint_errors::Severity;
+use rslint_parser::{util::*, T};
 use std::ops::Range;
 use tower_lsp::lsp_types::{
     CodeAction, CodeActionKind, CodeActionOrCommand, CodeActionParams, CodeActionResponse,
-    TextEdit, WorkspaceEdit,
+    Diagnostic, Position, Range as LspRange, TextEdit, Url, WorkspaceEdit,
 };
 
 pub async fn actions(
@@ -15,8 +16,7 @@ pub async fn actions(
 ) -> Result<Option<CodeActionResponse>> {
     let document = session.get_document(&params.text_document.uri).await?;
     if document
-        .parse
-        .parser_diagnostics()
+        .parsing_errors
         .iter()
         .any(|d| d.severity == Severity::Error)
         && !session.config.read().unwrap().incorrect_file_autofixes
@@ -25,18 +25,29 @@ pub async fn actions(
     }
 
     let action_range =
-        rslint_errors::lsp::range_to_byte_span(&document.files, document.file_id, &params.range)?;
+        rslint_errors::lsp::range_to_byte_span(&document.files, document.file.id, &params.range)?;
 
     let mut actions = vec![];
-    for res in document.rule_results.iter() {
-        if let Some(fixer) = res.fixer.as_ref() {
-            let has_match = res.diagnostics.iter().any(|d| {
-                rslint_errors::lsp::range_to_byte_span(&document.files, document.file_id, &d.range)
-                    .ok()
-                    == Some(action_range.to_owned())
-            });
+    let diagnostics = document
+        .rule_results
+        .iter()
+        .flat_map(|x| x.diagnostics.clone())
+        .collect();
 
-            if has_match {
+    actions.push(CodeActionOrCommand::CodeAction(ignore_file_action(
+        document.value(),
+        document.key(),
+        diagnostics,
+    )));
+
+    for res in document.rule_results.iter() {
+        let matched_diag = res.diagnostics.iter().find(|d| {
+            rslint_errors::lsp::range_to_byte_span(&document.files, document.file.id, &d.range).ok()
+                == Some(action_range.to_owned())
+        });
+
+        if let Some(fixer) = res.fixer.as_ref() {
+            if matched_diag.is_some() {
                 let edits = fixer
                     .indels
                     .iter()
@@ -44,7 +55,7 @@ pub async fn actions(
                         Some(TextEdit {
                             range: rslint_errors::lsp::byte_span_to_range(
                                 &document.files,
-                                document.file_id,
+                                document.file.id,
                                 Range::<usize>::from(i.delete),
                             )
                             .ok()?,
@@ -65,7 +76,7 @@ pub async fn actions(
                         .filter(|d| {
                             rslint_errors::lsp::range_to_byte_span(
                                 &document.files,
-                                document.file_id,
+                                document.file.id,
                                 &d.range,
                             )
                             .ok()
@@ -88,4 +99,29 @@ pub async fn actions(
         }
     }
     Ok(Some(actions))
+}
+
+fn ignore_file_action(document: &Document, uri: &Url, diagnostics: Vec<Diagnostic>) -> CodeAction {
+    // if the file has a shebang we cant insert a comment at the start without causing a syntax error
+    let line = document
+        .root
+        .token_with_kind(T![shebang])
+        .map_or(0u64, |_| 1);
+
+    let first_edit = TextEdit {
+        range: LspRange::new(Position::new(line, 0), Position::new(line, 0)),
+        new_text: "// rslint-ignore\n".to_string(),
+    };
+
+    CodeAction {
+        title: "Ignore this file".to_string(),
+        edit: Some(WorkspaceEdit::new(
+            vec![(uri.to_owned(), vec![first_edit])]
+                .into_iter()
+                .collect(),
+        )),
+        kind: Some(CodeActionKind::QUICKFIX),
+        diagnostics: Some(diagnostics),
+        ..Default::default()
+    }
 }

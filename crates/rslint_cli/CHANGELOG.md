@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   `1`: Linting was successful and there is at least one error
   `2`: Linting could not be done because of a config or CLI error (e.g. invalid glob pattern)
 - Changed CLI to accept multiple glob patterns
+- Move config handling to `rslint_config`
 
 ### Added
 
@@ -27,9 +28,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added the `infer` function
 - `-Z` developer flags (`dumpast`, `tokenize`, `help`)
 
-### Changed
+### Removed
 
-- Move config handling to `rslint_config`
+- Removed `JsFile` and moved it to `rslint_core`
 
 ## [0.2.1] - 2020-10-21
 

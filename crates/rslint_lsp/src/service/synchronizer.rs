@@ -3,16 +3,11 @@
 /// Functions related to processing events for a document.
 pub(crate) mod document {
     use crate::{
-        core::{
-            document::{Document, DocumentParse},
-            language::Language,
-            session::Session,
-        },
+        core::{document::Document, session::Session},
         provider,
     };
     use rslint_core::DirectiveParser;
     use rslint_errors::file::SimpleFiles;
-    use rslint_parser::{parse_module, parse_text, SyntaxNode};
     use tower_lsp::lsp_types::*;
 
     /// Handle a document "change" event.
@@ -35,20 +30,17 @@ pub(crate) mod document {
 
             let mut document = session.get_mut_document(&uri).await?;
             document.files = files;
-            document.file_id = file_id;
-            document.text = text.clone();
+            document.file.id = file_id;
+            document.file.source = text.clone();
 
-            document.parse = if document.language == Language::JavaScriptModule {
-                Box::new(parse_module(&text, file_id)) as Box<dyn DocumentParse>
-            } else {
-                Box::new(parse_text(&text, file_id)) as Box<dyn DocumentParse>
-            };
+            let (parsing_errors, root) = document.file.parse_with_errors();
 
-            let res = DirectiveParser::new(SyntaxNode::new_root(document.parse.green()), file_id)
-                .get_file_directives();
+            let res = DirectiveParser::new(root.clone(), &document.file).get_file_directives();
 
+            document.root = root;
             document.directives = res.directives;
             document.directive_errors = res.diagnostics;
+            document.parsing_errors = parsing_errors;
         }
 
         provider::diagnostics::publish_diagnostics(session, uri).await?;
