@@ -877,7 +877,6 @@ impl ProfilingData {
     }
 
     // Forcibly flush the contents of the profiling buffer, regardless of if it's full or not
-    #[cold]
     pub fn flush(&self, buffer: &mut Vec<ProfMsg>) {
         // We can safely ignore the result of sending a profiling
         // message to the profiling thread since it doesn't matter

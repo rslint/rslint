@@ -3,7 +3,7 @@
 macro_rules! rule_test {
     (
         $rule_name:ident,
-        rule_conf: $rule_conf:expr,
+        default_conf: $default_conf:expr,
         $(filter: $filter:expr,)?
         $({
             $($code:literal),+
@@ -15,7 +15,6 @@ macro_rules! rule_test {
             $(, es2021: $es2021:literal)?
             $(, errors: [$($error:expr),* $(,)?])?
             $(, config: $config:expr)?
-            $(, trans: $trans:expr)?
             $(,)?
         }),* $(,)?
     ) => {
@@ -26,9 +25,9 @@ macro_rules! rule_test {
                 tests::DatalogTestHarness,
                 datalog::DatalogLint::{self, *},
                 NoUnusedVarsConfig, RegexSet,
+                ScopeAnalyzer, FileId, DatalogResult,
             };
             use ast::Span;
-            use config::{Config, NoShadowHoisting::{self, *}};
             use std::borrow::Cow;
             use rayon::iter::{ParallelIterator, IntoParallelIterator};
             use tracing_subscriber::{layer::SubscriberExt, Layer, EnvFilter, Registry};
@@ -41,8 +40,8 @@ macro_rules! rule_test {
             //
             // let _ = tracing::subscriber::set_global_default(subscriber);
 
-            let config = ($rule_conf as fn(Config) -> Config)(Config::empty());
-            let analyzer = DatalogTestHarness::new()
+            let default_config = $default_conf as fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>;
+            let analyzer = DatalogTestHarness::new(default_config)
                 $(.with_filter($filter as fn(&DatalogLint) -> bool))?;
 
             vec![$(
@@ -55,8 +54,7 @@ macro_rules! rule_test {
                     $(.is_module($module))?
                     $(.with_es2021($es2021))?
                     $(.with_errors(vec![$($error),*]))?
-                    $(.with_transaction($trans))?
-                    .with_config($(($config as fn(Config) -> Config))?(config.clone())),
+                    $(.with_config($config as fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>))?,
             )?]
             .into_par_iter()
             .for_each(|test| test.run());
@@ -85,13 +83,13 @@ macro_rules! rule_test {
             use crate::{
                 tests::DatalogTestHarness,
                 datalog::DatalogLint::{self, *},
+                ScopeAnalyzer, FileId, DatalogResult,
             };
             use ast::Span;
-            use config::{Config, NoShadowHoisting::{self, *}};
             use std::borrow::Cow;
             use rayon::iter::{ParallelIterator, IntoParallelIterator};
 
-            let analyzer = DatalogTestHarness::new()
+            let analyzer = DatalogTestHarness::new(|_, _| Ok(()))
                 $(.with_filter($filter as fn(&DatalogLint) -> bool))?;
 
             analyzer
@@ -103,7 +101,7 @@ macro_rules! rule_test {
                 $(.is_module($module))?
                 $(.with_es2021($es2021))?
                 $(.with_errors(vec![$($error),*]))?
-                .with_config($(($config as fn(Config) -> Config))?(Config::empty()))
+                $(.with_config($config as fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>))?
                 .run();
 
             analyzer.report_outcome();
@@ -124,7 +122,6 @@ use crate::{
     DatalogResult, ScopeAnalyzer,
 };
 use ast::FileId;
-use config::Config;
 use rslint_parser::{parse_module, parse_text};
 use std::{
     borrow::Cow,
@@ -140,16 +137,18 @@ struct DatalogTestHarness {
     failing: AtomicUsize,
     counter: AtomicUsize,
     filter: Option<fn(&DatalogLint) -> bool>,
+    default_config: fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>,
 }
 
 impl DatalogTestHarness {
-    pub fn new() -> Self {
+    pub fn new(default_config: fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>) -> Self {
         Self {
             datalog: ScopeAnalyzer::new().expect("failed to create ddlog instance"),
             passing: AtomicUsize::new(0),
             failing: AtomicUsize::new(0),
             counter: AtomicUsize::new(0),
             filter: None,
+            default_config,
         }
     }
 
@@ -195,8 +194,7 @@ struct TestCase<'a> {
     errors: Vec<DatalogLint>,
     harness: &'a DatalogTestHarness,
     id: usize,
-    config: Config,
-    transaction: Option<fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>>,
+    config: Option<fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>>,
 }
 
 impl<'a> TestCase<'a> {
@@ -232,8 +230,7 @@ impl<'a> TestCase<'a> {
             errors: Vec::new(),
             harness,
             id,
-            config: Config::default(),
-            transaction: None,
+            config: None,
         }
     }
 
@@ -273,16 +270,8 @@ impl<'a> TestCase<'a> {
         self
     }
 
-    pub fn with_config(mut self, config: Config) -> Self {
-        self.config = config;
-        self
-    }
-
-    pub fn with_transaction(
-        mut self,
-        transaction: fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>,
-    ) -> Self {
-        self.transaction = Some(transaction);
+    pub fn with_config(mut self, config: fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>) -> Self {
+        self.config = Some(config);
         self
     }
 
@@ -303,15 +292,8 @@ impl<'a> TestCase<'a> {
             parse_text(&*self.code, 0).syntax()
         };
 
-        if self.config.no_unused_vars {
-            self.harness
-                .datalog
-                .no_unused_vars(file_id, Some(Default::default()))
-                .unwrap();
-        }
-        if let Some(transaction) = self.transaction {
-            transaction(&self.harness.datalog, file_id).unwrap();
-        }
+        (self.config.unwrap_or(self.harness.default_config))(&self.harness.datalog, file_id)
+            .unwrap();
 
         self.harness
             .datalog
@@ -358,7 +340,7 @@ impl<'a> TestCase<'a> {
 
         self.harness
             .datalog
-            .analyze(file_id, &ast, self.config)
+            .analyze(file_id, &ast)
             .expect("failed datalog transaction");
 
         for err in self.errors.iter_mut() {

@@ -1,25 +1,42 @@
 import ast
 import regex
 
-extern type Config
-extern type NoShadowHoisting
+input relation EnableNoUnusedVars(file: FileId, config: Ref<NoUnusedVarsConfig>)
+primary key (conf) (conf.file)
 
-extern function no_shadow_enabled(config: Config): bool
-extern function no_shadow_hoisting(config: Config): bool
-extern function no_shadow_hoist_functions(config: Config): bool
-extern function no_undef_enabled(config: Config): bool
-extern function no_unused_labels_enabled(config: Config): bool
-extern function no_typeof_undef_enabled(config: Config): bool
-extern function no_unused_vars_enabled(config: Config): bool
-extern function no_use_before_def_enabled(config: Config): bool
+input relation EnableNoUseBeforeDef(file: FileId, config: Ref<NoUseBeforeDefConfig>)
+primary key (conf) (conf.file)
+
+input relation EnableNoTypeofUndef(file: FileId, config: Ref<NoTypeofUndefConfig>)
+primary key (conf) (conf.file)
+
+input relation EnableNoUndef(file: FileId, config: Ref<NoUndefConfig>)
+primary key (conf) (conf.file)
+
+input relation EnableNoUnusedLabels(file: FileId, config: Ref<NoUnusedLabelsConfig>)
+primary key (conf) (conf.file)
+
+input relation EnableNoShadow(file: FileId, config: Ref<NoShadowConfig>)
+primary key (conf) (conf.file)
 
 extern type NoUnusedVarsConfig
-
 extern function ignored_patterns(config: NoUnusedVarsConfig): RegexSet
 
 extern type IgnoreArgs
 
 extern type CaughtErrors
 
-input relation EnableNoUnusedVars(file: FileId, config: Ref<NoUnusedVarsConfig>)
-primary key (conf) (conf.file)
+extern type NoUseBeforeDefConfig
+
+extern type NoTypeofUndefConfig
+
+extern type NoUndefConfig
+
+extern type NoUnusedLabelsConfig
+
+extern type NoShadowConfig
+extern type NoShadowHoisting
+extern function hoisting_never(config: NoShadowConfig): bool
+extern function hoisting_always(config: NoShadowConfig): bool
+extern function hoisting_functions(config: NoShadowConfig): bool
+extern function hoisting_enabled(config: NoShadowConfig): bool

@@ -3,6 +3,7 @@ import vec
 import utils
 import group
 import inputs
+import config
 
 /// All scopes that need their parent scopes
 relation NeedsScopeParents(scope: ScopeId, file: FileId)
@@ -67,7 +68,7 @@ relation FunctionLevelScope(
 )
 
 FunctionLevelScope(scope, scope, file, AnyIdFile { file }) :-
-    File(file, _, scope, _).
+    File(file, _, scope).
 
 // Functions
 FunctionLevelScope(body, body, file, AnyIdFunc { func }) :-
@@ -108,9 +109,9 @@ FunctionLevelScope(child, scope, file, id) :-
     (var scope, var id) = (scope, id).group_by((child, file)).arg_max(|scope| scope.0).
 
 relation ScopeOfId(id: AnyId, file: FileId, scope: ScopeId)
-ScopeOfId(AnyIdFile { id }, id, scope) :- File(id, _, scope, _).
+ScopeOfId(AnyIdFile { id }, id, scope) :- File(id, _, scope).
 ScopeOfId(AnyIdFunc { id }, file, scope) :- Function(id, file, _, scope, _, _).
 ScopeOfId(AnyIdClass { id }, file, scope) :- Class(id, file, _, _, _, scope, _).
 ScopeOfId(AnyIdStmt { id }, file, scope) :- Statement(id, file, _, scope, _).
 ScopeOfId(AnyIdExpr { id }, file, scope) :- Expression(id, file, _, scope, _).
-ScopeOfId(AnyIdImport { id }, file, scope) :- ImportDecl(id, file, _), File(file, _, scope, _).
+ScopeOfId(AnyIdImport { id }, file, scope) :- ImportDecl(id, file, _), File(file, _, scope).

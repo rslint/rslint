@@ -173,6 +173,7 @@ typedef ExprKind =
     | ExprSuperCall { args: Option<Vec<ExprId>> }
     | ExprImportCall { arg: Option<ExprId> }
     | ExprClass
+    | ExprUnimplemented
 
 typedef UnaryOperand =
     UnaryIncrement
@@ -288,26 +289,20 @@ typedef ClassElement =
     | ClassMethod {
         name: Option<PropertyKey>,
         params: Option<Vec<FuncParam>>,
-        body: Option<StmtId>
-    }
-    | ClassStaticMethod {
-        name: Option<PropertyKey>,
-        params: Option<Vec<FuncParam>>,
-        body: Option<StmtId>
+        body: Option<StmtId>,
+        is_static: bool,
     }
 
 function body(elem: ClassElement): Option<StmtId> {
     match (elem) {
-        ClassMethod { _, _, Some { body }} -> Some { body },
-        ClassStaticMethod { _, _, Some { body }} -> Some { body },
+        ClassMethod { _, _, Some { body }, _ } -> Some { body },
         _ -> None,
     }
 }
 
 function method_comps(elem: ClassElement): Option<(Vec<FuncParam>, StmtId)> {
     match (elem) {
-        ClassMethod { _, Some { params }, Some { body }} -> Some { (params, body) },
-        ClassStaticMethod { _, Some { params }, Some { body }} -> Some { (params, body) },
+        ClassMethod { _, Some { params }, Some { body }, _ } -> Some { (params, body) },
         _ -> None,
     }
 }

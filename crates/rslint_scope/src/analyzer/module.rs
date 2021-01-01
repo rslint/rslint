@@ -34,6 +34,9 @@ impl<'ddlog> Visit<'ddlog, ModuleItem> for AnalyzerInner {
             }
             ModuleItem::ExportDecl(export) => self.visit(scope, export).map(|(_id, scope)| scope),
             ModuleItem::Stmt(stmt) => Some(self.visit(scope, stmt).1),
+
+            // TODO: TypeScript module-level items
+            _ => None,
         }
     }
 }
@@ -80,6 +83,9 @@ impl<'ddlog> Visit<'ddlog, ImportClause> for AnalyzerInner {
             ImportClause::Name(name) => DatalogImportClause::SingleImport {
                 name: self.visit(scope, name),
             },
+
+            // TODO: TypeScript import types
+            _ => DatalogImportClause::WildcardImport { alias: None.into() },
         }
     }
 }

@@ -3144,8 +3144,6 @@ dependencies = [
  "time",
  "timely",
  "types__ast",
- "types__config",
- "types__regex",
  "types__utils",
  "types__vec",
 ]
@@ -3296,9 +3294,7 @@ dependencies = [
  "time",
  "timely",
  "types__ast",
- "types__config",
  "types__inputs",
- "types__regex",
  "types__utils",
  "types__vec",
 ]

@@ -1,6 +1,8 @@
 rule_test! {
     no_unused_vars,
-    rule_conf: |conf| conf.no_unused_vars(true),
+    default_conf: |analyzer, file| {
+        analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig::default()))
+    },
     filter: DatalogLint::is_no_unused_vars,
     // Should pass
     { "var foo = 5;\nlabel: while (true) {\n  console.log(foo);\n  break label;\n}", node: true },
@@ -182,21 +184,21 @@ rule_test! {
     // Ignoring variables by pattern
     {
         "let _x = 10;",
-        trans: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
+        config: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
             ignored_patterns: RegexSet::new(vec!["^_"]).unwrap(),
             ..Default::default()
         })),
     },
     {
         "function foo(_bar) {}; foo(10);",
-        trans: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
+        config: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
             ignored_patterns: RegexSet::new(vec!["^_"]).unwrap(),
             ..Default::default()
         })),
     },
     {
         "function(a) {}",
-        trans: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
+        config: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
             ignored_patterns: RegexSet::new(vec!["a"]).unwrap(),
             ..Default::default()
         })),

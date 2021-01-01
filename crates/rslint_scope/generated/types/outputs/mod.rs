@@ -62,7 +62,7 @@ pub type std_isize = i64;
 
 
 pub mod no_shadow;
+pub mod no_typeof_undef;
 pub mod no_undef;
-pub mod typeof_undef;
+pub mod no_use_before_def;
 pub mod unused_vars;
-pub mod use_before_def;

@@ -1,7 +1,7 @@
 use crate::rule_prelude::*;
 use rslint_scope::{
     ast::{AnyId, StmtKind},
-    FileId,
+    FileId, NoUseBeforeDefConfig,
 };
 
 declare_lint! {
@@ -40,6 +40,9 @@ declare_lint! {
      * before it is declared. Default `true`.
      */
     pub variables: bool,
+
+    #[serde(flatten)]
+    config: NoUseBeforeDefConfig,
 }
 
 impl Default for NoUseBeforeDef {
@@ -48,6 +51,7 @@ impl Default for NoUseBeforeDef {
             functions: true,
             classes: true,
             variables: true,
+            config: Default::default(),
         }
     }
 }
@@ -56,10 +60,13 @@ impl Default for NoUseBeforeDef {
 impl CstRule for NoUseBeforeDef {
     fn check_root(&self, _root: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         let analyzer = ctx.analyzer.as_ref()?.clone();
-        let outputs = analyzer.outputs();
         let file = FileId::new(ctx.file_id as u32);
 
-        outputs.use_before_def.iter().for_each(|used| {
+        analyzer
+            .no_use_before_def(file, Some(self.config.clone()))
+            .unwrap();
+
+        analyzer.outputs().use_before_def.iter().for_each(|used| {
             let used = used.key();
             if used.file != file {
                 return;

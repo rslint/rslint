@@ -18,8 +18,8 @@ use std::{
 use types::{
     name_in_scope::NameInScope,
     outputs::{
-        no_shadow::NoShadow, no_undef::NoUndef, typeof_undef::TypeofUndef,
-        unused_vars::UnusedVariables, use_before_def::UseBeforeDef,
+        no_shadow::NoShadow, no_typeof_undef::NoTypeofUndef, no_undef::NoUndef,
+        no_use_before_def::NoUseBeforeDef, unused_vars::UnusedVariables,
     },
 };
 
@@ -191,9 +191,9 @@ impl InnerOutputs {
 }
 
 outputs! {
-    no_typeof_undef: TypeofUndef, outputs_typeof_undef_TypeofUndef,
+    no_typeof_undef: NoTypeofUndef, outputs_no_typeof_undef_NoTypeofUndef,
     no_undef: NoUndef, outputs_no_undef_NoUndef,
-    use_before_def: UseBeforeDef, outputs_use_before_def_UseBeforeDef,
+    use_before_def: NoUseBeforeDef, outputs_no_use_before_def_NoUseBeforeDef,
     no_unused_vars: UnusedVariables, outputs_unused_vars_UnusedVariables,
     no_shadow: NoShadow, outputs_no_shadow_NoShadow,
     no_unused_labels: NoUnusedLabels, outputs_no_unused_labels_NoUnusedLabels,

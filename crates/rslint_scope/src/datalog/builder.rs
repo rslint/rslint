@@ -1630,4 +1630,22 @@ pub trait DatalogBuilder<'ddlog> {
             },
         );
     }
+
+    fn unimplemented_expression(&self) -> ExprId {
+        let datalog = self.datalog();
+        let expr_id = datalog.inc_expression();
+
+        datalog.insert(
+            Relations::inputs_Expression,
+            Expression {
+                id: expr_id,
+                file: self.file_id(),
+                kind: ExprKind::ExprUnimplemented,
+                scope: self.scope_id(),
+                span: (0u32..0).into(),
+            },
+        );
+
+        expr_id
+    }
 }

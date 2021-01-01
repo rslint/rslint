@@ -1,5 +1,5 @@
 use crate::rule_prelude::*;
-use rslint_scope::FileId;
+use rslint_scope::{FileId, NoUnusedLabelsConfig};
 
 declare_lint! {
     /**
@@ -25,28 +25,39 @@ declare_lint! {
     #[derive(Default)]
     NoUnusedLabels,
     ddlog,
-    "no-unused-labels"
+    "no-unused-labels",
+
+    #[serde(flatten)]
+    config: NoUnusedLabelsConfig,
 }
 
 #[typetag::serde]
 impl CstRule for NoUnusedLabels {
     fn check_root(&self, _root: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
-        let outputs = ctx.analyzer.as_ref()?.outputs().clone();
+        let analyzer = ctx.analyzer.as_ref()?.clone();
         let file = FileId::new(ctx.file_id as u32);
 
-        outputs.no_unused_labels.iter().for_each(|label| {
-            let label = label.key();
+        analyzer
+            .no_unused_labels(file, Some(self.config.clone()))
+            .unwrap();
 
-            if label.file == file {
-                let err = Diagnostic::warning(
-                    file.id as usize,
-                    "no-unused-labels",
-                    format!("the label `{}` was never used", *label.label_name.data),
-                )
-                .primary(label.label_name.span, "created here");
-                ctx.add_err(err);
-            }
-        });
+        analyzer
+            .outputs()
+            .no_unused_labels
+            .iter()
+            .for_each(|label| {
+                let label = label.key();
+
+                if label.file == file {
+                    let err = Diagnostic::warning(
+                        file.id as usize,
+                        "no-unused-labels",
+                        format!("the label `{}` was never used", *label.label_name.data),
+                    )
+                    .primary(label.label_name.span, "created here");
+                    ctx.add_err(err);
+                }
+            });
 
         None
     }

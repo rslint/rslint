@@ -62,181 +62,22 @@ pub type std_isize = i64;
 
 
 use schemars::JsonSchema;
-use std::fmt::{self, Debug, Display, Formatter};
 use types__regex::RegexSet as DDlogRegexSet;
 
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator)]
-#[serde(rename_all = "kebab-case")]
-pub struct Config {
-    pub no_shadow: bool,
-    pub no_shadow_hoisting: NoShadowHoisting,
-    pub no_undef: bool,
-    pub no_unused_labels: bool,
-    pub no_typeof_undef: bool,
-    pub no_unused_vars: bool,
-    pub no_use_before_def: bool,
-}
-
-impl Config {
-    pub fn empty() -> Self {
-        Self {
-            no_shadow: false,
-            no_shadow_hoisting: NoShadowHoisting::Never,
-            no_undef: false,
-            no_unused_labels: false,
-            no_typeof_undef: false,
-            no_unused_vars: false,
-            no_use_before_def: false,
-        }
-    }
-
-    pub fn no_shadow(mut self, no_shadow: bool) -> Self {
-        self.no_shadow = no_shadow;
-        self
-    }
-
-    pub fn no_shadow_hoisting(mut self, no_shadow_hoisting: NoShadowHoisting) -> Self {
-        self.no_shadow_hoisting = no_shadow_hoisting;
-        self
-    }
-
-    pub fn no_undef(mut self, no_undef: bool) -> Self {
-        self.no_undef = no_undef;
-        self
-    }
-
-    pub fn no_unused_labels(mut self, no_unused_labels: bool) -> Self {
-        self.no_unused_labels = no_unused_labels;
-        self
-    }
-
-    pub fn no_typeof_undef(mut self, no_typeof_undef: bool) -> Self {
-        self.no_typeof_undef = no_typeof_undef;
-        self
-    }
-
-    pub fn no_unused_vars(mut self, no_unused_vars: bool) -> Self {
-        self.no_unused_vars = no_unused_vars;
-        self
-    }
-
-    pub fn no_use_before_def(mut self, no_use_before_def: bool) -> Self {
-        self.no_use_before_def = no_use_before_def;
-        self
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            no_shadow: true,
-            no_shadow_hoisting: NoShadowHoisting::default(),
-            no_undef: true,
-            no_unused_labels: true,
-            no_typeof_undef: true,
-            no_unused_vars: true,
-            no_use_before_def: true,
-        }
-    }
-}
-
-impl Display for Config {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Debug::fmt(self, f)
-    }
-}
-
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator)]
-#[serde(rename_all = "kebab-case")]
-pub enum NoShadowHoisting {
-    Never,
-    Always,
-    Functions,
-}
-
-impl Default for NoShadowHoisting {
-    fn default() -> Self {
-        Self::Functions
-    }
-}
-
-impl Display for NoShadowHoisting {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Never => f.write_str("never"),
-            Self::Always => f.write_str("always"),
-            Self::Functions => f.write_str("functions"),
-        }
-    }
-}
-
-// DDlog bridge functions
-pub fn no_shadow_enabled(config: &Config) -> bool {
-    config.no_shadow
-}
-
-pub fn no_shadow_hoisting(config: &Config) -> bool {
-    matches!(
-        config.no_shadow_hoisting,
-        NoShadowHoisting::Always | NoShadowHoisting::Functions
-    )
-}
-
-pub fn no_shadow_hoist_functions(config: &Config) -> bool {
-    matches!(config.no_shadow_hoisting, NoShadowHoisting::Functions)
-}
-
-pub fn no_undef_enabled(config: &Config) -> bool {
-    config.no_undef
-}
-
-pub fn no_unused_labels_enabled(config: &Config) -> bool {
-    config.no_unused_labels
-}
-
-pub fn no_typeof_undef_enabled(config: &Config) -> bool {
-    config.no_typeof_undef
-}
-
-pub fn no_unused_vars_enabled(config: &Config) -> bool {
-    config.no_unused_vars
-}
-
-pub fn no_use_before_def_enabled(config: &Config) -> bool {
-    config.no_use_before_def
-}
-
-// macro_rules! ddlog_api {
-//     (impl $struct:ident {
-//         $(
-//             $vis:vis fn $func:ident(&$self:ident) -> $ret:ty $body:block
-//         )*
-//     }) => {
-//         impl $struct {
-//             $(
-//                 $vis fn $func(&$self) -> $ret $body
-//             )*
-//         }
-//
-//         $(
-//             ddlog_api!(@gen_api [$vis] $struct $func $ret)
-//         )*
-//     };
-//
-//     (@gen_api [] $struct:ident $func:ident $ret:ty) => {};
-//     (@gen_api [pub] $struct:ident $func:ident $ret:ty) => {
-//         pub fn $func(config: &$struct) -> $ret {
-//             config.$func()
-//         }
-//     };
-//     (@gen_api [$vis:vis] $struct:ident $func:ident $ret:ty) => {};
-// }
-
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize, FromRecord,
-    IntoRecord, Mutator,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
 )]
 #[serde(rename_all = "kebab-case")]
 pub struct NoUnusedVarsConfig {
@@ -274,14 +115,25 @@ impl JsonSchema for NoUnusedVarsConfig {
     }
 }
 
-
 pub fn ignored_patterns(config: &NoUnusedVarsConfig) -> &DDlogRegexSet {
     config.ignored_patterns()
 }
 
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum IgnoreArgs {
@@ -302,7 +154,20 @@ impl Default for IgnoreArgs {
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum CaughtErrors {
@@ -318,6 +183,250 @@ impl Default for CaughtErrors {
     }
 }
 
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoUseBeforeDefConfig {}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoTypeofUndefConfig {}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoUndefConfig {}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoUnusedLabelsConfig {}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoShadowConfig {
+    pub hoisting: NoShadowHoisting,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum NoShadowHoisting {
+    Never,
+    Always,
+    Functions,
+}
+
+impl Default for NoShadowHoisting {
+    fn default() -> Self {
+        Self::Always
+    }
+}
+
+pub fn hoisting_never(config: &NoShadowConfig) -> bool {
+    matches!(config.hoisting, NoShadowHoisting::Never)
+}
+
+pub fn hoisting_always(config: &NoShadowConfig) -> bool {
+    matches!(config.hoisting, NoShadowHoisting::Always)
+}
+
+pub fn hoisting_functions(config: &NoShadowConfig) -> bool {
+    matches!(config.hoisting, NoShadowHoisting::Functions)
+}
+
+pub fn hoisting_enabled(config: &NoShadowConfig) -> bool {
+    matches!(
+        config.hoisting,
+        NoShadowHoisting::Always | NoShadowHoisting::Functions,
+    )
+}
+
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "config::EnableNoShadow")]
+pub struct EnableNoShadow {
+    pub file: types__ast::FileId,
+    pub config: ddlog_std::Ref<NoShadowConfig>
+}
+impl abomonation::Abomonation for EnableNoShadow{}
+impl ::std::fmt::Display for EnableNoShadow {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            EnableNoShadow{file,config} => {
+                __formatter.write_str("config::EnableNoShadow{")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(config, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for EnableNoShadow {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "config::EnableNoTypeofUndef")]
+pub struct EnableNoTypeofUndef {
+    pub file: types__ast::FileId,
+    pub config: ddlog_std::Ref<NoTypeofUndefConfig>
+}
+impl abomonation::Abomonation for EnableNoTypeofUndef{}
+impl ::std::fmt::Display for EnableNoTypeofUndef {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            EnableNoTypeofUndef{file,config} => {
+                __formatter.write_str("config::EnableNoTypeofUndef{")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(config, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for EnableNoTypeofUndef {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "config::EnableNoUndef")]
+pub struct EnableNoUndef {
+    pub file: types__ast::FileId,
+    pub config: ddlog_std::Ref<NoUndefConfig>
+}
+impl abomonation::Abomonation for EnableNoUndef{}
+impl ::std::fmt::Display for EnableNoUndef {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            EnableNoUndef{file,config} => {
+                __formatter.write_str("config::EnableNoUndef{")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(config, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for EnableNoUndef {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "config::EnableNoUnusedLabels")]
+pub struct EnableNoUnusedLabels {
+    pub file: types__ast::FileId,
+    pub config: ddlog_std::Ref<NoUnusedLabelsConfig>
+}
+impl abomonation::Abomonation for EnableNoUnusedLabels{}
+impl ::std::fmt::Display for EnableNoUnusedLabels {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            EnableNoUnusedLabels{file,config} => {
+                __formatter.write_str("config::EnableNoUnusedLabels{")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(config, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for EnableNoUnusedLabels {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
 #[ddlog(rename = "config::EnableNoUnusedVars")]
 pub struct EnableNoUnusedVars {
@@ -343,19 +452,112 @@ impl ::std::fmt::Debug for EnableNoUnusedVars {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "config::EnableNoUseBeforeDef")]
+pub struct EnableNoUseBeforeDef {
+    pub file: types__ast::FileId,
+    pub config: ddlog_std::Ref<NoUseBeforeDefConfig>
+}
+impl abomonation::Abomonation for EnableNoUseBeforeDef{}
+impl ::std::fmt::Display for EnableNoUseBeforeDef {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            EnableNoUseBeforeDef{file,config} => {
+                __formatter.write_str("config::EnableNoUseBeforeDef{")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(config, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for EnableNoUseBeforeDef {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
+/* fn hoisting_always(config: & NoShadowConfig) -> bool */
+/* fn hoisting_enabled(config: & NoShadowConfig) -> bool */
+/* fn hoisting_functions(config: & NoShadowConfig) -> bool */
+/* fn hoisting_never(config: & NoShadowConfig) -> bool */
 /* fn ignored_patterns(config: & NoUnusedVarsConfig) -> types__regex::RegexSet */
-/* fn no_shadow_enabled(config: & Config) -> bool */
-/* fn no_shadow_hoist_functions(config: & Config) -> bool */
-/* fn no_shadow_hoisting(config: & Config) -> bool */
-/* fn no_typeof_undef_enabled(config: & Config) -> bool */
-/* fn no_undef_enabled(config: & Config) -> bool */
-/* fn no_unused_labels_enabled(config: & Config) -> bool */
-/* fn no_unused_vars_enabled(config: & Config) -> bool */
-/* fn no_use_before_def_enabled(config: & Config) -> bool */
+pub fn __Key_config_EnableNoShadow(__key: &DDValue) -> DDValue {
+    let ref conf = *{<EnableNoShadow>::from_ddvalue_ref(__key) };
+    (conf.file.clone()).into_ddvalue()
+}
+pub fn __Key_config_EnableNoTypeofUndef(__key: &DDValue) -> DDValue {
+    let ref conf = *{<EnableNoTypeofUndef>::from_ddvalue_ref(__key) };
+    (conf.file.clone()).into_ddvalue()
+}
+pub fn __Key_config_EnableNoUndef(__key: &DDValue) -> DDValue {
+    let ref conf = *{<EnableNoUndef>::from_ddvalue_ref(__key) };
+    (conf.file.clone()).into_ddvalue()
+}
+pub fn __Key_config_EnableNoUnusedLabels(__key: &DDValue) -> DDValue {
+    let ref conf = *{<EnableNoUnusedLabels>::from_ddvalue_ref(__key) };
+    (conf.file.clone()).into_ddvalue()
+}
 pub fn __Key_config_EnableNoUnusedVars(__key: &DDValue) -> DDValue {
     let ref conf = *{<EnableNoUnusedVars>::from_ddvalue_ref(__key) };
     (conf.file.clone()).into_ddvalue()
 }
+pub fn __Key_config_EnableNoUseBeforeDef(__key: &DDValue) -> DDValue {
+    let ref conf = *{<EnableNoUseBeforeDef>::from_ddvalue_ref(__key) };
+    (conf.file.clone()).into_ddvalue()
+}
+pub static __Arng_config_EnableNoShadow_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                               name: std::borrow::Cow::from(r###"(config::EnableNoShadow{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoShadowConfig>)}: config::EnableNoShadow) /*join*/"###),
+                                                                                                                                afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                {
+                                                                                                                                    let __cloned = __v.clone();
+                                                                                                                                    match < EnableNoShadow>::from_ddvalue(__v) {
+                                                                                                                                        EnableNoShadow{file: ref _0, config: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                        _ => None
+                                                                                                                                    }.map(|x|(x,__cloned))
+                                                                                                                                }
+                                                                                                                                __f},
+                                                                                                                                queryable: false
+                                                                                                                            });
+pub static __Arng_config_EnableNoTypeofUndef_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                    name: std::borrow::Cow::from(r###"(config::EnableNoTypeofUndef{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoTypeofUndefConfig>)}: config::EnableNoTypeofUndef) /*join*/"###),
+                                                                                                                                     afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                     {
+                                                                                                                                         let __cloned = __v.clone();
+                                                                                                                                         match < EnableNoTypeofUndef>::from_ddvalue(__v) {
+                                                                                                                                             EnableNoTypeofUndef{file: ref _0, config: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                             _ => None
+                                                                                                                                         }.map(|x|(x,__cloned))
+                                                                                                                                     }
+                                                                                                                                     __f},
+                                                                                                                                     queryable: false
+                                                                                                                                 });
+pub static __Arng_config_EnableNoUndef_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                              name: std::borrow::Cow::from(r###"(config::EnableNoUndef{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUndefConfig>)}: config::EnableNoUndef) /*join*/"###),
+                                                                                                                               afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                               {
+                                                                                                                                   let __cloned = __v.clone();
+                                                                                                                                   match < EnableNoUndef>::from_ddvalue(__v) {
+                                                                                                                                       EnableNoUndef{file: ref _0, config: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                       _ => None
+                                                                                                                                   }.map(|x|(x,__cloned))
+                                                                                                                               }
+                                                                                                                               __f},
+                                                                                                                               queryable: false
+                                                                                                                           });
+pub static __Arng_config_EnableNoUnusedLabels_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                     name: std::borrow::Cow::from(r###"(config::EnableNoUnusedLabels{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUnusedLabelsConfig>)}: config::EnableNoUnusedLabels) /*join*/"###),
+                                                                                                                                      afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                      {
+                                                                                                                                          let __cloned = __v.clone();
+                                                                                                                                          match < EnableNoUnusedLabels>::from_ddvalue(__v) {
+                                                                                                                                              EnableNoUnusedLabels{file: ref _0, config: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                              _ => None
+                                                                                                                                          }.map(|x|(x,__cloned))
+                                                                                                                                      }
+                                                                                                                                      __f},
+                                                                                                                                      queryable: false
+                                                                                                                                  });
 pub static __Arng_config_EnableNoUnusedVars_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                                    name: std::borrow::Cow::from(r###"(config::EnableNoUnusedVars{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars) /*join*/"###),
                                                                                                                                     afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
@@ -369,3 +571,16 @@ pub static __Arng_config_EnableNoUnusedVars_0 : ::once_cell::sync::Lazy<program:
                                                                                                                                     __f},
                                                                                                                                     queryable: false
                                                                                                                                 });
+pub static __Arng_config_EnableNoUseBeforeDef_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                     name: std::borrow::Cow::from(r###"(config::EnableNoUseBeforeDef{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUseBeforeDefConfig>)}: config::EnableNoUseBeforeDef) /*join*/"###),
+                                                                                                                                      afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                      {
+                                                                                                                                          let __cloned = __v.clone();
+                                                                                                                                          match < EnableNoUseBeforeDef>::from_ddvalue(__v) {
+                                                                                                                                              EnableNoUseBeforeDef{file: ref _0, config: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                              _ => None
+                                                                                                                                          }.map(|x|(x,__cloned))
+                                                                                                                                      }
+                                                                                                                                      __f},
+                                                                                                                                      queryable: false
+                                                                                                                                  });

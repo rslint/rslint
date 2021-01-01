@@ -699,22 +699,19 @@ impl ::std::fmt::Debug for Expression {
 pub struct File {
     pub id: types__ast::FileId,
     pub kind: types__ast::FileKind,
-    pub top_level_scope: types__ast::ScopeId,
-    pub config: types__config::Config
+    pub top_level_scope: types__ast::ScopeId
 }
 impl abomonation::Abomonation for File{}
 impl ::std::fmt::Display for File {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            File{id,kind,top_level_scope,config} => {
+            File{id,kind,top_level_scope} => {
                 __formatter.write_str("inputs::File{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(kind, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(top_level_scope, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(config, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -2004,12 +2001,12 @@ pub static __Arng_inputs_Expression_6 : ::once_cell::sync::Lazy<program::Arrange
                                                                                                                             queryable: true
                                                                                                                         });
 pub static __Arng_inputs_File_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                     name: std::borrow::Cow::from(r###"(inputs::File{.id=(_0: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(_: config::Config)}: inputs::File) /*join*/"###),
+                                                                                                                     name: std::borrow::Cow::from(r###"(inputs::File{.id=(_0: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId)}: inputs::File) /*join*/"###),
                                                                                                                       afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                       {
                                                                                                                           let __cloned = __v.clone();
                                                                                                                           match < File>::from_ddvalue(__v) {
-                                                                                                                              File{id: ref _0, kind: _, top_level_scope: _, config: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                              File{id: ref _0, kind: _, top_level_scope: _} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                               _ => None
                                                                                                                           }.map(|x|(x,__cloned))
                                                                                                                       }
@@ -2017,12 +2014,12 @@ pub static __Arng_inputs_File_0 : ::once_cell::sync::Lazy<program::Arrangement> 
                                                                                                                       queryable: false
                                                                                                                   });
 pub static __Arng_inputs_File_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                     name: std::borrow::Cow::from(r###"(inputs::File{.id=(_: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(_: config::Config)}: inputs::File) /*join*/"###),
+                                                                                                                     name: std::borrow::Cow::from(r###"(inputs::File{.id=(_: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId)}: inputs::File) /*join*/"###),
                                                                                                                       afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                       {
                                                                                                                           let __cloned = __v.clone();
                                                                                                                           match < File>::from_ddvalue(__v) {
-                                                                                                                              File{id: _, kind: _, top_level_scope: _, config: _} => Some((()).into_ddvalue()),
+                                                                                                                              File{id: _, kind: _, top_level_scope: _} => Some((()).into_ddvalue()),
                                                                                                                               _ => None
                                                                                                                           }.map(|x|(x,__cloned))
                                                                                                                       }
@@ -2030,12 +2027,12 @@ pub static __Arng_inputs_File_1 : ::once_cell::sync::Lazy<program::Arrangement> 
                                                                                                                       queryable: false
                                                                                                                   });
 pub static __Arng_inputs_File_2 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                     name: std::borrow::Cow::from(r###"(inputs::File{.id=_0, .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId), .config=(_: config::Config)}: inputs::File) /*join*/"###),
+                                                                                                                     name: std::borrow::Cow::from(r###"(inputs::File{.id=_0, .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId)}: inputs::File) /*join*/"###),
                                                                                                                       afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                       {
                                                                                                                           let __cloned = __v.clone();
                                                                                                                           match < File>::from_ddvalue(__v) {
-                                                                                                                              File{id: ref _0, kind: _, top_level_scope: _, config: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                              File{id: ref _0, kind: _, top_level_scope: _} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                               _ => None
                                                                                                                           }.map(|x|(x,__cloned))
                                                                                                                       }
@@ -2043,12 +2040,12 @@ pub static __Arng_inputs_File_2 : ::once_cell::sync::Lazy<program::Arrangement> 
                                                                                                                       queryable: true
                                                                                                                   });
 pub static __Arng_inputs_Function_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                         name: std::borrow::Cow::from(r###"(inputs::Function{.id=(_: ast::FuncId), .file=(_0: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function) /*join*/"###),
+                                                                                                                         name: std::borrow::Cow::from(r###"(inputs::Function{.id=(_0: ast::FuncId), .file=(_1: ast::FileId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(_: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function) /*join*/"###),
                                                                                                                           afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                           {
                                                                                                                               let __cloned = __v.clone();
                                                                                                                               match < Function>::from_ddvalue(__v) {
-                                                                                                                                  Function{id: _, file: ref _0, name: _, scope: _, body: _, exported: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                  Function{id: ref _0, file: ref _1, name: ddlog_std::Option::Some{x: types__ast::Spanned{data: _, span: _}}, scope: _, body: _, exported: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                                                                                                   _ => None
                                                                                                                               }.map(|x|(x,__cloned))
                                                                                                                           }
@@ -2056,12 +2053,12 @@ pub static __Arng_inputs_Function_0 : ::once_cell::sync::Lazy<program::Arrangeme
                                                                                                                           queryable: false
                                                                                                                       });
 pub static __Arng_inputs_Function_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                         name: std::borrow::Cow::from(r###"(inputs::Function{.id=(_0: ast::FuncId), .file=(_1: ast::FileId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(_: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function) /*join*/"###),
+                                                                                                                         name: std::borrow::Cow::from(r###"(inputs::Function{.id=(_: ast::FuncId), .file=(_0: ast::FileId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function) /*join*/"###),
                                                                                                                           afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                           {
                                                                                                                               let __cloned = __v.clone();
                                                                                                                               match < Function>::from_ddvalue(__v) {
-                                                                                                                                  Function{id: ref _0, file: ref _1, name: ddlog_std::Option::Some{x: types__ast::Spanned{data: _, span: _}}, scope: _, body: _, exported: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                                                                                                                                  Function{id: _, file: ref _0, name: _, scope: _, body: _, exported: _} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                                   _ => None
                                                                                                                               }.map(|x|(x,__cloned))
                                                                                                                           }

@@ -136,7 +136,7 @@ path = "vec"
 [dev-dependencies]
 
 [features]
-c_api = ["differential_datalog/c_api", "ddlog_rt/c_api", "ddlog_std/c_api", "ddlog_bigint/c_api", "ddlog_log/c_api", "debug/c_api", "internment/c_api", "types__outputs__no_unused_labels/c_api", "types__ast/c_api", "types__utils/c_api", "types__inputs/c_api", "types__vec/c_api", "types__group/c_api", "types__scopes/c_api", "types__config/c_api", "types__regex/c_api", "types__variable_decl/c_api"]
+c_api = ["differential_datalog/c_api", "ddlog_rt/c_api", "ddlog_std/c_api", "ddlog_bigint/c_api", "ddlog_log/c_api", "debug/c_api", "internment/c_api", "types__outputs__no_unused_labels/c_api", "types__ast/c_api", "types__utils/c_api", "types__inputs/c_api", "types__vec/c_api", "types__group/c_api", "types__scopes/c_api", "types__config/c_api", "types__variable_decl/c_api", "types__regex/c_api"]
 default = []
 
 [lib]

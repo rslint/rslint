@@ -1,5 +1,5 @@
 use crate::{rule_prelude::*, util::find_best_match_for_name};
-use rslint_scope::FileId;
+use rslint_scope::{FileId, NoTypeofUndefConfig, NoUndefConfig};
 
 declare_lint! {
     /**
@@ -25,7 +25,10 @@ declare_lint! {
      * inside a `typeof` expressions will be warned.
      */
     #[serde(rename = "typeof")]
-    pub typeof_: bool,
+    pub typeof_: Option<NoTypeofUndefConfig>,
+
+    #[serde(flatten)]
+    config: NoUndefConfig,
 }
 
 #[typetag::serde]
@@ -34,6 +37,8 @@ impl CstRule for NoUndef {
         let analyzer = ctx.analyzer.as_ref()?.clone();
         let outputs = analyzer.outputs().clone();
         let file = FileId::new(ctx.file_id as u32);
+
+        analyzer.no_undef(file, Some(self.config.clone())).unwrap();
 
         outputs.no_undef.iter().for_each(|undef| {
             let undef = undef.key();
@@ -71,7 +76,9 @@ impl CstRule for NoUndef {
             }
         });
 
-        if self.typeof_ {
+        if let Some(config) = self.typeof_.clone() {
+            analyzer.no_typeof_undef(file, Some(config)).unwrap();
+
             outputs.no_typeof_undef.iter().try_for_each(|undef| {
                 let undef = undef.key();
                 let whole_expr = analyzer.get_expr(undef.whole_expr, file)?;

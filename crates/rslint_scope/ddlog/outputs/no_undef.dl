@@ -3,7 +3,7 @@ import utils
 import inputs
 import config
 import name_in_scope
-import outputs::typeof_undef
+import outputs::no_typeof_undef
 
 // Variable usages (`let` and `const` predecls or undefined symbols) that don't
 // have an accompanying variable in scope are reported
@@ -11,8 +11,8 @@ import outputs::typeof_undef
 //       scopes for a declaration
 output relation NoUndef(name: Name, scope: ScopeId, span: Span, file: FileId)
 NoUndef(name, scope, span, file) :-
-    File(file, _, _, config),
-    config.no_undef_enabled(),
+    EnableNoUndef(file, _),
+
     NameRef(expr, file, name),
     Expression(expr, file, ExprNameRef, scope, span),
     // Expressions like `typeof not_undefined` are allowed under NoUndef
@@ -23,8 +23,8 @@ NoUndef(name, scope, span, file) :-
 
 // Assignments
 NoUndef(name, scope, span, file) :-
-    File(file, _, _, config),
-    config.no_undef_enabled(),
+    EnableNoUndef(file, _),
+
     Assign(expr, file, Some { Left { pat }}, _, _),
     Expression(expr, file, _, scope, _),
     // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
@@ -32,20 +32,17 @@ NoUndef(name, scope, span, file) :-
     Spanned { var name, var span } = bound_var,
     not NameInScope(file, name, scope, _).
 
+
 // The successors of an expression, property accesses or method calls
 relation ChainedWith(object: ExprId, property: ExprId, file: FileId)
 ChainedWith(object, property, file) :-
-    File(file, _, _, config),
-    config.no_undef_enabled(),
+    EnableNoUndef(file, _),
     BracketAccess(_, file, Some { object }, Some { property }).
 
 ChainedWith(object, property, file) :-
-    File(file, _, _, config),
-    config.no_undef_enabled(),
+    EnableNoUndef(file, _),
     DotAccess(property, file, Some { object }, _).
 
 ChainedWith(object, property, file) :-
-    File(file, _, _, config),
-    config.no_undef_enabled(),
     ChainedWith(object, interum, file),
     ChainedWith(interum, property, file).

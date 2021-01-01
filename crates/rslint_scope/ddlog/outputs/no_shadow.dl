@@ -16,8 +16,7 @@ output relation NoShadow(
 )
 
 NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false, file) :-
-    File(file, _, _, config),
-    config.no_shadow_enabled(),
+    EnableNoShadow(file, config),
 
     // Get the initial variable
     ScopeOfDecl(file, shadowed_scope, shadowed_id),
@@ -53,7 +52,7 @@ NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false
     // Within this match all "first", "second", etc. positional references are
     // in lexical terms, where the first declaration occurs before the second
     // in the physical source file
-    match ((config.no_shadow_hoisting(), shadower_scope_raw.is_hoistable(), shadowed_scope_raw.is_hoistable())) {
+    match ((config.deref().hoisting_enabled(), shadower_scope_raw.is_hoistable(), shadowed_scope_raw.is_hoistable())) {
         // If a variable is hoisted, the second shadows the first
         (true, true, true) -> shadower_span < shadowed_span,
         (true, false, true) -> shadower_span < shadowed_span,
@@ -78,16 +77,14 @@ DeclarationInDescendent(file, parent, name, id) :-
 relation ScopeOfDecl(file: FileId, scope: ScopeId, declared: AnyId)
 
 ScopeOfDecl(file, scope, declared) :-
-    File(file, _, _, config),
-    config.no_shadow_enabled(),
+    EnableNoShadow(file, config),
 
     VariableDeclarations(file, _, Unhoistable { scope }, declared, _),
     not declared.is_global().
 
 ScopeOfDecl(file, scope, declared) :-
-    File(file, _, _, config),
-    config.no_shadow_enabled(),
+    EnableNoShadow(file, config),
 
     VariableDeclarations(file, _, Hoistable { hoisted_scope, unhoisted_scope }, declared, _),
     not declared.is_global(),
-    var scope = if (config.no_shadow_hoisting()) { hoisted_scope } else { unhoisted_scope }.
+    var scope = if (config.deref().hoisting_enabled()) { hoisted_scope } else { unhoisted_scope }.

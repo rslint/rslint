@@ -116,39 +116,28 @@ impl LintResult<'_> {
 }
 
 /// Lint a file with a specific rule store.
-#[tracing::instrument(skip(file_source, store, verbose))]
+#[tracing::instrument(skip(store, verbose))]
 pub fn lint_file<'a>(
     file: &File,
     store: &'a CstRuleStore,
     verbose: bool,
     analyzer: Option<ScopeAnalyzer>,
-    ddlog_send: Option<&mut Sender<(rslint_scope::FileId, SyntaxNode, rslint_scope::Config)>>,
+    ddlog_send: Option<&mut Sender<(rslint_scope::FileId, SyntaxNode)>>,
 ) -> Result<LintResult<'a>, Diagnostic> {
-    let (parser_diagnostics, green) = {
+    let (parser_diagnostics, node) = {
         let span = tracing::info_span!("parsing file");
         let _guard = span.enter();
 
-        if module {
-            let parse = parse_module(file_source.as_ref(), file_id);
-            (parse.errors().to_owned(), parse.green())
-        } else {
-            let parse = parse_text(file_source.as_ref(), file_id);
-            (parse.errors().to_owned(), parse.green())
-        }
+        file.parse_with_errors()
     };
-    let node = SyntaxNode::new_root(green);
 
     if let Some(sender) = ddlog_send {
         sender
-            .send((
-                FileId::new(file_id as u32),
-                node.clone(),
-                Default::default(),
-            ))
+            .send((FileId::new(file.id as u32), node.clone()))
             .unwrap();
     }
 
-    lint_file_inner(node, parser_diagnostics, file_id, store, verbose, analyzer)
+    lint_file_inner(node, parser_diagnostics, file, store, verbose, analyzer)
 }
 
 /// used by lint_file and incrementally_relint to not duplicate code

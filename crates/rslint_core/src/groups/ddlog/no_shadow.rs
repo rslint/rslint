@@ -1,5 +1,5 @@
 use crate::rule_prelude::*;
-use rslint_scope::FileId;
+use rslint_scope::{FileId, NoShadowConfig};
 
 declare_lint! {
     /**
@@ -23,15 +23,20 @@ declare_lint! {
     "no-shadow",
     // TODO: There are also some options for this rule in eslint
     // which we may want to implement too.
+
+    #[serde(flatten)]
+    config: NoShadowConfig,
 }
 
 #[typetag::serde]
 impl CstRule for NoShadow {
     fn check_root(&self, _root: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
-        let outputs = ctx.analyzer.as_ref()?.outputs().clone();
+        let analyzer = ctx.analyzer.as_ref()?.clone();
         let file = FileId::new(ctx.file_id as u32);
 
-        outputs.no_shadow.iter().for_each(|shadow| {
+        analyzer.no_shadow(file, Some(self.config.clone())).unwrap();
+
+        analyzer.outputs().no_shadow.iter().for_each(|shadow| {
             let shadow = shadow.key();
 
             if shadow.file == file {

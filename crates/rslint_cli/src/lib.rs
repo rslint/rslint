@@ -23,7 +23,7 @@ use rslint_lexer::Lexer;
 use rslint_parser::SyntaxNode;
 use rslint_scope::{
     globals::{BUILTIN, ES2021, NODE},
-    Config as ScopeConfig, FileId, ScopeAnalyzer,
+    FileId, ScopeAnalyzer,
 };
 #[allow(unused_imports)]
 use std::{fs::write, path::PathBuf, process, sync::mpsc, thread};
@@ -79,7 +79,7 @@ fn run_inner(
 
     let span = info_span!("ddlog startup");
     let (ddlog_send, ddlog_thread) = span.in_scope(|| {
-        let (ddlog_send, ddlog_recv) = mpsc::channel::<(FileId, SyntaxNode, ScopeConfig)>();
+        let (ddlog_send, ddlog_recv) = mpsc::channel::<(FileId, SyntaxNode)>();
 
         tracing::trace!("spawning ddlog thread");
         let ddlog_thread = thread::spawn(move || {
@@ -91,11 +91,11 @@ fn run_inner(
             let span = info_span!("ddlog analysis");
             span.in_scope(|| {
                 let mut batch = Vec::with_capacity(25);
-                for (file_id, syntax, config) in ddlog_recv.iter() {
+                for (file_id, syntax) in ddlog_recv.iter() {
                     let span = info_span!("ddlog analysis on file {}", file_id.id);
                     let _guard = span.enter();
 
-                    batch.push((file_id, syntax, config));
+                    batch.push((file_id, syntax));
                     tracing::trace!("finished ddlog file {}", file_id.id,);
                 }
 
@@ -118,15 +118,7 @@ fn run_inner(
         .par_keys()
         .map_with(ddlog_send, |ddlog_send, id| {
             let file = walker.files.get(id).unwrap();
-            lint_file(
-                *id,
-                &file.source.clone(),
-                file.kind == JsFileKind::Module,
-                &store,
-                verbose,
-                None,
-                Some(ddlog_send),
-            )
+            lint_file(file, &store, verbose, None, Some(ddlog_send))
         })
         .filter_map(|res| {
             if let Err(diagnostic) = res {
@@ -153,15 +145,7 @@ fn run_inner(
                 .par_keys()
                 .map(|id| {
                     let file = walker.files.get(id).unwrap();
-                    lint_file(
-                        *id,
-                        &file.source.clone(),
-                        file.kind == JsFileKind::Module,
-                        &store,
-                        verbose,
-                        Some(analyzer.clone()),
-                        None,
-                    )
+                    lint_file(file, &store, verbose, Some(analyzer.clone()), None)
                 })
                 .filter_map(|res| {
                     if let Err(diagnostic) = res {

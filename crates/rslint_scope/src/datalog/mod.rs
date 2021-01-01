@@ -10,7 +10,6 @@ use ast::{
     ClassId, ExprId, FileId, FileKind, FuncId, GlobalId, GlobalPriv, IPattern, ImportId, Increment,
     ScopeId, StmtId,
 };
-use config::Config;
 use ddlog_std::tuple2;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
@@ -477,7 +476,7 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         Ok(Self { datalog })
     }
 
-    pub fn file(&self, file_id: FileId, kind: FileKind, config: Config) -> DatalogScope<'ddlog> {
+    pub fn file(&self, file_id: FileId, kind: FileKind) -> DatalogScope<'ddlog> {
         self.datalog.file_id.set(file_id);
         self.datalog.scope_id.set(ScopeId::new(0));
         self.datalog.global_id.set(GlobalId::new(0));
@@ -495,7 +494,6 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
                     id: file_id,
                     kind,
                     top_level_scope: scope_id,
-                    config,
                 },
             )
             .insert(

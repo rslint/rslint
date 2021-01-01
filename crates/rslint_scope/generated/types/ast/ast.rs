@@ -707,13 +707,8 @@ pub enum ClassElement {
     ClassMethod {
         name: ddlog_std::Option<PropertyKey>,
         params: ddlog_std::Option<ddlog_std::Vec<FuncParam>>,
-        body: ddlog_std::Option<StmtId>
-    },
-    #[ddlog(rename = "ast::ClassStaticMethod")]
-    ClassStaticMethod {
-        name: ddlog_std::Option<PropertyKey>,
-        params: ddlog_std::Option<ddlog_std::Vec<FuncParam>>,
-        body: ddlog_std::Option<StmtId>
+        body: ddlog_std::Option<StmtId>,
+        is_static: bool
     }
 }
 impl abomonation::Abomonation for ClassElement{}
@@ -724,22 +719,15 @@ impl ::std::fmt::Display for ClassElement {
                 __formatter.write_str("ast::ClassEmptyElem{")?;
                 __formatter.write_str("}")
             },
-            ClassElement::ClassMethod{name,params,body} => {
+            ClassElement::ClassMethod{name,params,body,is_static} => {
                 __formatter.write_str("ast::ClassMethod{")?;
                 ::std::fmt::Debug::fmt(name, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(params, __formatter)?;
                 __formatter.write_str(",")?;
                 ::std::fmt::Debug::fmt(body, __formatter)?;
-                __formatter.write_str("}")
-            },
-            ClassElement::ClassStaticMethod{name,params,body} => {
-                __formatter.write_str("ast::ClassStaticMethod{")?;
-                ::std::fmt::Debug::fmt(name, __formatter)?;
                 __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(params, __formatter)?;
-                __formatter.write_str(",")?;
-                ::std::fmt::Debug::fmt(body, __formatter)?;
+                ::std::fmt::Debug::fmt(is_static, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -900,7 +888,9 @@ pub enum ExprKind {
         arg: ddlog_std::Option<ExprId>
     },
     #[ddlog(rename = "ast::ExprClass")]
-    ExprClass
+    ExprClass,
+    #[ddlog(rename = "ast::ExprUnimplemented")]
+    ExprUnimplemented
 }
 impl abomonation::Abomonation for ExprKind{}
 impl ::std::fmt::Display for ExprKind {
@@ -1009,6 +999,10 @@ impl ::std::fmt::Display for ExprKind {
             },
             ExprKind::ExprClass{} => {
                 __formatter.write_str("ast::ExprClass{")?;
+                __formatter.write_str("}")
+            },
+            ExprKind::ExprUnimplemented{} => {
+                __formatter.write_str("ast::ExprUnimplemented{")?;
                 __formatter.write_str("}")
             }
         }
@@ -2126,8 +2120,7 @@ pub fn body_ast_PropertyVal_ddlog_std_Option__ast_StmtId(prop: & PropertyVal) ->
 }
 pub fn body_ast_ClassElement_ddlog_std_Option__ast_StmtId(elem: & ClassElement) -> ddlog_std::Option<StmtId>
 {   match (*elem) {
-        ClassElement::ClassMethod{name: _, params: _, body: ddlog_std::Option::Some{x: ref body}} => (ddlog_std::Option::Some{x: (*body).clone()}),
-        ClassElement::ClassStaticMethod{name: _, params: _, body: ddlog_std::Option::Some{x: ref body}} => (ddlog_std::Option::Some{x: (*body).clone()}),
+        ClassElement::ClassMethod{name: _, params: _, body: ddlog_std::Option::Some{x: ref body}, is_static: _} => (ddlog_std::Option::Some{x: (*body).clone()}),
         _ => (ddlog_std::Option::None{})
     }
 }
@@ -2263,8 +2256,7 @@ pub fn method_comps_ast_PropertyVal_ddlog_std_Option____Tuple2__ddlog_std_Vec__a
 }
 pub fn method_comps_ast_ClassElement_ddlog_std_Option____Tuple2__ddlog_std_Vec__ast_FuncParam_ast_StmtId(elem: & ClassElement) -> ddlog_std::Option<ddlog_std::tuple2<ddlog_std::Vec<FuncParam>, StmtId>>
 {   match (*elem) {
-        ClassElement::ClassMethod{name: _, params: ddlog_std::Option::Some{x: ref params}, body: ddlog_std::Option::Some{x: ref body}} => (ddlog_std::Option::Some{x: ddlog_std::tuple2((*params).clone(), (*body).clone())}),
-        ClassElement::ClassStaticMethod{name: _, params: ddlog_std::Option::Some{x: ref params}, body: ddlog_std::Option::Some{x: ref body}} => (ddlog_std::Option::Some{x: ddlog_std::tuple2((*params).clone(), (*body).clone())}),
+        ClassElement::ClassMethod{name: _, params: ddlog_std::Option::Some{x: ref params}, body: ddlog_std::Option::Some{x: ref body}, is_static: _} => (ddlog_std::Option::Some{x: ddlog_std::tuple2((*params).clone(), (*body).clone())}),
         _ => (ddlog_std::Option::None{})
     }
 }

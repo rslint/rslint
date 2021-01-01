@@ -49,6 +49,9 @@ impl<'ddlog> Visit<'ddlog, Expr> for AnalyzerInner {
             Expr::ImportCall(import) => self.visit(scope, import),
             Expr::YieldExpr(yield_expr) => self.visit(scope, yield_expr),
             Expr::AwaitExpr(await_expr) => self.visit(scope, await_expr),
+
+            // TODO: TypeScript expression types
+            _ => scope.unimplemented_expression(),
         }
     }
 }
@@ -525,7 +528,7 @@ impl<'ddlog> Visit<'ddlog, ClassElement> for AnalyzerInner {
     type Output = Intern<DatalogClassElement>;
 
     fn visit(&self, scope: &dyn DatalogBuilder<'ddlog>, elem: ClassElement) -> Self::Output {
-        Intern::new(match elem {
+        let element = match elem {
             ClassElement::EmptyStmt(_empty) => DatalogClassElement::ClassEmptyElem,
 
             ClassElement::Method(method) => {
@@ -542,31 +545,21 @@ impl<'ddlog> Visit<'ddlog, ClassElement> for AnalyzerInner {
                     })
                     .into();
                 let body = self.visit(scope, method.body()).into();
+                let is_static = method.static_token().is_some();
 
-                DatalogClassElement::ClassMethod { name, params, body }
+                DatalogClassElement::ClassMethod {
+                    name,
+                    params,
+                    body,
+                    is_static,
+                }
             }
 
-            ClassElement::StaticMethod(static_method) => {
-                let method = static_method.method();
-                let method = method.as_ref();
+            // TODO: All class element kinds
+            _ => DatalogClassElement::ClassEmptyElem,
+        };
 
-                let name = self.visit(scope, method.and_then(|m| m.name())).into();
-                let params = self
-                    .visit(scope, method.and_then(|m| m.parameters()))
-                    .map(|params| {
-                        params
-                            .into_iter()
-                            .map(FuncParam::explicit)
-                            .chain(iter::once(FuncParam::implicit(IMPLICIT_ARGUMENTS.clone())))
-                            .collect::<Vec<_>>()
-                            .into()
-                    })
-                    .into();
-                let body = self.visit(scope, method.and_then(|m| m.body())).into();
-
-                DatalogClassElement::ClassStaticMethod { name, params, body }
-            }
-        })
+        Intern::new(element)
     }
 }
 

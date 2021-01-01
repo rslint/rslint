@@ -66,6 +66,9 @@ impl<'ddlog> Visit<'ddlog, (Decl, bool)> for AnalyzerInner {
                 (None, scope)
             }
             Decl::VarDecl(var) => self.visit(scope, (var, exported)),
+
+            // TODO: TypeScript declarations
+            _ => (None, scope.scope()),
         }
     }
 }

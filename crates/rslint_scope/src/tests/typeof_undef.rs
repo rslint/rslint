@@ -1,6 +1,6 @@
 rule_test! {
     typeof_undef,
-    rule_conf: |conf| conf.no_typeof_undef(true),
+    default_conf: |analyzer, file| analyzer.no_typeof_undef(file, Some(Default::default())),
     filter: DatalogLint::is_typeof_undef,
     // Should pass
     { "var a = 10; typeof a" },

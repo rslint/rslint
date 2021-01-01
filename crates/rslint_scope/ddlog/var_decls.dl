@@ -64,7 +64,7 @@ relation VariableDeclarations(
 
 // Add implicit globals to every file
 VariableDeclarations(file, name, scope, id, meta) :-
-    File(file, _, file_scope, _),
+    File(file, _, file_scope),
     ImplicitGlobal(global, name, _),
 
     var meta = VariableMeta { false, false, None }.ref_new(),
@@ -74,7 +74,7 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // Add yser globals to the file they're declared in
 VariableDeclarations(file, name, scope, id, meta) :-
     UserGlobal(global, file, name, _),
-    File(file, _, file_scope, _),
+    File(file, _, file_scope),
 
     var meta = VariableMeta { true, false, None }.ref_new(),
     var id = AnyIdGlobal { global },
@@ -89,7 +89,7 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // ```
 VariableDeclarations(file, name, scope, id, meta) :-
     ImportDecl(import_id, file, clause),
-    File(file, _, file_scope, _),
+    File(file, _, file_scope),
 
     var imported = FlatMap(clause.free_variables()),
     Spanned { var name, var span } = imported,

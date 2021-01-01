@@ -1,179 +1,20 @@
 use schemars::JsonSchema;
-use std::fmt::{self, Debug, Display, Formatter};
 use types__regex::RegexSet as DDlogRegexSet;
 
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator)]
-#[serde(rename_all = "kebab-case")]
-pub struct Config {
-    pub no_shadow: bool,
-    pub no_shadow_hoisting: NoShadowHoisting,
-    pub no_undef: bool,
-    pub no_unused_labels: bool,
-    pub no_typeof_undef: bool,
-    pub no_unused_vars: bool,
-    pub no_use_before_def: bool,
-}
-
-impl Config {
-    pub fn empty() -> Self {
-        Self {
-            no_shadow: false,
-            no_shadow_hoisting: NoShadowHoisting::Never,
-            no_undef: false,
-            no_unused_labels: false,
-            no_typeof_undef: false,
-            no_unused_vars: false,
-            no_use_before_def: false,
-        }
-    }
-
-    pub fn no_shadow(mut self, no_shadow: bool) -> Self {
-        self.no_shadow = no_shadow;
-        self
-    }
-
-    pub fn no_shadow_hoisting(mut self, no_shadow_hoisting: NoShadowHoisting) -> Self {
-        self.no_shadow_hoisting = no_shadow_hoisting;
-        self
-    }
-
-    pub fn no_undef(mut self, no_undef: bool) -> Self {
-        self.no_undef = no_undef;
-        self
-    }
-
-    pub fn no_unused_labels(mut self, no_unused_labels: bool) -> Self {
-        self.no_unused_labels = no_unused_labels;
-        self
-    }
-
-    pub fn no_typeof_undef(mut self, no_typeof_undef: bool) -> Self {
-        self.no_typeof_undef = no_typeof_undef;
-        self
-    }
-
-    pub fn no_unused_vars(mut self, no_unused_vars: bool) -> Self {
-        self.no_unused_vars = no_unused_vars;
-        self
-    }
-
-    pub fn no_use_before_def(mut self, no_use_before_def: bool) -> Self {
-        self.no_use_before_def = no_use_before_def;
-        self
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            no_shadow: true,
-            no_shadow_hoisting: NoShadowHoisting::default(),
-            no_undef: true,
-            no_unused_labels: true,
-            no_typeof_undef: true,
-            no_unused_vars: true,
-            no_use_before_def: true,
-        }
-    }
-}
-
-impl Display for Config {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Debug::fmt(self, f)
-    }
-}
-
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator)]
-#[serde(rename_all = "kebab-case")]
-pub enum NoShadowHoisting {
-    Never,
-    Always,
-    Functions,
-}
-
-impl Default for NoShadowHoisting {
-    fn default() -> Self {
-        Self::Functions
-    }
-}
-
-impl Display for NoShadowHoisting {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Never => f.write_str("never"),
-            Self::Always => f.write_str("always"),
-            Self::Functions => f.write_str("functions"),
-        }
-    }
-}
-
-// DDlog bridge functions
-pub fn no_shadow_enabled(config: &Config) -> bool {
-    config.no_shadow
-}
-
-pub fn no_shadow_hoisting(config: &Config) -> bool {
-    matches!(
-        config.no_shadow_hoisting,
-        NoShadowHoisting::Always | NoShadowHoisting::Functions
-    )
-}
-
-pub fn no_shadow_hoist_functions(config: &Config) -> bool {
-    matches!(config.no_shadow_hoisting, NoShadowHoisting::Functions)
-}
-
-pub fn no_undef_enabled(config: &Config) -> bool {
-    config.no_undef
-}
-
-pub fn no_unused_labels_enabled(config: &Config) -> bool {
-    config.no_unused_labels
-}
-
-pub fn no_typeof_undef_enabled(config: &Config) -> bool {
-    config.no_typeof_undef
-}
-
-pub fn no_unused_vars_enabled(config: &Config) -> bool {
-    config.no_unused_vars
-}
-
-pub fn no_use_before_def_enabled(config: &Config) -> bool {
-    config.no_use_before_def
-}
-
-// macro_rules! ddlog_api {
-//     (impl $struct:ident {
-//         $(
-//             $vis:vis fn $func:ident(&$self:ident) -> $ret:ty $body:block
-//         )*
-//     }) => {
-//         impl $struct {
-//             $(
-//                 $vis fn $func(&$self) -> $ret $body
-//             )*
-//         }
-//
-//         $(
-//             ddlog_api!(@gen_api [$vis] $struct $func $ret)
-//         )*
-//     };
-//
-//     (@gen_api [] $struct:ident $func:ident $ret:ty) => {};
-//     (@gen_api [pub] $struct:ident $func:ident $ret:ty) => {
-//         pub fn $func(config: &$struct) -> $ret {
-//             config.$func()
-//         }
-//     };
-//     (@gen_api [$vis:vis] $struct:ident $func:ident $ret:ty) => {};
-// }
-
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize, FromRecord,
-    IntoRecord, Mutator,
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
 )]
 #[serde(rename_all = "kebab-case")]
 pub struct NoUnusedVarsConfig {
@@ -211,14 +52,25 @@ impl JsonSchema for NoUnusedVarsConfig {
     }
 }
 
-
 pub fn ignored_patterns(config: &NoUnusedVarsConfig) -> &DDlogRegexSet {
     config.ignored_patterns()
 }
 
-#[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum IgnoreArgs {
@@ -239,7 +91,20 @@ impl Default for IgnoreArgs {
 
 #[cfg_attr(feature = "schema", derive(JsonSchema))]
 #[derive(
-    Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize, FromRecord, IntoRecord, Mutator,
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
 )]
 #[serde(rename_all = "kebab-case")]
 pub enum CaughtErrors {
@@ -253,4 +118,148 @@ impl Default for CaughtErrors {
     fn default() -> Self {
         Self::All
     }
+}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoUseBeforeDefConfig {}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoTypeofUndefConfig {}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoUndefConfig {}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoUnusedLabelsConfig {}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub struct NoShadowConfig {
+    pub hoisting: NoShadowHoisting,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Serialize,
+    Deserialize,
+    FromRecord,
+    IntoRecord,
+    Mutator,
+    JsonSchema,
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum NoShadowHoisting {
+    Never,
+    Always,
+    Functions,
+}
+
+impl Default for NoShadowHoisting {
+    fn default() -> Self {
+        Self::Never
+    }
+}
+
+pub fn hoisting_never(config: &NoShadowConfig) -> bool {
+    matches!(config.hoisting, NoShadowHoisting::Never)
+}
+
+pub fn hoisting_always(config: &NoShadowConfig) -> bool {
+    matches!(config.hoisting, NoShadowHoisting::Always)
+}
+
+pub fn hoisting_functions(config: &NoShadowConfig) -> bool {
+    matches!(config.hoisting, NoShadowHoisting::Functions)
+}
+
+pub fn hoisting_enabled(config: &NoShadowConfig) -> bool {
+    matches!(
+        config.hoisting,
+        NoShadowHoisting::Always | NoShadowHoisting::Functions,
+    )
 }
