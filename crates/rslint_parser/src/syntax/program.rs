@@ -55,10 +55,10 @@ fn named_list(p: &mut Parser) -> Marker {
 
 fn specifier(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
-    binding_identifier(p);
+    identifier_name(p);
     if p.cur_src() == "as" {
         p.bump_remap(T![as]);
-        binding_identifier(p);
+        identifier_name(p);
     }
     m.complete(p, SPECIFIER)
 }
@@ -68,7 +68,7 @@ fn named_export_specifier(p: &mut Parser) -> CompletedMarker {
     identifier_name(p);
     if p.cur_src() == "as" {
         p.bump_remap(T![as]);
-        binding_identifier(p);
+        identifier_name(p);
     }
     m.complete(p, SPECIFIER)
 }

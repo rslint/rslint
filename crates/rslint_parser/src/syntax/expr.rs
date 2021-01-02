@@ -111,13 +111,6 @@ fn assign_expr_base(p: &mut Parser) -> Option<CompletedMarker> {
     if p.state.in_generator && p.at(T![yield]) {
         return Some(yield_expr(p));
     }
-    // FIXME: this shouldnt allow await in sync functions
-    if (p.state.in_async || p.syntax.top_level_await) && p.at(T![await]) {
-        let m = p.start();
-        p.bump_any();
-        unary_expr(p);
-        return Some(m.complete(p, AWAIT_EXPR));
-    }
     let potential_arrow_start = matches!(p.cur(), T![ident] | T!['('] | T![yield] | T![await]);
     let mut guard = p.with_state(ParserState {
         potential_arrow_start,
@@ -465,14 +458,21 @@ pub fn member_or_new_expr(p: &mut Parser, new_expr: bool) -> Option<CompletedMar
 // test subscripts
 // foo`bar`
 // foo(bar)(baz)(baz)[bar]
-pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> CompletedMarker {
+pub fn subscripts(p: &mut Parser, mut lhs: CompletedMarker, no_call: bool) -> CompletedMarker {
     // test_err subscripts_err
     // foo()?.baz[].
     // BAR`b
-    let mut lhs = optional_chain(p, lhs);
     let mut should_try_parsing_ts = true;
     while !p.at(EOF) {
         match p.cur() {
+            T![?.] if p.nth_at(1, T!['(']) => {
+                lhs = {
+                    let m = lhs.precede(p);
+                    p.bump_any();
+                    args(p);
+                    m.complete(p, CALL_EXPR)
+                }
+            }
             T!['('] if !no_call => {
                 lhs = {
                     let m = lhs.precede(p);
@@ -480,7 +480,9 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
                     m.complete(p, CALL_EXPR)
                 }
             }
+            T![?.] if p.nth_at(1, T!['[']) => lhs = bracket_expr(p, lhs, true),
             T!['['] => lhs = bracket_expr(p, lhs, false),
+            T![?.] => lhs = dot_expr(p, lhs, true),
             T![.] => lhs = dot_expr(p, lhs, false),
             T![!] if !p.has_linebreak_before_n(0) => {
                 lhs = {
@@ -521,47 +523,6 @@ pub fn subscripts(p: &mut Parser, lhs: CompletedMarker, no_call: bool) -> Comple
             _ => return lhs,
         }
     }
-    lhs
-}
-
-// An optional chain such as `foo?.bar?.(baz)?.[foo]`
-// test optional_chain
-// foo?.bar?.(baz)?.[foo]
-// foo.bar?.(f).baz
-// foo[bar]?.baz
-pub fn optional_chain(p: &mut Parser, lhs: CompletedMarker) -> CompletedMarker {
-    let mut lhs = lhs;
-    while !p.at(EOF) {
-        match p.cur() {
-            T![?.] => match p.nth(1) {
-                T!['('] => {
-                    lhs = {
-                        let m = lhs.precede(p);
-                        p.bump_any();
-                        args(p);
-                        m.complete(p, CALL_EXPR)
-                    }
-                }
-                T!['['] => lhs = bracket_expr(p, lhs, true),
-                BACKTICK => {
-                    let m = p.start();
-                    let range = p.cur_tok().range;
-                    p.bump_any();
-                    template(p, None);
-                    m.complete(p, ERROR);
-
-                    let err = p.err_builder("optional chains may not be followed by template literals")
-                            .primary(range, "a bracket, identifier, or arguments was expected for this optional chain");
-
-                    p.error(err);
-                    return lhs;
-                }
-                _ => lhs = dot_expr(p, lhs, true),
-            },
-            _ => return lhs,
-        }
-    }
-
     lhs
 }
 
@@ -707,6 +668,14 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
                 let m = temp.start();
                 temp.bump_any();
                 pattern(&mut *temp, false);
+                if temp.eat(T![:]) {
+                    if let Some(mut ty) = ts_type(&mut *temp) {
+                        ty.err_if_not_ts(
+                            &mut *temp,
+                            "spread elements can only have type annotations in TypeScript files",
+                        );
+                    }
+                }
                 let complete = m.complete(&mut *temp, REST_PATTERN);
                 spread_range = Some(complete.range(&*temp));
                 if !temp.eat(T![')']) {
@@ -1383,6 +1352,14 @@ pub fn postfix_expr(p: &mut Parser) -> Option<CompletedMarker> {
 pub fn unary_expr(p: &mut Parser) -> Option<CompletedMarker> {
     const UNARY_SINGLE: TokenSet =
         token_set![T![delete], T![void], T![typeof], T![+], T![-], T![~], T![!]];
+
+    // FIXME: this shouldnt allow await in sync functions
+    if (p.state.in_async || p.syntax.top_level_await) && p.at(T![await]) {
+        let m = p.start();
+        p.bump_any();
+        unary_expr(p);
+        return Some(m.complete(p, AWAIT_EXPR));
+    }
 
     if p.at(T![<]) {
         let m = p.start();

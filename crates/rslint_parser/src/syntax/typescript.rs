@@ -396,7 +396,7 @@ pub(crate) fn ts_heritage_clause(p: &mut Parser, exprs: bool) -> Vec<CompletedMa
         ts_entity_name(p, None, false);
     }
     if p.at(T![<]) {
-        ts_type_params(p);
+        ts_type_args(p);
     }
     // it doesnt matter if we complete as ts_expr_with_type_args even if its an lhs expr
     // because exprs: true will only be used with `class extends foo, bar`, in which case
@@ -411,7 +411,7 @@ pub(crate) fn ts_heritage_clause(p: &mut Parser, exprs: bool) -> Vec<CompletedMa
             ts_entity_name(p, None, false);
         }
         if p.at(T![<]) {
-            ts_type_params(p);
+            ts_type_args(p);
         }
         elems.push(m.complete(p, TS_EXPR_WITH_TYPE_ARGS));
     }
@@ -681,7 +681,7 @@ pub fn ts_non_conditional_type(p: &mut Parser) -> Option<CompletedMarker> {
     }
 
     if p.at(T![new]) {
-        return ts_fn_or_constructor_type(p, true);
+        return ts_fn_or_constructor_type(p, false);
     }
 
     intersection_or_union(p, false, |p| ts_intersection_type_or_higher(p), T![|])
