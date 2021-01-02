@@ -1,62 +1,6 @@
 # Config
 
-RSLint is fully configurable, you can configure the linter through a `rslintrc.toml` file in the linting directory.
-
-## Syntax
-
-RSLint uses [TOML](https://toml.io/en/) as its standard configuration format. TOML is a simple, minimal, human friendly format similar to INI.
-TOML was chosen over JSON for clarity, simplicity, and ease of use.
-
-Here are a few examples of a TOML configuration as opposed to a JSON configuration:
-
-```json
-"rules": {
-  "allow": ["no-await-in-loop"],
-  "groups": ["errors"],
-  "errors": {
-    "no-empty": { "disallowEmptyFunction": true },
-    "for-direction": {}
-  },
-  "warnings": {
-    "getter-return": {}
-  }
-}
-```
-
-TOML equivalent:
-
-```toml
-[rules]
-allow = ["no-empty"]
-groups = ["errors"]
-
-[rules.errors]
-no-empty = { disallowEmptyFunction = true }
-for-direction = {}
-
-[rules.warnings]
-getter-return = {}
-```
-
-TOML syntax also allows for:
-
-```toml
-[rules]
-allow = ["no-empty"]
-groups = ["errors"]
-
-[rules.errors]
-for-direction = {}
-
-[rules.errors.no-empty]
-disallowEmptyFunction = true
-
-[rules.warnings]
-getter-return = {}
-```
-
-TOML further allows for comments using `# This is a comment` which allows you to explain reasonings behind
-configuration fields.
+RSLint is fully configurable, you can configure the linter through a `rslintrc.toml` or `rslintrc.json` file.
 
 ## Rules
 
@@ -86,6 +30,21 @@ no-empty = { disallowEmptyFunctions = true }
 no-empty = {}
 ```
 
+```json
+{
+  "rules": {
+    "allow": ["no-empty"],
+    "groups": ["errors"],
+    "errors": {
+      "no-empty": { "disallowEmptyFunctions": true }
+    },
+    "warnings": {
+      "no-empty": {}
+    }
+  }
+}
+```
+
 In this case `no-empty` would not be run, because `allow` always takes precedence. If allow was not there then the `no-empty` in `rules.errors` would
 be run. if that was not there then the configuration in `rules.warnings` would be used. if that was not there then the rule would be run at error level because it is included in `errors`.
 
@@ -100,12 +59,29 @@ Enabling all rules in the `errors` group:
 groups = ["errors"]
 ```
 
+```json
+{
+  "rules": {
+    "groups": ["errors"]
+  }
+}
+```
+
 Enabling all rules in the `errors` group but allowing `no-empty`:
 
 ```toml
 [rules]
 groups = ["errors"]
 allow = ["no-empty"]
+```
+
+```json
+{
+  "rules": {
+    "groups": ["errors"],
+    "allow": ["no-empty"]
+  }
+}
 ```
 
 Enabling all rules in the `errors` group but making `no-empty` a warning without configuration:
@@ -118,12 +94,34 @@ groups = ["errors"]
 no-empty = {}
 ```
 
+```json
+{
+  "rules": {
+    "groups": ["errors"],
+    "warnings": {
+      "no-empty": {}
+    }
+  }
+}
+```
+
 Enabling `no-empty` with a configuration and enabling `for-direction` as an error:
 
 ```toml
 [rules.errors]
 for-direction = {}
 no-empty = { disallowEmptyFunctions = true }
+```
+
+```json
+{
+  "rules": {
+    "errors": {
+      "for-direction": {},
+      "no-empty": { "disallowEmptyFunctions": true }
+    }
+  }
+}
 ```
 
 or
@@ -134,4 +132,15 @@ for-direction = {}
 
 [rules.errors.no-empty]
 disallowEmptyFunctions = true
+```
+
+```json
+{
+  "rules": {
+    "groups": ["for-direction"],
+    "errors": {
+      "no-empty": { "disallowEmptyFunctions": true }
+    }
+  }
+}
 ```

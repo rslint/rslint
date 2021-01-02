@@ -9,12 +9,12 @@ use std::{
     cell::RefCell,
     env,
     fs::read_to_string,
-    path::PathBuf,
+    path::{Path, PathBuf},
     thread::{self, JoinHandle},
 };
 
-/// The name of the config file to search for.
-pub const CONFIG_NAME: &str = "rslintrc.toml";
+/// The name of the config files to search for.
+pub const CONFIG_NAMES: [&str; 2] = ["rslintrc.json", "rslintrc.toml"];
 
 /// A list of boxed rule implementations.
 pub type RuleList = Vec<Box<dyn CstRule>>;
@@ -164,6 +164,11 @@ pub struct Config {
     warnings: RefCell<Vec<Diagnostic>>,
 }
 
+enum ConfigStyle {
+    Toml,
+    Json,
+}
+
 impl Config {
     /// Creates a new config by first searching for a config in the current
     /// dir and all of it ancestors, and if `no_global_config` is `false`,
@@ -182,49 +187,89 @@ impl Config {
             let _guard = span.enter();
 
             let path = Self::find_config(no_global_config);
-            let (source, path) = match path.as_ref().and_then(|path| read_to_string(path).ok()) {
+            let (source, (path, style)) = match path
+                .as_ref()
+                .and_then(|(path, _)| read_to_string(path).ok())
+            {
                 Some(source) => (source, path.unwrap()),
                 None => return Default::default(),
             };
 
-            match toml::from_str::<ConfigRepr>(&source) {
-                Ok(repr) => Self {
-                    repr,
-                    warnings: Default::default(),
-                },
+            match style {
+                ConfigStyle::Json => match serde_json::from_str::<ConfigRepr>(&source) {
+                    Ok(repr) => Self {
+                        repr,
+                        warnings: Default::default(),
+                    },
+                    Err(err) => {
+                        let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
+                        let (line, col) = (err.line() - 1, err.column() - 1);
+                        let idx = config_file
+                            .line_range(0, line)
+                            .expect("serde_json yielded an invalid line range")
+                            .start
+                            + col;
 
-                Err(err) => {
-                    let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
-                    let d = if let Some(idx) = err
-                        .line_col()
-                        .and_then(|(line, col)| Some(config_file.line_range(0, line)?.start + col))
-                    {
-                        let pos_regex = regex::Regex::new(" at line \\d+ column \\d+$").unwrap();
-                        let msg = err.to_string();
-                        let msg = pos_regex.replace(&msg, "");
-                        Diagnostic::error(1, "config", msg).primary(idx..idx, "")
-                    } else {
-                        Diagnostic::error(1, "config", err.to_string())
-                    };
-                    emit_diagnostic(config_file, d);
-                    Default::default()
-                }
+                        let diag =
+                            Diagnostic::error(1, "config", err.to_string()).primary(idx..idx, "");
+                        emit_diagnostic(config_file, diag);
+                        Default::default()
+                    }
+                },
+                ConfigStyle::Toml => match toml::from_str::<ConfigRepr>(&source) {
+                    Ok(repr) => Self {
+                        repr,
+                        warnings: Default::default(),
+                    },
+
+                    Err(err) => {
+                        let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
+                        let d = if let Some(idx) = err.line_col().and_then(|(line, col)| {
+                            Some(config_file.line_range(0, line)?.start + col)
+                        }) {
+                            let pos_regex =
+                                regex::Regex::new(" at line \\d+ column \\d+$").unwrap();
+                            let msg = err.to_string();
+                            let msg = pos_regex.replace(&msg, "");
+                            Diagnostic::error(1, "config", msg).primary(idx..idx, "")
+                        } else {
+                            Diagnostic::error(1, "config", err.to_string())
+                        };
+                        emit_diagnostic(config_file, d);
+                        Default::default()
+                    }
+                },
             }
         })
     }
 
-    fn find_config(global_config: bool) -> Option<PathBuf> {
+    fn find_config(global_config: bool) -> Option<(PathBuf, ConfigStyle)> {
         let path = env::current_dir().ok()?;
+        fn search_path(path: &Path) -> Option<(PathBuf, ConfigStyle)> {
+            for config_name in CONFIG_NAMES.iter() {
+                let new_path = path.join(config_name);
+                let style = if config_name.ends_with("json") {
+                    ConfigStyle::Json
+                } else {
+                    ConfigStyle::Toml
+                };
+
+                if new_path.exists() {
+                    return Some((new_path, style));
+                }
+            }
+            None
+        }
+
         for path in path.ancestors() {
-            let path = path.join(CONFIG_NAME);
-            if path.exists() {
-                return Some(path);
+            if let Some(res) = search_path(path) {
+                return Some(res);
             }
         }
 
-        let path = config_dir()?.join(CONFIG_NAME);
-        if global_config && path.exists() {
-            return Some(path);
+        let path = config_dir()?;
+        if let Some(res) = search_path(&path).filter(|_| global_config) {
+            return Some(res);
         }
 
         None
