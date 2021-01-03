@@ -63,6 +63,7 @@ pub type std_isize = i64;
 
 pub static __STATIC_1: ::once_cell::sync::Lazy<ddlog_std::Vec<Spanned<Name>>> = ::once_cell::sync::Lazy::new(|| ddlog_std::vec_empty());
 pub static __STATIC_0: ::once_cell::sync::Lazy<ddlog_std::Vec<Spanned<Name>>> = ::once_cell::sync::Lazy::new(|| ddlog_std::vec_with_capacity((&(1 as u64))));
+use ddlog_std::Option as DDlogOption;
 use rslint_parser::{
     ast::{AssignOp as AstAssignOp, BinOp as AstBinOp, UnaryOp as AstUnaryOp},
     TextRange,
@@ -128,7 +129,31 @@ impl From<Range<usize>> for Span {
 }
 
 impl Copy for Span {}
+
 impl Copy for AnyId {}
+impl AnyId {
+    pub const fn file(&self) -> Option<FileId> {
+        match self {
+            AnyId::AnyIdGlobal { global } => match global.file {
+                DDlogOption::Some { x } => Option::Some(x),
+                DDlogOption::None => Option::None,
+            },
+            AnyId::AnyIdImport { import_ } => Some(import_.file),
+            AnyId::AnyIdClass { class } => Some(class.file),
+            AnyId::AnyIdFunc { func } => Some(func.file),
+            AnyId::AnyIdStmt { stmt } => Some(stmt.file),
+            AnyId::AnyIdExpr { expr } => Some(expr.file),
+            &AnyId::AnyIdFile { file } => Some(file),
+        }
+    }
+}
+
+impl Copy for FileId {}
+impl FileId {
+    pub const fn new(id: u32) -> Self {
+        Self { id }
+    }
+}
 
 macro_rules! impl_id_traits {
     ($($ty:ty),* $(,)?) => {
@@ -141,13 +166,6 @@ macro_rules! impl_id_traits {
         }
 
         $(
-            impl $ty {
-                /// Creates a new id from the given value
-                pub const fn new(id: u32) -> Self {
-                    Self { id }
-                }
-            }
-
             impl Increment for Cell<$ty> {
                 type Inner = $ty;
 
@@ -162,8 +180,11 @@ macro_rules! impl_id_traits {
                 type Output = Self;
 
                 fn add(self, other: Self) -> Self {
+                    debug_assert_eq!(self.file, other.file);
+
                     Self {
                         id: self.id + other.id,
+                        file: self.file,
                     }
                 }
             }
@@ -174,12 +195,14 @@ macro_rules! impl_id_traits {
                 fn add(self, other: u32) -> Self {
                     Self {
                         id: self.id + other,
+                        file: self.file,
                     }
                 }
             }
 
             impl AddAssign for $ty {
                 fn add_assign(&mut self, other: Self) {
+                    debug_assert_eq!(self.file, other.file);
                     self.id += other.id;
                 }
             }
@@ -198,7 +221,6 @@ macro_rules! impl_id_traits {
 
 // Implement basic traits for id type-safe wrappers
 impl_id_traits! {
-    FileId,
     ScopeId,
     GlobalId,
     ImportId,
@@ -206,6 +228,40 @@ impl_id_traits! {
     FuncId,
     StmtId,
     ExprId,
+}
+
+macro_rules! impl_new {
+    ($($ty:ty),* $(,)?) => {
+        $(
+            impl $ty {
+                /// Creates a new id from the given value
+                pub const fn new(id: u32, file: FileId) -> Self {
+                    Self { id, file }
+                }
+            }
+        )*
+    }
+}
+
+impl_new! {
+    ScopeId,
+    ImportId,
+    ClassId,
+    FuncId,
+    StmtId,
+    ExprId,
+}
+
+impl GlobalId {
+    /// Creates a new id from the given value
+    pub const fn new(id: u32, file: Option<FileId>) -> Self {
+        let file = match file {
+            Some(x) => DDlogOption::Some { x },
+            None => DDlogOption::None,
+        };
+
+        Self { id, file }
+    }
 }
 
 impl FuncParam {
@@ -746,15 +802,18 @@ impl ::std::default::Default for ClassElement {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
 #[ddlog(rename = "ast::ClassId")]
 pub struct ClassId {
-    pub id: u32
+    pub id: u32,
+    pub file: FileId
 }
 impl abomonation::Abomonation for ClassId{}
 impl ::std::fmt::Display for ClassId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            ClassId{id} => {
+            ClassId{id,file} => {
                 __formatter.write_str("ast::ClassId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -807,15 +866,18 @@ impl ::std::default::Default for ExportKind {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
 #[ddlog(rename = "ast::ExprId")]
 pub struct ExprId {
-    pub id: u32
+    pub id: u32,
+    pub file: FileId
 }
 impl abomonation::Abomonation for ExprId{}
 impl ::std::fmt::Display for ExprId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            ExprId{id} => {
+            ExprId{id,file} => {
                 __formatter.write_str("ast::ExprId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1118,15 +1180,18 @@ impl ::std::default::Default for ForInit {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
 #[ddlog(rename = "ast::FuncId")]
 pub struct FuncId {
-    pub id: u32
+    pub id: u32,
+    pub file: FileId
 }
 impl abomonation::Abomonation for FuncId{}
 impl ::std::fmt::Display for FuncId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            FuncId{id} => {
+            FuncId{id,file} => {
                 __formatter.write_str("ast::FuncId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1165,15 +1230,18 @@ impl ::std::fmt::Debug for FuncParam {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
 #[ddlog(rename = "ast::GlobalId")]
 pub struct GlobalId {
-    pub id: u32
+    pub id: u32,
+    pub file: ddlog_std::Option<FileId>
 }
 impl abomonation::Abomonation for GlobalId{}
 impl ::std::fmt::Display for GlobalId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            GlobalId{id} => {
+            GlobalId{id,file} => {
                 __formatter.write_str("ast::GlobalId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1220,6 +1288,28 @@ impl ::std::default::Default for GlobalPriv {
 pub type IClassElement = internment::Intern<ClassElement>;
 pub type IObjectPatternProp = internment::Intern<ObjectPatternProp>;
 pub type IPattern = internment::Intern<Pattern>;
+#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[ddlog(rename = "ast::ImplicitGlobalId")]
+pub struct ImplicitGlobalId {
+    pub id: u32
+}
+impl abomonation::Abomonation for ImplicitGlobalId{}
+impl ::std::fmt::Display for ImplicitGlobalId {
+    fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        match self {
+            ImplicitGlobalId{id} => {
+                __formatter.write_str("ast::ImplicitGlobalId{")?;
+                ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str("}")
+            }
+        }
+    }
+}
+impl ::std::fmt::Debug for ImplicitGlobalId {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        ::std::fmt::Display::fmt(&self, f)
+    }
+}
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Serialize, Deserialize, FromRecord)]
 #[ddlog(rename = "ast::ImportClause")]
 pub enum ImportClause {
@@ -1271,15 +1361,18 @@ impl ::std::default::Default for ImportClause {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
 #[ddlog(rename = "ast::ImportId")]
 pub struct ImportId {
-    pub id: u32
+    pub id: u32,
+    pub file: FileId
 }
 impl abomonation::Abomonation for ImportId{}
 impl ::std::fmt::Display for ImportId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            ImportId{id} => {
+            ImportId{id,file} => {
                 __formatter.write_str("ast::ImportId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1730,15 +1823,18 @@ impl ::std::default::Default for PropertyVal {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
 #[ddlog(rename = "ast::ScopeId")]
 pub struct ScopeId {
-    pub id: u32
+    pub id: u32,
+    pub file: FileId
 }
 impl abomonation::Abomonation for ScopeId{}
 impl ::std::fmt::Display for ScopeId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            ScopeId{id} => {
+            ScopeId{id,file} => {
                 __formatter.write_str("ast::ScopeId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -1802,15 +1898,18 @@ impl <T: ::std::fmt::Debug> ::std::fmt::Debug for Spanned<T> {
 #[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
 #[ddlog(rename = "ast::StmtId")]
 pub struct StmtId {
-    pub id: u32
+    pub id: u32,
+    pub file: FileId
 }
 impl abomonation::Abomonation for StmtId{}
 impl ::std::fmt::Display for StmtId {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            StmtId{id} => {
+            StmtId{id,file} => {
                 __formatter.write_str("ast::StmtId{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
+                __formatter.write_str(",")?;
+                ::std::fmt::Debug::fmt(file, __formatter)?;
                 __formatter.write_str("}")
             }
         }
@@ -2194,6 +2293,17 @@ pub fn bound_vars_ast_FuncParam_ddlog_std_Vec____Tuple2__ast_Spanned__internment
                                                                                                                                                                                                               }) as Box<dyn ::ddlog_rt::Closure<(*const Spanned<Name>), ddlog_std::tuple2<Spanned<Name>, bool>>>)
                                                                                                                                                                                                           }))
 }
+pub fn file(id: & AnyId) -> ddlog_std::Option<FileId>
+{   match (*id) {
+        AnyId::AnyIdGlobal{global: GlobalId{id: _, file: ref file}} => (*file).clone(),
+        AnyId::AnyIdImport{import_: ImportId{id: _, file: ref file}} => (ddlog_std::Option::Some{x: (*file).clone()}),
+        AnyId::AnyIdClass{class: ClassId{id: _, file: ref file}} => (ddlog_std::Option::Some{x: (*file).clone()}),
+        AnyId::AnyIdFunc{func: FuncId{id: _, file: ref file}} => (ddlog_std::Option::Some{x: (*file).clone()}),
+        AnyId::AnyIdStmt{stmt: StmtId{id: _, file: ref file}} => (ddlog_std::Option::Some{x: (*file).clone()}),
+        AnyId::AnyIdExpr{expr: ExprId{id: _, file: ref file}} => (ddlog_std::Option::Some{x: (*file).clone()}),
+        AnyId::AnyIdFile{file: ref file} => (ddlog_std::Option::Some{x: (*file).clone()})
+    }
+}
 pub fn free_variable(clause: & NamedImport) -> ddlog_std::Option<Spanned<Name>>
 {   types__utils::or_else::<Spanned<Name>>((&clause.alias), (&clause.name))
 }
@@ -2265,12 +2375,12 @@ pub fn to_string_ast_ScopeId___Stringval(scope: & ScopeId) -> String
 }
 pub fn to_string_ast_AnyId___Stringval(id: & AnyId) -> String
 {   match (*id) {
-        AnyId::AnyIdGlobal{global: GlobalId{id: ref id}} => ::ddlog_rt::string_append(String::from(r###"Global_"###), (&ddlog_std::__builtin_2string(id))),
-        AnyId::AnyIdImport{import_: ImportId{id: ref id}} => ::ddlog_rt::string_append(String::from(r###"Import_"###), (&ddlog_std::__builtin_2string(id))),
-        AnyId::AnyIdClass{class: ClassId{id: ref id}} => ::ddlog_rt::string_append(String::from(r###"Class_"###), (&ddlog_std::__builtin_2string(id))),
-        AnyId::AnyIdFunc{func: FuncId{id: ref id}} => ::ddlog_rt::string_append(String::from(r###"Func_"###), (&ddlog_std::__builtin_2string(id))),
-        AnyId::AnyIdStmt{stmt: StmtId{id: ref id}} => ::ddlog_rt::string_append(String::from(r###"Stmt_"###), (&ddlog_std::__builtin_2string(id))),
-        AnyId::AnyIdExpr{expr: ExprId{id: ref id}} => ::ddlog_rt::string_append(String::from(r###"Expr_"###), (&ddlog_std::__builtin_2string(id))),
+        AnyId::AnyIdGlobal{global: GlobalId{id: ref id, file: _}} => ::ddlog_rt::string_append(String::from(r###"Global_"###), (&ddlog_std::__builtin_2string(id))),
+        AnyId::AnyIdImport{import_: ImportId{id: ref id, file: _}} => ::ddlog_rt::string_append(String::from(r###"Import_"###), (&ddlog_std::__builtin_2string(id))),
+        AnyId::AnyIdClass{class: ClassId{id: ref id, file: _}} => ::ddlog_rt::string_append(String::from(r###"Class_"###), (&ddlog_std::__builtin_2string(id))),
+        AnyId::AnyIdFunc{func: FuncId{id: ref id, file: _}} => ::ddlog_rt::string_append(String::from(r###"Func_"###), (&ddlog_std::__builtin_2string(id))),
+        AnyId::AnyIdStmt{stmt: StmtId{id: ref id, file: _}} => ::ddlog_rt::string_append(String::from(r###"Stmt_"###), (&ddlog_std::__builtin_2string(id))),
+        AnyId::AnyIdExpr{expr: ExprId{id: ref id, file: _}} => ::ddlog_rt::string_append(String::from(r###"Expr_"###), (&ddlog_std::__builtin_2string(id))),
         AnyId::AnyIdFile{file: FileId{id: ref id}} => ::ddlog_rt::string_append(String::from(r###"File_"###), (&ddlog_std::__builtin_2string(id)))
     }
 }

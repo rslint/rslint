@@ -18,8 +18,6 @@ typedef NameOrigin =
 
 // TODO: Reduce the size of this since there are so many copies of it
 typedef NameInScope = NameInScope {
-    /// The file the name belongs to
-    file: FileId,
     /// The name of the symbol
     name: Name,
     /// The scope the symbol is in-scope within
@@ -50,61 +48,53 @@ typedef NameInScope = NameInScope {
 relation NameInScope[NameInScope]
 
 // An index that returns all variables avaliable in a given scope
-index Index_VariablesForScope(file: FileId, scope: ScopeId)
-    on NameInScope[NameInScope { .file = file, .scope = scope }]
+index Index_VariablesForScope(scope: ScopeId)
+    on NameInScope[NameInScope { .scope = scope }]
 
 // An index that returns all variables by the given name in the given scope
-index Index_VariableInScope(file: FileId, scope: ScopeId, variable: Name)
-    on NameInScope[NameInScope { .file = file, .name = variable, .scope = scope }]
+index Index_VariableInScope(scope: ScopeId, variable: Name)
+    on NameInScope[NameInScope { .name = variable, .scope = scope }]
 
 // Introduce all declared variables where they're used
-NameInScope(file, name, variable_scope, declared) :-
-    VariableDeclarations(file, name, scope, declared, _),
+NameInScope(name, variable_scope, declared) :-
+    VariableDeclarations(name, scope, declared, _),
     var variable_scope = scope.hoisted_scope(),
-    NameOccursInScope(variable_scope, &NameOccurrence { name, file }).
+    NameOccursInScope(variable_scope, name).
 
 // Walk variables down scopes
-NameInScope(file, name, child, declared) :-
-    NameOccursInScope(child, &NameOccurrence { name, file }),
-    not ScopeOfDeclName(file, name, child, _),
-    InputScope(parent, child, file),
-    NameInScope(file, name, parent, declared).
+NameInScope(name, child, declared) :-
+    NameOccursInScope(child, name),
+    not ScopeOfDeclName(name, child, _),
+    InputScope(parent, child),
+    NameInScope(name, parent, declared).
 
 
-relation ScopeOfDeclName(file: FileId, name: Name, scope: ScopeId, declared: AnyId)
-ScopeOfDeclName(file, name, scope, declared) :-
-    VariableDeclarations(file, name, Unhoistable { scope }, declared, _).
-ScopeOfDeclName(file, name, scope, declared) :-
-    VariableDeclarations(file, name, Hoistable { scope, _ }, declared, _).
-
-typedef NameOccurrence = NameOccurrence {
-    name: Name,
-    file: FileId,
-}
+relation ScopeOfDeclName(name: Name, scope: ScopeId, declared: AnyId)
+ScopeOfDeclName(name, scope, declared) :-
+    VariableDeclarations(name, Unhoistable { scope }, declared, _).
+ScopeOfDeclName(name, scope, declared) :-
+    VariableDeclarations(name, Hoistable { scope, _ }, declared, _).
 
 /// A record of where variable usages actually happen
-relation NameOccursInScope(scope: ScopeId, name: Intern<NameOccurrence>)
+relation NameOccursInScope(scope: ScopeId, name: Name)
 
 /// Add all name references
-NameOccursInScope(scope, interned) :-
-    NameRef(id, file, name),
-    Expression(id, file, _, scope, _),
-    var interned = NameOccurrence { name, file }.intern().
+NameOccursInScope(scope, name) :-
+    NameRef(id, name),
+    Expression(id, _, scope, _),.
 
 /// Add assignment patterns
-NameOccursInScope(scope, interned) :-
-    Assign(id, file, Some { Left { pattern }}, _, _),
-    Expression(id, file, _, scope, _),
-    var name = FlatMap(pattern.bound_vars().map(|name| name.data)),
-    var interned = NameOccurrence { name, file }.intern().
+NameOccursInScope(scope, name) :-
+    Assign(id, Some { Left { pattern }}, _, _),
+    Expression(id, _, scope, _),
+    var name = FlatMap(pattern.bound_vars().map(|name| name.data)).
 
 /// Add exports
-NameOccursInScope(scope, interned) :-
-    FileExport(file, NamedExport { export_name, export_alias }, scope),
-    Some { Spanned { var name, _ }} = export_alias.or_else(export_name),
-    var interned = NameOccurrence { name, file }.intern().
+NameOccursInScope(scope, name) :-
+    FileExport(NamedExport { export_name, export_alias }, scope),
+    Some { Spanned { var name, _ }} = export_alias.or_else(export_name).
 
 /// Recurse to parent scopes
-NameOccursInScope(parent, interned) :-
-    NameOccursInScope(child, interned @ &NameOccurrence { _, file }),
-    InputScope(parent, child, file).
+NameOccursInScope(parent, name) :-
+    NameOccursInScope(child, name),
+    InputScope(parent, child).

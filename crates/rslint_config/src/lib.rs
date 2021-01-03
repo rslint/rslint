@@ -103,7 +103,11 @@ impl schemars::JsonSchema for RulesConfigRepr {
         });
 
         // TODO(RDambrosio016): dont hardcode it like this
-        let group_items = vec![string_schema!("errors"), string_schema!("style")];
+        let group_items = vec![
+            string_schema!("errors"),
+            string_schema!("style"),
+            string_schema!("ddlog"),
+        ];
 
         let groups_schema = Schema::Object(SchemaObject {
             array: Some(Box::new(ArrayValidation {

@@ -8,10 +8,8 @@ input relation File(
 )
 
 primary key (f) (f.id)
-index FileById(file: FileId) on File(file, _, _)
 
 input relation FileExport(
-    file: FileId,
     export: ExportKind,
     scope: ScopeId,
 )
@@ -21,36 +19,24 @@ input relation FileExport(
 input relation InputScope(
     parent: ScopeId,
     child: ScopeId,
-    file: FileId,
 )
-
-index InputScopeByParent(parent: ScopeId, file: FileId) on InputScope(parent, _, file)
-index InputScopeByChild(child: ScopeId, file: FileId) on InputScope(_, child, file)
-index InputScopeByFile(file: FileId) on InputScope(_, _, file)
 
 // TODO: Give scopes a span and a kind
-input relation EveryScope(
-    scope: ScopeId,
-    file: FileId,
-)
-
-index EveryScopeByFile(file: FileId) on EveryScope(_, file)
+input relation EveryScope(scope: ScopeId)
 
 // Functions
 input relation Function(
     id: FuncId,
-    file: FileId,
     name: Option<Spanned<Name>>,
     scope: ScopeId,
     body: ScopeId,
     exported: bool,
 )
 
-primary key (f) (f.id, f.file)
+primary key (f) (f.id)
 
 input relation FunctionArg(
     parent_func: FuncId,
-    file: FileId,
     pattern: IPattern,
     implicit: bool,
 )
@@ -58,7 +44,6 @@ input relation FunctionArg(
 // Class declarations
 input relation Class(
     id: ClassId,
-    file: FileId,
     name: Option<Spanned<Name>>,
     parent: Option<ExprId>,
     elements: Option<Vec<IClassElement>>,
@@ -66,12 +51,11 @@ input relation Class(
     exported: bool,
 )
 
-primary key (c) (c.id, c.file)
+primary key (c) (c.id)
 
 // Imports
 input relation ImportDecl(
     id: ImportId,
-    file: FileId,
     clause: ImportClause,
 )
 
@@ -85,7 +69,6 @@ input relation ImplicitGlobal(
 // User Globals
 input relation UserGlobal(
     id: GlobalId,
-    file: FileId,
     name: Name,
     privileges: GlobalPriv,
 )
@@ -93,20 +76,17 @@ input relation UserGlobal(
 // Statements
 input relation Statement(
     id: StmtId,
-    file: FileId,
     kind: StmtKind,
     scope: ScopeId,
     span: Span,
 )
 
-primary key (stmt) (stmt.id, stmt.file)
-index StatementById(id: StmtId, file: FileId) on Statement(id, file, _, _, _)
-index StatementBySpan(span: Span, file: FileId) on Statement(_, file, _, _, span)
-index StatementByFile(file: FileId) on Expression(_, file, _, _, _)
+primary key (stmt) (stmt.id)
+
+index StatementById(id: StmtId) on Statement[Statement { .id = id }]
 
 input relation VarDecl(
     stmt_id: StmtId,
-    file: FileId,
     pattern: Option<IPattern>,
     value: Option<ExprId>,
     exported: bool,
@@ -114,7 +94,6 @@ input relation VarDecl(
 
 input relation LetDecl(
     stmt_id: StmtId,
-    file: FileId,
     pattern: Option<IPattern>,
     value: Option<ExprId>,
     exported: bool,
@@ -122,7 +101,6 @@ input relation LetDecl(
 
 input relation ConstDecl(
     stmt_id: StmtId,
-    file: FileId,
     pattern: Option<IPattern>,
     value: Option<ExprId>,
     exported: bool,
@@ -130,13 +108,11 @@ input relation ConstDecl(
 
 input relation Return(
     stmt_id: StmtId,
-    file: FileId,
     value: Option<ExprId>,
 )
 
 input relation If(
     stmt_id: StmtId,
-    file: FileId,
     cond: Option<ExprId>,
     if_body: Option<StmtId>,
     else_body: Option<StmtId>,
@@ -144,27 +120,23 @@ input relation If(
 
 input relation Break(
     stmt_id: StmtId,
-    file: FileId,
     label: Option<Spanned<Name>>,
 )
 
 input relation DoWhile(
     stmt_id: StmtId,
-    file: FileId,
     body: Option<StmtId>,
     cond: Option<ExprId>,
 )
 
 input relation While(
     stmt_id: StmtId,
-    file: FileId,
     cond: Option<ExprId>,
     body: Option<StmtId>,
 )
 
 input relation For(
     stmt_id: StmtId,
-    file: FileId,
     init: Option<ForInit>,
     test: Option<ExprId>,
     update: Option<ExprId>,
@@ -173,7 +145,6 @@ input relation For(
 
 input relation ForIn(
     stmt_id: StmtId,
-    file: FileId,
     elem: Option<ForInit>,
     collection: Option<ExprId>,
     body: Option<StmtId>,
@@ -181,7 +152,6 @@ input relation ForIn(
 
 input relation ForOf(
     stmt_id: StmtId,
-    file: FileId,
     awaited: bool,
     elem: Option<ForInit>,
     collection: Option<ExprId>,
@@ -190,20 +160,17 @@ input relation ForOf(
 
 input relation Continue(
     stmt_id: StmtId,
-    file: FileId,
     label: Option<Spanned<Name>>,
 )
 
 input relation With(
     stmt_id: StmtId,
-    file: FileId,
     cond: Option<ExprId>,
     body: Option<StmtId>,
 )
 
 input relation Label(
     stmt_id: StmtId,
-    file: FileId,
     name: Option<Spanned<Name>>,
     body: Option<StmtId>,
     body_scope: ScopeId,
@@ -212,27 +179,23 @@ input relation Label(
 // Switch statements & cases
 input relation Switch(
     stmt_id: StmtId,
-    file: FileId,
     test: Option<ExprId>,
 )
 
 // TODO: Flatten the cases?
 input relation SwitchCase(
     stmt_id: StmtId,
-    file: FileId,
     case: SwitchClause,
     body: Option<StmtId>,
 )
 
 input relation Throw(
     stmt_id: StmtId,
-    file: FileId,
     exception: Option<ExprId>,
 )
 
 input relation Try(
     stmt_id: StmtId,
-    file: FileId,
     body: Option<StmtId>,
     handler: TryHandler,
     finalizer: Option<StmtId>,
@@ -241,83 +204,70 @@ input relation Try(
 // Expressions
 typedef Expression = Expression {
     id: ExprId,
-    file: FileId,
     kind: ExprKind,
     scope: ScopeId,
     span: Span,
 }
 input relation Expression[Expression]
 
-primary key (e) (e.id, e.file)
-index ExpressionById(id: ExprId, file: FileId) on Expression[Expression { .id = id, .file = file }]
-index ExpressionBySpan(span: Span, file: FileId) on Expression[Expression { .span = span, .file = file }]
-index ExpressionByFile(file: FileId) on Expression[Expression { .file = file }]
+primary key (e) (e.id)
+
+index ExpressionById(id: ExprId) on Expression[Expression { .id = id }]
 
 input relation ExprNumber(
     expr_id: ExprId,
-    file: FileId,
     value: double,
 )
 
 input relation ExprBigInt(
     expr_id: ExprId,
-    file: FileId,
     value: bigint,
 )
 
 input relation ExprString(
     expr_id: ExprId,
-    file: FileId,
     value: istring,
 )
 
 input relation ExprBool(
     expr_id: ExprId,
-    file: FileId,
     value: bool,
 )
 
 input relation NameRef(
     expr_id: ExprId,
-    file: FileId,
     value: Name,
 )
 
 input relation Yield(
     expr_id: ExprId,
-    file: FileId,
     value: Option<ExprId>,
 )
 
 input relation Await(
     expr_id: ExprId,
-    file: FileId,
     value: Option<ExprId>,
 )
 
 input relation Arrow(
     expr_id: ExprId,
-    file: FileId,
     body: Option<(Either<ExprId, StmtId>, ScopeId)>,
 )
 
 // TODO: Inline this into Arrow?
 input relation ArrowParam(
     expr_id: ExprId,
-    file: FileId,
     param: IPattern,
 )
 
 input relation UnaryOp(
     expr_id: ExprId,
-    file: FileId,
     op: Option<UnaryOperand>,
     expr: Option<ExprId>,
 )
 
 input relation BinOp(
     expr_id: ExprId,
-    file: FileId,
     op: Option<BinOperand>,
     lhs: Option<ExprId>,
     rhs: Option<ExprId>,
@@ -325,7 +275,6 @@ input relation BinOp(
 
 input relation Ternary(
     expr_id: ExprId,
-    file: FileId,
     test: Option<ExprId>,
     true_val: Option<ExprId>,
     false_val: Option<ExprId>,
@@ -333,55 +282,47 @@ input relation Ternary(
 
 input relation Template(
     expr_id: ExprId,
-    file: FileId,
     tag: Option<ExprId>,
     elements: Vec<ExprId>,
 )
 
 input relation Array(
     expr_id: ExprId,
-    file: FileId,
     elements: Vec<ArrayElement>,
 )
 
 input relation Property(
     expr_id: ExprId,
-    file: FileId,
     key: Option<PropertyKey>,
     val: Option<PropertyVal>,
 )
 
 input relation BracketAccess(
     expr_id: ExprId,
-    file: FileId,
     object: Option<ExprId>,
     prop: Option<ExprId>,
 )
 
 input relation DotAccess(
     expr_id: ExprId,
-    file: FileId,
     object: Option<ExprId>,
     prop: Option<Spanned<Name>>,
 )
 
 input relation New(
     expr_id: ExprId,
-    file: FileId,
     object: Option<ExprId>,
     args: Option<Vec<ExprId>>,
 )
 
 input relation Call(
     expr_id: ExprId,
-    file: FileId,
     callee: Option<ExprId>,
     args: Option<Vec<ExprId>>,
 )
 
 input relation Assign(
     expr_id: ExprId,
-    file: FileId,
     lhs: Option<Either<IPattern, ExprId>>,
     rhs: Option<ExprId>,
     op: Option<AssignOperand>,
@@ -389,7 +330,6 @@ input relation Assign(
 
 input relation InlineFunc(
     expr_id: ExprId,
-    file: FileId,
     name: Option<Spanned<Name>>,
     body: Option<StmtId>,
 )
@@ -397,12 +337,10 @@ input relation InlineFunc(
 // TODO: Inline this?
 input relation InlineFuncParam(
     expr_id: ExprId,
-    file: FileId,
     param: IPattern,
 )
 
 input relation ClassExpr(
     expr_id: ExprId,
-    file: FileId,
     elements: Option<Vec<IClassElement>>,
 )

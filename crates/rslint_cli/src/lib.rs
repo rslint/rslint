@@ -17,16 +17,20 @@ pub use rslint_errors::{
 
 use colored::*;
 use rayon::prelude::*;
-use rslint_core::{autofix::recursively_apply_fixes, File};
-use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
+use rslint_core::{
+    autofix::recursively_apply_fixes, lint_file, util::find_best_match_for_name, CstRuleStore,
+    File, LintResult, RuleLevel, ScopeAnalyzer,
+};
 use rslint_lexer::Lexer;
 use rslint_parser::SyntaxNode;
-use rslint_scope::{
-    globals::{BUILTIN, ES2021, NODE},
-    FileId, ScopeAnalyzer,
-};
 #[allow(unused_imports)]
-use std::{fs::write, path::PathBuf, process, sync::mpsc, thread};
+use std::{
+    fs::write,
+    path::PathBuf,
+    process,
+    sync::mpsc::{self, Sender},
+    thread::{self, JoinHandle},
+};
 use tracing::*;
 
 #[allow(unused_must_use, unused_variables)]
@@ -60,7 +64,7 @@ fn run_inner(
     let mut walker = FileWalker::from_glob(collect_globs(globs));
 
     let joined = handle.join();
-    let mut config = joined.expect("config thread paniced");
+    let mut config = joined.expect("config thread panicked");
 
     drop(guard);
     emit_diagnostics("short", &config.warnings(), &walker);
@@ -77,48 +81,14 @@ fn run_inner(
         return 2;
     }
 
-    let span = info_span!("ddlog startup");
-    let (ddlog_send, ddlog_thread) = span.in_scope(|| {
-        let (ddlog_send, ddlog_recv) = mpsc::channel::<(FileId, SyntaxNode)>();
-
-        tracing::trace!("spawning ddlog thread");
-        let ddlog_thread = thread::spawn(move || {
-            let span = info_span!("analyzer init");
-            let analyzer = span.in_scope(|| ScopeAnalyzer::new().unwrap());
-            analyzer.enable_profiling(true);
-
-            tracing::trace!("started ddlog");
-            let span = info_span!("ddlog analysis");
-            span.in_scope(|| {
-                let mut batch = Vec::with_capacity(25);
-                for (file_id, syntax) in ddlog_recv.iter() {
-                    let span = info_span!("ddlog analysis on file {}", file_id.id);
-                    let _guard = span.enter();
-
-                    batch.push((file_id, syntax));
-                    tracing::trace!("finished ddlog file {}", file_id.id,);
-                }
-
-                tracing::trace!("finished receiving ast nodes, analyzing batch");
-                analyzer.inject_globals(BUILTIN).unwrap();
-                analyzer.inject_globals(ES2021).unwrap();
-                analyzer.inject_globals(NODE).unwrap();
-                analyzer.analyze_batch(&batch).unwrap();
-            });
-
-            tracing::trace!("finished ddlog");
-            analyzer
-        });
-
-        (ddlog_send, ddlog_thread)
-    });
+    let (analyzer, sender, thread_handle) = start_ddlog_daemon(walker.files.len());
 
     let mut results = walker
         .files
         .par_keys()
-        .map_with(ddlog_send, |ddlog_send, id| {
+        .map_with(sender, |sender, id| {
             let file = walker.files.get(id).unwrap();
-            lint_file(file, &store, verbose, None, Some(ddlog_send))
+            lint_file(file, &store, verbose, Some(analyzer.clone()), Some(sender))
         })
         .filter_map(|res| {
             if let Err(diagnostic) = res {
@@ -130,35 +100,25 @@ fn run_inner(
         })
         .collect::<Vec<_>>();
 
-    let mut store = store.clone();
-    store.rules.clear();
-    store.load_rules(rslint_core::groups::ddlog());
-
-    let span = info_span!("join ddlog thread");
-    let analyzer = span.in_scope(|| ddlog_thread.join().unwrap());
-
-    let span = info_span!("run ddlog rules");
-    span.in_scope(|| {
-        results.par_extend(
-            walker
-                .files
-                .par_keys()
-                .map(|id| {
-                    let file = walker.files.get(id).unwrap();
-                    lint_file(file, &store, verbose, Some(analyzer.clone()), None)
-                })
-                .filter_map(|res| {
-                    if let Err(diagnostic) = res {
-                        emit_diagnostic(&diagnostic, &walker);
-                        None
-                    } else {
-                        res.ok()
-                    }
-                }),
-        );
-    });
-
-    std::fs::write("ddlog_profile.txt", analyzer.ddlog_profile()).unwrap();
+    let ddlog_store = CstRuleStore::ddlog();
+    thread_handle.join().unwrap();
+    results.par_extend(
+        walker
+            .files
+            .par_keys()
+            .map(|id| {
+                let file = walker.files.get(id).unwrap();
+                lint_file(file, &ddlog_store, verbose, Some(analyzer.clone()), None)
+            })
+            .filter_map(|res| {
+                if let Err(diagnostic) = res {
+                    emit_diagnostic(&diagnostic, &walker);
+                    None
+                } else {
+                    res.ok()
+                }
+            }),
+    );
 
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)
@@ -465,6 +425,38 @@ pub fn emit_diagnostic(diagnostic: &Diagnostic, walker: &dyn file::Files) {
     emitter
         .emit_stderr(&diagnostic, true)
         .expect("failed to throw linter diagnostic")
+}
+
+fn start_ddlog_daemon(
+    number_files: usize,
+) -> (
+    ScopeAnalyzer,
+    Sender<(rslint_scope::FileId, SyntaxNode)>,
+    JoinHandle<()>,
+) {
+    use rslint_scope::globals::{BUILTIN, ES2021, NODE};
+
+    let (sender, receiver) = mpsc::channel();
+    let analyzer = ScopeAnalyzer::new().unwrap();
+
+    let handle = {
+        let analyzer = analyzer.clone();
+        thread::spawn(move || {
+            let analyzer = analyzer;
+
+            let mut batch = Vec::with_capacity(number_files);
+            for file in receiver.iter() {
+                batch.push(file);
+            }
+
+            analyzer.inject_globals(BUILTIN).unwrap();
+            analyzer.inject_globals(ES2021).unwrap();
+            analyzer.inject_globals(NODE).unwrap();
+            analyzer.analyze_batch(&batch).unwrap();
+        })
+    };
+
+    (analyzer, sender, handle)
 }
 
 // TODO: don't use expect because we treat panics as linter bugs

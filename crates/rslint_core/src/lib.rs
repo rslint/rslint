@@ -50,12 +50,12 @@ pub use crate::{
     store::CstRuleStore,
 };
 pub use rslint_errors::{Diagnostic, Severity, Span};
+use rslint_scope::FileId;
 pub use rslint_scope::ScopeAnalyzer;
 
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
-use rslint_scope::FileId;
 use std::{
     collections::HashMap,
     sync::{mpsc::Sender, Arc},
@@ -122,7 +122,7 @@ pub fn lint_file<'a>(
     store: &'a CstRuleStore,
     verbose: bool,
     analyzer: Option<ScopeAnalyzer>,
-    ddlog_send: Option<&mut Sender<(rslint_scope::FileId, SyntaxNode)>>,
+    sender: Option<&Sender<(FileId, SyntaxNode)>>,
 ) -> Result<LintResult<'a>, Diagnostic> {
     let (parser_diagnostics, node) = {
         let span = tracing::info_span!("parsing file");
@@ -131,7 +131,7 @@ pub fn lint_file<'a>(
         file.parse_with_errors()
     };
 
-    if let Some(sender) = ddlog_send {
+    if let Some(sender) = sender {
         sender
             .send((FileId::new(file.id as u32), node.clone()))
             .unwrap();

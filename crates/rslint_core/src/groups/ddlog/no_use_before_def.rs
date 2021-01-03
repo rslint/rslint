@@ -68,7 +68,7 @@ impl CstRule for NoUseBeforeDef {
 
         analyzer.outputs().use_before_def.iter().for_each(|used| {
             let used = used.key();
-            if used.file != file {
+            if used.declared.file() != Some(file) {
                 return;
             }
 
@@ -77,7 +77,7 @@ impl CstRule for NoUseBeforeDef {
                 AnyId::AnyIdClass { .. } if !self.classes => return,
                 AnyId::AnyIdStmt { stmt } if !self.variables => {
                     if matches!(
-                        analyzer.get_stmt(stmt, file).map(|stmt| stmt.kind),
+                        analyzer.get_stmt(stmt).map(|stmt| stmt.kind),
                         Some(StmtKind::StmtVarDecl)
                     ) {
                         return;

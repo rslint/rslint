@@ -48,7 +48,7 @@ impl CstRule for NoUnusedLabels {
             .for_each(|label| {
                 let label = label.key();
 
-                if label.file == file {
+                if label.stmt_id.file == file {
                     let err = Diagnostic::warning(
                         file.id as usize,
                         "no-unused-labels",

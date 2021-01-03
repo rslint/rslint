@@ -1,3 +1,4 @@
+use ddlog_std::Option as DDlogOption;
 use rslint_parser::{
     ast::{AssignOp as AstAssignOp, BinOp as AstBinOp, UnaryOp as AstUnaryOp},
     TextRange,
@@ -63,7 +64,31 @@ impl From<Range<usize>> for Span {
 }
 
 impl Copy for Span {}
+
 impl Copy for AnyId {}
+impl AnyId {
+    pub const fn file(&self) -> Option<FileId> {
+        match self {
+            AnyId::AnyIdGlobal { global } => match global.file {
+                DDlogOption::Some { x } => Option::Some(x),
+                DDlogOption::None => Option::None,
+            },
+            AnyId::AnyIdImport { import_ } => Some(import_.file),
+            AnyId::AnyIdClass { class } => Some(class.file),
+            AnyId::AnyIdFunc { func } => Some(func.file),
+            AnyId::AnyIdStmt { stmt } => Some(stmt.file),
+            AnyId::AnyIdExpr { expr } => Some(expr.file),
+            &AnyId::AnyIdFile { file } => Some(file),
+        }
+    }
+}
+
+impl Copy for FileId {}
+impl FileId {
+    pub const fn new(id: u32) -> Self {
+        Self { id }
+    }
+}
 
 macro_rules! impl_id_traits {
     ($($ty:ty),* $(,)?) => {
@@ -76,13 +101,6 @@ macro_rules! impl_id_traits {
         }
 
         $(
-            impl $ty {
-                /// Creates a new id from the given value
-                pub const fn new(id: u32) -> Self {
-                    Self { id }
-                }
-            }
-
             impl Increment for Cell<$ty> {
                 type Inner = $ty;
 
@@ -97,8 +115,11 @@ macro_rules! impl_id_traits {
                 type Output = Self;
 
                 fn add(self, other: Self) -> Self {
+                    debug_assert_eq!(self.file, other.file);
+
                     Self {
                         id: self.id + other.id,
+                        file: self.file,
                     }
                 }
             }
@@ -109,12 +130,14 @@ macro_rules! impl_id_traits {
                 fn add(self, other: u32) -> Self {
                     Self {
                         id: self.id + other,
+                        file: self.file,
                     }
                 }
             }
 
             impl AddAssign for $ty {
                 fn add_assign(&mut self, other: Self) {
+                    debug_assert_eq!(self.file, other.file);
                     self.id += other.id;
                 }
             }
@@ -133,7 +156,6 @@ macro_rules! impl_id_traits {
 
 // Implement basic traits for id type-safe wrappers
 impl_id_traits! {
-    FileId,
     ScopeId,
     GlobalId,
     ImportId,
@@ -141,6 +163,40 @@ impl_id_traits! {
     FuncId,
     StmtId,
     ExprId,
+}
+
+macro_rules! impl_new {
+    ($($ty:ty),* $(,)?) => {
+        $(
+            impl $ty {
+                /// Creates a new id from the given value
+                pub const fn new(id: u32, file: FileId) -> Self {
+                    Self { id, file }
+                }
+            }
+        )*
+    }
+}
+
+impl_new! {
+    ScopeId,
+    ImportId,
+    ClassId,
+    FuncId,
+    StmtId,
+    ExprId,
+}
+
+impl GlobalId {
+    /// Creates a new id from the given value
+    pub const fn new(id: u32, file: Option<FileId>) -> Self {
+        let file = match file {
+            Some(x) => DDlogOption::Some { x },
+            None => DDlogOption::None,
+        };
+
+        Self { id, file }
+    }
 }
 
 impl FuncParam {

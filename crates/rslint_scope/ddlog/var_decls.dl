@@ -55,7 +55,6 @@ typedef VariableMeta = VariableMeta {
 // TODO: Rewrite and refine semantics of this
 // TODO: Document this
 relation VariableDeclarations(
-    file: FileId,
     name: Name,
     scope: DeclarationScope,
     declared_in: AnyId,
@@ -63,18 +62,18 @@ relation VariableDeclarations(
 )
 
 // Add implicit globals to every file
-VariableDeclarations(file, name, scope, id, meta) :-
-    File(file, _, file_scope),
-    ImplicitGlobal(global, name, _),
+VariableDeclarations(name, scope, id, meta) :-
+    File(_, _, file_scope),
+    ImplicitGlobal(global @ GlobalId { _, None }, name, _),
 
     var meta = VariableMeta { false, false, None }.ref_new(),
     var id = AnyIdGlobal { global },
     var scope = Unhoistable { file_scope }.
 
 // Add yser globals to the file they're declared in
-VariableDeclarations(file, name, scope, id, meta) :-
-    UserGlobal(global, file, name, _),
+VariableDeclarations(name, scope, id, meta) :-
     File(file, _, file_scope),
+    UserGlobal(global @ GlobalId { _, Some { file }}, name, _),
 
     var meta = VariableMeta { true, false, None }.ref_new(),
     var id = AnyIdGlobal { global },
@@ -87,9 +86,9 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // import { Foo, Bar } from "./somewhere.js";
 // // Scope: { Foo, Bar, .. }
 // ```
-VariableDeclarations(file, name, scope, id, meta) :-
-    ImportDecl(import_id, file, clause),
+VariableDeclarations(name, scope, id, meta) :-
     File(file, _, file_scope),
+    ImportDecl(import_id @ ImportId { _, file }, clause),
 
     var imported = FlatMap(clause.free_variables()),
     Spanned { var name, var span } = imported,
@@ -109,12 +108,13 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // // Scope: { Baz, ... }
 // ```
 //
-VariableDeclarations(file, name, scope, id, meta) :-
-    Class(class, file, Some { Spanned { name, span }}, _, _, class_scope, _),
+VariableDeclarations(name, scope, id, meta) :-
+    Class(class, Some { Spanned { name, span }}, _, _, class_scope, _),
+    FunctionLevelScope(class_scope, hoisted_scope, _),
 
     var meta = VariableMeta { false, false, Some { span }}.ref_new(),
     var id = AnyIdClass { class },
-    var scope = Unhoistable { class_scope }.
+    var scope = Hoistable { hoisted_scope, class_scope }.
 
 // `let` declarations
 //
@@ -127,9 +127,9 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // // Scope: { foo, ... }
 // ```
 //
-VariableDeclarations(file, name, scope, id, meta) :-
-    LetDecl(stmt, file, Some { pat }, _, _),
-    Statement(stmt, file, _, stmt_scope, _),
+VariableDeclarations(name, scope, id, meta) :-
+    LetDecl(stmt, Some { pat }, _, _),
+    Statement(stmt, _, stmt_scope, _),
 
     var bound = FlatMap(pat.bound_vars()),
     Spanned { var name, var span } = bound,
@@ -149,9 +149,9 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // // Scope: { foo, ... }
 // ```
 //
-VariableDeclarations(file, name, scope, id, meta) :-
-    ConstDecl(stmt, file, Some { pat }, _, _),
-    Statement(stmt, file, _, stmt_scope, _),
+VariableDeclarations(name, scope, id, meta) :-
+    ConstDecl(stmt, Some { pat }, _, _),
+    Statement(stmt, _, stmt_scope, _),
 
     var bound = FlatMap(pat.bound_vars()),
     Spanned { var name, var span } = bound,
@@ -174,11 +174,11 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // // Scope: { ... }
 // ```
 //
-VariableDeclarations(file, name, scope, id, meta) :-
-    VarDecl(stmt, file, Some { pat }, _, _),
-    Statement(stmt, file, _, stmt_scope, _),
+VariableDeclarations(name, scope, id, meta) :-
+    VarDecl(stmt, Some { pat }, _, _),
+    Statement(stmt, _, stmt_scope, _),
     // Bubble `var` up to the nearest function-level scope
-    FunctionLevelScope(stmt_scope, nearest_scope, file, _),
+    FunctionLevelScope(stmt_scope, nearest_scope, _),
 
     var bound = FlatMap(pat.bound_vars()),
     Spanned { var name, var span } = bound,
@@ -197,10 +197,10 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // // Scope: { foo, ... }
 // ```
 //
-VariableDeclarations(file, name, scope, id, meta) :-
-    Function(func, file, Some { Spanned { name, span }}, func_scope, _, _),
+VariableDeclarations(name, scope, id, meta) :-
+    Function(func, Some { Spanned { name, span }}, func_scope, _, _),
     // Bubble functions up to the nearest function-level scope
-    FunctionLevelScope(func_scope, nearest_scope, file, _),
+    FunctionLevelScope(func_scope, nearest_scope, _),
 
     var meta = VariableMeta { false, false, Some { span }}.ref_new(),
     var id = AnyIdFunc { func },
@@ -216,9 +216,9 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // // Scope: { ... }
 // ```
 //
-VariableDeclarations(file, name, scope, id, meta) :-
-    FunctionArg(func, file, pat, implicit),
-    Function(func, file, _, _, body, _),
+VariableDeclarations(name, scope, id, meta) :-
+    FunctionArg(func, pat, implicit),
+    Function(func, _, _, body, _),
 
     var bound = FlatMap(pat.bound_vars()),
     Spanned { var name, var span } = bound,
@@ -242,9 +242,9 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // // Scope: { ... }
 // ```
 //
-VariableDeclarations(file, name, scope, id, meta) :-
-    ArrowParam(expr, file, pat),
-    Arrow(expr, file, Some { (_, body_scope) }),
+VariableDeclarations(name, scope, id, meta) :-
+    ArrowParam(expr, pat),
+    Arrow(expr, Some { (_, body_scope) }),
 
     var bound = FlatMap(pat.bound_vars()),
     Spanned { var name, var span } = bound,
@@ -272,9 +272,9 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // // Scope: { ... }
 // ```
 //
-VariableDeclarations(file, name, scope, id, meta) :-
-    InlineFunc(expr, file, Some { Spanned { name, span }}, Some { body }),
-    Statement(body, file, _, body_scope, _),
+VariableDeclarations(name, scope, id, meta) :-
+    InlineFunc(expr, Some { Spanned { name, span }}, Some { body }),
+    Statement(body, _, body_scope, _),
 
     var meta = VariableMeta {
         .is_function_argument = false,
@@ -296,10 +296,10 @@ VariableDeclarations(file, name, scope, id, meta) :-
 // // Scope: { ... }
 // ```
 //
-VariableDeclarations(file, name, scope, id, meta) :-
-    InlineFuncParam(expr, file, pat),
-    InlineFunc(expr, file, _, Some { body }),
-    Statement(body, file, _, body_scope, _),
+VariableDeclarations(name, scope, id, meta) :-
+    InlineFuncParam(expr, pat),
+    InlineFunc(expr, _, Some { body }),
+    Statement(body, _, body_scope, _),
 
     var bound = FlatMap(pat.bound_vars()),
     Spanned { var name, var span } = bound,
@@ -314,9 +314,9 @@ VariableDeclarations(file, name, scope, id, meta) :-
     var scope = Unhoistable { body_scope }.
 
 // `catch` statement patterns
-VariableDeclarations(file, name, scope, id, meta) :-
-    Try(stmt, file, _, TryHandler { Some { error }, Some { body } }, _),
-    Statement(body, file, _, stmt_scope, _),
+VariableDeclarations(name, scope, id, meta) :-
+    Try(stmt, _, TryHandler { Some { error }, Some { body } }, _),
+    Statement(body, _, stmt_scope, _),
 
     var bound = FlatMap(error.bound_vars()),
     Spanned { var name, var span } = bound,
@@ -326,11 +326,11 @@ VariableDeclarations(file, name, scope, id, meta) :-
     var scope = Unhoistable { stmt_scope }.
 
 // Class methods and static class methods
-VariableDeclarations(file, name, scope, id, meta) :-
-    Class(class, file, _, _, Some { elements }, _, _),
+VariableDeclarations(name, scope, id, meta) :-
+    Class(class, _, _, Some { elements }, _, _),
     var elem = FlatMap(elements),
     Some { (var params, var body) } = elem.ival().method_comps(),
-    Statement(body, file, _, stmt_scope, _),
+    Statement(body, _, stmt_scope, _),
 
     var bound = FlatMap(params.flatmap(|param| param.bound_vars())),
     (Spanned { var name, var span }, var implicit) = bound,
@@ -345,10 +345,10 @@ VariableDeclarations(file, name, scope, id, meta) :-
     var scope = Unhoistable { stmt_scope }.
 
 // Method properties, getters and setters
-VariableDeclarations(file, name, scope, id, meta) :-
-    Property(expr, file, _, Some { val }),
+VariableDeclarations(name, scope, id, meta) :-
+    Property(expr, _, Some { val }),
     Some { (var params, var body) } = val.method_comps(),
-    Statement(body, file, _, stmt_scope, _),
+    Statement(body, _, stmt_scope, _),
 
     var bound = FlatMap(params.flatmap(|param| param.bound_vars())),
     (Spanned { var name, var span }, var implicit) = bound,

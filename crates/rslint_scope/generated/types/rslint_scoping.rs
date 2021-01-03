@@ -84,39 +84,13 @@ pub static IMPLICIT_ARGUMENTS: Lazy<Intern<Pattern>> = Lazy::new(|| {
     })
 });
 
-pub static __Arng___Prefix_1_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                    name: std::borrow::Cow::from(r###"((_1: ast::FileId), (_: ast::ExprId), (_0: ast::ExprId), (_: ast::ScopeId), (_: ast::Span)) /*join*/"###),
-                                                                                                                     afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                     {
-                                                                                                                         let __cloned = __v.clone();
-                                                                                                                         match < ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>::from_ddvalue(__v) {
-                                                                                                                             ddlog_std::tuple5(ref _1, _, ref _0, _, _) => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                             _ => None
-                                                                                                                         }.map(|x|(x,__cloned))
-                                                                                                                     }
-                                                                                                                     __f},
-                                                                                                                     queryable: false
-                                                                                                                 });
-pub static __Arng___Prefix_1_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                    name: std::borrow::Cow::from(r###"((_0: ast::FileId), (_: ast::ExprId), (_: ast::ExprId), (_: ast::ScopeId), (_: ast::Span)) /*join*/"###),
-                                                                                                                     afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                     {
-                                                                                                                         let __cloned = __v.clone();
-                                                                                                                         match < ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>::from_ddvalue(__v) {
-                                                                                                                             ddlog_std::tuple5(ref _0, _, _, _, _) => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                             _ => None
-                                                                                                                         }.map(|x|(x,__cloned))
-                                                                                                                     }
-                                                                                                                     __f},
-                                                                                                                     queryable: false
-                                                                                                                 });
 pub static __Arng___Prefix_0_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                    name: std::borrow::Cow::from(r###"((_0: ast::FileId), (_: ast::ExprId), (_: ast::ExprId), (_2: ast::ScopeId), (_: ast::Span), (_1: internment::Intern<string>)) /*join*/"###),
+                                                                                                                    name: std::borrow::Cow::from(r###"((_: ast::FileId), (_: ast::ExprId), (_: ast::ExprId), (_: ast::ScopeId), (_: ast::Span)) /*join*/"###),
                                                                                                                      afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                      {
                                                                                                                          let __cloned = __v.clone();
-                                                                                                                         match < ddlog_std::tuple6<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span, internment::Intern<String>>>::from_ddvalue(__v) {
-                                                                                                                             ddlog_std::tuple6(ref _0, _, _, ref _2, _, ref _1) => Some((ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
+                                                                                                                         match < ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>::from_ddvalue(__v) {
+                                                                                                                             ddlog_std::tuple5(_, _, _, _, _) => Some((()).into_ddvalue()),
                                                                                                                              _ => None
                                                                                                                          }.map(|x|(x,__cloned))
                                                                                                                      }
@@ -124,26 +98,26 @@ pub static __Arng___Prefix_0_0 : ::once_cell::sync::Lazy<program::Arrangement> =
                                                                                                                      queryable: false
                                                                                                                  });
 pub static __Arng___Prefix_0_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                    name: std::borrow::Cow::from(r###"((_0: ast::FileId), (_: ast::ExprId), (_: ast::ExprId), (_: ast::ScopeId), (_: ast::Span), (_1: internment::Intern<string>)) /*join*/"###),
+                                                                                                                    name: std::borrow::Cow::from(r###"((_: ast::FileId), (_: ast::ExprId), (_0: ast::ExprId), (_: ast::ScopeId), (_: ast::Span)) /*join*/"###),
                                                                                                                      afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                      {
                                                                                                                          let __cloned = __v.clone();
-                                                                                                                         match < ddlog_std::tuple6<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span, internment::Intern<String>>>::from_ddvalue(__v) {
-                                                                                                                             ddlog_std::tuple6(ref _0, _, _, _, _, ref _1) => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                                                                                                                         match < ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>::from_ddvalue(__v) {
+                                                                                                                             ddlog_std::tuple5(_, _, ref _0, _, _) => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                              _ => None
                                                                                                                          }.map(|x|(x,__cloned))
                                                                                                                      }
                                                                                                                      __f},
                                                                                                                      queryable: false
                                                                                                                  });
-pub static __Rule___Prefix_1_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* __Prefix_1[((file: ast::FileId), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span))] :- config::EnableNoUseBeforeDef[(config::EnableNoUseBeforeDef{.file=(file: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUseBeforeDefConfig>)}: config::EnableNoUseBeforeDef)], inputs::New[(inputs::New{.expr_id=(expr: ast::ExprId), .file=(file: ast::FileId), .object=(ddlog_std::Some{.x=(object: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::New)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .file=(file: ast::FileId), .kind=(_: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)]. */
+pub static __Rule___Prefix_0_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* __Prefix_0[((file: ast::FileId), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span))] :- config::EnableNoUseBeforeDef[(config::EnableNoUseBeforeDef{.file=(file: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUseBeforeDefConfig>)}: config::EnableNoUseBeforeDef)], inputs::New[(inputs::New{.expr_id=(expr@ (ast::ExprId{.id=(_: bit<32>), .file=(file: ast::FileId)}: ast::ExprId)), .object=(ddlog_std::Some{.x=(object: ast::ExprId)}: ddlog_std::Option<ast::ExprId>), .args=(_: ddlog_std::Option<ddlog_std::Vec<ast::ExprId>>)}: inputs::New)], inputs::Expression[(inputs::Expression{.id=(expr: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(used_scope: ast::ScopeId), .span=(used_in: ast::Span)}: inputs::Expression)]. */
                                                                                                           program::Rule::ArrangementRule {
-                                                                                                              description: std::borrow::Cow::from( "__Prefix_1[(file, expr, object, used_scope, used_in)] :- config::EnableNoUseBeforeDef(.file=file, .config=_), inputs::New(.expr_id=expr, .file=file, .object=ddlog_std::Some{.x=object}, .args=_), inputs::Expression(.id=expr, .file=file, .kind=_, .scope=used_scope, .span=used_in)."),
-                                                                                                              arr: ( 7, 0),
+                                                                                                              description: std::borrow::Cow::from( "__Prefix_0[(file, expr, object, used_scope, used_in)] :- config::EnableNoUseBeforeDef(.file=file, .config=_), inputs::New(.expr_id=(expr@ ast::ExprId{.id=_, .file=file}), .object=ddlog_std::Some{.x=object}, .args=_), inputs::Expression(.id=expr, .kind=_, .scope=used_scope, .span=used_in)."),
+                                                                                                              arr: ( 6, 0),
                                                                                                               xform: XFormArrangement::Join{
-                                                                                                                         description: std::borrow::Cow::from("config::EnableNoUseBeforeDef(.file=file, .config=_), inputs::New(.expr_id=expr, .file=file, .object=ddlog_std::Some{.x=object}, .args=_)"),
+                                                                                                                         description: std::borrow::Cow::from("config::EnableNoUseBeforeDef(.file=file, .config=_), inputs::New(.expr_id=(expr@ ast::ExprId{.id=_, .file=file}), .object=ddlog_std::Some{.x=object}, .args=_)"),
                                                                                                                          ffun: None,
-                                                                                                                         arrangement: (45,0),
+                                                                                                                         arrangement: (44,0),
                                                                                                                          jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                          {
                                                                                                                              let ref file = match *<types__config::EnableNoUseBeforeDef>::from_ddvalue_ref(__v1) {
@@ -151,29 +125,32 @@ pub static __Rule___Prefix_1_0 : ::once_cell::sync::Lazy<program::Rule> = ::once
                                                                                                                                  _ => return None
                                                                                                                              };
                                                                                                                              let (ref expr, ref object) = match *<types__inputs::New>::from_ddvalue_ref(__v2) {
-                                                                                                                                 types__inputs::New{expr_id: ref expr, file: _, object: ddlog_std::Option::Some{x: ref object}, args: _} => ((*expr).clone(), (*object).clone()),
+                                                                                                                                 types__inputs::New{expr_id: ref expr, object: ddlog_std::Option::Some{x: ref object}, args: _} => match expr {
+                                                                                                                                                                                                                                       types__ast::ExprId{id: _, file: _} => ((*expr).clone(), (*object).clone()),
+                                                                                                                                                                                                                                       _ => return None
+                                                                                                                                                                                                                                   },
                                                                                                                                  _ => return None
                                                                                                                              };
                                                                                                                              Some((ddlog_std::tuple3((*file).clone(), (*expr).clone(), (*object).clone())).into_ddvalue())
                                                                                                                          }
                                                                                                                          __f},
                                                                                                                          next: Box::new(Some(XFormCollection::Arrange {
-                                                                                                                                                 description: std::borrow::Cow::from("arrange config::EnableNoUseBeforeDef(.file=file, .config=_), inputs::New(.expr_id=expr, .file=file, .object=ddlog_std::Some{.x=object}, .args=_) by (expr, file)"),
+                                                                                                                                                 description: std::borrow::Cow::from("arrange config::EnableNoUseBeforeDef(.file=file, .config=_), inputs::New(.expr_id=(expr@ ast::ExprId{.id=_, .file=file}), .object=ddlog_std::Some{.x=object}, .args=_) by (expr)"),
                                                                                                                                                  afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                                  {
                                                                                                                                                      let ddlog_std::tuple3(ref file, ref expr, ref object) = *<ddlog_std::tuple3<types__ast::FileId, types__ast::ExprId, types__ast::ExprId>>::from_ddvalue_ref( &__v );
-                                                                                                                                                     Some(((ddlog_std::tuple2((*expr).clone(), (*file).clone())).into_ddvalue(), (ddlog_std::tuple3((*file).clone(), (*expr).clone(), (*object).clone())).into_ddvalue()))
+                                                                                                                                                     Some((((*expr).clone()).into_ddvalue(), (ddlog_std::tuple3((*file).clone(), (*expr).clone(), (*object).clone())).into_ddvalue()))
                                                                                                                                                  }
                                                                                                                                                  __f},
                                                                                                                                                  next: Box::new(XFormArrangement::Join{
-                                                                                                                                                                    description: std::borrow::Cow::from("config::EnableNoUseBeforeDef(.file=file, .config=_), inputs::New(.expr_id=expr, .file=file, .object=ddlog_std::Some{.x=object}, .args=_), inputs::Expression(.id=expr, .file=file, .kind=_, .scope=used_scope, .span=used_in)"),
+                                                                                                                                                                    description: std::borrow::Cow::from("config::EnableNoUseBeforeDef(.file=file, .config=_), inputs::New(.expr_id=(expr@ ast::ExprId{.id=_, .file=file}), .object=ddlog_std::Some{.x=object}, .args=_), inputs::Expression(.id=expr, .kind=_, .scope=used_scope, .span=used_in)"),
                                                                                                                                                                     ffun: None,
-                                                                                                                                                                    arrangement: (28,0),
+                                                                                                                                                                    arrangement: (27,0),
                                                                                                                                                                     jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                     {
                                                                                                                                                                         let ddlog_std::tuple3(ref file, ref expr, ref object) = *<ddlog_std::tuple3<types__ast::FileId, types__ast::ExprId, types__ast::ExprId>>::from_ddvalue_ref( __v1 );
                                                                                                                                                                         let (ref used_scope, ref used_in) = match *<types__inputs::Expression>::from_ddvalue_ref(__v2) {
-                                                                                                                                                                            types__inputs::Expression{id: _, file: _, kind: _, scope: ref used_scope, span: ref used_in} => ((*used_scope).clone(), (*used_in).clone()),
+                                                                                                                                                                            types__inputs::Expression{id: _, kind: _, scope: ref used_scope, span: ref used_in} => ((*used_scope).clone(), (*used_in).clone()),
                                                                                                                                                                             _ => return None
                                                                                                                                                                         };
                                                                                                                                                                         Some((ddlog_std::tuple5((*file).clone(), (*expr).clone(), (*object).clone(), (*used_scope).clone(), (*used_in).clone())).into_ddvalue())
@@ -182,29 +159,5 @@ pub static __Rule___Prefix_1_0 : ::once_cell::sync::Lazy<program::Rule> = ::once
                                                                                                                                                                     next: Box::new(None)
                                                                                                                                                                 })
                                                                                                                                              }))
-                                                                                                                     }
-                                                                                                          });
-pub static __Rule___Prefix_0_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* __Prefix_0[((file: ast::FileId), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span), (name: internment::Intern<string>))] :- __Prefix_1[((file: ast::FileId), (expr: ast::ExprId), (object: ast::ExprId), (used_scope: ast::ScopeId), (used_in: ast::Span))], inputs::NameRef[(inputs::NameRef{.expr_id=(object: ast::ExprId), .file=(file: ast::FileId), .value=(name: internment::Intern<string>)}: inputs::NameRef)]. */
-                                                                                                          program::Rule::ArrangementRule {
-                                                                                                              description: std::borrow::Cow::from( "__Prefix_0[(file, expr, object, used_scope, used_in, name)] :- __Prefix_1[(file, expr, object, used_scope, used_in)], inputs::NameRef(.expr_id=object, .file=file, .value=name)."),
-                                                                                                              arr: ( 1, 0),
-                                                                                                              xform: XFormArrangement::Join{
-                                                                                                                         description: std::borrow::Cow::from("__Prefix_1[(file, expr, object, used_scope, used_in)], inputs::NameRef(.expr_id=object, .file=file, .value=name)"),
-                                                                                                                         ffun: None,
-                                                                                                                         arrangement: (44,0),
-                                                                                                                         jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
-                                                                                                                         {
-                                                                                                                             let (ref file, ref expr, ref object, ref used_scope, ref used_in) = match *<ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>::from_ddvalue_ref(__v1) {
-                                                                                                                                 ddlog_std::tuple5(ref file, ref expr, ref object, ref used_scope, ref used_in) => ((*file).clone(), (*expr).clone(), (*object).clone(), (*used_scope).clone(), (*used_in).clone()),
-                                                                                                                                 _ => return None
-                                                                                                                             };
-                                                                                                                             let ref name = match *<types__inputs::NameRef>::from_ddvalue_ref(__v2) {
-                                                                                                                                 types__inputs::NameRef{expr_id: _, file: _, value: ref name} => (*name).clone(),
-                                                                                                                                 _ => return None
-                                                                                                                             };
-                                                                                                                             Some((ddlog_std::tuple6((*file).clone(), (*expr).clone(), (*object).clone(), (*used_scope).clone(), (*used_in).clone(), (*name).clone())).into_ddvalue())
-                                                                                                                         }
-                                                                                                                         __f},
-                                                                                                                         next: Box::new(None)
                                                                                                                      }
                                                                                                           });

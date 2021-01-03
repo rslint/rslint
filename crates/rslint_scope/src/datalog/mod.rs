@@ -10,7 +10,6 @@ use ast::{
     ClassId, ExprId, FileId, FileKind, FuncId, GlobalId, GlobalPriv, IPattern, ImportId, Increment,
     ScopeId, StmtId,
 };
-use ddlog_std::tuple2;
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
     program::{IdxId, RelId, Update},
@@ -173,11 +172,8 @@ impl Datalog {
         Ok(result)
     }
 
-    pub fn get_expr(&self, expr: ExprId, file: FileId) -> Option<Expression> {
-        let query = self.query(
-            Indexes::inputs_ExpressionById,
-            Some(tuple2(expr, file).into_ddvalue()),
-        );
+    pub fn get_expr(&self, expr: ExprId) -> Option<Expression> {
+        let query = self.query(Indexes::inputs_ExpressionById, Some(expr.into_ddvalue()));
 
         query
             .map_err(|err| tracing::error!("expression query error: {:?}", err))
@@ -195,11 +191,8 @@ impl Datalog {
             .map(Expression::from_ddvalue)
     }
 
-    pub fn get_stmt(&self, stmt: StmtId, file: FileId) -> Option<Statement> {
-        let query = self.query(
-            Indexes::inputs_StatementById,
-            Some(tuple2(stmt, file).into_ddvalue()),
-        );
+    pub fn get_stmt(&self, stmt: StmtId) -> Option<Statement> {
+        let query = self.query(Indexes::inputs_StatementById, Some(stmt.into_ddvalue()));
 
         query
             .map_err(|err| tracing::error!("statement query error: {:?}", err))
@@ -229,49 +222,50 @@ impl Datalog {
         }
     }
 
-    pub fn purge_file(&self, file: FileId) -> DatalogResult<()> {
-        fn delete_all(
-            values: BTreeSet<DDValue>,
-            relation: Relations,
-        ) -> impl Iterator<Item = Update<DDValue>> {
-            values.into_iter().map(move |value| Update::DeleteValue {
-                relid: relation as RelId,
-                v: value,
-            })
-        }
+    pub fn purge_file(&self, _file: FileId) -> DatalogResult<()> {
+        // fn delete_all(
+        //     values: BTreeSet<DDValue>,
+        //     relation: Relations,
+        // ) -> impl Iterator<Item = Update<DDValue>> {
+        //     values.into_iter().map(move |value| Update::DeleteValue {
+        //         relid: relation as RelId,
+        //         v: value,
+        //     })
+        // }
+        //
+        // let span = tracing::info_span!("purge file");
+        // let _guard = span.enter();
+        // tracing::trace!("purging file {}", file.id);
 
-        let span = tracing::info_span!("purge file");
-        let _guard = span.enter();
-        tracing::trace!("purging file {}", file.id);
-
-        let files = self.query(Indexes::inputs_FileById, Some(file.into_ddvalue()))?;
-        let input_scopes =
-            self.query(Indexes::inputs_InputScopeByFile, Some(file.into_ddvalue()))?;
-        let every_scope =
-            self.query(Indexes::inputs_EveryScopeByFile, Some(file.into_ddvalue()))?;
-        let statements = self.query(Indexes::inputs_StatementByFile, Some(file.into_ddvalue()))?;
-        let expressions =
-            self.query(Indexes::inputs_ExpressionByFile, Some(file.into_ddvalue()))?;
+        // let files = self.query(Indexes::inputs_FileById, Some(file.into_ddvalue()))?;
+        // let input_scopes =
+        //     self.query(Indexes::inputs_InputScopeByFile, Some(file.into_ddvalue()))?;
+        // let every_scope =
+        //     self.query(Indexes::inputs_EveryScopeByFile, Some(file.into_ddvalue()))?;
+        // let statements = self.query(Indexes::inputs_StatementByFile, Some(file.into_ddvalue()))?;
+        // let expressions =
+        //     self.query(Indexes::inputs_ExpressionByFile, Some(file.into_ddvalue()))?;
 
         // TODO: More though deletion of all sub-relations, this should get rid of
         //       a decently large amount of data though
-        let updates = delete_all(files, Relations::inputs_File)
-            .chain(delete_all(input_scopes, Relations::inputs_InputScope))
-            .chain(delete_all(every_scope, Relations::inputs_EveryScope))
-            .chain(delete_all(statements, Relations::inputs_Statement))
-            .chain(delete_all(expressions, Relations::inputs_Expression));
-
-        let delta = {
-            let span = tracing::info_span!("ddlog transaction lock");
-            let _guard = span.enter();
-
-            let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
-            self.hddlog.apply_valupdates(updates)?;
-
-            guard.commit_dump_changes()?
-        };
-        self.outputs.batch_update(delta);
-
+        // let updates = delete_all(files, Relations::inputs_File)
+        //     .chain(delete_all(input_scopes, Relations::inputs_InputScope))
+        //     .chain(delete_all(every_scope, Relations::inputs_EveryScope))
+        //     .chain(delete_all(statements, Relations::inputs_Statement))
+        //     .chain(delete_all(expressions, Relations::inputs_Expression));
+        //
+        // let delta = {
+        //     let span = tracing::info_span!("ddlog transaction lock");
+        //     let _guard = span.enter();
+        //
+        //     let guard = TransactionGuard::new(&self.hddlog, &self.transaction_lock)?;
+        //     self.hddlog.apply_valupdates(updates)?;
+        //
+        //     guard.commit_dump_changes()?
+        // };
+        // self.outputs.batch_update(delta);
+        //
+        // Ok(())
         Ok(())
     }
 
@@ -282,11 +276,11 @@ impl Datalog {
         let mut lints = Vec::with_capacity(20);
 
         lints.extend(self.outputs().no_undef.iter().filter_map(|usage| {
-            if usage.key().file == file {
+            if usage.key().scope.file == file {
                 Some(DatalogLint::NoUndef {
                     var: usage.key().name.clone(),
                     span: usage.key().span,
-                    file: usage.key().file,
+                    file: usage.key().scope.file,
                 })
             } else {
                 None
@@ -294,11 +288,11 @@ impl Datalog {
         }));
 
         lints.extend(self.outputs().no_unused_vars.iter().filter_map(|unused| {
-            if unused.key().file == file {
+            if unused.key().declared.file() == Some(file) {
                 Some(DatalogLint::NoUnusedVars {
                     var: unused.key().name.clone(),
                     declared: unused.key().span,
-                    file: unused.key().file,
+                    file: unused.key().declared.file().unwrap(),
                 })
             } else {
                 None
@@ -306,27 +300,27 @@ impl Datalog {
         }));
 
         lints.extend(self.outputs().no_typeof_undef.iter().filter_map(|undef| {
-            if undef.key().file != file {
+            if undef.key().whole_expr.file != file {
                 return None;
             }
 
-            let whole_expr = self.get_expr(undef.key().whole_expr, file)?;
-            let undefined_portion = self.get_expr(undef.key().undefined_expr, file)?;
+            let whole_expr = self.get_expr(undef.key().whole_expr)?;
+            let undefined_portion = self.get_expr(undef.key().undefined_expr)?;
 
             Some(DatalogLint::TypeofUndef {
                 whole_expr: whole_expr.span,
                 undefined_portion: undefined_portion.span,
-                file: whole_expr.file,
+                file: whole_expr.id.file,
             })
         }));
 
         lints.extend(self.outputs().use_before_def.iter().filter_map(|used| {
-            if used.key().file == file {
+            if used.key().used.file == file {
                 Some(DatalogLint::UseBeforeDef {
                     name: used.key().name.clone(),
                     used: used.key().used_in,
                     declared: used.key().declared_in,
-                    file: used.key().file,
+                    file: used.key().used.file,
                 })
             } else {
                 None
@@ -334,13 +328,13 @@ impl Datalog {
         }));
 
         lints.extend(self.outputs().no_shadow.iter().filter_map(|shadow| {
-            if shadow.key().file == file {
+            if shadow.key().original.0.file() == Some(file) {
                 Some(DatalogLint::NoShadow {
                     variable: shadow.key().variable.clone(),
                     original: shadow.key().original.1,
                     shadow: shadow.key().shadower.1,
                     implicit: shadow.key().implicit,
-                    file: shadow.key().file,
+                    file: shadow.key().original.0.file().unwrap(),
                 })
             } else {
                 None
@@ -348,11 +342,11 @@ impl Datalog {
         }));
 
         lints.extend(self.outputs().no_unused_labels.iter().filter_map(|label| {
-            if label.key().file == file {
+            if label.key().stmt_id.file == file {
                 Some(DatalogLint::NoUnusedLabels {
                     label: label.key().label_name.data.clone(),
                     span: label.key().label_name.span,
-                    file: label.key().file,
+                    file: label.key().stmt_id.file,
                 })
             } else {
                 None
@@ -388,13 +382,13 @@ impl DatalogInner {
         Self {
             updates: RefCell::new(Vec::with_capacity(100)),
             file_id: Cell::new(file_id),
-            scope_id: Cell::new(ScopeId::new(0)),
-            global_id: Cell::new(GlobalId::new(0)),
-            import_id: Cell::new(ImportId::new(0)),
-            class_id: Cell::new(ClassId::new(0)),
-            function_id: Cell::new(FuncId::new(0)),
-            statement_id: Cell::new(StmtId::new(0)),
-            expression_id: Cell::new(ExprId::new(0)),
+            scope_id: Cell::new(ScopeId::new(0, FileId::new(0))),
+            global_id: Cell::new(GlobalId::new(0, Some(FileId::new(0)))),
+            import_id: Cell::new(ImportId::new(0, FileId::new(0))),
+            class_id: Cell::new(ClassId::new(0, FileId::new(0))),
+            function_id: Cell::new(FuncId::new(0, FileId::new(0))),
+            statement_id: Cell::new(StmtId::new(0, FileId::new(0))),
+            expression_id: Cell::new(ExprId::new(0, FileId::new(0))),
         }
     }
 
@@ -478,13 +472,13 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
 
     pub fn file(&self, file_id: FileId, kind: FileKind) -> DatalogScope<'ddlog> {
         self.datalog.file_id.set(file_id);
-        self.datalog.scope_id.set(ScopeId::new(0));
-        self.datalog.global_id.set(GlobalId::new(0));
-        self.datalog.import_id.set(ImportId::new(0));
-        self.datalog.class_id.set(ClassId::new(0));
-        self.datalog.function_id.set(FuncId::new(0));
-        self.datalog.statement_id.set(StmtId::new(0));
-        self.datalog.expression_id.set(ExprId::new(0));
+        self.datalog.scope_id.set(ScopeId::new(0, file_id));
+        self.datalog.global_id.set(GlobalId::new(0, Some(file_id)));
+        self.datalog.import_id.set(ImportId::new(0, file_id));
+        self.datalog.class_id.set(ClassId::new(0, file_id));
+        self.datalog.function_id.set(FuncId::new(0, file_id));
+        self.datalog.statement_id.set(StmtId::new(0, file_id));
+        self.datalog.expression_id.set(ExprId::new(0, file_id));
 
         let scope_id = self.datalog.inc_scope();
         self.datalog
@@ -501,16 +495,9 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
                 InputScope {
                     parent: scope_id,
                     child: scope_id,
-                    file: file_id,
                 },
             )
-            .insert(
-                Relations::inputs_EveryScope,
-                EveryScope {
-                    scope: scope_id,
-                    file: file_id,
-                },
-            );
+            .insert(Relations::inputs_EveryScope, EveryScope { scope: scope_id });
 
         DatalogScope {
             datalog: self.datalog,
@@ -526,16 +513,9 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
                 InputScope {
                     parent: scope_id,
                     child: scope_id,
-                    file: self.datalog.file_id(),
                 },
             )
-            .insert(
-                Relations::inputs_EveryScope,
-                EveryScope {
-                    scope: scope_id,
-                    file: self.datalog.file_id(),
-                },
-            );
+            .insert(Relations::inputs_EveryScope, EveryScope { scope: scope_id });
 
         DatalogScope {
             datalog: self.datalog,
@@ -549,7 +529,10 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         self.datalog.insert(
             Relations::inputs_ImplicitGlobal,
             ImplicitGlobal {
-                id: GlobalId { id: id.id },
+                id: GlobalId {
+                    id: id.id,
+                    file: None.into(),
+                },
                 name: Intern::new(global.name.to_string()),
                 privileges: if global.writeable {
                     GlobalPriv::ReadWriteGlobal
@@ -568,8 +551,10 @@ impl<'ddlog> DatalogTransaction<'ddlog> {
         self.datalog.insert(
             Relations::inputs_UserGlobal,
             UserGlobal {
-                id: GlobalId { id: id.id },
-                file,
+                id: GlobalId {
+                    id: id.id,
+                    file: Some(file).into(),
+                },
                 name: Intern::new(global.name.to_string()),
                 privileges: if global.writeable {
                     GlobalPriv::ReadWriteGlobal
@@ -608,7 +593,6 @@ impl<'ddlog> DatalogFunction<'ddlog> {
         self.datalog.insert(
             Relations::inputs_FunctionArg,
             FunctionArg {
-                file: self.file_id(),
                 parent_func: self.func_id(),
                 pattern,
                 implicit,

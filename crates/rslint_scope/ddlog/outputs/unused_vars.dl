@@ -8,14 +8,13 @@ import var_decls
 import is_exported
 import name_in_scope
 
-output relation UnusedVariables(name: Name, declared: AnyId, span: Span, file: FileId)
+output relation UnusedVariables(name: Name, declared: AnyId, span: Span)
 
 // Only hit non-function arguments and non-globals
-UnusedVariables(name, declared, span, file) :-
+UnusedVariables(name, declared, span) :-
     EnableNoUnusedVars(file, config),
 
     VariableDeclarations(
-        file,
         name,
         scope,
         declared,
@@ -26,21 +25,21 @@ UnusedVariables(name, declared, span, file) :-
             .declaration_span = Some { span },
         },
     ),
+    declared.file() == Some { file },
 
     // If the variable name matches an ignored pattern, don't analyze it
     not config.deref().ignored_patterns().regex_set_match(name.ival()),
     // Ignore global variables
     not declared.is_global(),
 
-    not IsExported(file, declared),
-    not NameInScope(file, name, scope.hoisted_scope(), declared).
+    not IsExported(declared),
+    not NameInScope(name, scope.hoisted_scope(), declared).
 
 // For function arguments it doesn't matter if the parent function is exported or not
-UnusedVariables(name, declared, span, file) :-
+UnusedVariables(name, declared, span) :-
     EnableNoUnusedVars(file, config),
 
     VariableDeclarations(
-        file,
         name,
         _,
         declared,
@@ -51,19 +50,19 @@ UnusedVariables(name, declared, span, file) :-
             .declaration_span = Some { span },
         },
     ),
+    declared.file() == Some { file },
 
     // If the variable name matches an ignored pattern, don't analyze it
     not config.deref().ignored_patterns().regex_set_match(name.ival()),
 
-    FunctionBodyScope(file, declared, body_scope),
-    not NameInScope(file, name, body_scope, declared).
+    FunctionBodyScope(declared, body_scope),
+    not NameInScope(name, body_scope, declared).
 
 // Handle globals
-UnusedVariables(name, declared, span, file) :-
+UnusedVariables(name, declared, span) :-
     EnableNoUnusedVars(file, config),
 
     VariableDeclarations(
-        file,
         name,
         scope,
         declared @ AnyIdGlobal,
@@ -74,24 +73,26 @@ UnusedVariables(name, declared, span, file) :-
             .declaration_span = Some { span },
         },
     ),
+    // This allows us to ignore implicit globals since they aren't pinned to a specific file
+    declared.file() == Some { file },
 
     // If the variable name matches an ignored pattern, don't analyze it
     not config.deref().ignored_patterns().regex_set_match(name.ival()),
     
-    not IsExported(file, declared),
-    not NameInScope(file, name, scope.unhoisted_scope(), declared).
+    not IsExported(declared),
+    not NameInScope(name, scope.unhoisted_scope(), declared).
 
-relation FunctionBodyScope(file: FileId, id: AnyId, body: ScopeId)
+relation FunctionBodyScope(id: AnyId, body: ScopeId)
 
-FunctionBodyScope(file, AnyIdFunc { id }, body) :-
+FunctionBodyScope(AnyIdFunc { id }, body) :-
     EnableNoUnusedVars(file, config),
-    Function(id, file, _, _, body, _).
+    Function(id @ FuncId { _, file }, _, _, body, _).
 
-FunctionBodyScope(file, AnyIdExpr { id }, body) :-
+FunctionBodyScope(AnyIdExpr { id }, body) :-
     EnableNoUnusedVars(file, config),
-    Arrow(id, file, Some { (_, body) }).
+    Arrow(id @ ExprId { _, file }, Some { (_, body) }).
 
-FunctionBodyScope(file, AnyIdExpr { id }, body) :-
+FunctionBodyScope(AnyIdExpr { id }, body) :-
     EnableNoUnusedVars(file, config),
-    InlineFunc(id, file, _, Some { body_id }),
-    Statement(body_id, file, _, body, _).
+    InlineFunc(id @ ExprId { _, file }, _, Some { body_id }),
+    Statement(body_id, _, body, _).

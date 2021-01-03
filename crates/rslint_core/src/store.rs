@@ -69,4 +69,20 @@ impl CstRuleStore {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    /// Removes the rules where `filter` returns `true`
+    pub fn filter<F>(&mut self, mut filter: F)
+    where
+        F: FnMut(&dyn CstRule) -> bool,
+    {
+        // TODO: Replace with `Vec::drain_filter()`
+        let mut i = 0;
+        while i != self.rules.len() {
+            if filter(&*self.rules[i]) {
+                self.rules.remove(i);
+            } else {
+                i += 1;
+            }
+        }
+    }
 }

@@ -4,17 +4,17 @@ import inputs
 import config
 import name_in_scope
 
-output relation NoTypeofUndef(whole_expr: ExprId, undefined_expr: ExprId, file: FileId)
-NoTypeofUndef(whole_expr, undefined_expr, file) :-
+output relation NoTypeofUndef(whole_expr: ExprId, undefined_expr: ExprId)
+NoTypeofUndef(whole_expr, undefined_expr) :-
     EnableNoTypeofUndef(file, _),
 
-    NameRef(undefined_expr, file, name),
-    Expression(undefined_expr, file, ExprNameRef, scope, span),
+    NameRef(undefined_expr @ ExprId { _, file }, name),
 
     // Expressions like `typeof not_undefined` are allowed under NoUndef
-    // and are instead output through TypeofUndef
-    WithinTypeofExpr(whole_expr, undefined_expr, file),
-    not NameInScope(file, name, scope, _).
+    // and are instead output through `NoTypeofUndef`
+    WithinTypeofExpr(whole_expr, undefined_expr),
+    Expression(undefined_expr, _, scope, span),
+    not NameInScope(name, scope, _).
 
 
 // Files that need to know about expressions nested within `typeof` expressions
@@ -23,19 +23,19 @@ NeedsWithinTypeofExpr(file) :- EnableNoTypeofUndef(file, _).
 NeedsWithinTypeofExpr(file) :- EnableNoUndef(file, _).
 
 
-relation WithinTypeofExpr(type_of: ExprId, expr: ExprId, file: FileId)
+relation WithinTypeofExpr(type_of: ExprId, expr: ExprId)
 // `typeof not_defined`
-WithinTypeofExpr(type_of, expr, file) :-
+WithinTypeofExpr(type_of, expr) :-
     NeedsWithinTypeofExpr(file),
-    UnaryOp(type_of, file, Some { UnaryTypeof }, Some { expr }).
+    UnaryOp(type_of @ ExprId { _, file }, Some { UnaryTypeof }, Some { expr }).
 
 // `typeof (not_defined)`
-WithinTypeofExpr(type_of, grouped, file) :-
-    WithinTypeofExpr(type_of, expr, file),
-    Expression(expr, file, ExprGrouping { Some { grouped }}, _, _).
+WithinTypeofExpr(type_of, grouped) :-
+    WithinTypeofExpr(type_of, expr),
+    Expression(expr, ExprGrouping { Some { grouped }}, _, _).
 
 // `typeof (defined, not_defined)`
-WithinTypeofExpr(type_of, last, file) :-
-    WithinTypeofExpr(type_of, expr, file),
-    Expression(expr, file, ExprSequence { sequence }, _, _),
+WithinTypeofExpr(type_of, last) :-
+    WithinTypeofExpr(type_of, expr),
+    Expression(expr, ExprSequence { sequence }, _, _),
     Some { var last } = sequence.last().

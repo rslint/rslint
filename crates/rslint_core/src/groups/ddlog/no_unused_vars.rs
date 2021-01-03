@@ -43,7 +43,7 @@ impl CstRule for NoUnusedVars {
         analyzer.outputs().no_unused_vars.iter().for_each(|unused| {
             let unused = unused.key();
 
-            if unused.file == file {
+            if unused.declared.file() == Some(file) {
                 let err = Diagnostic::warning(
                     file.id as usize,
                     "no-unused-vars",

@@ -9,40 +9,40 @@ import outputs::no_typeof_undef
 // have an accompanying variable in scope are reported
 // TODO: Use a levenshtein aggregate to try and correct and/or look in children
 //       scopes for a declaration
-output relation NoUndef(name: Name, scope: ScopeId, span: Span, file: FileId)
-NoUndef(name, scope, span, file) :-
+output relation NoUndef(name: Name, scope: ScopeId, span: Span)
+NoUndef(name, scope, span) :-
     EnableNoUndef(file, _),
 
-    NameRef(expr, file, name),
-    Expression(expr, file, ExprNameRef, scope, span),
+    NameRef(expr @ ExprId { _, file }, name),
+    Expression(expr, ExprNameRef, scope, span),
     // Expressions like `typeof not_undefined` are allowed under NoUndef
     // and are instead output through TypeofUndef
-    not WithinTypeofExpr(_, expr, file),
-    not ChainedWith(_, expr, file),
-    not NameInScope(file, name, scope, _).
+    not WithinTypeofExpr(_, expr),
+    not ChainedWith(_, expr),
+    not NameInScope(name, scope, _).
 
 // Assignments
-NoUndef(name, scope, span, file) :-
+NoUndef(name, scope, span) :-
     EnableNoUndef(file, _),
 
-    Assign(expr, file, Some { Left { pat }}, _, _),
-    Expression(expr, file, _, scope, _),
+    Assign(expr @ ExprId { _, file }, Some { Left { pat }}, _, _),
+    Expression(expr, _, scope, _),
     // FIXME: Waiting on https://github.com/vmware/differential-datalog/issues/784
     var bound_var = FlatMap(pat.bound_vars()),
     Spanned { var name, var span } = bound_var,
-    not NameInScope(file, name, scope, _).
+    not NameInScope(name, scope, _).
 
 
 // The successors of an expression, property accesses or method calls
-relation ChainedWith(object: ExprId, property: ExprId, file: FileId)
-ChainedWith(object, property, file) :-
+relation ChainedWith(object: ExprId, property: ExprId)
+ChainedWith(object, property) :-
     EnableNoUndef(file, _),
-    BracketAccess(_, file, Some { object }, Some { property }).
+    BracketAccess(ExprId { _, file }, Some { object }, Some { property }).
 
-ChainedWith(object, property, file) :-
+ChainedWith(object, property) :-
     EnableNoUndef(file, _),
-    DotAccess(property, file, Some { object }, _).
+    DotAccess(property @ ExprId { _, file }, Some { object }, _).
 
-ChainedWith(object, property, file) :-
-    ChainedWith(object, interum, file),
-    ChainedWith(interum, property, file).
+ChainedWith(object, property) :-
+    ChainedWith(object, interum),
+    ChainedWith(interum, property).

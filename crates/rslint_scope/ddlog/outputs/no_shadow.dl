@@ -12,16 +12,14 @@ output relation NoShadow(
     original: (AnyId, Span),
     shadower: (AnyId, Span),
     implicit: bool,
-    file: FileId,
 )
 
-NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false, file) :-
+NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false) :-
     EnableNoShadow(file, config),
 
     // Get the initial variable
-    ScopeOfDecl(file, shadowed_scope, shadowed_id),
+    ScopeOfDecl(shadowed_scope @ ScopeId { _, file }, shadowed_id),
     VariableDeclarations(
-        file,
         name,
         shadowed_scope_raw,
         shadowed_id,
@@ -32,14 +30,13 @@ NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false
     ),
 
     // Search the child scopes for visible declarations of the same name
-    DeclarationInDescendent(file, shadowed_scope, name, shadower_id),
+    DeclarationInDescendent(shadowed_scope, name, shadower_id),
 
     // A declaration cannot shadow itself
     shadowed_id != shadower_id,
 
     // Filter declarations for one with an identical name
     VariableDeclarations(
-        file,
         name,
         shadower_scope_raw,
         shadower_id,
@@ -63,28 +60,29 @@ NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false
     }.
 
 
-relation DeclarationInDescendent(file: FileId, scope: ScopeId, name: Name, id: AnyId)
+relation DeclarationInDescendent(scope: ScopeId, name: Name, id: AnyId)
 
-DeclarationInDescendent(file, scope, name, id) :-
-    ScopeOfDecl(file, scope, id),
-    VariableDeclarations(file, name, _, id, _).
+DeclarationInDescendent(scope, name, id) :-
+    EnableNoShadow(file, _),
+    ScopeOfDecl(scope @ ScopeId { _, file }, id),
+    VariableDeclarations(name, _, id, _).
 
-DeclarationInDescendent(file, parent, name, id) :-
-    DeclarationInDescendent(file, child, name, id),
-    InputScope(parent, child, file).
+DeclarationInDescendent(parent, name, id) :-
+    DeclarationInDescendent(child, name, id),
+    InputScope(parent, child).
 
 
-relation ScopeOfDecl(file: FileId, scope: ScopeId, declared: AnyId)
+relation ScopeOfDecl(scope: ScopeId, declared: AnyId)
 
-ScopeOfDecl(file, scope, declared) :-
+ScopeOfDecl(scope, declared) :-
     EnableNoShadow(file, config),
 
-    VariableDeclarations(file, _, Unhoistable { scope }, declared, _),
+    VariableDeclarations(_, Unhoistable { scope @ ScopeId { _, file }}, declared, _),
     not declared.is_global().
 
-ScopeOfDecl(file, scope, declared) :-
+ScopeOfDecl(scope, declared) :-
     EnableNoShadow(file, config),
 
-    VariableDeclarations(file, _, Hoistable { hoisted_scope, unhoisted_scope }, declared, _),
+    VariableDeclarations(_, Hoistable { hoisted_scope @ ScopeId { _, file }, unhoisted_scope }, declared, _),
     not declared.is_global(),
     var scope = if (config.deref().hoisting_enabled()) { hoisted_scope } else { unhoisted_scope }.

@@ -263,6 +263,8 @@ pub fn bigint_pow32(base: &ddlog_bigint::Int, exp: &u32) -> ddlog_bigint::Int {
 }
 
 // Option
+impl<T: Copy> Copy for Option<T> {}
+
 pub fn option2std<T>(x: StdOption<T>) -> Option<T> {
     match x {
         StdOption::None => Option::None,

@@ -35,14 +35,13 @@ declare_lint! {
 impl CstRule for NoUndef {
     fn check_root(&self, _root: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         let analyzer = ctx.analyzer.as_ref()?.clone();
-        let outputs = analyzer.outputs().clone();
         let file = FileId::new(ctx.file_id as u32);
 
         analyzer.no_undef(file, Some(self.config.clone())).unwrap();
 
-        outputs.no_undef.iter().for_each(|undef| {
+        analyzer.outputs().no_undef.iter().for_each(|undef| {
             let undef = undef.key();
-            if undef.file == file {
+            if undef.scope.file == file {
                 let scope = rslint_scope::ddlog_std::tuple2(file, undef.scope);
                 let mut err = ctx
                     .err(
@@ -66,7 +65,7 @@ impl CstRule for NoUndef {
                 if let Some(suggestion) = suggestion {
                     err = err.suggestion(
                         undef.span,
-                        "a variable with a similair name exists",
+                        "a variable with a similar name exists",
                         suggestion,
                         Applicability::MaybeIncorrect,
                     );
@@ -79,33 +78,37 @@ impl CstRule for NoUndef {
         if let Some(config) = self.typeof_.clone() {
             analyzer.no_typeof_undef(file, Some(config)).unwrap();
 
-            outputs.no_typeof_undef.iter().try_for_each(|undef| {
-                let undef = undef.key();
-                let whole_expr = analyzer.get_expr(undef.whole_expr, file)?;
-                let undefined_expr = analyzer.get_expr(undef.undefined_expr, file)?;
+            analyzer
+                .outputs()
+                .no_typeof_undef
+                .iter()
+                .try_for_each(|undef| {
+                    let undef = undef.key();
+                    let whole_expr = analyzer.get_expr(undef.whole_expr)?;
+                    let undefined_expr = analyzer.get_expr(undef.undefined_expr)?;
 
-                if undef.file == file {
-                    let d = Diagnostic::warning(
-                        file.id as usize,
-                        "no-undef",
-                        "`typeof` of an undefined value always results in `undefined`",
-                    )
-                    .primary(whole_expr.span, "this will always return \"undefined\"...")
-                    .secondary(
-                        undefined_expr.span,
-                        "...because this expression is undefined",
-                    )
-                    .suggestion(
-                        whole_expr.span,
-                        "try replacing the entire expression with \"undefined\"",
-                        "\"undefined\"",
-                        Applicability::Always,
-                    );
+                    if undef.whole_expr.file == file {
+                        let d = Diagnostic::warning(
+                            file.id as usize,
+                            "no-undef",
+                            "`typeof` of an undefined value always results in `undefined`",
+                        )
+                        .primary(whole_expr.span, "this will always return \"undefined\"...")
+                        .secondary(
+                            undefined_expr.span,
+                            "...because this expression is undefined",
+                        )
+                        .suggestion(
+                            whole_expr.span,
+                            "try replacing the entire expression with \"undefined\"",
+                            "\"undefined\"",
+                            Applicability::Always,
+                        );
 
-                    ctx.add_err(d);
-                }
-                Some(())
-            });
+                        ctx.add_err(d);
+                    }
+                    Some(())
+                });
         }
 
         None

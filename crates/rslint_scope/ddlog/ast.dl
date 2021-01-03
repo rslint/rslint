@@ -5,13 +5,14 @@ typedef Name = istring
 
 // Ids
 typedef FileId = FileId { id: u32 }
-typedef GlobalId = GlobalId { id: u32 }
-typedef ImportId = ImportId { id: u32 }
-typedef ClassId = ClassId { id: u32 }
-typedef FuncId = FuncId { id: u32 }
-typedef StmtId = StmtId { id: u32 }
-typedef ExprId = ExprId { id: u32 }
-typedef ScopeId = ScopeId { id: u32 }
+typedef GlobalId = GlobalId { id: u32, file: Option<FileId> }
+typedef ImportId = ImportId { id: u32, file: FileId }
+typedef ClassId = ClassId { id: u32, file: FileId }
+typedef FuncId = FuncId { id: u32, file: FileId }
+typedef StmtId = StmtId { id: u32, file: FileId }
+typedef ExprId = ExprId { id: u32, file: FileId }
+typedef ScopeId = ScopeId { id: u32, file: FileId }
+typedef ImplicitGlobalId = ImplicitGlobalId { id: u32 }
 
 function any_id(global: GlobalId): AnyId {
     AnyIdGlobal { global }
@@ -30,14 +31,26 @@ typedef AnyId =
     | AnyIdExpr { expr: ExprId }
     | AnyIdFile { file: FileId }
 
+function file(id: AnyId): Option<FileId> {
+    match (id) {
+        AnyIdGlobal { GlobalId { _, file }} -> file,
+        AnyIdImport { ImportId { _, file }} -> Some { file },
+        AnyIdClass { ClassId { _, file }} -> Some { file },
+        AnyIdFunc { FuncId { _, file }} -> Some { file },
+        AnyIdStmt { StmtId { _, file }} -> Some { file },
+        AnyIdExpr { ExprId { _, file }} -> Some { file },
+        AnyIdFile { file } -> Some { file },
+    }
+}
+
 function to_string(id: AnyId): string {
     match (id) {
-        AnyIdGlobal { GlobalId { id }} -> "Global_${id}",
-        AnyIdImport { ImportId { id }} -> "Import_${id}",
-        AnyIdClass { ClassId { id }} -> "Class_${id}",
-        AnyIdFunc { FuncId { id }} -> "Func_${id}",
-        AnyIdStmt { StmtId { id }} -> "Stmt_${id}",
-        AnyIdExpr { ExprId { id }} -> "Expr_${id}",
+        AnyIdGlobal { GlobalId { id, _ }} -> "Global_${id}",
+        AnyIdImport { ImportId { id, _ }} -> "Import_${id}",
+        AnyIdClass { ClassId { id, _ }} -> "Class_${id}",
+        AnyIdFunc { FuncId { id, _ }} -> "Func_${id}",
+        AnyIdStmt { StmtId { id, _ }} -> "Stmt_${id}",
+        AnyIdExpr { ExprId { id, _ }} -> "Expr_${id}",
         AnyIdFile { FileId { id }} -> "File_${id}",
     }
 }

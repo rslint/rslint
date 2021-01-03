@@ -224,6 +224,7 @@ pub mod typedefs
         pub use ::types__ast::JSFlavor;
         pub use ::types__ast::ImportId;
         pub use ::types__ast::ImportClause;
+        pub use ::types__ast::ImplicitGlobalId;
         pub use ::types__ast::IPattern;
         pub use ::types__ast::IObjectPatternProp;
         pub use ::types__ast::IClassElement;
@@ -254,6 +255,7 @@ pub mod typedefs
         pub use ::types__ast::is_expr;
         pub use ::types__ast::free_variables;
         pub use ::types__ast::free_variable;
+        pub use ::types__ast::file;
         pub use ::types__ast::bound_vars_ast_FuncParam_ddlog_std_Vec____Tuple2__ast_Spanned__internment_Intern____Stringval___Boolval;
         pub use ::types__ast::bound_vars_internment_Intern__ast_ObjectPatternProp_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval;
         pub use ::types__ast::bound_vars_internment_Intern__ast_Pattern_ddlog_std_Vec__ast_Spanned__internment_Intern____Stringval;
@@ -635,7 +637,6 @@ pub mod typedefs
         pub use ::types::name_in_scope::ScopeOfDeclName;
         pub use ::types::name_in_scope::NameOrigin;
         pub use ::types::name_in_scope::NameOccursInScope;
-        pub use ::types::name_in_scope::NameOccurrence;
         pub use ::types::name_in_scope::NameInScope;
     }
     pub mod outputs
@@ -738,13 +739,12 @@ pub mod typedefs
         pub use ::types__vec::all;
     }
 }
-decl_update_deserializer!(UpdateSerializer,(2, types__config::EnableNoShadow), (3, types__config::EnableNoTypeofUndef), (4, types__config::EnableNoUndef), (5, types__config::EnableNoUnusedLabels), (6, types__config::EnableNoUnusedVars), (7, types__config::EnableNoUseBeforeDef), (8, types__inputs::Array), (9, types__inputs::Arrow), (10, types__inputs::ArrowParam), (11, types__inputs::Assign), (12, types__inputs::Await), (13, types__inputs::BinOp), (14, types__inputs::BracketAccess), (15, types__inputs::Break), (16, types__inputs::Call), (17, types__inputs::Class), (18, types__inputs::ClassExpr), (19, types__inputs::ConstDecl), (20, types__inputs::Continue), (21, types__inputs::DoWhile), (22, types__inputs::DotAccess), (23, types__inputs::EveryScope), (24, types__inputs::ExprBigInt), (25, types__inputs::ExprBool), (26, types__inputs::ExprNumber), (27, types__inputs::ExprString), (28, types__inputs::Expression), (29, types__inputs::File), (30, types__inputs::FileExport), (31, types__inputs::For), (32, types__inputs::ForIn), (33, types__inputs::ForOf), (34, types__inputs::Function), (35, types__inputs::FunctionArg), (36, types__inputs::If), (37, types__inputs::ImplicitGlobal), (38, types__inputs::ImportDecl), (39, types__inputs::InlineFunc), (40, types__inputs::InlineFuncParam), (41, types__inputs::InputScope), (42, types__inputs::Label), (43, types__inputs::LetDecl), (44, types__inputs::NameRef), (45, types__inputs::New), (46, types__inputs::Property), (47, types__inputs::Return), (48, types__inputs::Statement), (49, types__inputs::Switch), (50, types__inputs::SwitchCase), (51, types__inputs::Template), (52, types__inputs::Ternary), (53, types__inputs::Throw), (54, types__inputs::Try), (55, types__inputs::UnaryOp), (56, types__inputs::UserGlobal), (57, types__inputs::VarDecl), (58, types__inputs::While), (59, types__inputs::With), (60, types__inputs::Yield), (66, types::outputs::no_shadow::NoShadow), (69, types::outputs::no_typeof_undef::NoTypeofUndef), (72, types::outputs::no_undef::NoUndef), (74, types__outputs__no_unused_labels::NoUnusedLabels), (75, types__outputs__no_unused_labels::UsedLabels), (77, types::outputs::no_use_before_def::NoUseBeforeDef), (79, types::outputs::unused_vars::UnusedVariables));
+decl_update_deserializer!(UpdateSerializer,(1, types__config::EnableNoShadow), (2, types__config::EnableNoTypeofUndef), (3, types__config::EnableNoUndef), (4, types__config::EnableNoUnusedLabels), (5, types__config::EnableNoUnusedVars), (6, types__config::EnableNoUseBeforeDef), (7, types__inputs::Array), (8, types__inputs::Arrow), (9, types__inputs::ArrowParam), (10, types__inputs::Assign), (11, types__inputs::Await), (12, types__inputs::BinOp), (13, types__inputs::BracketAccess), (14, types__inputs::Break), (15, types__inputs::Call), (16, types__inputs::Class), (17, types__inputs::ClassExpr), (18, types__inputs::ConstDecl), (19, types__inputs::Continue), (20, types__inputs::DoWhile), (21, types__inputs::DotAccess), (22, types__inputs::EveryScope), (23, types__inputs::ExprBigInt), (24, types__inputs::ExprBool), (25, types__inputs::ExprNumber), (26, types__inputs::ExprString), (27, types__inputs::Expression), (28, types__inputs::File), (29, types__inputs::FileExport), (30, types__inputs::For), (31, types__inputs::ForIn), (32, types__inputs::ForOf), (33, types__inputs::Function), (34, types__inputs::FunctionArg), (35, types__inputs::If), (36, types__inputs::ImplicitGlobal), (37, types__inputs::ImportDecl), (38, types__inputs::InlineFunc), (39, types__inputs::InlineFuncParam), (40, types__inputs::InputScope), (41, types__inputs::Label), (42, types__inputs::LetDecl), (43, types__inputs::NameRef), (44, types__inputs::New), (45, types__inputs::Property), (46, types__inputs::Return), (47, types__inputs::Statement), (48, types__inputs::Switch), (49, types__inputs::SwitchCase), (50, types__inputs::Template), (51, types__inputs::Ternary), (52, types__inputs::Throw), (53, types__inputs::Try), (54, types__inputs::UnaryOp), (55, types__inputs::UserGlobal), (56, types__inputs::VarDecl), (57, types__inputs::While), (58, types__inputs::With), (59, types__inputs::Yield), (65, types::outputs::no_shadow::NoShadow), (68, types::outputs::no_typeof_undef::NoTypeofUndef), (71, types::outputs::no_undef::NoUndef), (73, types__outputs__no_unused_labels::NoUnusedLabels), (74, types__outputs__no_unused_labels::UsedLabels), (76, types::outputs::no_use_before_def::NoUseBeforeDef), (78, types::outputs::unused_vars::UnusedVariables));
 impl TryFrom<&str> for Relations {
     type Error = ();
     fn try_from(rname: &str) -> ::std::result::Result<Self, ()> {
          match rname {
         "__Prefix_0" => Ok(Relations::__Prefix_0),
-        "__Prefix_1" => Ok(Relations::__Prefix_1),
         "config::EnableNoShadow" => Ok(Relations::config_EnableNoShadow),
         "config::EnableNoTypeofUndef" => Ok(Relations::config_EnableNoTypeofUndef),
         "config::EnableNoUndef" => Ok(Relations::config_EnableNoUndef),
@@ -819,7 +819,7 @@ impl TryFrom<&str> for Relations {
         "outputs::no_unused_labels::LabelUsage" => Ok(Relations::outputs_no_unused_labels_LabelUsage),
         "outputs::no_unused_labels::NoUnusedLabels" => Ok(Relations::outputs_no_unused_labels_NoUnusedLabels),
         "outputs::no_unused_labels::UsedLabels" => Ok(Relations::outputs_no_unused_labels_UsedLabels),
-        "outputs::no_unused_labels::__Prefix_2" => Ok(Relations::outputs_no_unused_labels___Prefix_2),
+        "outputs::no_unused_labels::__Prefix_1" => Ok(Relations::outputs_no_unused_labels___Prefix_1),
         "outputs::no_use_before_def::NoUseBeforeDef" => Ok(Relations::outputs_no_use_before_def_NoUseBeforeDef),
         "outputs::unused_vars::FunctionBodyScope" => Ok(Relations::outputs_unused_vars_FunctionBodyScope),
         "outputs::unused_vars::UnusedVariables" => Ok(Relations::outputs_unused_vars_UnusedVariables),
@@ -918,8 +918,7 @@ impl Relations {
 impl Relations {
     pub fn type_id(&self) -> ::std::any::TypeId {
         match self {
-            Relations::__Prefix_0 => ::std::any::TypeId::of::<ddlog_std::tuple6<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span, internment::Intern<String>>>(),
-            Relations::__Prefix_1 => ::std::any::TypeId::of::<ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>(),
+            Relations::__Prefix_0 => ::std::any::TypeId::of::<ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>(),
             Relations::config_EnableNoShadow => ::std::any::TypeId::of::<types__config::EnableNoShadow>(),
             Relations::config_EnableNoTypeofUndef => ::std::any::TypeId::of::<types__config::EnableNoTypeofUndef>(),
             Relations::config_EnableNoUndef => ::std::any::TypeId::of::<types__config::EnableNoUndef>(),
@@ -994,7 +993,7 @@ impl Relations {
             Relations::outputs_no_unused_labels_LabelUsage => ::std::any::TypeId::of::<types__outputs__no_unused_labels::LabelUsage>(),
             Relations::outputs_no_unused_labels_NoUnusedLabels => ::std::any::TypeId::of::<types__outputs__no_unused_labels::NoUnusedLabels>(),
             Relations::outputs_no_unused_labels_UsedLabels => ::std::any::TypeId::of::<types__outputs__no_unused_labels::UsedLabels>(),
-            Relations::outputs_no_unused_labels___Prefix_2 => ::std::any::TypeId::of::<ddlog_std::tuple4<types__ast::FileId, types__ast::StmtId, types__ast::Spanned<types__ast::Name>, types__ast::ScopeId>>(),
+            Relations::outputs_no_unused_labels___Prefix_1 => ::std::any::TypeId::of::<ddlog_std::tuple4<types__ast::FileId, types__ast::StmtId, types__ast::Spanned<types__ast::Name>, types__ast::ScopeId>>(),
             Relations::outputs_no_use_before_def_NoUseBeforeDef => ::std::any::TypeId::of::<types::outputs::no_use_before_def::NoUseBeforeDef>(),
             Relations::outputs_unused_vars_FunctionBodyScope => ::std::any::TypeId::of::<types::outputs::unused_vars::FunctionBodyScope>(),
             Relations::outputs_unused_vars_UnusedVariables => ::std::any::TypeId::of::<types::outputs::unused_vars::UnusedVariables>(),
@@ -1014,93 +1013,92 @@ impl TryFrom<program::RelId> for Relations {
     fn try_from(rid: program::RelId) -> ::std::result::Result<Self, ()> {
          match rid {
         0 => Ok(Relations::__Prefix_0),
-        1 => Ok(Relations::__Prefix_1),
-        2 => Ok(Relations::config_EnableNoShadow),
-        3 => Ok(Relations::config_EnableNoTypeofUndef),
-        4 => Ok(Relations::config_EnableNoUndef),
-        5 => Ok(Relations::config_EnableNoUnusedLabels),
-        6 => Ok(Relations::config_EnableNoUnusedVars),
-        7 => Ok(Relations::config_EnableNoUseBeforeDef),
-        8 => Ok(Relations::inputs_Array),
-        9 => Ok(Relations::inputs_Arrow),
-        10 => Ok(Relations::inputs_ArrowParam),
-        11 => Ok(Relations::inputs_Assign),
-        12 => Ok(Relations::inputs_Await),
-        13 => Ok(Relations::inputs_BinOp),
-        14 => Ok(Relations::inputs_BracketAccess),
-        15 => Ok(Relations::inputs_Break),
-        16 => Ok(Relations::inputs_Call),
-        17 => Ok(Relations::inputs_Class),
-        18 => Ok(Relations::inputs_ClassExpr),
-        19 => Ok(Relations::inputs_ConstDecl),
-        20 => Ok(Relations::inputs_Continue),
-        21 => Ok(Relations::inputs_DoWhile),
-        22 => Ok(Relations::inputs_DotAccess),
-        23 => Ok(Relations::inputs_EveryScope),
-        24 => Ok(Relations::inputs_ExprBigInt),
-        25 => Ok(Relations::inputs_ExprBool),
-        26 => Ok(Relations::inputs_ExprNumber),
-        27 => Ok(Relations::inputs_ExprString),
-        28 => Ok(Relations::inputs_Expression),
-        29 => Ok(Relations::inputs_File),
-        30 => Ok(Relations::inputs_FileExport),
-        31 => Ok(Relations::inputs_For),
-        32 => Ok(Relations::inputs_ForIn),
-        33 => Ok(Relations::inputs_ForOf),
-        34 => Ok(Relations::inputs_Function),
-        35 => Ok(Relations::inputs_FunctionArg),
-        36 => Ok(Relations::inputs_If),
-        37 => Ok(Relations::inputs_ImplicitGlobal),
-        38 => Ok(Relations::inputs_ImportDecl),
-        39 => Ok(Relations::inputs_InlineFunc),
-        40 => Ok(Relations::inputs_InlineFuncParam),
-        41 => Ok(Relations::inputs_InputScope),
-        42 => Ok(Relations::inputs_Label),
-        43 => Ok(Relations::inputs_LetDecl),
-        44 => Ok(Relations::inputs_NameRef),
-        45 => Ok(Relations::inputs_New),
-        46 => Ok(Relations::inputs_Property),
-        47 => Ok(Relations::inputs_Return),
-        48 => Ok(Relations::inputs_Statement),
-        49 => Ok(Relations::inputs_Switch),
-        50 => Ok(Relations::inputs_SwitchCase),
-        51 => Ok(Relations::inputs_Template),
-        52 => Ok(Relations::inputs_Ternary),
-        53 => Ok(Relations::inputs_Throw),
-        54 => Ok(Relations::inputs_Try),
-        55 => Ok(Relations::inputs_UnaryOp),
-        56 => Ok(Relations::inputs_UserGlobal),
-        57 => Ok(Relations::inputs_VarDecl),
-        58 => Ok(Relations::inputs_While),
-        59 => Ok(Relations::inputs_With),
-        60 => Ok(Relations::inputs_Yield),
-        61 => Ok(Relations::is_exported_IsExported),
-        62 => Ok(Relations::name_in_scope_NameInScope),
-        63 => Ok(Relations::name_in_scope_NameOccursInScope),
-        64 => Ok(Relations::name_in_scope_ScopeOfDeclName),
-        65 => Ok(Relations::outputs_no_shadow_DeclarationInDescendent),
-        66 => Ok(Relations::outputs_no_shadow_NoShadow),
-        67 => Ok(Relations::outputs_no_shadow_ScopeOfDecl),
-        68 => Ok(Relations::outputs_no_typeof_undef_NeedsWithinTypeofExpr),
-        69 => Ok(Relations::outputs_no_typeof_undef_NoTypeofUndef),
-        70 => Ok(Relations::outputs_no_typeof_undef_WithinTypeofExpr),
-        71 => Ok(Relations::outputs_no_undef_ChainedWith),
-        72 => Ok(Relations::outputs_no_undef_NoUndef),
-        73 => Ok(Relations::outputs_no_unused_labels_LabelUsage),
-        74 => Ok(Relations::outputs_no_unused_labels_NoUnusedLabels),
-        75 => Ok(Relations::outputs_no_unused_labels_UsedLabels),
-        76 => Ok(Relations::outputs_no_unused_labels___Prefix_2),
-        77 => Ok(Relations::outputs_no_use_before_def_NoUseBeforeDef),
-        78 => Ok(Relations::outputs_unused_vars_FunctionBodyScope),
-        79 => Ok(Relations::outputs_unused_vars_UnusedVariables),
-        80 => Ok(Relations::scopes_FunctionLevelScope),
-        81 => Ok(Relations::scopes_IsHoistable),
-        82 => Ok(Relations::scopes_NeedsScopeChildren),
-        83 => Ok(Relations::scopes_NeedsScopeParents),
-        84 => Ok(Relations::scopes_ScopeFamily),
-        85 => Ok(Relations::scopes_ScopeOfId),
-        86 => Ok(Relations::var_decls_VariableDeclarations),
-        87 => Ok(Relations::variable_decl_VariableDecl),
+        1 => Ok(Relations::config_EnableNoShadow),
+        2 => Ok(Relations::config_EnableNoTypeofUndef),
+        3 => Ok(Relations::config_EnableNoUndef),
+        4 => Ok(Relations::config_EnableNoUnusedLabels),
+        5 => Ok(Relations::config_EnableNoUnusedVars),
+        6 => Ok(Relations::config_EnableNoUseBeforeDef),
+        7 => Ok(Relations::inputs_Array),
+        8 => Ok(Relations::inputs_Arrow),
+        9 => Ok(Relations::inputs_ArrowParam),
+        10 => Ok(Relations::inputs_Assign),
+        11 => Ok(Relations::inputs_Await),
+        12 => Ok(Relations::inputs_BinOp),
+        13 => Ok(Relations::inputs_BracketAccess),
+        14 => Ok(Relations::inputs_Break),
+        15 => Ok(Relations::inputs_Call),
+        16 => Ok(Relations::inputs_Class),
+        17 => Ok(Relations::inputs_ClassExpr),
+        18 => Ok(Relations::inputs_ConstDecl),
+        19 => Ok(Relations::inputs_Continue),
+        20 => Ok(Relations::inputs_DoWhile),
+        21 => Ok(Relations::inputs_DotAccess),
+        22 => Ok(Relations::inputs_EveryScope),
+        23 => Ok(Relations::inputs_ExprBigInt),
+        24 => Ok(Relations::inputs_ExprBool),
+        25 => Ok(Relations::inputs_ExprNumber),
+        26 => Ok(Relations::inputs_ExprString),
+        27 => Ok(Relations::inputs_Expression),
+        28 => Ok(Relations::inputs_File),
+        29 => Ok(Relations::inputs_FileExport),
+        30 => Ok(Relations::inputs_For),
+        31 => Ok(Relations::inputs_ForIn),
+        32 => Ok(Relations::inputs_ForOf),
+        33 => Ok(Relations::inputs_Function),
+        34 => Ok(Relations::inputs_FunctionArg),
+        35 => Ok(Relations::inputs_If),
+        36 => Ok(Relations::inputs_ImplicitGlobal),
+        37 => Ok(Relations::inputs_ImportDecl),
+        38 => Ok(Relations::inputs_InlineFunc),
+        39 => Ok(Relations::inputs_InlineFuncParam),
+        40 => Ok(Relations::inputs_InputScope),
+        41 => Ok(Relations::inputs_Label),
+        42 => Ok(Relations::inputs_LetDecl),
+        43 => Ok(Relations::inputs_NameRef),
+        44 => Ok(Relations::inputs_New),
+        45 => Ok(Relations::inputs_Property),
+        46 => Ok(Relations::inputs_Return),
+        47 => Ok(Relations::inputs_Statement),
+        48 => Ok(Relations::inputs_Switch),
+        49 => Ok(Relations::inputs_SwitchCase),
+        50 => Ok(Relations::inputs_Template),
+        51 => Ok(Relations::inputs_Ternary),
+        52 => Ok(Relations::inputs_Throw),
+        53 => Ok(Relations::inputs_Try),
+        54 => Ok(Relations::inputs_UnaryOp),
+        55 => Ok(Relations::inputs_UserGlobal),
+        56 => Ok(Relations::inputs_VarDecl),
+        57 => Ok(Relations::inputs_While),
+        58 => Ok(Relations::inputs_With),
+        59 => Ok(Relations::inputs_Yield),
+        60 => Ok(Relations::is_exported_IsExported),
+        61 => Ok(Relations::name_in_scope_NameInScope),
+        62 => Ok(Relations::name_in_scope_NameOccursInScope),
+        63 => Ok(Relations::name_in_scope_ScopeOfDeclName),
+        64 => Ok(Relations::outputs_no_shadow_DeclarationInDescendent),
+        65 => Ok(Relations::outputs_no_shadow_NoShadow),
+        66 => Ok(Relations::outputs_no_shadow_ScopeOfDecl),
+        67 => Ok(Relations::outputs_no_typeof_undef_NeedsWithinTypeofExpr),
+        68 => Ok(Relations::outputs_no_typeof_undef_NoTypeofUndef),
+        69 => Ok(Relations::outputs_no_typeof_undef_WithinTypeofExpr),
+        70 => Ok(Relations::outputs_no_undef_ChainedWith),
+        71 => Ok(Relations::outputs_no_undef_NoUndef),
+        72 => Ok(Relations::outputs_no_unused_labels_LabelUsage),
+        73 => Ok(Relations::outputs_no_unused_labels_NoUnusedLabels),
+        74 => Ok(Relations::outputs_no_unused_labels_UsedLabels),
+        75 => Ok(Relations::outputs_no_unused_labels___Prefix_1),
+        76 => Ok(Relations::outputs_no_use_before_def_NoUseBeforeDef),
+        77 => Ok(Relations::outputs_unused_vars_FunctionBodyScope),
+        78 => Ok(Relations::outputs_unused_vars_UnusedVariables),
+        79 => Ok(Relations::scopes_FunctionLevelScope),
+        80 => Ok(Relations::scopes_IsHoistable),
+        81 => Ok(Relations::scopes_NeedsScopeChildren),
+        82 => Ok(Relations::scopes_NeedsScopeParents),
+        83 => Ok(Relations::scopes_ScopeFamily),
+        84 => Ok(Relations::scopes_ScopeOfId),
+        85 => Ok(Relations::var_decls_VariableDeclarations),
+        86 => Ok(Relations::variable_decl_VariableDecl),
              _  => Err(())
          }
     }
@@ -1108,93 +1106,92 @@ impl TryFrom<program::RelId> for Relations {
 pub fn relid2name(rid: program::RelId) -> Option<&'static str> {
    match rid {
         0 => Some(&"__Prefix_0"),
-        1 => Some(&"__Prefix_1"),
-        2 => Some(&"config::EnableNoShadow"),
-        3 => Some(&"config::EnableNoTypeofUndef"),
-        4 => Some(&"config::EnableNoUndef"),
-        5 => Some(&"config::EnableNoUnusedLabels"),
-        6 => Some(&"config::EnableNoUnusedVars"),
-        7 => Some(&"config::EnableNoUseBeforeDef"),
-        8 => Some(&"inputs::Array"),
-        9 => Some(&"inputs::Arrow"),
-        10 => Some(&"inputs::ArrowParam"),
-        11 => Some(&"inputs::Assign"),
-        12 => Some(&"inputs::Await"),
-        13 => Some(&"inputs::BinOp"),
-        14 => Some(&"inputs::BracketAccess"),
-        15 => Some(&"inputs::Break"),
-        16 => Some(&"inputs::Call"),
-        17 => Some(&"inputs::Class"),
-        18 => Some(&"inputs::ClassExpr"),
-        19 => Some(&"inputs::ConstDecl"),
-        20 => Some(&"inputs::Continue"),
-        21 => Some(&"inputs::DoWhile"),
-        22 => Some(&"inputs::DotAccess"),
-        23 => Some(&"inputs::EveryScope"),
-        24 => Some(&"inputs::ExprBigInt"),
-        25 => Some(&"inputs::ExprBool"),
-        26 => Some(&"inputs::ExprNumber"),
-        27 => Some(&"inputs::ExprString"),
-        28 => Some(&"inputs::Expression"),
-        29 => Some(&"inputs::File"),
-        30 => Some(&"inputs::FileExport"),
-        31 => Some(&"inputs::For"),
-        32 => Some(&"inputs::ForIn"),
-        33 => Some(&"inputs::ForOf"),
-        34 => Some(&"inputs::Function"),
-        35 => Some(&"inputs::FunctionArg"),
-        36 => Some(&"inputs::If"),
-        37 => Some(&"inputs::ImplicitGlobal"),
-        38 => Some(&"inputs::ImportDecl"),
-        39 => Some(&"inputs::InlineFunc"),
-        40 => Some(&"inputs::InlineFuncParam"),
-        41 => Some(&"inputs::InputScope"),
-        42 => Some(&"inputs::Label"),
-        43 => Some(&"inputs::LetDecl"),
-        44 => Some(&"inputs::NameRef"),
-        45 => Some(&"inputs::New"),
-        46 => Some(&"inputs::Property"),
-        47 => Some(&"inputs::Return"),
-        48 => Some(&"inputs::Statement"),
-        49 => Some(&"inputs::Switch"),
-        50 => Some(&"inputs::SwitchCase"),
-        51 => Some(&"inputs::Template"),
-        52 => Some(&"inputs::Ternary"),
-        53 => Some(&"inputs::Throw"),
-        54 => Some(&"inputs::Try"),
-        55 => Some(&"inputs::UnaryOp"),
-        56 => Some(&"inputs::UserGlobal"),
-        57 => Some(&"inputs::VarDecl"),
-        58 => Some(&"inputs::While"),
-        59 => Some(&"inputs::With"),
-        60 => Some(&"inputs::Yield"),
-        61 => Some(&"is_exported::IsExported"),
-        62 => Some(&"name_in_scope::NameInScope"),
-        63 => Some(&"name_in_scope::NameOccursInScope"),
-        64 => Some(&"name_in_scope::ScopeOfDeclName"),
-        65 => Some(&"outputs::no_shadow::DeclarationInDescendent"),
-        66 => Some(&"outputs::no_shadow::NoShadow"),
-        67 => Some(&"outputs::no_shadow::ScopeOfDecl"),
-        68 => Some(&"outputs::no_typeof_undef::NeedsWithinTypeofExpr"),
-        69 => Some(&"outputs::no_typeof_undef::NoTypeofUndef"),
-        70 => Some(&"outputs::no_typeof_undef::WithinTypeofExpr"),
-        71 => Some(&"outputs::no_undef::ChainedWith"),
-        72 => Some(&"outputs::no_undef::NoUndef"),
-        73 => Some(&"outputs::no_unused_labels::LabelUsage"),
-        74 => Some(&"outputs::no_unused_labels::NoUnusedLabels"),
-        75 => Some(&"outputs::no_unused_labels::UsedLabels"),
-        76 => Some(&"outputs::no_unused_labels::__Prefix_2"),
-        77 => Some(&"outputs::no_use_before_def::NoUseBeforeDef"),
-        78 => Some(&"outputs::unused_vars::FunctionBodyScope"),
-        79 => Some(&"outputs::unused_vars::UnusedVariables"),
-        80 => Some(&"scopes::FunctionLevelScope"),
-        81 => Some(&"scopes::IsHoistable"),
-        82 => Some(&"scopes::NeedsScopeChildren"),
-        83 => Some(&"scopes::NeedsScopeParents"),
-        84 => Some(&"scopes::ScopeFamily"),
-        85 => Some(&"scopes::ScopeOfId"),
-        86 => Some(&"var_decls::VariableDeclarations"),
-        87 => Some(&"variable_decl::VariableDecl"),
+        1 => Some(&"config::EnableNoShadow"),
+        2 => Some(&"config::EnableNoTypeofUndef"),
+        3 => Some(&"config::EnableNoUndef"),
+        4 => Some(&"config::EnableNoUnusedLabels"),
+        5 => Some(&"config::EnableNoUnusedVars"),
+        6 => Some(&"config::EnableNoUseBeforeDef"),
+        7 => Some(&"inputs::Array"),
+        8 => Some(&"inputs::Arrow"),
+        9 => Some(&"inputs::ArrowParam"),
+        10 => Some(&"inputs::Assign"),
+        11 => Some(&"inputs::Await"),
+        12 => Some(&"inputs::BinOp"),
+        13 => Some(&"inputs::BracketAccess"),
+        14 => Some(&"inputs::Break"),
+        15 => Some(&"inputs::Call"),
+        16 => Some(&"inputs::Class"),
+        17 => Some(&"inputs::ClassExpr"),
+        18 => Some(&"inputs::ConstDecl"),
+        19 => Some(&"inputs::Continue"),
+        20 => Some(&"inputs::DoWhile"),
+        21 => Some(&"inputs::DotAccess"),
+        22 => Some(&"inputs::EveryScope"),
+        23 => Some(&"inputs::ExprBigInt"),
+        24 => Some(&"inputs::ExprBool"),
+        25 => Some(&"inputs::ExprNumber"),
+        26 => Some(&"inputs::ExprString"),
+        27 => Some(&"inputs::Expression"),
+        28 => Some(&"inputs::File"),
+        29 => Some(&"inputs::FileExport"),
+        30 => Some(&"inputs::For"),
+        31 => Some(&"inputs::ForIn"),
+        32 => Some(&"inputs::ForOf"),
+        33 => Some(&"inputs::Function"),
+        34 => Some(&"inputs::FunctionArg"),
+        35 => Some(&"inputs::If"),
+        36 => Some(&"inputs::ImplicitGlobal"),
+        37 => Some(&"inputs::ImportDecl"),
+        38 => Some(&"inputs::InlineFunc"),
+        39 => Some(&"inputs::InlineFuncParam"),
+        40 => Some(&"inputs::InputScope"),
+        41 => Some(&"inputs::Label"),
+        42 => Some(&"inputs::LetDecl"),
+        43 => Some(&"inputs::NameRef"),
+        44 => Some(&"inputs::New"),
+        45 => Some(&"inputs::Property"),
+        46 => Some(&"inputs::Return"),
+        47 => Some(&"inputs::Statement"),
+        48 => Some(&"inputs::Switch"),
+        49 => Some(&"inputs::SwitchCase"),
+        50 => Some(&"inputs::Template"),
+        51 => Some(&"inputs::Ternary"),
+        52 => Some(&"inputs::Throw"),
+        53 => Some(&"inputs::Try"),
+        54 => Some(&"inputs::UnaryOp"),
+        55 => Some(&"inputs::UserGlobal"),
+        56 => Some(&"inputs::VarDecl"),
+        57 => Some(&"inputs::While"),
+        58 => Some(&"inputs::With"),
+        59 => Some(&"inputs::Yield"),
+        60 => Some(&"is_exported::IsExported"),
+        61 => Some(&"name_in_scope::NameInScope"),
+        62 => Some(&"name_in_scope::NameOccursInScope"),
+        63 => Some(&"name_in_scope::ScopeOfDeclName"),
+        64 => Some(&"outputs::no_shadow::DeclarationInDescendent"),
+        65 => Some(&"outputs::no_shadow::NoShadow"),
+        66 => Some(&"outputs::no_shadow::ScopeOfDecl"),
+        67 => Some(&"outputs::no_typeof_undef::NeedsWithinTypeofExpr"),
+        68 => Some(&"outputs::no_typeof_undef::NoTypeofUndef"),
+        69 => Some(&"outputs::no_typeof_undef::WithinTypeofExpr"),
+        70 => Some(&"outputs::no_undef::ChainedWith"),
+        71 => Some(&"outputs::no_undef::NoUndef"),
+        72 => Some(&"outputs::no_unused_labels::LabelUsage"),
+        73 => Some(&"outputs::no_unused_labels::NoUnusedLabels"),
+        74 => Some(&"outputs::no_unused_labels::UsedLabels"),
+        75 => Some(&"outputs::no_unused_labels::__Prefix_1"),
+        76 => Some(&"outputs::no_use_before_def::NoUseBeforeDef"),
+        77 => Some(&"outputs::unused_vars::FunctionBodyScope"),
+        78 => Some(&"outputs::unused_vars::UnusedVariables"),
+        79 => Some(&"scopes::FunctionLevelScope"),
+        80 => Some(&"scopes::IsHoistable"),
+        81 => Some(&"scopes::NeedsScopeChildren"),
+        82 => Some(&"scopes::NeedsScopeParents"),
+        83 => Some(&"scopes::ScopeFamily"),
+        84 => Some(&"scopes::ScopeOfId"),
+        85 => Some(&"var_decls::VariableDeclarations"),
+        86 => Some(&"variable_decl::VariableDecl"),
        _  => None
    }
 }
@@ -1204,9 +1201,8 @@ pub fn relid2cname(rid: program::RelId) -> Option<&'static ::std::ffi::CStr> {
 }   /// A map of `RelId`s to their name as an `&'static str`
 pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(88, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(87, ::fnv::FnvBuildHasher::default());
         map.insert(Relations::__Prefix_0, "__Prefix_0");
-        map.insert(Relations::__Prefix_1, "__Prefix_1");
         map.insert(Relations::config_EnableNoShadow, "config::EnableNoShadow");
         map.insert(Relations::config_EnableNoTypeofUndef, "config::EnableNoTypeofUndef");
         map.insert(Relations::config_EnableNoUndef, "config::EnableNoUndef");
@@ -1281,7 +1277,7 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
         map.insert(Relations::outputs_no_unused_labels_LabelUsage, "outputs::no_unused_labels::LabelUsage");
         map.insert(Relations::outputs_no_unused_labels_NoUnusedLabels, "outputs::no_unused_labels::NoUnusedLabels");
         map.insert(Relations::outputs_no_unused_labels_UsedLabels, "outputs::no_unused_labels::UsedLabels");
-        map.insert(Relations::outputs_no_unused_labels___Prefix_2, "outputs::no_unused_labels::__Prefix_2");
+        map.insert(Relations::outputs_no_unused_labels___Prefix_1, "outputs::no_unused_labels::__Prefix_1");
         map.insert(Relations::outputs_no_use_before_def_NoUseBeforeDef, "outputs::no_use_before_def::NoUseBeforeDef");
         map.insert(Relations::outputs_unused_vars_FunctionBodyScope, "outputs::unused_vars::FunctionBodyScope");
         map.insert(Relations::outputs_unused_vars_UnusedVariables, "outputs::unused_vars::UnusedVariables");
@@ -1299,95 +1295,94 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
 #[cfg(feature = "c_api")]
 pub static RELIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<program::RelId, &'static ::std::ffi::CStr>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(88, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(87, ::fnv::FnvBuildHasher::default());
         map.insert(0, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_0\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(1, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_1\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(2, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoShadow\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(3, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoTypeofUndef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(4, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(5, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoUnusedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(6, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoUnusedVars\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(7, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoUseBeforeDef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(8, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Array\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(9, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Arrow\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(10, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ArrowParam\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(11, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Assign\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(12, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Await\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(13, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::BinOp\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(14, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::BracketAccess\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(15, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Break\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(16, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Call\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(17, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Class\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(18, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ClassExpr\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(19, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ConstDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(20, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Continue\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(21, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::DoWhile\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(22, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::DotAccess\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(23, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::EveryScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(24, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExprBigInt\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(25, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExprBool\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(26, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExprNumber\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(27, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExprString\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(28, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Expression\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(29, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::File\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(30, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::FileExport\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(31, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::For\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(32, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ForIn\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(33, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ForOf\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(34, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Function\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(35, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::FunctionArg\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(36, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::If\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(37, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ImplicitGlobal\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(38, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ImportDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(39, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InlineFunc\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(40, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InlineFuncParam\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(41, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InputScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(42, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Label\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(43, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::LetDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(44, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::NameRef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(45, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::New\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(46, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Property\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(47, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Return\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(48, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Statement\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(49, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Switch\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(50, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::SwitchCase\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(51, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Template\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(52, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Ternary\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(53, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Throw\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(54, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Try\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(55, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::UnaryOp\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(56, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::UserGlobal\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(57, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::VarDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(58, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::While\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(59, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::With\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(60, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Yield\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(61, ::std::ffi::CStr::from_bytes_with_nul(b"is_exported::IsExported\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(62, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::NameInScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(63, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::NameOccursInScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(64, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::ScopeOfDeclName\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(65, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_shadow::DeclarationInDescendent\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(66, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_shadow::NoShadow\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(67, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_shadow::ScopeOfDecl\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(68, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_typeof_undef::NeedsWithinTypeofExpr\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(69, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_typeof_undef::NoTypeofUndef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(70, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_typeof_undef::WithinTypeofExpr\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(71, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::ChainedWith\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(72, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::NoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(73, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::LabelUsage\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(74, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::NoUnusedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(75, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::UsedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(76, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::__Prefix_2\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(77, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_use_before_def::NoUseBeforeDef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(78, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::FunctionBodyScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(79, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::UnusedVariables\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(80, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::FunctionLevelScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(81, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::IsHoistable\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(82, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::NeedsScopeChildren\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(83, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::NeedsScopeParents\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(84, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeFamily\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(85, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeOfId\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(86, ::std::ffi::CStr::from_bytes_with_nul(b"var_decls::VariableDeclarations\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(87, ::std::ffi::CStr::from_bytes_with_nul(b"variable_decl::VariableDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(1, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoShadow\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(2, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoTypeofUndef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(3, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(4, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoUnusedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(5, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoUnusedVars\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(6, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoUseBeforeDef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(7, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Array\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(8, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Arrow\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(9, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ArrowParam\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(10, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Assign\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(11, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Await\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(12, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::BinOp\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(13, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::BracketAccess\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(14, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Break\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(15, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Call\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(16, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Class\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(17, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ClassExpr\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(18, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ConstDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(19, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Continue\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(20, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::DoWhile\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(21, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::DotAccess\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(22, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::EveryScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(23, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExprBigInt\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(24, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExprBool\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(25, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExprNumber\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(26, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExprString\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(27, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Expression\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(28, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::File\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(29, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::FileExport\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(30, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::For\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(31, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ForIn\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(32, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ForOf\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(33, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Function\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(34, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::FunctionArg\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(35, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::If\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(36, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ImplicitGlobal\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(37, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ImportDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(38, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InlineFunc\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(39, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InlineFuncParam\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(40, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InputScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(41, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Label\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(42, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::LetDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(43, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::NameRef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(44, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::New\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(45, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Property\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(46, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Return\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(47, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Statement\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(48, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Switch\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(49, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::SwitchCase\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(50, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Template\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(51, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Ternary\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(52, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Throw\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(53, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Try\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(54, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::UnaryOp\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(55, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::UserGlobal\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(56, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::VarDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(57, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::While\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(58, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::With\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(59, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::Yield\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(60, ::std::ffi::CStr::from_bytes_with_nul(b"is_exported::IsExported\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(61, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::NameInScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(62, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::NameOccursInScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(63, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::ScopeOfDeclName\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(64, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_shadow::DeclarationInDescendent\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(65, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_shadow::NoShadow\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(66, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_shadow::ScopeOfDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(67, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_typeof_undef::NeedsWithinTypeofExpr\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(68, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_typeof_undef::NoTypeofUndef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(69, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_typeof_undef::WithinTypeofExpr\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(70, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::ChainedWith\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(71, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::NoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(72, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::LabelUsage\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(73, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::NoUnusedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(74, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::UsedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(75, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::__Prefix_1\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(76, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_use_before_def::NoUseBeforeDef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(77, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::FunctionBodyScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(78, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::UnusedVariables\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(79, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::FunctionLevelScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(80, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::IsHoistable\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(81, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::NeedsScopeChildren\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(82, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::NeedsScopeParents\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(83, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeFamily\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(84, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeOfId\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(85, ::std::ffi::CStr::from_bytes_with_nul(b"var_decls::VariableDeclarations\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(86, ::std::ffi::CStr::from_bytes_with_nul(b"variable_decl::VariableDecl\0").expect("Unreachable: A null byte was specifically inserted"));
         map
     });
     /// A map of input `Relations`s to their name as an `&'static str`
@@ -1472,17 +1467,8 @@ impl TryFrom<&str> for Indexes {
     type Error = ();
     fn try_from(iname: &str) -> ::std::result::Result<Self, ()> {
          match iname {
-        "inputs::EveryScopeByFile" => Ok(Indexes::inputs_EveryScopeByFile),
-        "inputs::ExpressionByFile" => Ok(Indexes::inputs_ExpressionByFile),
         "inputs::ExpressionById" => Ok(Indexes::inputs_ExpressionById),
-        "inputs::ExpressionBySpan" => Ok(Indexes::inputs_ExpressionBySpan),
-        "inputs::FileById" => Ok(Indexes::inputs_FileById),
-        "inputs::InputScopeByChild" => Ok(Indexes::inputs_InputScopeByChild),
-        "inputs::InputScopeByFile" => Ok(Indexes::inputs_InputScopeByFile),
-        "inputs::InputScopeByParent" => Ok(Indexes::inputs_InputScopeByParent),
-        "inputs::StatementByFile" => Ok(Indexes::inputs_StatementByFile),
         "inputs::StatementById" => Ok(Indexes::inputs_StatementById),
-        "inputs::StatementBySpan" => Ok(Indexes::inputs_StatementBySpan),
         "name_in_scope::Index_VariableInScope" => Ok(Indexes::name_in_scope_Index_VariableInScope),
         "name_in_scope::Index_VariablesForScope" => Ok(Indexes::name_in_scope_Index_VariablesForScope),
         "scopes::ScopeFamilyByParent" => Ok(Indexes::scopes_ScopeFamilyByParent),
@@ -1494,40 +1480,22 @@ impl TryFrom<program::IdxId> for Indexes {
     type Error = ();
     fn try_from(iid: program::IdxId) -> ::core::result::Result<Self, ()> {
          match iid {
-        0 => Ok(Indexes::inputs_EveryScopeByFile),
-        1 => Ok(Indexes::inputs_ExpressionByFile),
-        2 => Ok(Indexes::inputs_ExpressionById),
-        3 => Ok(Indexes::inputs_ExpressionBySpan),
-        4 => Ok(Indexes::inputs_FileById),
-        5 => Ok(Indexes::inputs_InputScopeByChild),
-        6 => Ok(Indexes::inputs_InputScopeByFile),
-        7 => Ok(Indexes::inputs_InputScopeByParent),
-        8 => Ok(Indexes::inputs_StatementByFile),
-        9 => Ok(Indexes::inputs_StatementById),
-        10 => Ok(Indexes::inputs_StatementBySpan),
-        11 => Ok(Indexes::name_in_scope_Index_VariableInScope),
-        12 => Ok(Indexes::name_in_scope_Index_VariablesForScope),
-        13 => Ok(Indexes::scopes_ScopeFamilyByParent),
+        0 => Ok(Indexes::inputs_ExpressionById),
+        1 => Ok(Indexes::inputs_StatementById),
+        2 => Ok(Indexes::name_in_scope_Index_VariableInScope),
+        3 => Ok(Indexes::name_in_scope_Index_VariablesForScope),
+        4 => Ok(Indexes::scopes_ScopeFamilyByParent),
              _  => Err(())
          }
     }
 }
 pub fn indexid2name(iid: program::IdxId) -> Option<&'static str> {
    match iid {
-        0 => Some(&"inputs::EveryScopeByFile"),
-        1 => Some(&"inputs::ExpressionByFile"),
-        2 => Some(&"inputs::ExpressionById"),
-        3 => Some(&"inputs::ExpressionBySpan"),
-        4 => Some(&"inputs::FileById"),
-        5 => Some(&"inputs::InputScopeByChild"),
-        6 => Some(&"inputs::InputScopeByFile"),
-        7 => Some(&"inputs::InputScopeByParent"),
-        8 => Some(&"inputs::StatementByFile"),
-        9 => Some(&"inputs::StatementById"),
-        10 => Some(&"inputs::StatementBySpan"),
-        11 => Some(&"name_in_scope::Index_VariableInScope"),
-        12 => Some(&"name_in_scope::Index_VariablesForScope"),
-        13 => Some(&"scopes::ScopeFamilyByParent"),
+        0 => Some(&"inputs::ExpressionById"),
+        1 => Some(&"inputs::StatementById"),
+        2 => Some(&"name_in_scope::Index_VariableInScope"),
+        3 => Some(&"name_in_scope::Index_VariablesForScope"),
+        4 => Some(&"scopes::ScopeFamilyByParent"),
        _  => None
    }
 }
@@ -1537,18 +1505,9 @@ pub fn indexid2cname(iid: program::IdxId) -> Option<&'static ::std::ffi::CStr> {
 }   /// A map of `Indexes` to their name as an `&'static str`
 pub static IDXIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Indexes, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(14, ::fnv::FnvBuildHasher::default());
-        map.insert(Indexes::inputs_EveryScopeByFile, "inputs::EveryScopeByFile");
-        map.insert(Indexes::inputs_ExpressionByFile, "inputs::ExpressionByFile");
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(5, ::fnv::FnvBuildHasher::default());
         map.insert(Indexes::inputs_ExpressionById, "inputs::ExpressionById");
-        map.insert(Indexes::inputs_ExpressionBySpan, "inputs::ExpressionBySpan");
-        map.insert(Indexes::inputs_FileById, "inputs::FileById");
-        map.insert(Indexes::inputs_InputScopeByChild, "inputs::InputScopeByChild");
-        map.insert(Indexes::inputs_InputScopeByFile, "inputs::InputScopeByFile");
-        map.insert(Indexes::inputs_InputScopeByParent, "inputs::InputScopeByParent");
-        map.insert(Indexes::inputs_StatementByFile, "inputs::StatementByFile");
         map.insert(Indexes::inputs_StatementById, "inputs::StatementById");
-        map.insert(Indexes::inputs_StatementBySpan, "inputs::StatementBySpan");
         map.insert(Indexes::name_in_scope_Index_VariableInScope, "name_in_scope::Index_VariableInScope");
         map.insert(Indexes::name_in_scope_Index_VariablesForScope, "name_in_scope::Index_VariablesForScope");
         map.insert(Indexes::scopes_ScopeFamilyByParent, "scopes::ScopeFamilyByParent");
@@ -1558,29 +1517,17 @@ pub static IDXIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Indexes, &'static
 #[cfg(feature = "c_api")]
 pub static IDXIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<program::IdxId, &'static ::std::ffi::CStr>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(14, ::fnv::FnvBuildHasher::default());
-        map.insert(0, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::EveryScopeByFile\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(1, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExpressionByFile\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(2, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExpressionById\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(3, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExpressionBySpan\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(4, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::FileById\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(5, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InputScopeByChild\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(6, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InputScopeByFile\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(7, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::InputScopeByParent\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(8, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::StatementByFile\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(9, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::StatementById\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(10, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::StatementBySpan\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(11, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::Index_VariableInScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(12, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::Index_VariablesForScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(13, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeFamilyByParent\0").expect("Unreachable: A null byte was specifically inserted"));
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(5, ::fnv::FnvBuildHasher::default());
+        map.insert(0, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::ExpressionById\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(1, ::std::ffi::CStr::from_bytes_with_nul(b"inputs::StatementById\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(2, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::Index_VariableInScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(3, ::std::ffi::CStr::from_bytes_with_nul(b"name_in_scope::Index_VariablesForScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(4, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeFamilyByParent\0").expect("Unreachable: A null byte was specifically inserted"));
         map
     });
 pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::Record) -> ::std::result::Result<DDValue, String> {
     match rel {
         Relations::__Prefix_0 => {
-            Ok(<ddlog_std::tuple6<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span, internment::Intern<String>>>::from_record(_rec)?.into_ddvalue())
-        },
-        Relations::__Prefix_1 => {
             Ok(<ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>::from_record(_rec)?.into_ddvalue())
         },
         Relations::config_EnableNoShadow => {
@@ -1805,7 +1752,7 @@ pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::R
         Relations::outputs_no_unused_labels_UsedLabels => {
             Ok(<types__outputs__no_unused_labels::UsedLabels>::from_record(_rec)?.into_ddvalue())
         },
-        Relations::outputs_no_unused_labels___Prefix_2 => {
+        Relations::outputs_no_unused_labels___Prefix_1 => {
             Ok(<ddlog_std::tuple4<types__ast::FileId, types__ast::StmtId, types__ast::Spanned<internment::Intern<String>>, types__ast::ScopeId>>::from_record(_rec)?.into_ddvalue())
         },
         Relations::outputs_no_use_before_def_NoUseBeforeDef => {
@@ -1864,194 +1811,148 @@ pub fn relkey_from_record(rel: Relations, _rec: &differential_datalog::record::R
             Ok(<types__ast::FileId>::from_record(_rec)?.into_ddvalue())
         },
         Relations::inputs_Class => {
-            Ok(<ddlog_std::tuple2<types__ast::ClassId, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
+            Ok(<types__ast::ClassId>::from_record(_rec)?.into_ddvalue())
         },
         Relations::inputs_Expression => {
-            Ok(<ddlog_std::tuple2<types__ast::ExprId, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
+            Ok(<types__ast::ExprId>::from_record(_rec)?.into_ddvalue())
         },
         Relations::inputs_File => {
             Ok(<types__ast::FileId>::from_record(_rec)?.into_ddvalue())
         },
         Relations::inputs_Function => {
-            Ok(<ddlog_std::tuple2<types__ast::FuncId, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
+            Ok(<types__ast::FuncId>::from_record(_rec)?.into_ddvalue())
         },
         Relations::inputs_Statement => {
-            Ok(<ddlog_std::tuple2<types__ast::StmtId, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
+            Ok(<types__ast::StmtId>::from_record(_rec)?.into_ddvalue())
         }
         _ => Err(format!("relation {:?} does not have a primary key", rel))
     }
 }
 pub fn idxkey_from_record(idx: Indexes, _rec: &differential_datalog::record::Record) -> ::std::result::Result<DDValue, String> {
     match idx {
-        Indexes::inputs_EveryScopeByFile => {
-            Ok(<types__ast::FileId>::from_record(_rec)?.into_ddvalue())
-        },
-        Indexes::inputs_ExpressionByFile => {
-            Ok(<types__ast::FileId>::from_record(_rec)?.into_ddvalue())
-        },
         Indexes::inputs_ExpressionById => {
-            Ok(<ddlog_std::tuple2<types__ast::ExprId, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
-        },
-        Indexes::inputs_ExpressionBySpan => {
-            Ok(<ddlog_std::tuple2<types__ast::Span, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
-        },
-        Indexes::inputs_FileById => {
-            Ok(<types__ast::FileId>::from_record(_rec)?.into_ddvalue())
-        },
-        Indexes::inputs_InputScopeByChild => {
-            Ok(<ddlog_std::tuple2<types__ast::ScopeId, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
-        },
-        Indexes::inputs_InputScopeByFile => {
-            Ok(<types__ast::FileId>::from_record(_rec)?.into_ddvalue())
-        },
-        Indexes::inputs_InputScopeByParent => {
-            Ok(<ddlog_std::tuple2<types__ast::ScopeId, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
-        },
-        Indexes::inputs_StatementByFile => {
-            Ok(<types__ast::FileId>::from_record(_rec)?.into_ddvalue())
+            Ok(<types__ast::ExprId>::from_record(_rec)?.into_ddvalue())
         },
         Indexes::inputs_StatementById => {
-            Ok(<ddlog_std::tuple2<types__ast::StmtId, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
-        },
-        Indexes::inputs_StatementBySpan => {
-            Ok(<ddlog_std::tuple2<types__ast::Span, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
+            Ok(<types__ast::StmtId>::from_record(_rec)?.into_ddvalue())
         },
         Indexes::name_in_scope_Index_VariableInScope => {
-            Ok(<ddlog_std::tuple3<types__ast::FileId, types__ast::ScopeId, internment::Intern<String>>>::from_record(_rec)?.into_ddvalue())
+            Ok(<ddlog_std::tuple2<types__ast::ScopeId, internment::Intern<String>>>::from_record(_rec)?.into_ddvalue())
         },
         Indexes::name_in_scope_Index_VariablesForScope => {
-            Ok(<ddlog_std::tuple2<types__ast::FileId, types__ast::ScopeId>>::from_record(_rec)?.into_ddvalue())
+            Ok(<types__ast::ScopeId>::from_record(_rec)?.into_ddvalue())
         },
         Indexes::scopes_ScopeFamilyByParent => {
-            Ok(<ddlog_std::tuple2<types__ast::ScopeId, types__ast::FileId>>::from_record(_rec)?.into_ddvalue())
+            Ok(<types__ast::ScopeId>::from_record(_rec)?.into_ddvalue())
         }
     }
 }
 pub fn indexes2arrid(idx: Indexes) -> program::ArrId {
     match idx {
-        Indexes::inputs_EveryScopeByFile => ( 23, 0),
-        Indexes::inputs_ExpressionByFile => ( 28, 4),
-        Indexes::inputs_ExpressionById => ( 28, 5),
-        Indexes::inputs_ExpressionBySpan => ( 28, 6),
-        Indexes::inputs_FileById => ( 29, 2),
-        Indexes::inputs_InputScopeByChild => ( 41, 2),
-        Indexes::inputs_InputScopeByFile => ( 41, 3),
-        Indexes::inputs_InputScopeByParent => ( 41, 4),
-        Indexes::inputs_StatementByFile => ( 28, 4),
-        Indexes::inputs_StatementById => ( 48, 2),
-        Indexes::inputs_StatementBySpan => ( 48, 3),
-        Indexes::name_in_scope_Index_VariableInScope => ( 62, 7),
-        Indexes::name_in_scope_Index_VariablesForScope => ( 62, 8),
-        Indexes::scopes_ScopeFamilyByParent => ( 84, 2),
+        Indexes::inputs_ExpressionById => ( 27, 4),
+        Indexes::inputs_StatementById => ( 47, 2),
+        Indexes::name_in_scope_Index_VariableInScope => ( 61, 7),
+        Indexes::name_in_scope_Index_VariablesForScope => ( 61, 8),
+        Indexes::scopes_ScopeFamilyByParent => ( 83, 2),
     }
 }
 #[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
 pub enum Relations {
     __Prefix_0 = 0,
-    __Prefix_1 = 1,
-    config_EnableNoShadow = 2,
-    config_EnableNoTypeofUndef = 3,
-    config_EnableNoUndef = 4,
-    config_EnableNoUnusedLabels = 5,
-    config_EnableNoUnusedVars = 6,
-    config_EnableNoUseBeforeDef = 7,
-    inputs_Array = 8,
-    inputs_Arrow = 9,
-    inputs_ArrowParam = 10,
-    inputs_Assign = 11,
-    inputs_Await = 12,
-    inputs_BinOp = 13,
-    inputs_BracketAccess = 14,
-    inputs_Break = 15,
-    inputs_Call = 16,
-    inputs_Class = 17,
-    inputs_ClassExpr = 18,
-    inputs_ConstDecl = 19,
-    inputs_Continue = 20,
-    inputs_DoWhile = 21,
-    inputs_DotAccess = 22,
-    inputs_EveryScope = 23,
-    inputs_ExprBigInt = 24,
-    inputs_ExprBool = 25,
-    inputs_ExprNumber = 26,
-    inputs_ExprString = 27,
-    inputs_Expression = 28,
-    inputs_File = 29,
-    inputs_FileExport = 30,
-    inputs_For = 31,
-    inputs_ForIn = 32,
-    inputs_ForOf = 33,
-    inputs_Function = 34,
-    inputs_FunctionArg = 35,
-    inputs_If = 36,
-    inputs_ImplicitGlobal = 37,
-    inputs_ImportDecl = 38,
-    inputs_InlineFunc = 39,
-    inputs_InlineFuncParam = 40,
-    inputs_InputScope = 41,
-    inputs_Label = 42,
-    inputs_LetDecl = 43,
-    inputs_NameRef = 44,
-    inputs_New = 45,
-    inputs_Property = 46,
-    inputs_Return = 47,
-    inputs_Statement = 48,
-    inputs_Switch = 49,
-    inputs_SwitchCase = 50,
-    inputs_Template = 51,
-    inputs_Ternary = 52,
-    inputs_Throw = 53,
-    inputs_Try = 54,
-    inputs_UnaryOp = 55,
-    inputs_UserGlobal = 56,
-    inputs_VarDecl = 57,
-    inputs_While = 58,
-    inputs_With = 59,
-    inputs_Yield = 60,
-    is_exported_IsExported = 61,
-    name_in_scope_NameInScope = 62,
-    name_in_scope_NameOccursInScope = 63,
-    name_in_scope_ScopeOfDeclName = 64,
-    outputs_no_shadow_DeclarationInDescendent = 65,
-    outputs_no_shadow_NoShadow = 66,
-    outputs_no_shadow_ScopeOfDecl = 67,
-    outputs_no_typeof_undef_NeedsWithinTypeofExpr = 68,
-    outputs_no_typeof_undef_NoTypeofUndef = 69,
-    outputs_no_typeof_undef_WithinTypeofExpr = 70,
-    outputs_no_undef_ChainedWith = 71,
-    outputs_no_undef_NoUndef = 72,
-    outputs_no_unused_labels_LabelUsage = 73,
-    outputs_no_unused_labels_NoUnusedLabels = 74,
-    outputs_no_unused_labels_UsedLabels = 75,
-    outputs_no_unused_labels___Prefix_2 = 76,
-    outputs_no_use_before_def_NoUseBeforeDef = 77,
-    outputs_unused_vars_FunctionBodyScope = 78,
-    outputs_unused_vars_UnusedVariables = 79,
-    scopes_FunctionLevelScope = 80,
-    scopes_IsHoistable = 81,
-    scopes_NeedsScopeChildren = 82,
-    scopes_NeedsScopeParents = 83,
-    scopes_ScopeFamily = 84,
-    scopes_ScopeOfId = 85,
-    var_decls_VariableDeclarations = 86,
-    variable_decl_VariableDecl = 87
+    config_EnableNoShadow = 1,
+    config_EnableNoTypeofUndef = 2,
+    config_EnableNoUndef = 3,
+    config_EnableNoUnusedLabels = 4,
+    config_EnableNoUnusedVars = 5,
+    config_EnableNoUseBeforeDef = 6,
+    inputs_Array = 7,
+    inputs_Arrow = 8,
+    inputs_ArrowParam = 9,
+    inputs_Assign = 10,
+    inputs_Await = 11,
+    inputs_BinOp = 12,
+    inputs_BracketAccess = 13,
+    inputs_Break = 14,
+    inputs_Call = 15,
+    inputs_Class = 16,
+    inputs_ClassExpr = 17,
+    inputs_ConstDecl = 18,
+    inputs_Continue = 19,
+    inputs_DoWhile = 20,
+    inputs_DotAccess = 21,
+    inputs_EveryScope = 22,
+    inputs_ExprBigInt = 23,
+    inputs_ExprBool = 24,
+    inputs_ExprNumber = 25,
+    inputs_ExprString = 26,
+    inputs_Expression = 27,
+    inputs_File = 28,
+    inputs_FileExport = 29,
+    inputs_For = 30,
+    inputs_ForIn = 31,
+    inputs_ForOf = 32,
+    inputs_Function = 33,
+    inputs_FunctionArg = 34,
+    inputs_If = 35,
+    inputs_ImplicitGlobal = 36,
+    inputs_ImportDecl = 37,
+    inputs_InlineFunc = 38,
+    inputs_InlineFuncParam = 39,
+    inputs_InputScope = 40,
+    inputs_Label = 41,
+    inputs_LetDecl = 42,
+    inputs_NameRef = 43,
+    inputs_New = 44,
+    inputs_Property = 45,
+    inputs_Return = 46,
+    inputs_Statement = 47,
+    inputs_Switch = 48,
+    inputs_SwitchCase = 49,
+    inputs_Template = 50,
+    inputs_Ternary = 51,
+    inputs_Throw = 52,
+    inputs_Try = 53,
+    inputs_UnaryOp = 54,
+    inputs_UserGlobal = 55,
+    inputs_VarDecl = 56,
+    inputs_While = 57,
+    inputs_With = 58,
+    inputs_Yield = 59,
+    is_exported_IsExported = 60,
+    name_in_scope_NameInScope = 61,
+    name_in_scope_NameOccursInScope = 62,
+    name_in_scope_ScopeOfDeclName = 63,
+    outputs_no_shadow_DeclarationInDescendent = 64,
+    outputs_no_shadow_NoShadow = 65,
+    outputs_no_shadow_ScopeOfDecl = 66,
+    outputs_no_typeof_undef_NeedsWithinTypeofExpr = 67,
+    outputs_no_typeof_undef_NoTypeofUndef = 68,
+    outputs_no_typeof_undef_WithinTypeofExpr = 69,
+    outputs_no_undef_ChainedWith = 70,
+    outputs_no_undef_NoUndef = 71,
+    outputs_no_unused_labels_LabelUsage = 72,
+    outputs_no_unused_labels_NoUnusedLabels = 73,
+    outputs_no_unused_labels_UsedLabels = 74,
+    outputs_no_unused_labels___Prefix_1 = 75,
+    outputs_no_use_before_def_NoUseBeforeDef = 76,
+    outputs_unused_vars_FunctionBodyScope = 77,
+    outputs_unused_vars_UnusedVariables = 78,
+    scopes_FunctionLevelScope = 79,
+    scopes_IsHoistable = 80,
+    scopes_NeedsScopeChildren = 81,
+    scopes_NeedsScopeParents = 82,
+    scopes_ScopeFamily = 83,
+    scopes_ScopeOfId = 84,
+    var_decls_VariableDeclarations = 85,
+    variable_decl_VariableDecl = 86
 }
 #[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
 pub enum Indexes {
-    inputs_EveryScopeByFile = 0,
-    inputs_ExpressionByFile = 1,
-    inputs_ExpressionById = 2,
-    inputs_ExpressionBySpan = 3,
-    inputs_FileById = 4,
-    inputs_InputScopeByChild = 5,
-    inputs_InputScopeByFile = 6,
-    inputs_InputScopeByParent = 7,
-    inputs_StatementByFile = 8,
-    inputs_StatementById = 9,
-    inputs_StatementBySpan = 10,
-    name_in_scope_Index_VariableInScope = 11,
-    name_in_scope_Index_VariablesForScope = 12,
-    scopes_ScopeFamilyByParent = 13
+    inputs_ExpressionById = 0,
+    inputs_StatementById = 1,
+    name_in_scope_Index_VariableInScope = 2,
+    name_in_scope_Index_VariablesForScope = 3,
+    scopes_ScopeFamilyByParent = 4
 }
 pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> program::Program {
     let config_EnableNoShadow = program::Relation {
@@ -2060,7 +1961,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                     distinct:     false,
                                     caching_mode: program::CachingMode::Set,
                                     key_func:     Some(types__config::__Key_config_EnableNoShadow),
-                                    id:           2,
+                                    id:           1,
                                     rules:        vec![
                                     ],
                                     arrangements: vec![
@@ -2074,7 +1975,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                          distinct:     false,
                                          caching_mode: program::CachingMode::Set,
                                          key_func:     Some(types__config::__Key_config_EnableNoTypeofUndef),
-                                         id:           3,
+                                         id:           2,
                                          rules:        vec![
                                          ],
                                          arrangements: vec![
@@ -2088,7 +1989,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                    distinct:     false,
                                    caching_mode: program::CachingMode::Set,
                                    key_func:     Some(types__config::__Key_config_EnableNoUndef),
-                                   id:           4,
+                                   id:           3,
                                    rules:        vec![
                                    ],
                                    arrangements: vec![
@@ -2102,7 +2003,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                             distinct:     false,
                                                             caching_mode: program::CachingMode::Set,
                                                             key_func:     None,
-                                                            id:           68,
+                                                            id:           67,
                                                             rules:        vec![
                                                                 types::outputs::no_typeof_undef::__Rule_outputs_no_typeof_undef_NeedsWithinTypeofExpr_0.clone(),
                                                                 types::outputs::no_typeof_undef::__Rule_outputs_no_typeof_undef_NeedsWithinTypeofExpr_1.clone()
@@ -2118,7 +2019,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                           distinct:     false,
                                           caching_mode: program::CachingMode::Set,
                                           key_func:     Some(types__config::__Key_config_EnableNoUnusedLabels),
-                                          id:           5,
+                                          id:           4,
                                           rules:        vec![
                                           ],
                                           arrangements: vec![
@@ -2132,11 +2033,12 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                         distinct:     false,
                                         caching_mode: program::CachingMode::Set,
                                         key_func:     Some(types__config::__Key_config_EnableNoUnusedVars),
-                                        id:           6,
+                                        id:           5,
                                         rules:        vec![
                                         ],
                                         arrangements: vec![
-                                            types__config::__Arng_config_EnableNoUnusedVars_0.clone()
+                                            types__config::__Arng_config_EnableNoUnusedVars_0.clone(),
+                                            types__config::__Arng_config_EnableNoUnusedVars_1.clone()
                                         ],
                                         change_cb:    None
                                     };
@@ -2146,7 +2048,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                           distinct:     false,
                                           caching_mode: program::CachingMode::Set,
                                           key_func:     Some(types__config::__Key_config_EnableNoUseBeforeDef),
-                                          id:           7,
+                                          id:           6,
                                           rules:        vec![
                                           ],
                                           arrangements: vec![
@@ -2160,7 +2062,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           8,
+                           id:           7,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2173,7 +2075,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           9,
+                           id:           8,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2188,7 +2090,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           10,
+                                id:           9,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -2202,7 +2104,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                             distinct:     false,
                             caching_mode: program::CachingMode::Set,
                             key_func:     None,
-                            id:           11,
+                            id:           10,
                             rules:        vec![
                             ],
                             arrangements: vec![
@@ -2217,7 +2119,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           12,
+                           id:           11,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2230,7 +2132,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           13,
+                           id:           12,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2243,7 +2145,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                    distinct:     false,
                                    caching_mode: program::CachingMode::Set,
                                    key_func:     None,
-                                   id:           14,
+                                   id:           13,
                                    rules:        vec![
                                    ],
                                    arrangements: vec![
@@ -2257,7 +2159,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           15,
+                           id:           14,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2271,7 +2173,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                           distinct:     false,
                           caching_mode: program::CachingMode::Set,
                           key_func:     None,
-                          id:           16,
+                          id:           15,
                           rules:        vec![
                           ],
                           arrangements: vec![
@@ -2285,7 +2187,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     Some(types__inputs::__Key_inputs_Class),
-                           id:           17,
+                           id:           16,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2300,7 +2202,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                distinct:     false,
                                caching_mode: program::CachingMode::Set,
                                key_func:     None,
-                               id:           18,
+                               id:           17,
                                rules:        vec![
                                ],
                                arrangements: vec![
@@ -2314,7 +2216,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                distinct:     false,
                                caching_mode: program::CachingMode::Set,
                                key_func:     None,
-                               id:           19,
+                               id:           18,
                                rules:        vec![
                                ],
                                arrangements: vec![
@@ -2328,7 +2230,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                               distinct:     false,
                               caching_mode: program::CachingMode::Set,
                               key_func:     None,
-                              id:           20,
+                              id:           19,
                               rules:        vec![
                               ],
                               arrangements: vec![
@@ -2342,7 +2244,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                              distinct:     false,
                              caching_mode: program::CachingMode::Set,
                              key_func:     None,
-                             id:           21,
+                             id:           20,
                              rules:        vec![
                              ],
                              arrangements: vec![
@@ -2355,7 +2257,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                distinct:     false,
                                caching_mode: program::CachingMode::Set,
                                key_func:     None,
-                               id:           22,
+                               id:           21,
                                rules:        vec![
                                ],
                                arrangements: vec![
@@ -2369,7 +2271,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                            distinct:     false,
                                            caching_mode: program::CachingMode::Set,
                                            key_func:     None,
-                                           id:           71,
+                                           id:           70,
                                            rules:        vec![
                                                types::outputs::no_undef::__Rule_outputs_no_undef_ChainedWith_0.clone(),
                                                types::outputs::no_undef::__Rule_outputs_no_undef_ChainedWith_1.clone(),
@@ -2388,11 +2290,10 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           23,
+                                id:           22,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
-                                    types__inputs::__Arng_inputs_EveryScope_0.clone()
                                 ],
                                 change_cb:    None
                             };
@@ -2402,7 +2303,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           24,
+                                id:           23,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -2415,7 +2316,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                               distinct:     false,
                               caching_mode: program::CachingMode::Set,
                               key_func:     None,
-                              id:           25,
+                              id:           24,
                               rules:        vec![
                               ],
                               arrangements: vec![
@@ -2428,7 +2329,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           26,
+                                id:           25,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -2441,7 +2342,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           27,
+                                id:           26,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -2454,7 +2355,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     Some(types__inputs::__Key_inputs_Expression),
-                                id:           28,
+                                id:           27,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -2462,9 +2363,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                     types__inputs::__Arng_inputs_Expression_1.clone(),
                                     types__inputs::__Arng_inputs_Expression_2.clone(),
                                     types__inputs::__Arng_inputs_Expression_3.clone(),
-                                    types__inputs::__Arng_inputs_Expression_4.clone(),
-                                    types__inputs::__Arng_inputs_Expression_5.clone(),
-                                    types__inputs::__Arng_inputs_Expression_6.clone()
+                                    types__inputs::__Arng_inputs_Expression_4.clone()
                                 ],
                                 change_cb:    None
                             };
@@ -2474,13 +2373,12 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                           distinct:     false,
                           caching_mode: program::CachingMode::Set,
                           key_func:     Some(types__inputs::__Key_inputs_File),
-                          id:           29,
+                          id:           28,
                           rules:        vec![
                           ],
                           arrangements: vec![
                               types__inputs::__Arng_inputs_File_0.clone(),
-                              types__inputs::__Arng_inputs_File_1.clone(),
-                              types__inputs::__Arng_inputs_File_2.clone()
+                              types__inputs::__Arng_inputs_File_1.clone()
                           ],
                           change_cb:    None
                       };
@@ -2490,7 +2388,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           30,
+                                id:           29,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -2503,7 +2401,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                          distinct:     false,
                          caching_mode: program::CachingMode::Set,
                          key_func:     None,
-                         id:           31,
+                         id:           30,
                          rules:        vec![
                          ],
                          arrangements: vec![
@@ -2516,7 +2414,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           32,
+                           id:           31,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2529,7 +2427,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           33,
+                           id:           32,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2542,7 +2440,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                               distinct:     false,
                               caching_mode: program::CachingMode::Set,
                               key_func:     Some(types__inputs::__Key_inputs_Function),
-                              id:           34,
+                              id:           33,
                               rules:        vec![
                               ],
                               arrangements: vec![
@@ -2559,7 +2457,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                  distinct:     false,
                                  caching_mode: program::CachingMode::Set,
                                  key_func:     None,
-                                 id:           35,
+                                 id:           34,
                                  rules:        vec![
                                  ],
                                  arrangements: vec![
@@ -2573,7 +2471,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                         distinct:     false,
                         caching_mode: program::CachingMode::Set,
                         key_func:     None,
-                        id:           36,
+                        id:           35,
                         rules:        vec![
                         ],
                         arrangements: vec![
@@ -2586,7 +2484,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                     distinct:     false,
                                     caching_mode: program::CachingMode::Set,
                                     key_func:     None,
-                                    id:           37,
+                                    id:           36,
                                     rules:        vec![
                                     ],
                                     arrangements: vec![
@@ -2600,7 +2498,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           38,
+                                id:           37,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -2614,7 +2512,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           39,
+                                id:           38,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -2631,7 +2529,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                      distinct:     false,
                                      caching_mode: program::CachingMode::Set,
                                      key_func:     None,
-                                     id:           40,
+                                     id:           39,
                                      rules:        vec![
                                      ],
                                      arrangements: vec![
@@ -2645,15 +2543,12 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           41,
+                                id:           40,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
                                     types__inputs::__Arng_inputs_InputScope_0.clone(),
-                                    types__inputs::__Arng_inputs_InputScope_1.clone(),
-                                    types__inputs::__Arng_inputs_InputScope_2.clone(),
-                                    types__inputs::__Arng_inputs_InputScope_3.clone(),
-                                    types__inputs::__Arng_inputs_InputScope_4.clone()
+                                    types__inputs::__Arng_inputs_InputScope_1.clone()
                                 ],
                                 change_cb:    None
                             };
@@ -2663,7 +2558,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           42,
+                           id:           41,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2672,19 +2567,19 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            ],
                            change_cb:    None
                        };
-    let outputs_no_unused_labels___Prefix_2 = program::Relation {
-                                                  name:         std::borrow::Cow::from("outputs::no_unused_labels::__Prefix_2"),
+    let outputs_no_unused_labels___Prefix_1 = program::Relation {
+                                                  name:         std::borrow::Cow::from("outputs::no_unused_labels::__Prefix_1"),
                                                   input:        false,
                                                   distinct:     false,
                                                   caching_mode: program::CachingMode::Set,
                                                   key_func:     None,
-                                                  id:           76,
+                                                  id:           75,
                                                   rules:        vec![
-                                                      types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels___Prefix_2_0.clone()
+                                                      types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels___Prefix_1_0.clone()
                                                   ],
                                                   arrangements: vec![
-                                                      types__outputs__no_unused_labels::__Arng_outputs_no_unused_labels___Prefix_2_0.clone(),
-                                                      types__outputs__no_unused_labels::__Arng_outputs_no_unused_labels___Prefix_2_1.clone()
+                                                      types__outputs__no_unused_labels::__Arng_outputs_no_unused_labels___Prefix_1_0.clone(),
+                                                      types__outputs__no_unused_labels::__Arng_outputs_no_unused_labels___Prefix_1_1.clone()
                                                   ],
                                                   change_cb:    None
                                               };
@@ -2694,7 +2589,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                              distinct:     false,
                              caching_mode: program::CachingMode::Set,
                              key_func:     None,
-                             id:           43,
+                             id:           42,
                              rules:        vec![
                              ],
                              arrangements: vec![
@@ -2708,12 +2603,13 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                              distinct:     false,
                              caching_mode: program::CachingMode::Set,
                              key_func:     None,
-                             id:           44,
+                             id:           43,
                              rules:        vec![
                              ],
                              arrangements: vec![
                                  types__inputs::__Arng_inputs_NameRef_0.clone(),
-                                 types__inputs::__Arng_inputs_NameRef_1.clone()
+                                 types__inputs::__Arng_inputs_NameRef_1.clone(),
+                                 types__inputs::__Arng_inputs_NameRef_2.clone()
                              ],
                              change_cb:    None
                          };
@@ -2723,7 +2619,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                               distinct:     false,
                                               caching_mode: program::CachingMode::Set,
                                               key_func:     None,
-                                              id:           63,
+                                              id:           62,
                                               rules:        vec![
                                                   types::name_in_scope::__Rule_name_in_scope_NameOccursInScope_0.clone(),
                                                   types::name_in_scope::__Rule_name_in_scope_NameOccursInScope_1.clone(),
@@ -2743,28 +2639,12 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                          distinct:     false,
                          caching_mode: program::CachingMode::Set,
                          key_func:     None,
-                         id:           45,
+                         id:           44,
                          rules:        vec![
                          ],
                          arrangements: vec![
                              types__inputs::__Arng_inputs_New_0.clone(),
                              types__inputs::__Arng_inputs_New_1.clone()
-                         ],
-                         change_cb:    None
-                     };
-    let __Prefix_1 = program::Relation {
-                         name:         std::borrow::Cow::from("__Prefix_1"),
-                         input:        false,
-                         distinct:     false,
-                         caching_mode: program::CachingMode::Set,
-                         key_func:     None,
-                         id:           1,
-                         rules:        vec![
-                             types::__Rule___Prefix_1_0.clone()
-                         ],
-                         arrangements: vec![
-                             types::__Arng___Prefix_1_0.clone(),
-                             types::__Arng___Prefix_1_1.clone()
                          ],
                          change_cb:    None
                      };
@@ -2790,7 +2670,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                               distinct:     false,
                               caching_mode: program::CachingMode::Set,
                               key_func:     None,
-                              id:           46,
+                              id:           45,
                               rules:        vec![
                               ],
                               arrangements: vec![
@@ -2803,7 +2683,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                             distinct:     false,
                             caching_mode: program::CachingMode::Set,
                             key_func:     None,
-                            id:           47,
+                            id:           46,
                             rules:        vec![
                             ],
                             arrangements: vec![
@@ -2816,14 +2696,13 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                distinct:     false,
                                caching_mode: program::CachingMode::Set,
                                key_func:     Some(types__inputs::__Key_inputs_Statement),
-                               id:           48,
+                               id:           47,
                                rules:        vec![
                                ],
                                arrangements: vec![
                                    types__inputs::__Arng_inputs_Statement_0.clone(),
                                    types__inputs::__Arng_inputs_Statement_1.clone(),
-                                   types__inputs::__Arng_inputs_Statement_2.clone(),
-                                   types__inputs::__Arng_inputs_Statement_3.clone()
+                                   types__inputs::__Arng_inputs_Statement_2.clone()
                                ],
                                change_cb:    None
                            };
@@ -2833,7 +2712,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                   distinct:     false,
                                                   caching_mode: program::CachingMode::Set,
                                                   key_func:     None,
-                                                  id:           73,
+                                                  id:           72,
                                                   rules:        vec![
                                                       types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_LabelUsage_0.clone(),
                                                       types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_LabelUsage_1.clone()
@@ -2850,7 +2729,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                         distinct:     false,
                                         caching_mode: program::CachingMode::Set,
                                         key_func:     None,
-                                        id:           82,
+                                        id:           81,
                                         rules:        vec![
                                             types__outputs__no_unused_labels::__Rule_scopes_NeedsScopeChildren_0.clone()
                                         ],
@@ -2865,7 +2744,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                     distinct:     false,
                                                     caching_mode: program::CachingMode::Set,
                                                     key_func:     None,
-                                                    id:           78,
+                                                    id:           77,
                                                     rules:        vec![
                                                         types::outputs::unused_vars::__Rule_outputs_unused_vars_FunctionBodyScope_0.clone(),
                                                         types::outputs::unused_vars::__Rule_outputs_unused_vars_FunctionBodyScope_1.clone(),
@@ -2882,7 +2761,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                         distinct:     false,
                                         caching_mode: program::CachingMode::Set,
                                         key_func:     None,
-                                        id:           80,
+                                        id:           79,
                                         rules:        vec![
                                             types__scopes::__Rule_scopes_FunctionLevelScope_0.clone(),
                                             types__scopes::__Rule_scopes_FunctionLevelScope_1.clone(),
@@ -2904,7 +2783,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                distinct:     false,
                                caching_mode: program::CachingMode::Set,
                                key_func:     None,
-                               id:           85,
+                               id:           84,
                                rules:        vec![
                                    types__scopes::__Rule_scopes_ScopeOfId_0.clone(),
                                    types__scopes::__Rule_scopes_ScopeOfId_1.clone(),
@@ -2923,7 +2802,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                             distinct:     false,
                             caching_mode: program::CachingMode::Set,
                             key_func:     None,
-                            id:           49,
+                            id:           48,
                             rules:        vec![
                             ],
                             arrangements: vec![
@@ -2936,7 +2815,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           50,
+                                id:           49,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -2949,7 +2828,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                               distinct:     false,
                               caching_mode: program::CachingMode::Set,
                               key_func:     None,
-                              id:           51,
+                              id:           50,
                               rules:        vec![
                               ],
                               arrangements: vec![
@@ -2962,7 +2841,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                              distinct:     false,
                              caching_mode: program::CachingMode::Set,
                              key_func:     None,
-                             id:           52,
+                             id:           51,
                              rules:        vec![
                              ],
                              arrangements: vec![
@@ -2975,7 +2854,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           53,
+                           id:           52,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -2988,7 +2867,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                          distinct:     false,
                          caching_mode: program::CachingMode::Set,
                          key_func:     None,
-                         id:           54,
+                         id:           53,
                          rules:        vec![
                          ],
                          arrangements: vec![
@@ -3002,7 +2881,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                              distinct:     false,
                              caching_mode: program::CachingMode::Set,
                              key_func:     None,
-                             id:           55,
+                             id:           54,
                              rules:        vec![
                              ],
                              arrangements: vec![
@@ -3016,7 +2895,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                        distinct:     false,
                                                        caching_mode: program::CachingMode::Set,
                                                        key_func:     None,
-                                                       id:           70,
+                                                       id:           69,
                                                        rules:        vec![
                                                            types::outputs::no_typeof_undef::__Rule_outputs_no_typeof_undef_WithinTypeofExpr_0.clone(),
                                                            types::outputs::no_typeof_undef::__Rule_outputs_no_typeof_undef_WithinTypeofExpr_1.clone(),
@@ -3034,7 +2913,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                 distinct:     false,
                                 caching_mode: program::CachingMode::Set,
                                 key_func:     None,
-                                id:           56,
+                                id:           55,
                                 rules:        vec![
                                 ],
                                 arrangements: vec![
@@ -3048,7 +2927,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                              distinct:     false,
                              caching_mode: program::CachingMode::Set,
                              key_func:     None,
-                             id:           57,
+                             id:           56,
                              rules:        vec![
                              ],
                              arrangements: vec![
@@ -3062,7 +2941,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                              distinct:     false,
                                              caching_mode: program::CachingMode::Set,
                                              key_func:     None,
-                                             id:           86,
+                                             id:           85,
                                              rules:        vec![
                                                  types::var_decls::__Rule_var_decls_VariableDeclarations_0.clone(),
                                                  types::var_decls::__Rule_var_decls_VariableDeclarations_1.clone(),
@@ -3099,14 +2978,13 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                             distinct:     false,
                                             caching_mode: program::CachingMode::Set,
                                             key_func:     None,
-                                            id:           67,
+                                            id:           66,
                                             rules:        vec![
                                                 types::outputs::no_shadow::__Rule_outputs_no_shadow_ScopeOfDecl_0.clone(),
                                                 types::outputs::no_shadow::__Rule_outputs_no_shadow_ScopeOfDecl_1.clone()
                                             ],
                                             arrangements: vec![
-                                                types::outputs::no_shadow::__Arng_outputs_no_shadow_ScopeOfDecl_0.clone(),
-                                                types::outputs::no_shadow::__Arng_outputs_no_shadow_ScopeOfDecl_1.clone()
+                                                types::outputs::no_shadow::__Arng_outputs_no_shadow_ScopeOfDecl_0.clone()
                                             ],
                                             change_cb:    None
                                         };
@@ -3116,7 +2994,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                         distinct:     false,
                                                         caching_mode: program::CachingMode::Set,
                                                         key_func:     None,
-                                                        id:           65,
+                                                        id:           64,
                                                         rules:        vec![
                                                             types::outputs::no_shadow::__Rule_outputs_no_shadow_DeclarationInDescendent_0.clone(),
                                                             types::outputs::no_shadow::__Rule_outputs_no_shadow_DeclarationInDescendent_1.clone()
@@ -3133,7 +3011,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                          distinct:     true,
                                          caching_mode: program::CachingMode::Set,
                                          key_func:     None,
-                                         id:           66,
+                                         id:           65,
                                          rules:        vec![
                                              types::outputs::no_shadow::__Rule_outputs_no_shadow_NoShadow_0.clone()
                                          ],
@@ -3147,7 +3025,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                             distinct:     false,
                                             caching_mode: program::CachingMode::Set,
                                             key_func:     None,
-                                            id:           64,
+                                            id:           63,
                                             rules:        vec![
                                                 types::name_in_scope::__Rule_name_in_scope_ScopeOfDeclName_0.clone(),
                                                 types::name_in_scope::__Rule_name_in_scope_ScopeOfDeclName_1.clone()
@@ -3163,7 +3041,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                         distinct:     false,
                                         caching_mode: program::CachingMode::Set,
                                         key_func:     None,
-                                        id:           62,
+                                        id:           61,
                                         rules:        vec![
                                             types::name_in_scope::__Rule_name_in_scope_NameInScope_0.clone(),
                                             types::name_in_scope::__Rule_name_in_scope_NameInScope_1.clone()
@@ -3187,7 +3065,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                     distinct:     true,
                                                     caching_mode: program::CachingMode::Set,
                                                     key_func:     None,
-                                                    id:           69,
+                                                    id:           68,
                                                     rules:        vec![
                                                         types::outputs::no_typeof_undef::__Rule_outputs_no_typeof_undef_NoTypeofUndef_0.clone()
                                                     ],
@@ -3201,7 +3079,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                        distinct:     true,
                                        caching_mode: program::CachingMode::Set,
                                        key_func:     None,
-                                       id:           72,
+                                       id:           71,
                                        rules:        vec![
                                            types::outputs::no_undef::__Rule_outputs_no_undef_NoUndef_0.clone(),
                                            types::outputs::no_undef::__Rule_outputs_no_undef_NoUndef_1.clone()
@@ -3216,7 +3094,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                      distinct:     false,
                                      caching_mode: program::CachingMode::Set,
                                      key_func:     None,
-                                     id:           61,
+                                     id:           60,
                                      rules:        vec![
                                          types::is_exported::__Rule_is_exported_IsExported_0.clone(),
                                          types::is_exported::__Rule_is_exported_IsExported_1.clone(),
@@ -3236,7 +3114,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                   distinct:     true,
                                                   caching_mode: program::CachingMode::Set,
                                                   key_func:     None,
-                                                  id:           79,
+                                                  id:           78,
                                                   rules:        vec![
                                                       types::outputs::unused_vars::__Rule_outputs_unused_vars_UnusedVariables_0.clone(),
                                                       types::outputs::unused_vars::__Rule_outputs_unused_vars_UnusedVariables_1.clone(),
@@ -3252,7 +3130,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                          distinct:     false,
                                          caching_mode: program::CachingMode::Set,
                                          key_func:     None,
-                                         id:           87,
+                                         id:           86,
                                          rules:        vec![
                                              types__variable_decl::__Rule_variable_decl_VariableDecl_0.clone(),
                                              types__variable_decl::__Rule_variable_decl_VariableDecl_1.clone(),
@@ -3269,13 +3147,12 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                        distinct:     true,
                                                        caching_mode: program::CachingMode::Set,
                                                        key_func:     None,
-                                                       id:           77,
+                                                       id:           76,
                                                        rules:        vec![
                                                            types::outputs::no_use_before_def::__Rule_outputs_no_use_before_def_NoUseBeforeDef_0.clone(),
                                                            types::outputs::no_use_before_def::__Rule_outputs_no_use_before_def_NoUseBeforeDef_1.clone(),
                                                            types::outputs::no_use_before_def::__Rule_outputs_no_use_before_def_NoUseBeforeDef_2.clone(),
-                                                           types::outputs::no_use_before_def::__Rule_outputs_no_use_before_def_NoUseBeforeDef_3.clone(),
-                                                           types::outputs::no_use_before_def::__Rule_outputs_no_use_before_def_NoUseBeforeDef_4.clone()
+                                                           types::outputs::no_use_before_def::__Rule_outputs_no_use_before_def_NoUseBeforeDef_3.clone()
                                                        ],
                                                        arrangements: vec![
                                                        ],
@@ -3287,7 +3164,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                  distinct:     false,
                                  caching_mode: program::CachingMode::Set,
                                  key_func:     None,
-                                 id:           81,
+                                 id:           80,
                                  rules:        vec![
                                      types__scopes::__Rule_scopes_IsHoistable_0.clone(),
                                      types__scopes::__Rule_scopes_IsHoistable_1.clone()
@@ -3302,7 +3179,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           58,
+                           id:           57,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -3315,7 +3192,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                           distinct:     false,
                           caching_mode: program::CachingMode::Set,
                           key_func:     None,
-                          id:           59,
+                          id:           58,
                           rules:        vec![
                           ],
                           arrangements: vec![
@@ -3328,7 +3205,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                            distinct:     false,
                            caching_mode: program::CachingMode::Set,
                            key_func:     None,
-                           id:           60,
+                           id:           59,
                            rules:        vec![
                            ],
                            arrangements: vec![
@@ -3341,7 +3218,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                        distinct:     false,
                                        caching_mode: program::CachingMode::Set,
                                        key_func:     None,
-                                       id:           83,
+                                       id:           82,
                                        rules:        vec![
                                        ],
                                        arrangements: vec![
@@ -3355,7 +3232,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                  distinct:     false,
                                  caching_mode: program::CachingMode::Set,
                                  key_func:     None,
-                                 id:           84,
+                                 id:           83,
                                  rules:        vec![
                                      types__scopes::__Rule_scopes_ScopeFamily_0.clone(),
                                      types__scopes::__Rule_scopes_ScopeFamily_1.clone(),
@@ -3374,7 +3251,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                   distinct:     true,
                                                   caching_mode: program::CachingMode::Set,
                                                   key_func:     None,
-                                                  id:           75,
+                                                  id:           74,
                                                   rules:        vec![
                                                       types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_UsedLabels_0.clone(),
                                                       types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_UsedLabels_1.clone()
@@ -3390,7 +3267,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                       distinct:     true,
                                                       caching_mode: program::CachingMode::Set,
                                                       key_func:     None,
-                                                      id:           74,
+                                                      id:           73,
                                                       rules:        vec![
                                                           types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_NoUnusedLabels_0.clone()
                                                       ],
@@ -3442,12 +3319,11 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
             program::ProgNode::Rel{rel: inputs_InlineFuncParam},
             program::ProgNode::Rel{rel: inputs_InputScope},
             program::ProgNode::Rel{rel: inputs_Label},
-            program::ProgNode::Rel{rel: outputs_no_unused_labels___Prefix_2},
+            program::ProgNode::Rel{rel: outputs_no_unused_labels___Prefix_1},
             program::ProgNode::Rel{rel: inputs_LetDecl},
             program::ProgNode::Rel{rel: inputs_NameRef},
             program::ProgNode::SCC{rels: vec![program::RecursiveRelation{rel: name_in_scope_NameOccursInScope, distinct: true}]},
             program::ProgNode::Rel{rel: inputs_New},
-            program::ProgNode::Rel{rel: __Prefix_1},
             program::ProgNode::Rel{rel: __Prefix_0},
             program::ProgNode::Rel{rel: inputs_Property},
             program::ProgNode::Rel{rel: inputs_Return},

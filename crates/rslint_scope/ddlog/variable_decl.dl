@@ -6,18 +6,17 @@ typedef VariableDeclKind = VarDeclVar | VarDeclLet | VarDeclConst
 /// Variable declarations, an aggregate of `var`, `let` and `const`
 relation VariableDecl(
     stmt: StmtId,
-    file: FileId,
     kind: VariableDeclKind,
     pattern: Option<IPattern>,
     value: Option<ExprId>,
     exported: bool,
 )
 
-VariableDecl(stmt, file, VarDeclVar, pattern, value, exported) :-
-    VarDecl(stmt, file, pattern, value, exported).
+VariableDecl(stmt, VarDeclVar, pattern, value, exported) :-
+    VarDecl(stmt, pattern, value, exported).
 
-VariableDecl(stmt, file, VarDeclLet, pattern, value, exported) :-
-    LetDecl(stmt, file, pattern, value, exported).
+VariableDecl(stmt, VarDeclLet, pattern, value, exported) :-
+    LetDecl(stmt, pattern, value, exported).
 
-VariableDecl(stmt, file, VarDeclConst, pattern, value, exported) :-
-    ConstDecl(stmt, file, pattern, value, exported).
+VariableDecl(stmt, VarDeclConst, pattern, value, exported) :-
+    ConstDecl(stmt, pattern, value, exported).

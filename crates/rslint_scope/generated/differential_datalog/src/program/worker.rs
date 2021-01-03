@@ -22,7 +22,6 @@ use differential_dataflow::{
 };
 use fnv::{FnvBuildHasher, FnvHashMap};
 use std::{
-    cell::RefCell,
     collections::{BTreeMap, BTreeSet, HashMap},
     mem,
     rc::Rc,
@@ -40,13 +39,6 @@ use timely::{
     progress::frontier::AntichainRef,
     worker::Worker,
 };
-
-/// The size of each worker's thread-local profiling buffer
-const PROFILING_BUFFER_SIZE: usize = 256;
-
-thread_local! {
-    static WORKER_PROFILING_BUFFER: RefCell<Vec<ProfMsg>> = RefCell::new(Vec::new());
-}
 
 type SessionData = (
     FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
@@ -161,7 +153,7 @@ impl<'a> DDlogWorker<'a> {
         }
     }
 
-    pub fn run(&mut self) -> Result<(), String> {
+    pub fn run(mut self) -> Result<(), String> {
         // Initialize profiling
         self.init_profiling();
 
@@ -493,9 +485,6 @@ impl<'a> DDlogWorker<'a> {
 
     /// Initialize timely and differential profiling logging hooks
     fn init_profiling(&self) {
-        // Allocate the memory required for each worker's profiling buffer
-        WORKER_PROFILING_BUFFER.with(|buf| buf.borrow_mut().reserve(PROFILING_BUFFER_SIZE));
-
         let profiling = self.profiling.clone();
         self.worker
             .log_register()
@@ -815,11 +804,6 @@ impl<'a> DDlogWorker<'a> {
             Ok((sessions, traces))
         })
     }
-
-    pub fn cleanup(&self) {
-        // Flush all remaining profiling messages to the profiling thread
-        WORKER_PROFILING_BUFFER.with(|buf| self.profiling.flush(&mut *buf.borrow_mut()));
-    }
 }
 
 #[derive(Clone)]
@@ -829,7 +813,7 @@ pub struct ProfilingData {
     /// Whether timely profiling is enabled
     timely_enabled: Arc<AtomicBool>,
     /// The channel used to send profiling data to the profiling thread
-    data_channel: Sender<Vec<ProfMsg>>,
+    data_channel: Sender<ProfMsg>,
 }
 
 impl ProfilingData {
@@ -837,7 +821,7 @@ impl ProfilingData {
     pub const fn new(
         cpu_enabled: Arc<AtomicBool>,
         timely_enabled: Arc<AtomicBool>,
-        data_channel: Sender<Vec<ProfMsg>>,
+        data_channel: Sender<ProfMsg>,
     ) -> Self {
         Self {
             cpu_enabled,
@@ -858,29 +842,6 @@ impl ProfilingData {
 
     /// Record a profiling message
     pub fn record(&self, event: ProfMsg) {
-        WORKER_PROFILING_BUFFER.with(|buf| {
-            let mut buf = buf.borrow_mut();
-
-            // Push the new event to the profiling buffer
-            buf.push(event);
-
-            // Attempt to flush the buffer
-            self.try_flush(&mut *buf);
-        });
-    }
-
-    // Attempt to flush the profiling buffer, only actually flushing if it is full
-    pub fn try_flush(&self, buffer: &mut Vec<ProfMsg>) {
-        if buffer.len() == PROFILING_BUFFER_SIZE {
-            self.flush(buffer)
-        }
-    }
-
-    // Forcibly flush the contents of the profiling buffer, regardless of if it's full or not
-    pub fn flush(&self, buffer: &mut Vec<ProfMsg>) {
-        // We can safely ignore the result of sending a profiling
-        // message to the profiling thread since it doesn't matter
-        // if a profiling message is dropped in some way
-        let _ = self.data_channel.send(buffer.drain(..).collect());
+        let _ = self.data_channel.send(event);
     }
 }

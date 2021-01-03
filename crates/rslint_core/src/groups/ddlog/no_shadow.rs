@@ -39,7 +39,7 @@ impl CstRule for NoShadow {
         analyzer.outputs().no_shadow.iter().for_each(|shadow| {
             let shadow = shadow.key();
 
-            if shadow.file == file {
+            if shadow.original.0.file() == Some(file) {
                 let err = Diagnostic::warning(
                     file.id as usize,
                     "no-shadow",

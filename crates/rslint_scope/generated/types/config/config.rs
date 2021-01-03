@@ -304,7 +304,7 @@ pub enum NoShadowHoisting {
 
 impl Default for NoShadowHoisting {
     fn default() -> Self {
-        Self::Always
+        Self::Never
     }
 }
 
@@ -565,6 +565,19 @@ pub static __Arng_config_EnableNoUnusedVars_0 : ::once_cell::sync::Lazy<program:
                                                                                                                                         let __cloned = __v.clone();
                                                                                                                                         match < EnableNoUnusedVars>::from_ddvalue(__v) {
                                                                                                                                             EnableNoUnusedVars{file: ref _0, config: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                            _ => None
+                                                                                                                                        }.map(|x|(x,__cloned))
+                                                                                                                                    }
+                                                                                                                                    __f},
+                                                                                                                                    queryable: false
+                                                                                                                                });
+pub static __Arng_config_EnableNoUnusedVars_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                   name: std::borrow::Cow::from(r###"(config::EnableNoUnusedVars{.file=(_: ast::FileId), .config=(_: ddlog_std::Ref<config::NoUnusedVarsConfig>)}: config::EnableNoUnusedVars) /*join*/"###),
+                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                    {
+                                                                                                                                        let __cloned = __v.clone();
+                                                                                                                                        match < EnableNoUnusedVars>::from_ddvalue(__v) {
+                                                                                                                                            EnableNoUnusedVars{file: _, config: _} => Some((()).into_ddvalue()),
                                                                                                                                             _ => None
                                                                                                                                         }.map(|x|(x,__cloned))
                                                                                                                                     }

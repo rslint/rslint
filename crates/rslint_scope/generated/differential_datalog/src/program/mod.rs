@@ -798,7 +798,7 @@ impl Program {
         let worker_guards = timely::execute(
             Configuration::Process(number_workers),
             move |worker: &mut Worker<Allocator>| -> Result<_, String> {
-                let mut worker = DDlogWorker::new(
+                let worker = DDlogWorker::new(
                     worker,
                     program.clone(),
                     &frontier_ts,
@@ -811,10 +811,7 @@ impl Program {
                     thread_handle_recv.clone(),
                 );
 
-                worker.run()?;
-                worker.cleanup();
-
-                Ok(())
+                worker.run()
             },
         )
         .map_err(|err| format!("Failed to start timely computation: {:?}", err))?;
@@ -887,14 +884,11 @@ impl Program {
 
     /// This thread function is always invoked whether or not profiling is on. If it isn't, the
     /// thread will blocks on the channel read as no message will ever arrive.
-    fn prof_thread_func(channel: Receiver<Vec<ProfMsg>>, profile: Arc<Mutex<Profile>>) {
+    fn prof_thread_func(channel: Receiver<ProfMsg>, profile: Arc<Mutex<Profile>>) {
         loop {
             match channel.recv() {
-                Ok(messages) => {
-                    let mut profile = profile.lock().unwrap();
-                    for message in messages {
-                        profile.update(&message);
-                    }
+                Ok(message) => {
+                    profile.lock().unwrap().update(&message);
                 }
                 _ => return,
             }

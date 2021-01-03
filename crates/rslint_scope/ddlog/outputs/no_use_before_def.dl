@@ -18,7 +18,6 @@ typedef NoUseBeforeDef = NoUseBeforeDef {
     used_in: Span,
     declared: AnyId,
     declared_in: Span,
-    file: FileId,
 }
 
 // Using variables, classes and functions before they're defined
@@ -28,56 +27,56 @@ output relation NoUseBeforeDef[NoUseBeforeDef]
 // foo(bar); // used before definition
 // var bar = 10;
 // ```
-NoUseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
+NoUseBeforeDef(name, expr, used_in, declared, declared_in) :-
     EnableNoUseBeforeDef(file, _),
 
-    NameRef(expr, file, name),
-    Expression(expr, file, ExprNameRef, used_scope, used_in),
+    NameRef(expr @ ExprId { _, file }, name),
+    Expression(expr, ExprNameRef, used_scope, used_in),
     // Make sure this NameRef isn't the name within a `new` clause,
     // ex. `new Foo(); var Foo;`
-    not New(_, file, Some { expr }, _),
-    NameInScope(file, name, used_scope, declared @ AnyIdStmt { stmt }),
-    Statement(stmt, file, StmtVarDecl, declared_scope, declared_in),
+    not New(_, Some { expr }, _),
+    NameInScope(name, used_scope, declared @ AnyIdStmt { stmt }),
+    Statement(stmt, StmtVarDecl, declared_scope, declared_in),
     declared_scope != used_scope and used_in < declared_in.
 
-NoUseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
+NoUseBeforeDef(name, expr, used_in, declared, declared_in) :-
     EnableNoUseBeforeDef(file, _),
 
-    New(expr, file, Some { object }, _),
-    Expression(expr, file, _, used_scope, used_in),
-    NameRef(callee, file, name),
-    NameInScope(file, name, used_scope, declared @ AnyIdClass { class }),
-    Class(class, file, Some { Spanned { _, declared_in }}, _, _, decl_scope, _),
+    New(expr @ ExprId { _, file }, Some { object }, _),
+    Expression(expr, _, used_scope, used_in),
+    NameRef(callee, name),
+    NameInScope(name, used_scope, declared @ AnyIdClass { class }),
+    Class(class, Some { Spanned { _, declared_in }}, _, _, decl_scope, _),
     decl_scope != used_scope and used_in < declared_in.
 
 // TODO: Integrate with directives to ignore functions if the user wants it
-NoUseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
+NoUseBeforeDef(name, expr, used_in, declared, declared_in) :-
     EnableNoUseBeforeDef(file, _),
 
-    Call(expr, file, Some { callee }, _),
-    Expression(expr, file, _, used_scope, used_in),
-    NameRef(callee, file, name),
-    NameInScope(file, name, used_scope, declared @ AnyIdFunc { func }),
-    Function(func, file, Some { Spanned { _, declared_in }}, decl_scope, _, _),
+    Call(expr @ ExprId { _, file }, Some { callee }, _),
+    Expression(expr, _, used_scope, used_in),
+    NameRef(callee, name),
+    NameInScope(name, used_scope, declared @ AnyIdFunc { func }),
+    Function(func, Some { Spanned { _, declared_in }}, decl_scope, _, _),
     decl_scope != used_scope and used_in < declared_in.
 
-NoUseBeforeDef(name, expr, used_in, declared, declared_in, file) :-
+NoUseBeforeDef(name, expr, used_in, declared, declared_in) :-
     EnableNoUseBeforeDef(file, _),
 
-    New(expr, file, Some { object }, _),
-    Expression(expr, file, _, used_scope, used_in),
-    NameRef(object, file, name),
-    NameInScope(file, name, used_scope, declared @ AnyIdStmt { decl }),
-    VariableDecl(decl, file, _, _, Some { class }, _),
-    ClassExpr(class, file, _),
-    Expression(class, file, _, decl_scope, declared_in),
+    New(expr @ ExprId { _, file }, Some { object }, _),
+    Expression(expr, _, used_scope, used_in),
+    NameRef(object, name),
+    NameInScope(name, used_scope, declared @ AnyIdStmt { decl }),
+    VariableDecl(decl, _, _, Some { class }, _),
+    ClassExpr(class, _),
+    Expression(class, _, decl_scope, declared_in),
     decl_scope != used_scope and used_in < declared_in.
 
-NoUseBeforeDef(name, expr, used_in, AnyIdClass { class }, declared_in, file) :-
-    EnableNoUseBeforeDef(file, _),
-
-    New(expr, file, Some { object }, _),
-    Expression(expr, file, _, used_scope, used_in),
-    NameRef(object, file, name),
-    Class(class, file, Some { Spanned { name, declared_in }}, _, _, declared_scope, _),
-    declared_scope != used_scope and used_in < declared_in.
+// NoUseBeforeDef(name, expr, used_in, AnyIdClass { class }, declared_in) :-
+//     EnableNoUseBeforeDef(file, _),
+// 
+//     New(expr @ ExprId { _, file }, Some { object }, _),
+//     Expression(expr, _, used_scope, used_in),
+//     NameRef(object, name),
+//     Class(class, Some { Spanned { name, declared_in }}, _, _, declared_scope, _),
+//     declared_scope != used_scope and used_in < declared_in.
