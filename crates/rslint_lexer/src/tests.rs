@@ -701,7 +701,7 @@ fn number_basic() {
 fn number_basic_err() {
     assert_lex! {
         "2_?",
-        ERROR_TOKEN:2,
+        NUMBER:2, // numeric separator error
         QUESTION:1
     }
 

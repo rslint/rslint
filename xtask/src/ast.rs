@@ -245,6 +245,7 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "CONSTRUCTOR_PARAMETERS",
         "PRIVATE_PROP_ACCESS",
         "IMPORT_STRING_SPECIFIER",
+        "EXPR_PATTERN",
         // TypeScript
         "TS_ANY",
         "TS_UNKNOWN",
@@ -1497,6 +1498,10 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             T![.],
             rhs: PrivateName
         }
+
+        struct ExprPattern {
+            expr: Expr
+        }
     },
     enums: &ast_enums! {
         enum ObjectProp {
@@ -1514,7 +1519,8 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
             RestPattern,
             AssignPattern,
             ObjectPattern,
-            ArrayPattern
+            ArrayPattern,
+            ExprPattern
         }
 
         enum SwitchCase {

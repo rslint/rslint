@@ -188,7 +188,7 @@ fn assign_expr_recursive(
         if p.at(T![=]) {
             if !is_valid_target(p, &target) && target.kind() != TEMPLATE {
                 p.rewind(checkpoint);
-                target = pattern(p, false)?;
+                target = pattern(p, false, true)?;
             }
         } else {
             if !is_valid_target(p, &target) {
@@ -667,7 +667,7 @@ pub fn paren_or_arrow_expr(p: &mut Parser, can_be_arrow: bool) -> CompletedMarke
             if temp.at(T![...]) {
                 let m = temp.start();
                 temp.bump_any();
-                pattern(&mut *temp, false);
+                pattern(&mut *temp, false, false);
                 if temp.eat(T![:]) {
                     if let Some(mut ty) = ts_type(&mut *temp) {
                         ty.err_if_not_ts(

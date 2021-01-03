@@ -192,6 +192,7 @@ fn check_pat(
                 check_pat(p, subpat, map, marker);
             }
         }
+        ast::Pattern::ExprPattern(_) => unreachable!(),
     }
 }
 

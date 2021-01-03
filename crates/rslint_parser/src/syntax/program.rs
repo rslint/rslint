@@ -399,7 +399,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
             return m.complete(p, EXPORT_DEFAULT_DECL);
         }
 
-        if p.at(T![async]) && p.nth_at(1, T![function]) && !p.has_linebreak_before_n(1) {
+        if p.cur_src() == "async" && p.nth_at(1, T![function]) && !p.has_linebreak_before_n(1) {
             p.state.decorators_were_valid = true;
             let mut guard = p.with_state(ParserState {
                 in_async: true,
@@ -424,7 +424,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
         p.state.decorators_were_valid = true;
         class_decl(p, false);
     } else if !only_ty
-        && p.at(T![async])
+        && p.cur_src() == "async"
         && p.nth_at(1, T![function])
         && !p.has_linebreak_before_n(1)
     {

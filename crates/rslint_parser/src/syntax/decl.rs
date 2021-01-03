@@ -165,7 +165,7 @@ fn formal_param_pat(p: &mut Parser) -> Option<CompletedMarker> {
         }
     }
 
-    let pat = pattern(p, true)?;
+    let pat = pattern(p, true, false)?;
     let pat_range = pat.range(p);
     let mut kind = pat.kind();
     pat.undo_completion(p).abandon(p);
@@ -320,7 +320,7 @@ fn parameters_common(p: &mut Parser, constructor_params: bool) -> CompletedMarke
         let marker = if p.at(T![...]) {
             let m = p.start();
             p.bump_any();
-            pattern(p, true);
+            pattern(p, true, false);
 
             // rest patterns cannot be optional: `...foo?: number[]`
             if p.at(T![?]) {
@@ -1132,8 +1132,7 @@ pub fn method(
                 ..p.state.clone()
             });
             object_prop_name(&mut *guard, false);
-            formal_parameters(&mut *guard);
-            block_stmt(&mut *guard, true, None);
+            args_body(&mut *guard);
             drop(guard);
             m.complete(p, METHOD)
         }
@@ -1144,8 +1143,7 @@ pub fn method(
                 ..p.state.clone()
             });
             object_prop_name(&mut *guard, false);
-            formal_parameters(&mut *guard);
-            block_stmt(&mut *guard, true, None);
+            args_body(&mut *guard);
             drop(guard);
             m.complete(p, METHOD)
         }

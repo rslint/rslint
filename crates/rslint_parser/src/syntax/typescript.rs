@@ -221,14 +221,14 @@ pub(crate) fn ts_decl(p: &mut Parser) -> Option<CompletedMarker> {
             return ts_ambient_external_module_decl(p, true);
         } else if token_set![T![ident], T![yield], T![await]].contains(p.nth(1)) {
             p.bump_remap(T![module]);
-            return Some(ts_module_or_namespace_decl(p, false, false));
+            return ts_module_or_namespace_decl(p, false, false);
         }
     }
 
     if p.cur_src() == "namespace" {
         let m = p.start();
         p.bump_any();
-        ts_module_or_namespace_decl(p, true, false)
+        ts_module_or_namespace_decl(p, true, false)?
             .undo_completion(p)
             .abandon(p);
         return Some(m.complete(p, TS_NAMESPACE_DECL));
@@ -260,28 +260,30 @@ pub(crate) fn ts_module_or_namespace_decl(
     p: &mut Parser,
     namespace: bool,
     eat_dot: bool,
-) -> CompletedMarker {
+) -> Option<CompletedMarker> {
     let m = p.start();
     if eat_dot {
         p.eat(T![.]);
     }
 
-    identifier_name(p);
+    if identifier_name(p).is_none() && p.state.no_recovery {
+        return None;
+    }
 
     if p.at(T![.]) {
-        ts_module_or_namespace_decl(p, namespace, true);
+        ts_module_or_namespace_decl(p, namespace, true)?;
     } else {
         ts_module_block(p);
     }
 
-    m.complete(
+    Some(m.complete(
         p,
         if namespace {
             TS_NAMESPACE_DECL
         } else {
             TS_MODULE_DECL
         },
-    )
+    ))
 }
 
 pub fn ts_ambient_external_module_decl(
@@ -317,13 +319,13 @@ pub fn ts_ambient_external_module_decl(
     Some(m.complete(p, TS_MODULE_DECL))
 }
 
-pub fn ts_module_block(p: &mut Parser) -> CompletedMarker {
+pub fn ts_module_block(p: &mut Parser) -> Option<CompletedMarker> {
     let m = p.start();
-    p.expect(T!['{']);
+    p.expect_no_recover(T!['{'])?;
     // module blocks are considered top level
     block_items(p, false, true, true, None);
-    p.expect(T!['}']);
-    m.complete(p, TS_MODULE_BLOCK)
+    p.expect_no_recover(T!['}'])?;
+    Some(m.complete(p, TS_MODULE_BLOCK))
 }
 
 pub fn ts_interface(p: &mut Parser) -> Option<CompletedMarker> {

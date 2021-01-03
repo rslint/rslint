@@ -1708,6 +1708,14 @@ impl PrivatePropAccess {
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ExprPattern {
+    pub(crate) syntax: SyntaxNode,
+}
+impl ExprPattern {
+    pub fn expr(&self) -> Option<Expr> { support::child(&self.syntax) }
+}
+#[doc = ""]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ObjectProp {
     LiteralProp(LiteralProp),
     Getter(Getter),
@@ -1725,6 +1733,7 @@ pub enum Pattern {
     AssignPattern(AssignPattern),
     ObjectPattern(ObjectPattern),
     ArrayPattern(ArrayPattern),
+    ExprPattern(ExprPattern),
 }
 #[doc = ""]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -3646,6 +3655,17 @@ impl AstNode for PrivatePropAccess {
     }
     fn syntax(&self) -> &SyntaxNode { &self.syntax }
 }
+impl AstNode for ExprPattern {
+    fn can_cast(kind: SyntaxKind) -> bool { kind == EXPR_PATTERN }
+    fn cast(syntax: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(syntax.kind()) {
+            Some(Self { syntax })
+        } else {
+            None
+        }
+    }
+    fn syntax(&self) -> &SyntaxNode { &self.syntax }
+}
 impl From<LiteralProp> for ObjectProp {
     fn from(node: LiteralProp) -> ObjectProp { ObjectProp::LiteralProp(node) }
 }
@@ -3714,11 +3734,19 @@ impl From<ObjectPattern> for Pattern {
 impl From<ArrayPattern> for Pattern {
     fn from(node: ArrayPattern) -> Pattern { Pattern::ArrayPattern(node) }
 }
+impl From<ExprPattern> for Pattern {
+    fn from(node: ExprPattern) -> Pattern { Pattern::ExprPattern(node) }
+}
 impl AstNode for Pattern {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(
             kind,
-            SINGLE_PATTERN | REST_PATTERN | ASSIGN_PATTERN | OBJECT_PATTERN | ARRAY_PATTERN
+            SINGLE_PATTERN
+                | REST_PATTERN
+                | ASSIGN_PATTERN
+                | OBJECT_PATTERN
+                | ARRAY_PATTERN
+                | EXPR_PATTERN
         )
     }
     fn cast(syntax: SyntaxNode) -> Option<Self> {
@@ -3728,6 +3756,7 @@ impl AstNode for Pattern {
             ASSIGN_PATTERN => Pattern::AssignPattern(AssignPattern { syntax }),
             OBJECT_PATTERN => Pattern::ObjectPattern(ObjectPattern { syntax }),
             ARRAY_PATTERN => Pattern::ArrayPattern(ArrayPattern { syntax }),
+            EXPR_PATTERN => Pattern::ExprPattern(ExprPattern { syntax }),
             _ => return None,
         };
         Some(res)
@@ -3739,6 +3768,7 @@ impl AstNode for Pattern {
             Pattern::AssignPattern(it) => &it.syntax,
             Pattern::ObjectPattern(it) => &it.syntax,
             Pattern::ArrayPattern(it) => &it.syntax,
+            Pattern::ExprPattern(it) => &it.syntax,
         }
     }
 }
@@ -5443,6 +5473,11 @@ impl std::fmt::Display for PrivateName {
     }
 }
 impl std::fmt::Display for PrivatePropAccess {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(self.syntax(), f)
+    }
+}
+impl std::fmt::Display for ExprPattern {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self.syntax(), f)
     }

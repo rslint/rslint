@@ -187,7 +187,7 @@ fn expr_stmt(p: &mut Parser, decorator: Option<CompletedMarker>) -> Option<Compl
     ) && !p.nth_at(1, T![:])
         && !p.nth_at(1, T![.])
     {
-        if let Some(mut res) = ts_expr_stmt(p) {
+        if let Some(mut res) = try_parse_ts(p, |p| ts_expr_stmt(p)) {
             if let Some(decorator) = decorator {
                 let kind = res.kind();
                 let m = decorator.precede(p);
@@ -757,7 +757,7 @@ fn declarator(
     let m = p.start();
     p.state.should_record_names = is_const.is_some() || is_let;
     let pat_m = p.start();
-    let pat = pattern(p, false)?;
+    let pat = pattern(p, false, false)?;
     pat.undo_completion(p).abandon(p);
     p.state.should_record_names = false;
     let kind = pat.kind();
@@ -790,7 +790,7 @@ fn declarator(
                 .err_builder("`for` statement declarators cannot have a type annotation")
                 .primary(start..end, "");
 
-            p.error(err);
+            p.state.for_head_error = Some(err);
         }
     }
 
@@ -831,9 +831,15 @@ pub fn do_stmt(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     let start = p.cur_tok().range.start;
     p.expect(T![do]);
-    p.state.iteration_stmt(true);
-    stmt(p, None, None);
-    p.state.iteration_stmt(false);
+    stmt(
+        &mut *p.with_state(ParserState {
+            continue_allowed: true,
+            break_allowed: true,
+            ..p.state.clone()
+        }),
+        None,
+        None,
+    );
     p.expect(T![while]);
     condition(p);
     semi(p, start..p.cur_tok().range.end);
@@ -853,6 +859,9 @@ fn for_head(p: &mut Parser) -> SyntaxKind {
         m.complete(p, FOR_STMT_INIT);
 
         if p.at(T![in]) || p.cur_src() == "of" {
+            if let Some(err) = p.state.for_head_error.take() {
+                p.error(err);
+            }
             let is_in = p.at(T![in]);
             p.bump_any();
 
@@ -860,6 +869,7 @@ fn for_head(p: &mut Parser) -> SyntaxKind {
 
             for_each_head(p, is_in)
         } else {
+            p.state.for_head_error = None;
             p.expect(T![;]);
             normal_for_head(p);
             FOR_STMT
@@ -1054,7 +1064,7 @@ fn catch_clause(p: &mut Parser) {
 
     if p.eat(T!['(']) {
         let m = p.start();
-        let kind = pattern(p, false).map(|x| x.kind());
+        let kind = pattern(p, false, false).map(|x| x.kind());
         if p.at(T![:]) {
             let start = p.cur_tok().range.start;
             p.bump_any();

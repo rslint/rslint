@@ -1,8 +1,32 @@
-use super::expr::{assign_expr, identifier_name, identifier_reference, object_prop_name};
+use super::expr::{assign_expr, identifier_name, identifier_reference, lhs_expr, object_prop_name};
 use crate::{SyntaxKind::*, *};
 
-pub fn pattern(p: &mut Parser, parameters: bool) -> Option<CompletedMarker> {
+pub fn pattern(p: &mut Parser, parameters: bool, assignment: bool) -> Option<CompletedMarker> {
     Some(match p.cur() {
+        T![this] if parameters => {
+            let m = p.start();
+            let _m = p.start();
+            p.bump_remap(T![ident]);
+            _m.complete(p, NAME);
+            m.complete(p, SINGLE_PATTERN)
+        }
+        T!['['] => array_binding_pattern(p, parameters, assignment),
+        T!['{'] if p.state.allow_object_expr => object_binding_pattern(p, parameters),
+        _ if assignment => {
+            let m = p.start();
+            let mut complete = lhs_expr(p)?;
+            if complete.kind() == NAME_REF {
+                complete.change_kind(p, NAME);
+            }
+            m.complete(
+                p,
+                if complete.kind() == NAME {
+                    SINGLE_PATTERN
+                } else {
+                    EXPR_PATTERN
+                },
+            )
+        }
         T![ident] | T![yield] | T![await] => {
             let m = p.start();
             if p.state.should_record_names {
@@ -38,15 +62,6 @@ pub fn pattern(p: &mut Parser, parameters: bool) -> Option<CompletedMarker> {
             binding_identifier(p);
             m.complete(p, SINGLE_PATTERN)
         }
-        T![this] if parameters => {
-            let m = p.start();
-            let _m = p.start();
-            p.bump_remap(T![ident]);
-            _m.complete(p, NAME);
-            m.complete(p, SINGLE_PATTERN)
-        }
-        T!['['] => array_binding_pattern(p, parameters),
-        T!['{'] if p.state.allow_object_expr => object_binding_pattern(p, parameters),
         _ => {
             let err = p
                 .err_builder("Expected an identifier or pattern, but found none")
@@ -110,8 +125,12 @@ pub fn binding_identifier(p: &mut Parser) -> Option<CompletedMarker> {
     Some(m)
 }
 
-pub fn binding_element(p: &mut Parser, parameters: bool) -> Option<CompletedMarker> {
-    let left = pattern(p, parameters);
+pub fn binding_element(
+    p: &mut Parser,
+    parameters: bool,
+    assignment: bool,
+) -> Option<CompletedMarker> {
+    let left = pattern(p, parameters, assignment);
 
     if p.at(T![=]) {
         let m = left.map(|m| m.precede(p)).unwrap_or_else(|| p.start());
@@ -124,7 +143,11 @@ pub fn binding_element(p: &mut Parser, parameters: bool) -> Option<CompletedMark
     left
 }
 
-pub fn array_binding_pattern(p: &mut Parser, parameters: bool) -> CompletedMarker {
+pub fn array_binding_pattern(
+    p: &mut Parser,
+    parameters: bool,
+    assignment: bool,
+) -> CompletedMarker {
     let m = p.start();
     p.expect(T!['[']);
 
@@ -136,11 +159,11 @@ pub fn array_binding_pattern(p: &mut Parser, parameters: bool) -> CompletedMarke
             let m = p.start();
             p.bump_any();
 
-            pattern(p, parameters);
+            pattern(p, parameters, assignment);
 
             m.complete(p, REST_PATTERN);
             break;
-        } else if binding_element(p, parameters).is_none() {
+        } else if binding_element(p, parameters, assignment).is_none() {
             p.err_recover_no_err(
                 token_set![T![await], T![ident], T![yield], T![:], T![=], T![']']],
                 false,
@@ -174,7 +197,7 @@ pub fn object_binding_pattern(p: &mut Parser, parameters: bool) -> CompletedMark
             let m = p.start();
             p.bump_any();
 
-            pattern(p, parameters);
+            pattern(p, parameters, false);
             m.complete(p, REST_PATTERN);
             break;
         }
@@ -197,7 +220,7 @@ fn object_binding_prop(p: &mut Parser, parameters: bool) -> Option<CompletedMark
     };
 
     if p.eat(T![:]) {
-        binding_element(p, parameters);
+        binding_element(p, parameters, false);
         return Some(m.complete(p, KEY_VALUE_PATTERN));
     }
 

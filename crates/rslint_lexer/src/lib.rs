@@ -13,6 +13,8 @@
 //! `>>` and `>>>` are not emitted as single tokens, they are emitted as multiple `>` tokens. This is because of
 //! TypeScript parsing and productions such as `T<U<N>>`
 
+#![allow(clippy::or_fun_call)]
+
 #[macro_use]
 mod token;
 mod highlight;
@@ -549,39 +551,46 @@ impl<'src> Lexer<'src> {
     }
 
     #[inline]
-    fn read_zero(&mut self) {
+    fn read_zero(&mut self) -> Option<Diagnostic> {
         // TODO: Octal literals
         match self.bytes.get(self.cur + 1) {
             Some(b'x') | Some(b'X') => {
                 if self.special_number_start(|c| c.is_ascii_hexdigit()) {
-                    self.read_hexnumber();
+                    let diag = self.read_hexnumber();
                     self.maybe_bigint();
+                    diag
                 } else {
                     self.next();
+                    None
                 }
             }
             Some(b'b') | Some(b'B') => {
                 if self.special_number_start(|c| c == '0' || c == '1') {
-                    self.read_bindigits();
+                    let diag = self.read_bindigits();
                     self.maybe_bigint();
+                    diag
                 } else {
                     self.next();
+                    None
                 }
             }
             Some(b'o') | Some(b'O') => {
                 if self.special_number_start(|c| ('0'..='7').contains(&c)) {
-                    self.read_octaldigits();
+                    let diag = self.read_octaldigits();
                     self.maybe_bigint();
+                    diag
                 } else {
                     self.next();
+                    None
                 }
             }
             Some(b'n') => {
                 self.cur += 2;
+                None
             }
             Some(b'.') => {
                 self.cur += 1;
-                self.read_float();
+                self.read_float()
             }
             Some(b'e') | Some(b'E') => {
                 // At least one digit is required
@@ -589,12 +598,15 @@ impl<'src> Lexer<'src> {
                     Some(b'-') | Some(b'+') => {
                         if let Some(b'0'..=b'9') = self.bytes.get(self.cur + 3) {
                             self.next();
-                            self.read_exponent();
+                            self.read_exponent()
+                        } else {
+                            None
                         }
                     }
                     Some(b'0'..=b'9') => self.read_exponent(),
                     _ => {
                         self.next();
+                        None
                     }
                 }
             }
@@ -605,24 +617,65 @@ impl<'src> Lexer<'src> {
     }
 
     #[inline]
-    fn read_hexnumber(&mut self) {
+    fn read_hexnumber(&mut self) -> Option<Diagnostic> {
+        let mut diag = None;
         unwind_loop! {
-            if let Some(b) = self.next_bounded() {
-                if !(*b as char).is_ascii_hexdigit() {
-                    return;
-                }
-            } else {
-                return;
+            match self.next() {
+                Some(b'_') => diag = diag.or(self.handle_numeric_separator(16)),
+                Some(b) if char::from(*b).is_ascii_hexdigit() => {},
+                _ => return diag,
             }
         }
+    }
+
+    #[inline]
+    fn handle_numeric_separator(&mut self, radix: u8) -> Option<Diagnostic> {
+        debug_assert_eq!(self.bytes[self.cur], b'_');
+
+        let err_diag = Diagnostic::error(
+            self.file_id,
+            "",
+            "numeric separators are only allowed between two digits",
+        )
+        .primary(self.cur..self.cur + 1, "");
+
+        let peeked = self.bytes.get(self.cur + 1).copied();
+
+        if peeked.is_none() || !char::from(peeked.unwrap()).is_digit(radix as u32) {
+            return Some(err_diag);
+        }
+
+        let forbidden = |c: Option<u8>| {
+            if c.is_none() {
+                return true;
+            }
+            let c = c.unwrap();
+
+            if radix == 16 {
+                matches!(c, b'.' | b'X' | b'_' | b'x')
+            } else {
+                matches!(c, b'.' | b'B' | b'E' | b'O' | b'_' | b'b' | b'e' | b'o')
+            }
+        };
+
+        let prev = self.bytes.get(self.cur - 1).copied();
+
+        if forbidden(prev) || forbidden(peeked) {
+            return Some(err_diag);
+        }
+
+        self.next_bounded();
+        None
     }
 
     // Read a number which does not start with 0, since that can be more things and is handled
     // by another function
     #[inline]
-    fn read_number(&mut self) {
+    fn read_number(&mut self) -> Option<Diagnostic> {
+        let mut diag = None;
         unwind_loop! {
             match self.next_bounded() {
+                Some(b'_') => diag = diag.or(self.handle_numeric_separator(10)),
                 Some(b'0'..=b'9') => {},
                 Some(b'.') => {
                     return self.read_float();
@@ -636,26 +689,29 @@ impl<'src> Lexer<'src> {
                                 self.next();
                                 return self.read_exponent();
                             } else {
-                                return;
+                                return diag;
                             }
                         },
                         Some(b'0'..=b'9') => return self.read_exponent(),
-                        _ => return,
+                        _ => return diag,
                     }
                 },
                 Some(b'n') => {
                     self.next();
-                    return;
+                    return diag;
                 }
-                _ => return,
+                _ => return diag,
             }
         }
     }
 
     #[inline]
-    fn read_float(&mut self) {
+    fn read_float(&mut self) -> Option<Diagnostic> {
+        let mut diag = None;
+
         unwind_loop! {
             match self.next_bounded() {
+                Some(b'_') => diag = diag.or(self.handle_numeric_separator(16)),
                 // LLVM has a hard time optimizing inclusive patterns, perhaps we should check if it makes llvm sad,
                 // and optimize this into a lookup table
                 Some(b'0'..=b'9') => {},
@@ -665,53 +721,56 @@ impl<'src> Lexer<'src> {
                         Some(b'-') | Some(b'+') => {
                             if let Some(b'0'..=b'9') = self.bytes.get(self.cur + 2) {
                                 self.next();
-                                return self.read_exponent();
+                                return self.read_exponent().or(diag);
                             } else {
-                                return;
+                                return diag;
                             }
                         },
-                        Some(b'0'..=b'9') => return self.read_exponent(),
-                        _ => return,
+                        Some(b'0'..=b'9') => return self.read_exponent().or(diag),
+                        _ => return diag,
                     }
                 },
-                _ => return,
+                _ => return diag,
             }
         }
     }
 
     #[inline]
-    fn read_exponent(&mut self) {
+    fn read_exponent(&mut self) -> Option<Diagnostic> {
         if let Some(b'-') | Some(b'+') = self.bytes.get(self.cur + 1) {
             self.next();
         }
 
+        let mut diag = None;
         unwind_loop! {
-            if let Some(b'0'..=b'9') = self.next() {
-
-            } else {
-                return;
+            match self.next() {
+                Some(b'_') => diag = diag.or(self.handle_numeric_separator(10)),
+                Some(b'0'..=b'9') => {},
+                _ => return diag,
             }
         }
     }
 
     #[inline]
-    fn read_bindigits(&mut self) {
+    fn read_bindigits(&mut self) -> Option<Diagnostic> {
+        let mut diag = None;
         unwind_loop! {
-            if let Some(b'0') | Some(b'1') = self.next() {
-
-            } else {
-                return
+            match self.next() {
+                Some(b'_') => diag = diag.or(self.handle_numeric_separator(2)),
+                Some(b'0') | Some(b'1') => {},
+                _ => return diag,
             }
         }
     }
 
     #[inline]
-    fn read_octaldigits(&mut self) {
+    fn read_octaldigits(&mut self) -> Option<Diagnostic> {
+        let mut diag = None;
         unwind_loop! {
-            if let Some(b'0'..=b'7') = self.next() {
-
-            } else {
-                return
+            match self.next() {
+                Some(b'_') => diag = diag.or(self.handle_numeric_separator(8)),
+                Some(b'0'..=b'7') => {},
+                _ => return diag,
             }
         }
     }
@@ -1138,8 +1197,9 @@ impl<'src> Lexer<'src> {
             // This simply changes state on the start
             TPL => self.eat(tok!(BACKTICK, 1)),
             ZER => {
-                self.read_zero();
-                self.verify_number_end(start)
+                let diag = self.read_zero();
+                let (token, err) = self.verify_number_end(start);
+                (token, err.or(diag))
             }
             PRD => {
                 if let Some(b"..") = self.bytes.get(self.cur + 1..self.cur + 3) {
@@ -1147,8 +1207,9 @@ impl<'src> Lexer<'src> {
                     return tok!(DOT2, 3);
                 }
                 if let Some(b'0'..=b'9') = self.bytes.get(self.cur + 1) {
-                    self.read_float();
-                    self.verify_number_end(start)
+                    let diag = self.read_float();
+                    let (token, err) = self.verify_number_end(start);
+                    (token, err.or(diag))
                 } else {
                     self.eat(tok![.])
                 }
@@ -1212,8 +1273,9 @@ impl<'src> Lexer<'src> {
                 tok!(IDENT, self.cur - start)
             }
             DIG => {
-                self.read_number();
-                self.verify_number_end(start)
+                let diag = self.read_number();
+                let (token, err) = self.verify_number_end(start);
+                (token, err.or(diag))
             }
             COL => self.eat(tok![:]),
             SEM => self.eat(tok![;]),

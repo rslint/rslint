@@ -1,3 +1,5 @@
+use rslint_errors::Diagnostic;
+
 use crate::syntax::expr::EXPR_RECOVERY_SET;
 use crate::{CompletedMarker, Parser, SyntaxKind, TokenSet};
 use std::collections::HashMap;
@@ -5,7 +7,7 @@ use std::ops::{Deref, DerefMut, Range};
 
 /// State kept by the parser while parsing.
 /// It is required for things such as strict mode or async functions
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct ParserState {
     /// If false, object expressions are not allowed to be parsed
     /// inside an expression.
@@ -49,6 +51,7 @@ pub struct ParserState {
     pub in_binding_list_for_signature: bool,
     pub decorators_were_valid: bool,
     pub in_default: bool,
+    pub for_head_error: Option<Diagnostic>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -83,6 +86,7 @@ impl Default for ParserState {
             in_binding_list_for_signature: false,
             decorators_were_valid: false,
             in_default: false,
+            for_head_error: None,
         }
     }
 }
@@ -110,11 +114,6 @@ impl ParserState {
             self.default_item = Some(marker.range(p).into());
         }
         marker
-    }
-
-    pub fn iteration_stmt(&mut self, set: bool) {
-        self.continue_allowed = set;
-        self.break_allowed = set;
     }
 
     /// Turn on strict mode and issue a warning for redundant strict mode declarations
