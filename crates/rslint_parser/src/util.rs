@@ -383,8 +383,8 @@ pub fn contains_js_linebreak(string: impl AsRef<str>) -> bool {
     let text = string.as_ref();
     text.contains('\n')
         || text.contains('\r')
-        || text.contains("\u{2028}")
-        || text.contains("\u{2029}")
+        || text.contains('\u{2028}')
+        || text.contains('\u{2029}')
 }
 
 /// Check whether a string contains a valid js whitespace character
