@@ -72,7 +72,7 @@ impl File {
     }
 
     // TODO: Needs to work correctly for \u2028, \u2029, and \r line endings
-    pub fn line_starts<'a>(source: &'a str) -> impl Iterator<Item = usize> + 'a {
+    pub fn line_starts(source: &str) -> impl Iterator<Item = usize> + '_ {
         std::iter::once(0).chain(source.match_indices('\n').map(|(i, _)| i + 1))
     }
 

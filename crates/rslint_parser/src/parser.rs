@@ -92,14 +92,18 @@ pub struct Parser<'t> {
 impl<'t> Parser<'t> {
     /// Make a new parser
     pub fn new(tokens: TokenSource<'t>, file_id: usize, syntax: Syntax) -> Parser<'t> {
-        let mut state = ParserState::default();
         // TODO(RDambrosio016): Does TypeScript imply Module/Strict?
-        state.is_module = syntax.file_kind == FileKind::Module;
-        state.strict = if syntax.file_kind == FileKind::Module {
+        let strict = if syntax.file_kind == FileKind::Module {
             Some(StrictMode::Module)
         } else {
             None
         };
+        let state = ParserState {
+            is_module: syntax.file_kind == FileKind::Module,
+            strict,
+            ..ParserState::default()
+        };
+
         Parser {
             file_id,
             tokens,

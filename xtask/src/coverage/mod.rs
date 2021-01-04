@@ -79,9 +79,11 @@ pub fn run(query: Option<&str>) {
 
     let mut counter = 0usize;
     let mut create_column = |name: colored::ColoredString| {
-        let mut column = Column::default();
-        column.header = name.to_string();
-        column.align = ascii_table::Align::Center;
+        let column = Column {
+            header: name.to_string(),
+            align: ascii_table::Align::Center,
+            ..Column::default()
+        };
         table.columns.insert(counter, column);
         counter += 1;
     };

@@ -234,6 +234,6 @@ fn n_attached_trivias<'a>(
 fn linebreak_count(text: &str) -> usize {
     text.matches('\n').count()
         + text.matches('\r').count()
-        + text.matches("\u{2028}").count()
-        + text.matches("\u{2029}").count()
+        + text.matches('\u{2028}').count()
+        + text.matches('\u{2029}').count()
 }
