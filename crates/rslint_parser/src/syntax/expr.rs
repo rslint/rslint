@@ -3,6 +3,8 @@
 //!
 //! See the [ECMAScript spec](https://www.ecma-international.org/ecma-262/5.1/#sec-11).
 
+use syntax::decl::is_semi;
+
 use super::decl::{
     arrow_body, class_decl, formal_parameters, function_decl, maybe_private_name, method,
 };
@@ -229,10 +231,11 @@ pub fn yield_expr(p: &mut Parser) -> CompletedMarker {
     let m = p.start();
     p.expect(T![yield]);
 
-    if !p.has_linebreak_before_n(1) {
+    if !is_semi(p, 0) && (p.at(T![*]) || p.at_ts(STARTS_EXPR)) {
         p.eat(T![*]);
         assign_expr(p);
     }
+
     m.complete(p, YIELD_EXPR)
 }
 

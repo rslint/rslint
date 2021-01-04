@@ -1048,6 +1048,10 @@ pub fn ts_type_params(p: &mut Parser) -> Option<CompletedMarker> {
         if first {
             first = false;
         } else {
+            if p.at(T![,]) && p.nth_at(1, T![>]) {
+                p.bump_any();
+                break;
+            }
             p.expect_no_recover(T![,])?;
         }
         no_recover!(p, type_param(p));

@@ -57,7 +57,12 @@ impl CstRule for NoAwaitInLoop {
                     _ => {}
                 }
 
-                if ancestor.is_loop() {
+                if ancestor.is_loop()
+                    && ancestor
+                        .child_with_ast::<ast::Stmt>()?
+                        .range()
+                        .contains_range(node.text_range())
+                {
                     let err = ctx.err(self.name(), "Unexpected `await` in loop")
                         .primary(err_node, "this expression causes the loop to wait for the promise to resolve before continuing")
                         .footer_note("the promises are resolved one after the other, not at the same time")
@@ -91,5 +96,9 @@ rule_tests! {
         }
         "
     },
-    ok: {}
+    ok: {
+        "
+        for (let i of await foo) {}
+        "
+    }
 }

@@ -29,6 +29,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Removed the `store` field from `LintResult`
 
+### Fixed
+
+- Fixed `no-await-in-loop` rejecting an await expression in the condition of the loop
+
 ## [0.2.1] - 2020-10-21
 
 ### Added

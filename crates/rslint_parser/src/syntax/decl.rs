@@ -623,7 +623,7 @@ fn is_method(p: &Parser, offset: usize) -> bool {
         || (p.nth_at(offset, T!['(']) || p.nth_at(offset, T![<]))
 }
 
-fn is_semi(p: &Parser, offset: usize) -> bool {
+pub(crate) fn is_semi(p: &Parser, offset: usize) -> bool {
     p.nth_at(offset, T![;])
         || p.nth_at(offset, EOF)
         || p.nth_at(offset, T!['}'])
