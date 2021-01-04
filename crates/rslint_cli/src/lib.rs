@@ -82,6 +82,7 @@ fn run_inner(
     }
 
     let (analyzer, sender, thread_handle) = start_ddlog_daemon(walker.files.len());
+    analyzer.enable_profiling(true);
 
     let mut results = walker
         .files
@@ -119,6 +120,7 @@ fn run_inner(
                 }
             }),
     );
+    std::fs::write("ddlog_profile.txt", analyzer.ddlog_profile()).unwrap();
 
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)

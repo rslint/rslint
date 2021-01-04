@@ -519,6 +519,19 @@ pub static __Arng_config_EnableNoShadow_0 : ::once_cell::sync::Lazy<program::Arr
                                                                                                                                 __f},
                                                                                                                                 queryable: false
                                                                                                                             });
+pub static __Arng_config_EnableNoShadow_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                               name: std::borrow::Cow::from(r###"(config::EnableNoShadow{.file=(_: ast::FileId), .config=(_: ddlog_std::Ref<config::NoShadowConfig>)}: config::EnableNoShadow) /*join*/"###),
+                                                                                                                                afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                {
+                                                                                                                                    let __cloned = __v.clone();
+                                                                                                                                    match < EnableNoShadow>::from_ddvalue(__v) {
+                                                                                                                                        EnableNoShadow{file: _, config: _} => Some((()).into_ddvalue()),
+                                                                                                                                        _ => None
+                                                                                                                                    }.map(|x|(x,__cloned))
+                                                                                                                                }
+                                                                                                                                __f},
+                                                                                                                                queryable: false
+                                                                                                                            });
 pub static __Arng_config_EnableNoTypeofUndef_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                                     name: std::borrow::Cow::from(r###"(config::EnableNoTypeofUndef{.file=(_0: ast::FileId), .config=(_: ddlog_std::Ref<config::NoTypeofUndefConfig>)}: config::EnableNoTypeofUndef) /*join*/"###),
                                                                                                                                      afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>

@@ -31,7 +31,7 @@ NoUseBeforeDef(name, expr, used_in, declared, declared_in) :-
     EnableNoUseBeforeDef(file, _),
 
     NameRef(expr @ ExprId { _, file }, name),
-    Expression(expr, ExprNameRef, used_scope, used_in),
+    Expression(expr, _, used_scope, used_in),
     // Make sure this NameRef isn't the name within a `new` clause,
     // ex. `new Foo(); var Foo;`
     not New(_, Some { expr }, _),
@@ -44,7 +44,7 @@ NoUseBeforeDef(name, expr, used_in, declared, declared_in) :-
 
     New(expr @ ExprId { _, file }, Some { object }, _),
     Expression(expr, _, used_scope, used_in),
-    NameRef(callee, name),
+    NameRef(object, name),
     NameInScope(name, used_scope, declared @ AnyIdClass { class }),
     Class(class, Some { Spanned { _, declared_in }}, _, _, decl_scope, _),
     decl_scope != used_scope and used_in < declared_in.
@@ -71,12 +71,3 @@ NoUseBeforeDef(name, expr, used_in, declared, declared_in) :-
     ClassExpr(class, _),
     Expression(class, _, decl_scope, declared_in),
     decl_scope != used_scope and used_in < declared_in.
-
-// NoUseBeforeDef(name, expr, used_in, AnyIdClass { class }, declared_in) :-
-//     EnableNoUseBeforeDef(file, _),
-// 
-//     New(expr @ ExprId { _, file }, Some { object }, _),
-//     Expression(expr, _, used_scope, used_in),
-//     NameRef(object, name),
-//     Class(class, Some { Spanned { name, declared_in }}, _, _, declared_scope, _),
-//     declared_scope != used_scope and used_in < declared_in.

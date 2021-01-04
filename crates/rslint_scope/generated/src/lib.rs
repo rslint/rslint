@@ -918,7 +918,7 @@ impl Relations {
 impl Relations {
     pub fn type_id(&self) -> ::std::any::TypeId {
         match self {
-            Relations::__Prefix_0 => ::std::any::TypeId::of::<ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>(),
+            Relations::__Prefix_0 => ::std::any::TypeId::of::<ddlog_std::tuple6<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span, internment::Intern<String>>>(),
             Relations::config_EnableNoShadow => ::std::any::TypeId::of::<types__config::EnableNoShadow>(),
             Relations::config_EnableNoTypeofUndef => ::std::any::TypeId::of::<types__config::EnableNoTypeofUndef>(),
             Relations::config_EnableNoUndef => ::std::any::TypeId::of::<types__config::EnableNoUndef>(),
@@ -1528,7 +1528,7 @@ pub static IDXIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<program::IdxId, 
 pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::Record) -> ::std::result::Result<DDValue, String> {
     match rel {
         Relations::__Prefix_0 => {
-            Ok(<ddlog_std::tuple5<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span>>::from_record(_rec)?.into_ddvalue())
+            Ok(<ddlog_std::tuple6<types__ast::FileId, types__ast::ExprId, types__ast::ExprId, types__ast::ScopeId, types__ast::Span, internment::Intern<String>>>::from_record(_rec)?.into_ddvalue())
         },
         Relations::config_EnableNoShadow => {
             Ok(<types__config::EnableNoShadow>::from_record(_rec)?.into_ddvalue())
@@ -1965,7 +1965,8 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                     rules:        vec![
                                     ],
                                     arrangements: vec![
-                                        types__config::__Arng_config_EnableNoShadow_0.clone()
+                                        types__config::__Arng_config_EnableNoShadow_0.clone(),
+                                        types__config::__Arng_config_EnableNoShadow_1.clone()
                                     ],
                                     change_cb:    None
                                 };
@@ -2608,8 +2609,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                              ],
                              arrangements: vec![
                                  types__inputs::__Arng_inputs_NameRef_0.clone(),
-                                 types__inputs::__Arng_inputs_NameRef_1.clone(),
-                                 types__inputs::__Arng_inputs_NameRef_2.clone()
+                                 types__inputs::__Arng_inputs_NameRef_1.clone()
                              ],
                              change_cb:    None
                          };
@@ -2659,8 +2659,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                              types::__Rule___Prefix_0_0.clone()
                          ],
                          arrangements: vec![
-                             types::__Arng___Prefix_0_0.clone(),
-                             types::__Arng___Prefix_0_1.clone()
+                             types::__Arng___Prefix_0_0.clone()
                          ],
                          change_cb:    None
                      };
@@ -2966,9 +2965,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                  types::var_decls::__Arng_var_decls_VariableDeclarations_3.clone(),
                                                  types::var_decls::__Arng_var_decls_VariableDeclarations_4.clone(),
                                                  types::var_decls::__Arng_var_decls_VariableDeclarations_5.clone(),
-                                                 types::var_decls::__Arng_var_decls_VariableDeclarations_6.clone(),
-                                                 types::var_decls::__Arng_var_decls_VariableDeclarations_7.clone(),
-                                                 types::var_decls::__Arng_var_decls_VariableDeclarations_8.clone()
+                                                 types::var_decls::__Arng_var_decls_VariableDeclarations_6.clone()
                                              ],
                                              change_cb:    None
                                          };
@@ -2980,8 +2977,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                             key_func:     None,
                                             id:           66,
                                             rules:        vec![
-                                                types::outputs::no_shadow::__Rule_outputs_no_shadow_ScopeOfDecl_0.clone(),
-                                                types::outputs::no_shadow::__Rule_outputs_no_shadow_ScopeOfDecl_1.clone()
+                                                types::outputs::no_shadow::__Rule_outputs_no_shadow_ScopeOfDecl_0.clone()
                                             ],
                                             arrangements: vec![
                                                 types::outputs::no_shadow::__Arng_outputs_no_shadow_ScopeOfDecl_0.clone()
@@ -3000,8 +2996,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                             types::outputs::no_shadow::__Rule_outputs_no_shadow_DeclarationInDescendent_1.clone()
                                                         ],
                                                         arrangements: vec![
-                                                            types::outputs::no_shadow::__Arng_outputs_no_shadow_DeclarationInDescendent_0.clone(),
-                                                            types::outputs::no_shadow::__Arng_outputs_no_shadow_DeclarationInDescendent_1.clone()
+                                                            types::outputs::no_shadow::__Arng_outputs_no_shadow_DeclarationInDescendent_0.clone()
                                                         ],
                                                         change_cb:    None
                                                     };
