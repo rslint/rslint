@@ -1,5 +1,8 @@
 //! Configuration file support.
 
+// FIXME: Workaround for https://github.com/GREsau/schemars/pull/65
+#![allow(clippy::field_reassign_with_default)]
+
 mod de;
 use dirs_next::config_dir;
 use rslint_core::{get_group_rules_by_name, CstRule, CstRuleStore, Diagnostic, RuleLevel};
