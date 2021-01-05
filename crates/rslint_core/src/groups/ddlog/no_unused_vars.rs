@@ -36,9 +36,7 @@ impl CstRule for NoUnusedVars {
         let analyzer = ctx.analyzer.as_ref()?.clone();
         let file = FileId::new(ctx.file_id as u32);
 
-        analyzer
-            .no_unused_vars(file, Some(self.config.clone()))
-            .unwrap();
+        analyzer.no_unused_vars(file, Some(self.config.clone()));
 
         analyzer.outputs().no_unused_vars.iter().for_each(|unused| {
             let unused = unused.key();

@@ -37,7 +37,7 @@ impl CstRule for NoUndef {
         let analyzer = ctx.analyzer.as_ref()?.clone();
         let file = FileId::new(ctx.file_id as u32);
 
-        analyzer.no_undef(file, Some(self.config.clone())).unwrap();
+        analyzer.no_undef(file, Some(self.config.clone()));
 
         analyzer.outputs().no_undef.iter().for_each(|undef| {
             let undef = undef.key();
@@ -76,7 +76,7 @@ impl CstRule for NoUndef {
         });
 
         if let Some(config) = self.typeof_.clone() {
-            analyzer.no_typeof_undef(file, Some(config)).unwrap();
+            analyzer.no_typeof_undef(file, Some(config));
 
             analyzer
                 .outputs()

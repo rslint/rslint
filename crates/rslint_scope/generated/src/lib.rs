@@ -656,6 +656,7 @@ pub mod typedefs
         pub mod no_undef
         {
             pub use ::types::outputs::no_undef::NoUndef;
+            pub use ::types::outputs::no_undef::GloballessNoUndef;
             pub use ::types::outputs::no_undef::ChainedWith;
         }
         pub mod no_unused_labels
@@ -739,7 +740,7 @@ pub mod typedefs
         pub use ::types__vec::all;
     }
 }
-decl_update_deserializer!(UpdateSerializer,(1, types__config::EnableNoShadow), (2, types__config::EnableNoTypeofUndef), (3, types__config::EnableNoUndef), (4, types__config::EnableNoUnusedLabels), (5, types__config::EnableNoUnusedVars), (6, types__config::EnableNoUseBeforeDef), (7, types__inputs::Array), (8, types__inputs::Arrow), (9, types__inputs::ArrowParam), (10, types__inputs::Assign), (11, types__inputs::Await), (12, types__inputs::BinOp), (13, types__inputs::BracketAccess), (14, types__inputs::Break), (15, types__inputs::Call), (16, types__inputs::Class), (17, types__inputs::ClassExpr), (18, types__inputs::ConstDecl), (19, types__inputs::Continue), (20, types__inputs::DoWhile), (21, types__inputs::DotAccess), (22, types__inputs::EveryScope), (23, types__inputs::ExprBigInt), (24, types__inputs::ExprBool), (25, types__inputs::ExprNumber), (26, types__inputs::ExprString), (27, types__inputs::Expression), (28, types__inputs::File), (29, types__inputs::FileExport), (30, types__inputs::For), (31, types__inputs::ForIn), (32, types__inputs::ForOf), (33, types__inputs::Function), (34, types__inputs::FunctionArg), (35, types__inputs::If), (36, types__inputs::ImplicitGlobal), (37, types__inputs::ImportDecl), (38, types__inputs::InlineFunc), (39, types__inputs::InlineFuncParam), (40, types__inputs::InputScope), (41, types__inputs::Label), (42, types__inputs::LetDecl), (43, types__inputs::NameRef), (44, types__inputs::New), (45, types__inputs::Property), (46, types__inputs::Return), (47, types__inputs::Statement), (48, types__inputs::Switch), (49, types__inputs::SwitchCase), (50, types__inputs::Template), (51, types__inputs::Ternary), (52, types__inputs::Throw), (53, types__inputs::Try), (54, types__inputs::UnaryOp), (55, types__inputs::UserGlobal), (56, types__inputs::VarDecl), (57, types__inputs::While), (58, types__inputs::With), (59, types__inputs::Yield), (65, types::outputs::no_shadow::NoShadow), (68, types::outputs::no_typeof_undef::NoTypeofUndef), (71, types::outputs::no_undef::NoUndef), (73, types__outputs__no_unused_labels::NoUnusedLabels), (74, types__outputs__no_unused_labels::UsedLabels), (76, types::outputs::no_use_before_def::NoUseBeforeDef), (78, types::outputs::unused_vars::UnusedVariables));
+decl_update_deserializer!(UpdateSerializer,(1, types__config::EnableNoShadow), (2, types__config::EnableNoTypeofUndef), (3, types__config::EnableNoUndef), (4, types__config::EnableNoUnusedLabels), (5, types__config::EnableNoUnusedVars), (6, types__config::EnableNoUseBeforeDef), (7, types__inputs::Array), (8, types__inputs::Arrow), (9, types__inputs::ArrowParam), (10, types__inputs::Assign), (11, types__inputs::Await), (12, types__inputs::BinOp), (13, types__inputs::BracketAccess), (14, types__inputs::Break), (15, types__inputs::Call), (16, types__inputs::Class), (17, types__inputs::ClassExpr), (18, types__inputs::ConstDecl), (19, types__inputs::Continue), (20, types__inputs::DoWhile), (21, types__inputs::DotAccess), (22, types__inputs::EveryScope), (23, types__inputs::ExprBigInt), (24, types__inputs::ExprBool), (25, types__inputs::ExprNumber), (26, types__inputs::ExprString), (27, types__inputs::Expression), (28, types__inputs::File), (29, types__inputs::FileExport), (30, types__inputs::For), (31, types__inputs::ForIn), (32, types__inputs::ForOf), (33, types__inputs::Function), (34, types__inputs::FunctionArg), (35, types__inputs::If), (36, types__inputs::ImplicitGlobal), (37, types__inputs::ImportDecl), (38, types__inputs::InlineFunc), (39, types__inputs::InlineFuncParam), (40, types__inputs::InputScope), (41, types__inputs::Label), (42, types__inputs::LetDecl), (43, types__inputs::NameRef), (44, types__inputs::New), (45, types__inputs::Property), (46, types__inputs::Return), (47, types__inputs::Statement), (48, types__inputs::Switch), (49, types__inputs::SwitchCase), (50, types__inputs::Template), (51, types__inputs::Ternary), (52, types__inputs::Throw), (53, types__inputs::Try), (54, types__inputs::UnaryOp), (55, types__inputs::UserGlobal), (56, types__inputs::VarDecl), (57, types__inputs::While), (58, types__inputs::With), (59, types__inputs::Yield), (65, types::outputs::no_shadow::NoShadow), (68, types::outputs::no_typeof_undef::NoTypeofUndef), (72, types::outputs::no_undef::NoUndef), (74, types__outputs__no_unused_labels::NoUnusedLabels), (75, types__outputs__no_unused_labels::UsedLabels), (77, types::outputs::no_use_before_def::NoUseBeforeDef), (79, types::outputs::unused_vars::UnusedVariables));
 impl TryFrom<&str> for Relations {
     type Error = ();
     fn try_from(rname: &str) -> ::std::result::Result<Self, ()> {
@@ -815,6 +816,7 @@ impl TryFrom<&str> for Relations {
         "outputs::no_typeof_undef::NoTypeofUndef" => Ok(Relations::outputs_no_typeof_undef_NoTypeofUndef),
         "outputs::no_typeof_undef::WithinTypeofExpr" => Ok(Relations::outputs_no_typeof_undef_WithinTypeofExpr),
         "outputs::no_undef::ChainedWith" => Ok(Relations::outputs_no_undef_ChainedWith),
+        "outputs::no_undef::GloballessNoUndef" => Ok(Relations::outputs_no_undef_GloballessNoUndef),
         "outputs::no_undef::NoUndef" => Ok(Relations::outputs_no_undef_NoUndef),
         "outputs::no_unused_labels::LabelUsage" => Ok(Relations::outputs_no_unused_labels_LabelUsage),
         "outputs::no_unused_labels::NoUnusedLabels" => Ok(Relations::outputs_no_unused_labels_NoUnusedLabels),
@@ -989,6 +991,7 @@ impl Relations {
             Relations::outputs_no_typeof_undef_NoTypeofUndef => ::std::any::TypeId::of::<types::outputs::no_typeof_undef::NoTypeofUndef>(),
             Relations::outputs_no_typeof_undef_WithinTypeofExpr => ::std::any::TypeId::of::<types::outputs::no_typeof_undef::WithinTypeofExpr>(),
             Relations::outputs_no_undef_ChainedWith => ::std::any::TypeId::of::<types::outputs::no_undef::ChainedWith>(),
+            Relations::outputs_no_undef_GloballessNoUndef => ::std::any::TypeId::of::<types::outputs::no_undef::GloballessNoUndef>(),
             Relations::outputs_no_undef_NoUndef => ::std::any::TypeId::of::<types::outputs::no_undef::NoUndef>(),
             Relations::outputs_no_unused_labels_LabelUsage => ::std::any::TypeId::of::<types__outputs__no_unused_labels::LabelUsage>(),
             Relations::outputs_no_unused_labels_NoUnusedLabels => ::std::any::TypeId::of::<types__outputs__no_unused_labels::NoUnusedLabels>(),
@@ -1083,22 +1086,23 @@ impl TryFrom<program::RelId> for Relations {
         68 => Ok(Relations::outputs_no_typeof_undef_NoTypeofUndef),
         69 => Ok(Relations::outputs_no_typeof_undef_WithinTypeofExpr),
         70 => Ok(Relations::outputs_no_undef_ChainedWith),
-        71 => Ok(Relations::outputs_no_undef_NoUndef),
-        72 => Ok(Relations::outputs_no_unused_labels_LabelUsage),
-        73 => Ok(Relations::outputs_no_unused_labels_NoUnusedLabels),
-        74 => Ok(Relations::outputs_no_unused_labels_UsedLabels),
-        75 => Ok(Relations::outputs_no_unused_labels___Prefix_1),
-        76 => Ok(Relations::outputs_no_use_before_def_NoUseBeforeDef),
-        77 => Ok(Relations::outputs_unused_vars_FunctionBodyScope),
-        78 => Ok(Relations::outputs_unused_vars_UnusedVariables),
-        79 => Ok(Relations::scopes_FunctionLevelScope),
-        80 => Ok(Relations::scopes_IsHoistable),
-        81 => Ok(Relations::scopes_NeedsScopeChildren),
-        82 => Ok(Relations::scopes_NeedsScopeParents),
-        83 => Ok(Relations::scopes_ScopeFamily),
-        84 => Ok(Relations::scopes_ScopeOfId),
-        85 => Ok(Relations::var_decls_VariableDeclarations),
-        86 => Ok(Relations::variable_decl_VariableDecl),
+        71 => Ok(Relations::outputs_no_undef_GloballessNoUndef),
+        72 => Ok(Relations::outputs_no_undef_NoUndef),
+        73 => Ok(Relations::outputs_no_unused_labels_LabelUsage),
+        74 => Ok(Relations::outputs_no_unused_labels_NoUnusedLabels),
+        75 => Ok(Relations::outputs_no_unused_labels_UsedLabels),
+        76 => Ok(Relations::outputs_no_unused_labels___Prefix_1),
+        77 => Ok(Relations::outputs_no_use_before_def_NoUseBeforeDef),
+        78 => Ok(Relations::outputs_unused_vars_FunctionBodyScope),
+        79 => Ok(Relations::outputs_unused_vars_UnusedVariables),
+        80 => Ok(Relations::scopes_FunctionLevelScope),
+        81 => Ok(Relations::scopes_IsHoistable),
+        82 => Ok(Relations::scopes_NeedsScopeChildren),
+        83 => Ok(Relations::scopes_NeedsScopeParents),
+        84 => Ok(Relations::scopes_ScopeFamily),
+        85 => Ok(Relations::scopes_ScopeOfId),
+        86 => Ok(Relations::var_decls_VariableDeclarations),
+        87 => Ok(Relations::variable_decl_VariableDecl),
              _  => Err(())
          }
     }
@@ -1176,22 +1180,23 @@ pub fn relid2name(rid: program::RelId) -> Option<&'static str> {
         68 => Some(&"outputs::no_typeof_undef::NoTypeofUndef"),
         69 => Some(&"outputs::no_typeof_undef::WithinTypeofExpr"),
         70 => Some(&"outputs::no_undef::ChainedWith"),
-        71 => Some(&"outputs::no_undef::NoUndef"),
-        72 => Some(&"outputs::no_unused_labels::LabelUsage"),
-        73 => Some(&"outputs::no_unused_labels::NoUnusedLabels"),
-        74 => Some(&"outputs::no_unused_labels::UsedLabels"),
-        75 => Some(&"outputs::no_unused_labels::__Prefix_1"),
-        76 => Some(&"outputs::no_use_before_def::NoUseBeforeDef"),
-        77 => Some(&"outputs::unused_vars::FunctionBodyScope"),
-        78 => Some(&"outputs::unused_vars::UnusedVariables"),
-        79 => Some(&"scopes::FunctionLevelScope"),
-        80 => Some(&"scopes::IsHoistable"),
-        81 => Some(&"scopes::NeedsScopeChildren"),
-        82 => Some(&"scopes::NeedsScopeParents"),
-        83 => Some(&"scopes::ScopeFamily"),
-        84 => Some(&"scopes::ScopeOfId"),
-        85 => Some(&"var_decls::VariableDeclarations"),
-        86 => Some(&"variable_decl::VariableDecl"),
+        71 => Some(&"outputs::no_undef::GloballessNoUndef"),
+        72 => Some(&"outputs::no_undef::NoUndef"),
+        73 => Some(&"outputs::no_unused_labels::LabelUsage"),
+        74 => Some(&"outputs::no_unused_labels::NoUnusedLabels"),
+        75 => Some(&"outputs::no_unused_labels::UsedLabels"),
+        76 => Some(&"outputs::no_unused_labels::__Prefix_1"),
+        77 => Some(&"outputs::no_use_before_def::NoUseBeforeDef"),
+        78 => Some(&"outputs::unused_vars::FunctionBodyScope"),
+        79 => Some(&"outputs::unused_vars::UnusedVariables"),
+        80 => Some(&"scopes::FunctionLevelScope"),
+        81 => Some(&"scopes::IsHoistable"),
+        82 => Some(&"scopes::NeedsScopeChildren"),
+        83 => Some(&"scopes::NeedsScopeParents"),
+        84 => Some(&"scopes::ScopeFamily"),
+        85 => Some(&"scopes::ScopeOfId"),
+        86 => Some(&"var_decls::VariableDeclarations"),
+        87 => Some(&"variable_decl::VariableDecl"),
        _  => None
    }
 }
@@ -1201,7 +1206,7 @@ pub fn relid2cname(rid: program::RelId) -> Option<&'static ::std::ffi::CStr> {
 }   /// A map of `RelId`s to their name as an `&'static str`
 pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'static str>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(87, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(88, ::fnv::FnvBuildHasher::default());
         map.insert(Relations::__Prefix_0, "__Prefix_0");
         map.insert(Relations::config_EnableNoShadow, "config::EnableNoShadow");
         map.insert(Relations::config_EnableNoTypeofUndef, "config::EnableNoTypeofUndef");
@@ -1273,6 +1278,7 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
         map.insert(Relations::outputs_no_typeof_undef_NoTypeofUndef, "outputs::no_typeof_undef::NoTypeofUndef");
         map.insert(Relations::outputs_no_typeof_undef_WithinTypeofExpr, "outputs::no_typeof_undef::WithinTypeofExpr");
         map.insert(Relations::outputs_no_undef_ChainedWith, "outputs::no_undef::ChainedWith");
+        map.insert(Relations::outputs_no_undef_GloballessNoUndef, "outputs::no_undef::GloballessNoUndef");
         map.insert(Relations::outputs_no_undef_NoUndef, "outputs::no_undef::NoUndef");
         map.insert(Relations::outputs_no_unused_labels_LabelUsage, "outputs::no_unused_labels::LabelUsage");
         map.insert(Relations::outputs_no_unused_labels_NoUnusedLabels, "outputs::no_unused_labels::NoUnusedLabels");
@@ -1295,7 +1301,7 @@ pub static RELIDMAP: ::once_cell::sync::Lazy<::fnv::FnvHashMap<Relations, &'stat
 #[cfg(feature = "c_api")]
 pub static RELIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<program::RelId, &'static ::std::ffi::CStr>> =
     ::once_cell::sync::Lazy::new(|| {
-        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(87, ::fnv::FnvBuildHasher::default());
+        let mut map = ::fnv::FnvHashMap::with_capacity_and_hasher(88, ::fnv::FnvBuildHasher::default());
         map.insert(0, ::std::ffi::CStr::from_bytes_with_nul(b"__Prefix_0\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(1, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoShadow\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(2, ::std::ffi::CStr::from_bytes_with_nul(b"config::EnableNoTypeofUndef\0").expect("Unreachable: A null byte was specifically inserted"));
@@ -1367,22 +1373,23 @@ pub static RELIDMAPC: ::once_cell::sync::Lazy<::fnv::FnvHashMap<program::RelId, 
         map.insert(68, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_typeof_undef::NoTypeofUndef\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(69, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_typeof_undef::WithinTypeofExpr\0").expect("Unreachable: A null byte was specifically inserted"));
         map.insert(70, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::ChainedWith\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(71, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::NoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(72, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::LabelUsage\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(73, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::NoUnusedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(74, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::UsedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(75, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::__Prefix_1\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(76, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_use_before_def::NoUseBeforeDef\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(77, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::FunctionBodyScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(78, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::UnusedVariables\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(79, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::FunctionLevelScope\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(80, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::IsHoistable\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(81, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::NeedsScopeChildren\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(82, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::NeedsScopeParents\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(83, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeFamily\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(84, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeOfId\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(85, ::std::ffi::CStr::from_bytes_with_nul(b"var_decls::VariableDeclarations\0").expect("Unreachable: A null byte was specifically inserted"));
-        map.insert(86, ::std::ffi::CStr::from_bytes_with_nul(b"variable_decl::VariableDecl\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(71, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::GloballessNoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(72, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_undef::NoUndef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(73, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::LabelUsage\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(74, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::NoUnusedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(75, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::UsedLabels\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(76, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_unused_labels::__Prefix_1\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(77, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::no_use_before_def::NoUseBeforeDef\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(78, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::FunctionBodyScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(79, ::std::ffi::CStr::from_bytes_with_nul(b"outputs::unused_vars::UnusedVariables\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(80, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::FunctionLevelScope\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(81, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::IsHoistable\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(82, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::NeedsScopeChildren\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(83, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::NeedsScopeParents\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(84, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeFamily\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(85, ::std::ffi::CStr::from_bytes_with_nul(b"scopes::ScopeOfId\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(86, ::std::ffi::CStr::from_bytes_with_nul(b"var_decls::VariableDeclarations\0").expect("Unreachable: A null byte was specifically inserted"));
+        map.insert(87, ::std::ffi::CStr::from_bytes_with_nul(b"variable_decl::VariableDecl\0").expect("Unreachable: A null byte was specifically inserted"));
         map
     });
     /// A map of input `Relations`s to their name as an `&'static str`
@@ -1740,6 +1747,9 @@ pub fn relval_from_record(rel: Relations, _rec: &differential_datalog::record::R
         Relations::outputs_no_undef_ChainedWith => {
             Ok(<types::outputs::no_undef::ChainedWith>::from_record(_rec)?.into_ddvalue())
         },
+        Relations::outputs_no_undef_GloballessNoUndef => {
+            Ok(<types::outputs::no_undef::GloballessNoUndef>::from_record(_rec)?.into_ddvalue())
+        },
         Relations::outputs_no_undef_NoUndef => {
             Ok(<types::outputs::no_undef::NoUndef>::from_record(_rec)?.into_ddvalue())
         },
@@ -1853,7 +1863,7 @@ pub fn indexes2arrid(idx: Indexes) -> program::ArrId {
         Indexes::inputs_StatementById => ( 47, 2),
         Indexes::name_in_scope_Index_VariableInScope => ( 61, 7),
         Indexes::name_in_scope_Index_VariablesForScope => ( 61, 8),
-        Indexes::scopes_ScopeFamilyByParent => ( 83, 2),
+        Indexes::scopes_ScopeFamilyByParent => ( 84, 2),
     }
 }
 #[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
@@ -1929,22 +1939,23 @@ pub enum Relations {
     outputs_no_typeof_undef_NoTypeofUndef = 68,
     outputs_no_typeof_undef_WithinTypeofExpr = 69,
     outputs_no_undef_ChainedWith = 70,
-    outputs_no_undef_NoUndef = 71,
-    outputs_no_unused_labels_LabelUsage = 72,
-    outputs_no_unused_labels_NoUnusedLabels = 73,
-    outputs_no_unused_labels_UsedLabels = 74,
-    outputs_no_unused_labels___Prefix_1 = 75,
-    outputs_no_use_before_def_NoUseBeforeDef = 76,
-    outputs_unused_vars_FunctionBodyScope = 77,
-    outputs_unused_vars_UnusedVariables = 78,
-    scopes_FunctionLevelScope = 79,
-    scopes_IsHoistable = 80,
-    scopes_NeedsScopeChildren = 81,
-    scopes_NeedsScopeParents = 82,
-    scopes_ScopeFamily = 83,
-    scopes_ScopeOfId = 84,
-    var_decls_VariableDeclarations = 85,
-    variable_decl_VariableDecl = 86
+    outputs_no_undef_GloballessNoUndef = 71,
+    outputs_no_undef_NoUndef = 72,
+    outputs_no_unused_labels_LabelUsage = 73,
+    outputs_no_unused_labels_NoUnusedLabels = 74,
+    outputs_no_unused_labels_UsedLabels = 75,
+    outputs_no_unused_labels___Prefix_1 = 76,
+    outputs_no_use_before_def_NoUseBeforeDef = 77,
+    outputs_unused_vars_FunctionBodyScope = 78,
+    outputs_unused_vars_UnusedVariables = 79,
+    scopes_FunctionLevelScope = 80,
+    scopes_IsHoistable = 81,
+    scopes_NeedsScopeChildren = 82,
+    scopes_NeedsScopeParents = 83,
+    scopes_ScopeFamily = 84,
+    scopes_ScopeOfId = 85,
+    var_decls_VariableDeclarations = 86,
+    variable_decl_VariableDecl = 87
 }
 #[derive(Copy,Clone,Debug,PartialEq,Eq,Hash)]
 pub enum Indexes {
@@ -2378,8 +2389,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                           rules:        vec![
                           ],
                           arrangements: vec![
-                              types__inputs::__Arng_inputs_File_0.clone(),
-                              types__inputs::__Arng_inputs_File_1.clone()
+                              types__inputs::__Arng_inputs_File_0.clone()
                           ],
                           change_cb:    None
                       };
@@ -2574,7 +2584,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                   distinct:     false,
                                                   caching_mode: program::CachingMode::Set,
                                                   key_func:     None,
-                                                  id:           75,
+                                                  id:           76,
                                                   rules:        vec![
                                                       types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels___Prefix_1_0.clone()
                                                   ],
@@ -2711,7 +2721,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                   distinct:     false,
                                                   caching_mode: program::CachingMode::Set,
                                                   key_func:     None,
-                                                  id:           72,
+                                                  id:           73,
                                                   rules:        vec![
                                                       types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_LabelUsage_0.clone(),
                                                       types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_LabelUsage_1.clone()
@@ -2728,7 +2738,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                         distinct:     false,
                                         caching_mode: program::CachingMode::Set,
                                         key_func:     None,
-                                        id:           81,
+                                        id:           82,
                                         rules:        vec![
                                             types__outputs__no_unused_labels::__Rule_scopes_NeedsScopeChildren_0.clone()
                                         ],
@@ -2743,7 +2753,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                     distinct:     false,
                                                     caching_mode: program::CachingMode::Set,
                                                     key_func:     None,
-                                                    id:           77,
+                                                    id:           78,
                                                     rules:        vec![
                                                         types::outputs::unused_vars::__Rule_outputs_unused_vars_FunctionBodyScope_0.clone(),
                                                         types::outputs::unused_vars::__Rule_outputs_unused_vars_FunctionBodyScope_1.clone(),
@@ -2760,7 +2770,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                         distinct:     false,
                                         caching_mode: program::CachingMode::Set,
                                         key_func:     None,
-                                        id:           79,
+                                        id:           80,
                                         rules:        vec![
                                             types__scopes::__Rule_scopes_FunctionLevelScope_0.clone(),
                                             types__scopes::__Rule_scopes_FunctionLevelScope_1.clone(),
@@ -2782,7 +2792,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                distinct:     false,
                                caching_mode: program::CachingMode::Set,
                                key_func:     None,
-                               id:           84,
+                               id:           85,
                                rules:        vec![
                                    types__scopes::__Rule_scopes_ScopeOfId_0.clone(),
                                    types__scopes::__Rule_scopes_ScopeOfId_1.clone(),
@@ -2940,7 +2950,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                              distinct:     false,
                                              caching_mode: program::CachingMode::Set,
                                              key_func:     None,
-                                             id:           85,
+                                             id:           86,
                                              rules:        vec![
                                                  types::var_decls::__Rule_var_decls_VariableDeclarations_0.clone(),
                                                  types::var_decls::__Rule_var_decls_VariableDeclarations_1.clone(),
@@ -2954,9 +2964,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                  types::var_decls::__Rule_var_decls_VariableDeclarations_9.clone(),
                                                  types::var_decls::__Rule_var_decls_VariableDeclarations_10.clone(),
                                                  types::var_decls::__Rule_var_decls_VariableDeclarations_11.clone(),
-                                                 types::var_decls::__Rule_var_decls_VariableDeclarations_12.clone(),
-                                                 types::var_decls::__Rule_var_decls_VariableDeclarations_13.clone(),
-                                                 types::var_decls::__Rule_var_decls_VariableDeclarations_14.clone()
+                                                 types::var_decls::__Rule_var_decls_VariableDeclarations_12.clone()
                                              ],
                                              arrangements: vec![
                                                  types::var_decls::__Arng_var_decls_VariableDeclarations_0.clone(),
@@ -3068,16 +3076,31 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                     ],
                                                     change_cb:    Some(std::sync::Arc::clone(&__update_cb))
                                                 };
+    let outputs_no_undef_GloballessNoUndef = program::Relation {
+                                                 name:         std::borrow::Cow::from("outputs::no_undef::GloballessNoUndef"),
+                                                 input:        false,
+                                                 distinct:     false,
+                                                 caching_mode: program::CachingMode::Set,
+                                                 key_func:     None,
+                                                 id:           71,
+                                                 rules:        vec![
+                                                     types::outputs::no_undef::__Rule_outputs_no_undef_GloballessNoUndef_0.clone(),
+                                                     types::outputs::no_undef::__Rule_outputs_no_undef_GloballessNoUndef_1.clone()
+                                                 ],
+                                                 arrangements: vec![
+                                                     types::outputs::no_undef::__Arng_outputs_no_undef_GloballessNoUndef_0.clone()
+                                                 ],
+                                                 change_cb:    None
+                                             };
     let outputs_no_undef_NoUndef = program::Relation {
                                        name:         std::borrow::Cow::from("outputs::no_undef::NoUndef"),
                                        input:        false,
                                        distinct:     true,
                                        caching_mode: program::CachingMode::Set,
                                        key_func:     None,
-                                       id:           71,
+                                       id:           72,
                                        rules:        vec![
-                                           types::outputs::no_undef::__Rule_outputs_no_undef_NoUndef_0.clone(),
-                                           types::outputs::no_undef::__Rule_outputs_no_undef_NoUndef_1.clone()
+                                           types::outputs::no_undef::__Rule_outputs_no_undef_NoUndef_0.clone()
                                        ],
                                        arrangements: vec![
                                        ],
@@ -3109,7 +3132,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                   distinct:     true,
                                                   caching_mode: program::CachingMode::Set,
                                                   key_func:     None,
-                                                  id:           78,
+                                                  id:           79,
                                                   rules:        vec![
                                                       types::outputs::unused_vars::__Rule_outputs_unused_vars_UnusedVariables_0.clone(),
                                                       types::outputs::unused_vars::__Rule_outputs_unused_vars_UnusedVariables_1.clone(),
@@ -3125,7 +3148,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                          distinct:     false,
                                          caching_mode: program::CachingMode::Set,
                                          key_func:     None,
-                                         id:           86,
+                                         id:           87,
                                          rules:        vec![
                                              types__variable_decl::__Rule_variable_decl_VariableDecl_0.clone(),
                                              types__variable_decl::__Rule_variable_decl_VariableDecl_1.clone(),
@@ -3142,7 +3165,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                        distinct:     true,
                                                        caching_mode: program::CachingMode::Set,
                                                        key_func:     None,
-                                                       id:           76,
+                                                       id:           77,
                                                        rules:        vec![
                                                            types::outputs::no_use_before_def::__Rule_outputs_no_use_before_def_NoUseBeforeDef_0.clone(),
                                                            types::outputs::no_use_before_def::__Rule_outputs_no_use_before_def_NoUseBeforeDef_1.clone(),
@@ -3159,7 +3182,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                  distinct:     false,
                                  caching_mode: program::CachingMode::Set,
                                  key_func:     None,
-                                 id:           80,
+                                 id:           81,
                                  rules:        vec![
                                      types__scopes::__Rule_scopes_IsHoistable_0.clone(),
                                      types__scopes::__Rule_scopes_IsHoistable_1.clone()
@@ -3213,7 +3236,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                        distinct:     false,
                                        caching_mode: program::CachingMode::Set,
                                        key_func:     None,
-                                       id:           82,
+                                       id:           83,
                                        rules:        vec![
                                        ],
                                        arrangements: vec![
@@ -3227,7 +3250,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                  distinct:     false,
                                  caching_mode: program::CachingMode::Set,
                                  key_func:     None,
-                                 id:           83,
+                                 id:           84,
                                  rules:        vec![
                                      types__scopes::__Rule_scopes_ScopeFamily_0.clone(),
                                      types__scopes::__Rule_scopes_ScopeFamily_1.clone(),
@@ -3246,7 +3269,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                   distinct:     true,
                                                   caching_mode: program::CachingMode::Set,
                                                   key_func:     None,
-                                                  id:           74,
+                                                  id:           75,
                                                   rules:        vec![
                                                       types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_UsedLabels_0.clone(),
                                                       types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_UsedLabels_1.clone()
@@ -3262,7 +3285,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
                                                       distinct:     true,
                                                       caching_mode: program::CachingMode::Set,
                                                       key_func:     None,
-                                                      id:           73,
+                                                      id:           74,
                                                       rules:        vec![
                                                           types__outputs__no_unused_labels::__Rule_outputs_no_unused_labels_NoUnusedLabels_0.clone()
                                                       ],
@@ -3345,6 +3368,7 @@ pub fn prog(__update_cb: std::sync::Arc<dyn program::RelationCallback>) -> progr
             program::ProgNode::Rel{rel: name_in_scope_ScopeOfDeclName},
             program::ProgNode::SCC{rels: vec![program::RecursiveRelation{rel: name_in_scope_NameInScope, distinct: true}]},
             program::ProgNode::Rel{rel: outputs_no_typeof_undef_NoTypeofUndef},
+            program::ProgNode::Rel{rel: outputs_no_undef_GloballessNoUndef},
             program::ProgNode::Rel{rel: outputs_no_undef_NoUndef},
             program::ProgNode::Rel{rel: is_exported_IsExported},
             program::ProgNode::Rel{rel: outputs_unused_vars_UnusedVariables},

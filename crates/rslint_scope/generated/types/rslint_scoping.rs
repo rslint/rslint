@@ -61,8 +61,6 @@ pub type std_usize = u64;
 pub type std_isize = i64;
 
 
-pub static __STATIC_0: ::once_cell::sync::Lazy<ddlog_std::Ref<crate::var_decls::VariableMeta>> = ::once_cell::sync::Lazy::new(|| ddlog_std::ref_new((&(crate::var_decls::VariableMeta{is_function_argument: false, implicitly_declared: false, declaration_span: (ddlog_std::Option::None{})}))));
-pub static __STATIC_1: ::once_cell::sync::Lazy<ddlog_std::Ref<crate::var_decls::VariableMeta>> = ::once_cell::sync::Lazy::new(|| ddlog_std::ref_new((&(crate::var_decls::VariableMeta{is_function_argument: true, implicitly_declared: false, declaration_span: (ddlog_std::Option::None{})}))));
 pub mod is_exported;
 pub mod name_in_scope;
 pub mod outputs;

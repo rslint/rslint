@@ -8,7 +8,9 @@ fn hoisting_never(analyzer: &ScopeAnalyzer, file: FileId) -> DatalogResult<()> {
         Some(NoShadowConfig {
             hoisting: NoShadowHoisting::Never,
         }),
-    )
+    );
+
+    Ok(())
 }
 
 fn hoisting_always(analyzer: &ScopeAnalyzer, file: FileId) -> DatalogResult<()> {
@@ -17,7 +19,9 @@ fn hoisting_always(analyzer: &ScopeAnalyzer, file: FileId) -> DatalogResult<()> 
         Some(NoShadowConfig {
             hoisting: NoShadowHoisting::Always,
         }),
-    )
+    );
+
+    Ok(())
 }
 
 rule_test! {

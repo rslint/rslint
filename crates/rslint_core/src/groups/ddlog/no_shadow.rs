@@ -34,7 +34,7 @@ impl CstRule for NoShadow {
         let analyzer = ctx.analyzer.as_ref()?.clone();
         let file = FileId::new(ctx.file_id as u32);
 
-        analyzer.no_shadow(file, Some(self.config.clone())).unwrap();
+        analyzer.no_shadow(file, Some(self.config.clone()));
 
         analyzer.outputs().no_shadow.iter().for_each(|shadow| {
             let shadow = shadow.key();

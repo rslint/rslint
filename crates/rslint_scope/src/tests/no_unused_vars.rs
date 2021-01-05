@@ -1,7 +1,8 @@
 rule_test! {
     no_unused_vars,
     default_conf: |analyzer, file| {
-        analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig::default()))
+        analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig::default()));
+        Ok(())
     },
     filter: DatalogLint::is_no_unused_vars,
     // Should pass
@@ -184,24 +185,33 @@ rule_test! {
     // Ignoring variables by pattern
     {
         "let _x = 10;",
-        config: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
-            ignored_patterns: RegexSet::new(vec!["^_"]).unwrap(),
-            ..Default::default()
-        })),
+        config: |analyzer, file| {
+            analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
+                ignored_patterns: RegexSet::new(vec!["^_"]).unwrap(),
+                ..Default::default()
+            }));
+            Ok(())
+        },
     },
     {
         "function foo(_bar) {}; foo(10);",
-        config: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
-            ignored_patterns: RegexSet::new(vec!["^_"]).unwrap(),
-            ..Default::default()
-        })),
+        config: |analyzer, file| {
+            analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
+                ignored_patterns: RegexSet::new(vec!["^_"]).unwrap(),
+                ..Default::default()
+            }));
+            Ok(())
+        },
     },
     {
         "function(a) {}",
-        config: |analyzer, file| analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
-            ignored_patterns: RegexSet::new(vec!["a"]).unwrap(),
-            ..Default::default()
-        })),
+        config: |analyzer, file| {
+            analyzer.no_unused_vars(file, Some(NoUnusedVarsConfig {
+                ignored_patterns: RegexSet::new(vec!["a"]).unwrap(),
+                ..Default::default()
+            }));
+            Ok(())
+        },
     },
 
     // Should fail

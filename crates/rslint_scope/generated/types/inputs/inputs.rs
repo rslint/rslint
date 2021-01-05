@@ -1821,19 +1821,6 @@ pub static __Arng_inputs_File_0 : ::once_cell::sync::Lazy<program::Arrangement> 
                                                                                                                       __f},
                                                                                                                       queryable: false
                                                                                                                   });
-pub static __Arng_inputs_File_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                     name: std::borrow::Cow::from(r###"(inputs::File{.id=(_: ast::FileId), .kind=(_: ast::FileKind), .top_level_scope=(_: ast::ScopeId)}: inputs::File) /*join*/"###),
-                                                                                                                      afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                      {
-                                                                                                                          let __cloned = __v.clone();
-                                                                                                                          match < File>::from_ddvalue(__v) {
-                                                                                                                              File{id: _, kind: _, top_level_scope: _} => Some((()).into_ddvalue()),
-                                                                                                                              _ => None
-                                                                                                                          }.map(|x|(x,__cloned))
-                                                                                                                      }
-                                                                                                                      __f},
-                                                                                                                      queryable: false
-                                                                                                                  });
 pub static __Arng_inputs_Function_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                          name: std::borrow::Cow::from(r###"(inputs::Function{.id=(_0: ast::FuncId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(_: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function) /*join*/"###),
                                                                                                                           afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
@@ -1899,18 +1886,17 @@ pub static __Arng_inputs_FunctionArg_0 : ::once_cell::sync::Lazy<program::Arrang
                                                                                                                              __f},
                                                                                                                              queryable: false
                                                                                                                          });
-pub static __Arng_inputs_ImplicitGlobal_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                               name: std::borrow::Cow::from(r###"(inputs::ImplicitGlobal{.id=(ast::GlobalId{.id=(_: bit<32>), .file=(ddlog_std::None{}: ddlog_std::Option<ast::FileId>)}: ast::GlobalId), .name=(_: internment::Intern<string>), .privileges=(_: ast::GlobalPriv)}: inputs::ImplicitGlobal) /*join*/"###),
-                                                                                                                                afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+pub static __Arng_inputs_ImplicitGlobal_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set{
+                                                                                                                                name: std::borrow::Cow::from(r###"(inputs::ImplicitGlobal{.id=(ast::GlobalId{.id=(_: bit<32>), .file=(ddlog_std::None{}: ddlog_std::Option<ast::FileId>)}: ast::GlobalId), .name=(_0: internment::Intern<string>), .privileges=(_: ast::GlobalPriv)}: inputs::ImplicitGlobal) /*antijoin*/"###),
+                                                                                                                                fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                                 {
-                                                                                                                                    let __cloned = __v.clone();
                                                                                                                                     match < ImplicitGlobal>::from_ddvalue(__v) {
-                                                                                                                                        ImplicitGlobal{id: types__ast::GlobalId{id: _, file: ddlog_std::Option::None{}}, name: _, privileges: _} => Some((()).into_ddvalue()),
+                                                                                                                                        ImplicitGlobal{id: types__ast::GlobalId{id: _, file: ddlog_std::Option::None{}}, name: ref _0, privileges: _} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                                         _ => None
-                                                                                                                                    }.map(|x|(x,__cloned))
+                                                                                                                                    }
                                                                                                                                 }
                                                                                                                                 __f},
-                                                                                                                                queryable: false
+                                                                                                                                distinct: true
                                                                                                                             });
 pub static __Arng_inputs_ImportDecl_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                            name: std::borrow::Cow::from(r###"(inputs::ImportDecl{.id=(ast::ImportId{.id=(_: bit<32>), .file=(_0: ast::FileId)}: ast::ImportId), .clause=(_: ast::ImportClause)}: inputs::ImportDecl) /*join*/"###),
@@ -2171,18 +2157,17 @@ pub static __Arng_inputs_UnaryOp_0 : ::once_cell::sync::Lazy<program::Arrangemen
                                                                                                                          __f},
                                                                                                                          queryable: false
                                                                                                                      });
-pub static __Arng_inputs_UserGlobal_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                           name: std::borrow::Cow::from(r###"(inputs::UserGlobal{.id=(ast::GlobalId{.id=(_: bit<32>), .file=(ddlog_std::Some{.x=(_0: ast::FileId)}: ddlog_std::Option<ast::FileId>)}: ast::GlobalId), .name=(_: internment::Intern<string>), .privileges=(_: ast::GlobalPriv)}: inputs::UserGlobal) /*join*/"###),
-                                                                                                                            afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+pub static __Arng_inputs_UserGlobal_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set{
+                                                                                                                            name: std::borrow::Cow::from(r###"(inputs::UserGlobal{.id=(ast::GlobalId{.id=(_: bit<32>), .file=(ddlog_std::Some{.x=(_0: ast::FileId)}: ddlog_std::Option<ast::FileId>)}: ast::GlobalId), .name=(_1: internment::Intern<string>), .privileges=(_: ast::GlobalPriv)}: inputs::UserGlobal) /*antijoin*/"###),
+                                                                                                                            fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
                                                                                                                             {
-                                                                                                                                let __cloned = __v.clone();
                                                                                                                                 match < UserGlobal>::from_ddvalue(__v) {
-                                                                                                                                    UserGlobal{id: types__ast::GlobalId{id: _, file: ddlog_std::Option::Some{x: ref _0}}, name: _, privileges: _} => Some(((*_0).clone()).into_ddvalue()),
+                                                                                                                                    UserGlobal{id: types__ast::GlobalId{id: _, file: ddlog_std::Option::Some{x: ref _0}}, name: ref _1, privileges: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
                                                                                                                                     _ => None
-                                                                                                                                }.map(|x|(x,__cloned))
+                                                                                                                                }
                                                                                                                             }
                                                                                                                             __f},
-                                                                                                                            queryable: false
+                                                                                                                            distinct: true
                                                                                                                         });
 pub static __Arng_inputs_VarDecl_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                         name: std::borrow::Cow::from(r###"(inputs::VarDecl{.stmt_id=(_0: ast::StmtId), .pattern=(ddlog_std::Some{.x=(_: internment::Intern<ast::Pattern>)}: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=(_: bool)}: inputs::VarDecl) /*join*/"###),

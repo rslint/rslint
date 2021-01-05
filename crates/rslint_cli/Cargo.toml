@@ -33,7 +33,8 @@ notify = "4.0.15"
 colored = "2.0.0"
 tracing = { version = "0.1.22", features = ["attributes", "release_max_level_trace"] }
 tracing-flame = "0.1.0"
-inferno = "0.10.2"
+inferno = "0.10.3"
+superluminal-perf = "0.1.1"
 
 [dependencies.tracing-subscriber]
 version = "0.2.15"

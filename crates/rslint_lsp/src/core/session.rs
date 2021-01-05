@@ -75,7 +75,7 @@ impl Session {
                 })
                 .unwrap_or_default(),
         );
-        let analyzer = match ScopeAnalyzer::new() {
+        let analyzer = match ScopeAnalyzer::new(1) {
             Ok(analyzer) => analyzer,
             Err(err) => anyhow::bail!(err),
         };

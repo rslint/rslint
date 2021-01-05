@@ -1,6 +1,9 @@
 rule_test! {
     use_before_def,
-    default_conf: |analyzer, file| analyzer.no_use_before_def(file, Some(Default::default())),
+    default_conf: |analyzer, file| {
+        analyzer.no_use_before_def(file, Some(Default::default()));
+        Ok(())
+    },
     filter: DatalogLint::is_use_before_def,
     // Should pass
     { "var a = 10; alert(a);" },

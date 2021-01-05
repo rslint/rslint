@@ -31,9 +31,6 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
-// TODO: Make this runtime configurable
-const DATALOG_WORKERS: usize = 1;
-
 // TODO: Work on the internment situation, I don't like
 //       having to allocate strings for idents
 // TODO: Reduce the number of scopes generated as much as possible
@@ -53,8 +50,8 @@ unsafe impl Sync for Datalog {}
 static_assertions::assert_impl_all!(Datalog: Send, Sync);
 
 impl Datalog {
-    pub fn new() -> DatalogResult<Self> {
-        let (hddlog, _init_state) = HDDlog::run(DATALOG_WORKERS, false)?;
+    pub fn new(num_workers: usize) -> DatalogResult<Self> {
+        let (hddlog, _init_state) = HDDlog::run(num_workers, false)?;
         let this = Self {
             hddlog,
             transaction_lock: Mutex::new(()),
@@ -118,7 +115,9 @@ impl Datalog {
             }
 
             Ok(())
-        })
+        })?;
+
+        Ok(())
     }
 
     // TODO: Make this take an iterator
@@ -131,7 +130,9 @@ impl Datalog {
             }
 
             Ok(())
-        })
+        })?;
+
+        Ok(())
     }
 
     pub fn dump_inputs<W>(&self, mut output: W) -> io::Result<()>
@@ -154,7 +155,7 @@ impl Datalog {
         let _guard = span.enter();
 
         let inner = DatalogInner::new(FileId::new(0));
-        let mut trans = DatalogTransaction::new(&inner)?;
+        let mut trans = DatalogTransaction::new(&inner);
         let result = transaction(&mut trans)?;
 
         let delta = {
@@ -359,14 +360,14 @@ impl Datalog {
 
 impl Default for Datalog {
     fn default() -> Self {
-        Self::new().expect("failed to create ddlog instance")
+        Self::new(1).expect("failed to create ddlog instance")
     }
 }
 
 #[doc(hidden)]
 #[derive(Debug)]
 pub struct DatalogInner {
-    updates: RefCell<Vec<Update<DDValue>>>,
+    pub(crate) updates: RefCell<Vec<Update<DDValue>>>,
     file_id: Cell<FileId>,
     scope_id: Cell<ScopeId>,
     global_id: Cell<GlobalId>,
@@ -378,7 +379,7 @@ pub struct DatalogInner {
 }
 
 impl DatalogInner {
-    fn new(file_id: FileId) -> Self {
+    pub(crate) fn new(file_id: FileId) -> Self {
         Self {
             updates: RefCell::new(Vec::with_capacity(100)),
             file_id: Cell::new(file_id),
@@ -420,7 +421,7 @@ impl DatalogInner {
         self.expression_id.inc()
     }
 
-    fn file_id(&self) -> FileId {
+    pub fn file_id(&self) -> FileId {
         self.file_id.get()
     }
 
@@ -462,12 +463,12 @@ impl DatalogInner {
 }
 
 pub struct DatalogTransaction<'ddlog> {
-    datalog: &'ddlog DatalogInner,
+    pub(crate) datalog: &'ddlog DatalogInner,
 }
 
 impl<'ddlog> DatalogTransaction<'ddlog> {
-    const fn new(datalog: &'ddlog DatalogInner) -> DatalogResult<Self> {
-        Ok(Self { datalog })
+    pub(crate) const fn new(datalog: &'ddlog DatalogInner) -> Self {
+        Self { datalog }
     }
 
     pub fn file(&self, file_id: FileId, kind: FileKind) -> DatalogScope<'ddlog> {

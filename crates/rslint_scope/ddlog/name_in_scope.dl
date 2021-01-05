@@ -75,6 +75,7 @@ ScopeOfDeclName(name, scope, declared) :-
 ScopeOfDeclName(name, scope, declared) :-
     VariableDeclarations(name, Hoistable { scope, _ }, declared, _).
 
+
 /// A record of where variable usages actually happen
 relation NameOccursInScope(scope: ScopeId, name: Name)
 

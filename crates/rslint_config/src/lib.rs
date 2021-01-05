@@ -189,6 +189,7 @@ impl Config {
         no_global_config: bool,
         emit_diagnostic: fn(SimpleFile, Diagnostic),
     ) -> JoinHandle<Self> {
+<<<<<<< HEAD
         thread::spawn(move || {
             let span = tracing::info_span!("loading config");
             let _guard = span.enter();
@@ -224,6 +225,22 @@ impl Config {
                     }
                 },
                 ConfigStyle::Toml => match toml::from_str::<ConfigRepr>(&source) {
+=======
+        thread::Builder::new()
+            .name("rslint-config-walker".to_owned())
+            .spawn(move || {
+                let span = tracing::info_span!("loading config");
+                let _guard = span.enter();
+
+                let path = Self::find_config(no_global_config);
+                let (source, path) = match path.as_ref().and_then(|path| read_to_string(path).ok())
+                {
+                    Some(source) => (source, path.unwrap()),
+                    None => return Default::default(),
+                };
+
+                match toml::from_str::<ConfigRepr>(&source) {
+>>>>>>> b873dca... Performance work, benchmarking and better concurrent integration
                     Ok(repr) => Self {
                         repr,
                         warnings: Default::default(),
@@ -245,9 +262,15 @@ impl Config {
                         emit_diagnostic(config_file, d);
                         Default::default()
                     }
+<<<<<<< HEAD
                 },
             }
         })
+=======
+                }
+            })
+            .expect("the thread name has no null bytes")
+>>>>>>> b873dca... Performance work, benchmarking and better concurrent integration
     }
 
     fn find_config(global_config: bool) -> Option<(PathBuf, ConfigStyle)> {

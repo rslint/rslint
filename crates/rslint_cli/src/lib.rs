@@ -28,7 +28,7 @@ use std::{
     fs::write,
     path::PathBuf,
     process,
-    sync::mpsc::{self, Sender},
+    sync::mpsc::{self, Receiver, Sender},
     thread::{self, JoinHandle},
 };
 use tracing::*;
@@ -81,9 +81,12 @@ fn run_inner(
         return 2;
     }
 
-    let (analyzer, sender, thread_handle) = start_ddlog_daemon(walker.files.len());
-    analyzer.enable_profiling(true);
+    superluminal_perf::begin_event("start ddlog daemon");
+    let (analyzer, sender, _thread_handle, finished_receiver) =
+        start_ddlog_daemon(walker.files.len());
+    superluminal_perf::end_event();
 
+    superluminal_perf::begin_event("1st lint pass");
     let mut results = walker
         .files
         .par_keys()
@@ -100,9 +103,15 @@ fn run_inner(
             }
         })
         .collect::<Vec<_>>();
+    superluminal_perf::end_event();
 
     let ddlog_store = CstRuleStore::ddlog();
-    thread_handle.join().unwrap();
+
+    superluminal_perf::begin_event("wait for ddlog signal");
+    finished_receiver.recv().unwrap();
+    superluminal_perf::end_event();
+
+    superluminal_perf::begin_event("2nd lint pass");
     results.par_extend(
         walker
             .files
@@ -120,14 +129,16 @@ fn run_inner(
                 }
             }),
     );
-    std::fs::write("ddlog_profile.txt", analyzer.ddlog_profile()).unwrap();
+    superluminal_perf::end_event();
 
+    superluminal_perf::begin_event("emit diagnostics");
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)
     } else {
         0
     };
     print_results(&mut results, &walker, &config, fix_count, &formatter);
+    superluminal_perf::end_event();
 
     // print_results remaps the result to the appropriate severity
     // so these diagnostic severities should be accurate
@@ -429,36 +440,62 @@ pub fn emit_diagnostic(diagnostic: &Diagnostic, walker: &dyn file::Files) {
         .expect("failed to throw linter diagnostic")
 }
 
-fn start_ddlog_daemon(
-    number_files: usize,
-) -> (
+type DaemonOutput = (
     ScopeAnalyzer,
-    Sender<(rslint_scope::FileId, SyntaxNode)>,
+    Sender<(usize, rslint_scope::FileId, SyntaxNode)>,
     JoinHandle<()>,
-) {
+    Receiver<()>,
+);
+
+fn start_ddlog_daemon(number_files: usize) -> DaemonOutput {
     use rslint_scope::globals::{BUILTIN, ES2021, NODE};
 
     let (sender, receiver) = mpsc::channel();
-    let analyzer = ScopeAnalyzer::new().unwrap();
+    let (finished_sender, finished_receiver) = mpsc::channel();
+    let analyzer = ScopeAnalyzer::new(3).unwrap();
 
     let handle = {
         let analyzer = analyzer.clone();
-        thread::spawn(move || {
-            let analyzer = analyzer;
+        thread::Builder::new()
+            .name("ddlog-daemon".to_owned())
+            .spawn(move || {
+                let analyzer = analyzer;
 
-            let mut batch = Vec::with_capacity(number_files);
-            for file in receiver.iter() {
-                batch.push(file);
-            }
+                superluminal_perf::begin_event("ddlog receive files");
+                let batch = {
+                    let mut batch: Vec<_> = receiver.iter().take(number_files).collect();
+                    batch.sort_unstable_by_key(|&(len, _, _)| len);
 
-            analyzer.inject_globals(BUILTIN).unwrap();
-            analyzer.inject_globals(ES2021).unwrap();
-            analyzer.inject_globals(NODE).unwrap();
-            analyzer.analyze_batch(&batch).unwrap();
-        })
+                    batch
+                        .into_iter()
+                        .map(|(_, file, node)| (file, node))
+                        .collect::<Vec<_>>()
+                };
+                superluminal_perf::end_event();
+
+                superluminal_perf::begin_event("ddlog flush config queue");
+                analyzer.flush_config_queue().unwrap();
+                superluminal_perf::end_event();
+
+                superluminal_perf::begin_event("ddlog ingest globals");
+                analyzer.inject_globals(BUILTIN).unwrap();
+                analyzer.inject_globals(ES2021).unwrap();
+                analyzer.inject_globals(NODE).unwrap();
+                superluminal_perf::end_event();
+
+                analyzer.enable_profiling(true);
+                superluminal_perf::begin_event("ddlog batch analysis");
+                analyzer.analyze_batch(batch.as_slice()).unwrap();
+                superluminal_perf::end_event();
+                analyzer.enable_profiling(false);
+                std::fs::write("ddlog_profile.txt", analyzer.ddlog_profile()).unwrap();
+
+                finished_sender.send(()).unwrap();
+            })
+            .expect("the thread name does not contain null bytes")
     };
 
-    (analyzer, sender, handle)
+    (analyzer, sender, handle, finished_receiver)
 }
 
 // TODO: don't use expect because we treat panics as linter bugs

@@ -2,7 +2,10 @@
 
 rule_test! {
     no_undef,
-    default_conf: |analyzer, file| analyzer.no_undef(file, Some(Default::default())),
+    default_conf: |analyzer, file| {
+        analyzer.no_undef(file, Some(Default::default()));
+        Ok(())
+    },
     filter: DatalogLint::is_no_undef,
     // Should pass
     { "var a = 1, b = 2; a + b;" },
@@ -146,5 +149,8 @@ rule_test! {
     no_undef_typed_array_constructor,
     "corpus/TypedArrayConstructor.mjs",
     module: true,
-    config: |analyzer, file| analyzer.no_undef(file, Some(Default::default())),
+    config: |analyzer, file| {
+        analyzer.no_undef(file, Some(Default::default()));
+        Ok(())
+    },
 }

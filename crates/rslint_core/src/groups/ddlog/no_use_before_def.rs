@@ -62,9 +62,7 @@ impl CstRule for NoUseBeforeDef {
         let analyzer = ctx.analyzer.as_ref()?.clone();
         let file = FileId::new(ctx.file_id as u32);
 
-        analyzer
-            .no_use_before_def(file, Some(self.config.clone()))
-            .unwrap();
+        analyzer.no_use_before_def(file, Some(self.config.clone()));
 
         analyzer.outputs().use_before_def.iter().for_each(|used| {
             let used = used.key();

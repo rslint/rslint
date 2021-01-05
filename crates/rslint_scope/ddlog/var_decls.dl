@@ -61,23 +61,23 @@ relation VariableDeclarations(
     meta: Ref<VariableMeta>,
 )
 
-// Add implicit globals to every file
-VariableDeclarations(name, scope, id, meta) :-
-    File(_, _, file_scope),
-    ImplicitGlobal(global @ GlobalId { _, None }, name, _),
+// // Add implicit globals to every file
+// VariableDeclarations(name, scope, id, meta) :-
+//     File(_, _, file_scope),
+//     ImplicitGlobal(global @ GlobalId { _, None }, name, _),
+// 
+//     var meta = VariableMeta { false, false, None }.ref_new(),
+//     var id = AnyIdGlobal { global },
+//     var scope = Unhoistable { file_scope }.
 
-    var meta = VariableMeta { false, false, None }.ref_new(),
-    var id = AnyIdGlobal { global },
-    var scope = Unhoistable { file_scope }.
-
-// Add yser globals to the file they're declared in
-VariableDeclarations(name, scope, id, meta) :-
-    File(file, _, file_scope),
-    UserGlobal(global @ GlobalId { _, Some { file }}, name, _),
-
-    var meta = VariableMeta { true, false, None }.ref_new(),
-    var id = AnyIdGlobal { global },
-    var scope = Unhoistable { file_scope }.
+// // Add user globals to the file they're declared in
+// VariableDeclarations(name, scope, id, meta) :-
+//     File(file, _, file_scope),
+//     UserGlobal(global @ GlobalId { _, Some { file }}, name, _),
+// 
+//     var meta = VariableMeta { true, false, None }.ref_new(),
+//     var id = AnyIdGlobal { global },
+//     var scope = Unhoistable { file_scope }.
 
 // Import declarations
 //

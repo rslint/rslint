@@ -5,12 +5,30 @@ import config
 import name_in_scope
 import outputs::no_typeof_undef
 
+typedef NoUndef = NoUndef {
+    name: Name,
+    scope: ScopeId,
+    span: Span,
+}
+
 // Variable usages (`let` and `const` predecls or undefined symbols) that don't
 // have an accompanying variable in scope are reported
+output relation NoUndef[NoUndef]
+
+// Make sure the violation isn't an implicitly declared global variable
+NoUndef[no_undef] :-
+    GloballessNoUndef(no_undef @ NoUndef { name, _, _ }, file),
+    not UserGlobal(GlobalId { _, Some { file }}, name, _),
+    not ImplicitGlobal(GlobalId { _, None }, name, _).
+
+
+// Potential `no-undef` violations, apart from any usage of global variables since
+// `NameInScope` does not contain *implicit* globals
 // TODO: Use a levenshtein aggregate to try and correct and/or look in children
 //       scopes for a declaration
-output relation NoUndef(name: Name, scope: ScopeId, span: Span)
-NoUndef(name, scope, span) :-
+relation GloballessNoUndef(no_undef: NoUndef, file: FileId)
+
+GloballessNoUndef(NoUndef { name, scope, span }, file) :-
     EnableNoUndef(file, _),
 
     NameRef(expr @ ExprId { _, file }, name),
@@ -22,7 +40,7 @@ NoUndef(name, scope, span) :-
     not NameInScope(name, scope, _).
 
 // Assignments
-NoUndef(name, scope, span) :-
+GloballessNoUndef(NoUndef { name, scope, span }, file) :-
     EnableNoUndef(file, _),
 
     Assign(expr @ ExprId { _, file }, Some { Left { pat }}, _, _),

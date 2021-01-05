@@ -143,7 +143,7 @@ struct DatalogTestHarness {
 impl DatalogTestHarness {
     pub fn new(default_config: fn(&ScopeAnalyzer, FileId) -> DatalogResult<()>) -> Self {
         Self {
-            datalog: ScopeAnalyzer::new().expect("failed to create ddlog instance"),
+            datalog: ScopeAnalyzer::new(1).expect("failed to create ddlog instance"),
             passing: AtomicUsize::new(0),
             failing: AtomicUsize::new(0),
             counter: AtomicUsize::new(0),
@@ -294,6 +294,7 @@ impl<'a> TestCase<'a> {
 
         (self.config.unwrap_or(self.harness.default_config))(&self.harness.datalog, file_id)
             .unwrap();
+        self.harness.datalog.flush_config_queue().unwrap();
 
         self.harness
             .datalog

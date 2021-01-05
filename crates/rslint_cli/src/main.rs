@@ -80,6 +80,7 @@ fn main() {
     let num_threads = opt.max_threads.unwrap_or_else(num_cpus::get);
     rayon::ThreadPoolBuilder::new()
         .num_threads(num_threads)
+        .thread_name(|thread_id| format!("rslint-worker-{}", thread_id))
         .build_global()
         .expect("failed to build thread pool");
 

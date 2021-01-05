@@ -1,6 +1,9 @@
 rule_test! {
     no_unused_labels,
-    default_conf: |analyzer, file| analyzer.no_unused_labels(file, Some(Default::default())),
+    default_conf: |analyzer, file| {
+        analyzer.no_unused_labels(file, Some(Default::default()));
+        Ok(())
+    },
     filter: DatalogLint::is_no_unused_labels,
     // Should pass
     { "A: break A;" },
