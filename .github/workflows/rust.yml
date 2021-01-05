@@ -77,19 +77,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        name: [linux, windows, macos]
-
         include:
-          - name: linux
-            os: ubuntu-latest
+          - os: ubuntu-latest
             artifact_name: rslint_cli
             asset_name: rslint_cli-linux
-          - name: windows
-            os: windows-latest
+          - os: windows-latest
             artifact_name: rslint_cli.exe
             asset_name: rslint_cli-windows
-          - name: macos
-            os: macos-latest
+          - os: macos-latest
             artifact_name: rslint_cli
             asset_name: rslint_cli-macos
 
