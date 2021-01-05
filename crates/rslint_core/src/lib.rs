@@ -26,6 +26,9 @@
 //! ⚠️ note however that many rules rely on checking tokens or the root and running on single nodes
 //! may yield incorrect results, you should only do this if you know about the rule's implementation.
 
+// FIXME: Workaround for https://github.com/GREsau/schemars/pull/65
+#![allow(clippy::field_reassign_with_default)]
+
 mod file;
 mod rule;
 mod store;
