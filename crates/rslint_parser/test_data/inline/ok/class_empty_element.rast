@@ -30,8 +30,7 @@ MODULE@0..41
         SEMICOLON@21..22 ";"
       WHITESPACE@22..23 " "
       GETTER@23..35
-        NAME@23..26
-          IDENT@23..26 "get"
+        GET_KW@23..26 "get"
         WHITESPACE@26..27 " "
         NAME@27..30
           IDENT@27..30 "foo"

@@ -62,14 +62,22 @@ pub fn maybe_private_name(p: &mut Parser) -> Option<CompletedMarker> {
     }
 }
 
-fn class_prop_name(p: &mut Parser) -> Option<CompletedMarker> {
+fn class_prop_name(p: &mut Parser) -> Option<(CompletedMarker, Option<usize>)> {
     if p.at(T![#]) {
         let m = p.start();
         p.bump_any();
         identifier_name(p);
-        Some(m.complete(p, PRIVATE_NAME))
+        Some((m.complete(p, PRIVATE_NAME), None))
+    } else if let Some(obj) = object_prop_name(p, false) {
+        // need to return an index to the token event so class_member can later
+        // potentially change it to a get/set keyword
+        if obj.kind() == NAME {
+            Some((obj, Some(obj.start_pos as usize + 1)))
+        } else {
+            Some((obj, None))
+        }
     } else {
-        object_prop_name(p, false)
+        None
     }
 }
 
@@ -1024,13 +1032,13 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
             return Some(m.complete(p, METHOD));
         }
     }
-    let kind = if key.map(|x| x.kind()) == Some(PRIVATE_NAME) {
+    let kind = if key.map(|(x, _)| x.kind()) == Some(PRIVATE_NAME) {
         PRIVATE_PROP
     } else {
         CLASS_PROP
     };
     let is_constructor =
-        kind != CLASS_PROP && key.map(|x| p.span_text(x.range(p))) == Some("constructor");
+        kind != CLASS_PROP && key.map(|(x, _)| p.span_text(x.range(p))) == Some("constructor");
 
     if is_prop(p, 0) && key.is_some() {
         return Some(make_prop(p, m, kind, declare, is_constructor, opt));
@@ -1038,9 +1046,15 @@ fn class_member_no_semi(p: &mut Parser) -> Option<CompletedMarker> {
 
     let next_line_generator = p.has_linebreak_before_n(0) && p.at(T![*]);
 
-    if let Some(key) = key.filter(|x| x.kind() != PRIVATE_NAME) {
+    if let Some((key, idx)) = key.filter(|(x, _)| x.kind() != PRIVATE_NAME) {
         if matches!(p.span_text(key.range(p)), "get" | "set") && !next_line_generator {
             let getter = p.span_text(key.range(p)) == "get";
+            let remap_kind = if getter { T![get] } else { T![set] };
+            key.undo_completion(p).abandon(p);
+            match p.events[idx.unwrap()] {
+                Event::Token { ref mut kind, .. } => *kind = remap_kind,
+                _ => unreachable!(),
+            };
             class_prop_name(p);
 
             if let Some(range) = readonly_range {
@@ -1093,7 +1107,7 @@ pub fn method(
         //  get {}
         // }
         T![ident] if p.cur_src() == "get" && p.nth(1) != T!['('] => {
-            p.bump_any();
+            p.bump_remap(T![get]);
             object_prop_name(p, false);
             args_body(p);
             m.complete(p, GETTER)
@@ -1103,7 +1117,7 @@ pub fn method(
         //  set bar() {}
         // }
         T![ident] if p.cur_src() == "set" && p.nth(1) != T!['('] => {
-            p.bump_any();
+            p.bump_remap(T![set]);
             object_prop_name(p, false);
             args_body(p);
             m.complete(p, SETTER)

@@ -13,7 +13,7 @@ MODULE@0..43
         L_CURLY@8..9 "{"
         WHITESPACE@9..11 "\n "
         GETTER@11..40
-          IDENT@11..14 "get"
+          GET_KW@11..14 "get"
           WHITESPACE@14..15 " "
           NAME@15..18
             IDENT@15..18 "foo"
