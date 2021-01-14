@@ -27,7 +27,7 @@ use std::{
     rc::Rc,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
+        Arc, Barrier,
     },
     thread::{self, Thread},
     time::Duration,
@@ -61,6 +61,8 @@ pub struct DDlogWorker<'a> {
     frontier_timestamp: &'a TSAtomic,
     /// Peer workers' thread handles, only used by worker 0.
     peers: FnvHashMap<usize, Thread>,
+    /// The progress barrier used for transactions
+    progress_barrier: Arc<Barrier>,
     /// Information on which metrics are enabled and a
     /// channel for sending profiling data
     profiling: ProfilingData,
@@ -78,11 +80,12 @@ impl<'a> DDlogWorker<'a> {
         program: Arc<Program>,
         frontier_timestamp: &'a TSAtomic,
         num_workers: usize,
+        progress_barrier: Arc<Barrier>,
         profiling: ProfilingData,
-        request_receivers: Arc<Mutex<Vec<Option<Receiver<Msg>>>>>,
-        reply_senders: Arc<Mutex<Vec<Option<Sender<Reply>>>>>,
+        request_receivers: Arc<[Receiver<Msg>]>,
+        reply_senders: Arc<[Sender<Reply>]>,
         thread_handle_sender: Sender<(usize, Thread)>,
-        thread_handle_receiver: Arc<Mutex<Receiver<(usize, Thread)>>>,
+        thread_handle_receiver: Arc<Receiver<(usize, Thread)>>,
     ) -> Self {
         let worker_index = worker.index();
 
@@ -96,12 +99,8 @@ impl<'a> DDlogWorker<'a> {
         // If this is worker zero, receive all other worker's thread handles and
         // populate the `peers` map with them
         if worker_index == 0 {
-            let thread_handle_recv = thread_handle_receiver
-                .lock()
-                .expect("failed to lock thread handle receiver");
-
             for _ in 0..num_workers - 1 {
-                let (worker, thread_handle) = thread_handle_recv
+                let (worker, thread_handle) = thread_handle_receiver
                     .recv()
                     .expect("failed to receive thread handle from timely worker");
 
@@ -115,22 +114,15 @@ impl<'a> DDlogWorker<'a> {
                 .expect("failed to send thread handle for a timely worker");
         }
 
-        // Get the request receiver for the current worker
-        let request_receiver = mem::take(&mut request_receivers.lock().unwrap()[worker_index])
-            .expect("failed to get request receiver for a timely worker");
-
-        // Get the reply sender for the current worker
-        let reply_sender = mem::take(&mut reply_senders.lock().unwrap()[worker_index])
-            .expect("failed to get reply sender for a timely worker");
-
         Self {
             worker,
             program,
             frontier_timestamp,
             peers,
+            progress_barrier,
             profiling,
-            request_receiver,
-            reply_sender,
+            request_receiver: request_receivers[worker_index].clone(),
+            reply_sender: reply_senders[worker_index].clone(),
         }
     }
 
@@ -183,27 +175,26 @@ impl<'a> DDlogWorker<'a> {
             self.advance(&mut all_sessions, &mut traces, epoch);
             self.flush(&mut all_sessions, &probe);
 
-            // The only way an error can occur in sending the flush acknowledgement
-            // is if the receiver has hung up on the channel, in which case it doesn't matter
-            let _ = self.reply_sender.send(Reply::FlushAck);
+            self.reply_sender
+                .send(Reply::FlushAck)
+                .map_err(|e| format!("failed to send ACK: {}", e))?;
         }
 
         // Close session handles for non-input sessions;
         // close all sessions for workers other than worker 0.
         let mut sessions: FnvHashMap<RelId, InputSession<TS, DDValue, Weight>> = all_sessions
             .drain()
-            .filter(|&(relid, _)| self.program.get_relation(relid).input)
+            .filter(|&(relid, _)| self.is_leader() && self.program.get_relation(relid).input)
             .collect();
 
         // Only worker 0 receives data
         if self.is_leader() {
             loop {
-                self.worker.step();
-
                 // Non-blocking receive, so that we can do some garbage collecting
                 // when there is no real work to do.
                 match self.request_receiver.try_recv() {
                     Ok(Msg::Update(mut updates)) => {
+                        //println!("updates: {:?}", updates);
                         for update in updates.drain(..) {
                             match update {
                                 Update::Insert { relid, v } => {
@@ -238,19 +229,19 @@ impl<'a> DDlogWorker<'a> {
                                     );
                                 }
                             }
-
-                            self.worker.step();
                         }
                     }
 
                     Ok(Msg::Flush) => {
+                        //println!("flushing");
                         epoch += 1;
                         self.advance(&mut sessions, &mut traces, epoch);
                         self.flush(&mut sessions, &probe);
 
-                        // The only way an error can occur in sending the flush acknowledgement
-                        // is if the receiver has hung up on the channel, in which case it doesn't matter
-                        let _ = self.reply_sender.send(Reply::FlushAck);
+                        //println!("flushed");
+                        self.reply_sender
+                            .send(Reply::FlushAck)
+                            .map_err(|e| format!("failed to send ACK: {}", e))?;
                     }
 
                     Ok(Msg::Query(arrid, key)) => {
@@ -266,7 +257,7 @@ impl<'a> DDlogWorker<'a> {
                         // Command channel empty: use idle time to work on garbage collection.
                         // This will block when there is no more compaction left to do.
                         // The sender must unpark worker 0 after sending to the channel.
-                        self.worker.step();
+                        self.worker.step_or_park(None);
                     }
 
                     Err(TryRecvError::Disconnected) => {
@@ -287,7 +278,8 @@ impl<'a> DDlogWorker<'a> {
                 // worker 0 can know exactly when all other workers have processed all data
                 // for the `frontier_ts` timestamp, so that it knows when a transaction has
                 // been fully committed and produced all its outputs.
-                let time = self.frontier_timestamp.load(Ordering::Acquire);
+                self.progress_barrier.wait();
+                let time = self.frontier_timestamp.load(Ordering::SeqCst);
 
                 // TS::max_value() == 0xffffffffffffffff*
                 if time == TS::max_value() {
@@ -297,8 +289,14 @@ impl<'a> DDlogWorker<'a> {
                 // `sessions` is empty, but we must advance trace frontiers, so we
                 // don't hinder trace compaction.
                 self.advance(&mut sessions, &mut traces, time);
-                self.flush(&mut sessions, &probe);
+                while probe.less_than(&time) {
+                    if !self.worker.step_or_park(None) {
+                        // Dataflow terminated.
+                        return Ok(());
+                    }
+                }
 
+                self.progress_barrier.wait();
                 // We're all caught up with `frontier_ts` and can now spend some time
                 // garbage collecting.  The `step_or_park` call below will block if there
                 // is no more garbage collecting left to do.  It will wake up when one of
@@ -308,61 +306,12 @@ impl<'a> DDlogWorker<'a> {
                 // us a message and unparked the thread.  We check if the frontier has been
                 // advanced by worker 0 and, if so, go back to the barrier to synchronize
                 // with other workers.
-                while self.frontier_timestamp.load(Ordering::Acquire) == time {
-                    self.worker.step();
-
+                while self.frontier_timestamp.load(Ordering::SeqCst) == time {
                     // Non-blocking receive, so that we can do some garbage collecting
                     // when there is no real work to do.
                     match self.request_receiver.try_recv() {
                         Ok(Msg::Query(arrid, key)) => {
                             self.handle_query(&mut traces, arrid, key)?;
-                        }
-
-                        Ok(Msg::Update(mut updates)) => {
-                            for update in updates.drain(..) {
-                                match update {
-                                    Update::Insert { relid, v } => {
-                                        sessions
-                                            .get_mut(&relid)
-                                            .ok_or_else(|| {
-                                                format!(
-                                                    "no session found for relation ID {}",
-                                                    relid
-                                                )
-                                            })?
-                                            .update(v, 1);
-                                    }
-                                    Update::DeleteValue { relid, v } => {
-                                        sessions
-                                            .get_mut(&relid)
-                                            .ok_or_else(|| {
-                                                format!(
-                                                    "no session found for relation ID {}",
-                                                    relid
-                                                )
-                                            })?
-                                            .update(v, -1);
-                                    }
-                                    Update::InsertOrUpdate { .. } => {
-                                        return Err(
-                                            "InsertOrUpdate command received by worker thread"
-                                                .to_string(),
-                                        );
-                                    }
-                                    Update::DeleteKey { .. } => {
-                                        // workers don't know about keys
-                                        return Err("DeleteKey command received by worker thread"
-                                            .to_string());
-                                    }
-                                    Update::Modify { .. } => {
-                                        return Err(
-                                            "Modify command received by worker thread".to_string()
-                                        );
-                                    }
-                                }
-
-                                self.worker.step();
-                            }
                         }
 
                         Ok(msg) => {
@@ -375,7 +324,7 @@ impl<'a> DDlogWorker<'a> {
 
                         Err(TryRecvError::Empty) => {
                             // Command channel empty: use idle time to work on garbage collection.
-                            self.worker.step();
+                            self.worker.step_or_park(None);
                         }
 
                         // The sender disconnected, so we can gracefully exit
@@ -417,20 +366,23 @@ impl<'a> DDlogWorker<'a> {
         sessions: &mut FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
         probe: &ProbeHandle<TS>,
     ) {
-        for relation_input in sessions.values_mut() {
+        for (_, relation_input) in sessions.iter_mut() {
             relation_input.flush();
         }
 
-        if let Some(session) = sessions.values_mut().next() {
+        if let Some((_, session)) = sessions.iter_mut().next() {
             // Do nothing if timestamp has not advanced since the last
             // transaction (i.e., no updates have arrived).
             if self.frontier_timestamp() < *session.time() {
                 self.set_frontier_timestamp(*session.time());
                 self.unpark_peers();
 
+                self.progress_barrier.wait();
                 while probe.less_than(session.time()) {
-                    self.worker.step();
+                    self.worker.step_or_park(None);
                 }
+
+                self.progress_barrier.wait();
             }
         }
     }
@@ -440,6 +392,7 @@ impl<'a> DDlogWorker<'a> {
     fn stop_all_workers(&self) {
         self.set_frontier_timestamp(TS::max_value());
         self.unpark_peers();
+        self.progress_barrier.wait();
     }
 
     /// Handle a query
@@ -594,8 +547,8 @@ impl<'a> DDlogWorker<'a> {
         let program = self.program.clone();
 
         self.worker.dataflow::<TS, _, _>(|outer: &mut Child<Worker<Allocator>, TS>| -> Result<_, String> {
-            let mut sessions: FnvHashMap<RelId, InputSession<TS, DDValue, Weight>> = FnvHashMap::default();
-            let mut collections: FnvHashMap<RelId, Collection<Child<Worker<Allocator>, TS>, DDValue, Weight>> =
+            let mut sessions : FnvHashMap<RelId, InputSession<TS, DDValue, Weight>> = FnvHashMap::default();
+            let mut collections : FnvHashMap<RelId, Collection<Child<Worker<Allocator>, TS>, DDValue, Weight>> =
                     HashMap::with_capacity_and_hasher(program.nodes.len(), FnvBuildHasher::default());
             let mut arrangements = FnvHashMap::default();
 
@@ -775,7 +728,7 @@ impl<'a> DDlogWorker<'a> {
                                 if rel.rel.distinct && !rel.distinct {
                                     collection = with_prof_context(
                                         &format!("{}.distinct_total", rel.rel.name),
-                                        || collection.threshold_total(|_, c| if *c == 0 { 0 } else { 1 }),
+                                        || collection.threshold_total(|_,c| if *c == 0 { 0 } else { 1 }),
                                     );
                                 }
 
@@ -889,9 +842,6 @@ impl ProfilingData {
 
     /// Record a profiling message
     pub fn record(&self, event: ProfMsg) {
-        // We can safely ignore the result of sending a profiling
-        // message to the profiling thread since it doesn't matter
-        // if a profiling message is dropped in some way
         let _ = self.data_channel.send(event);
     }
 }

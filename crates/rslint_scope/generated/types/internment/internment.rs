@@ -365,6 +365,12 @@ pub fn join(strings: & ddlog_std::Vec<istring>, sep: & String) -> String
 pub fn len(s: & istring) -> u64
 {   istring_len(s)
 }
+pub fn parse_dec_i64(s: & istring) -> ddlog_std::Option<i64>
+{   ddlog_std::parse_dec_i64(ival(s))
+}
+pub fn parse_dec_u64(s: & istring) -> ddlog_std::Option<u64>
+{   ddlog_std::parse_dec_u64(ival(s))
+}
 pub fn replace(s: & istring, from: & String, to: & String) -> String
 {   istring_replace(s, from, to)
 }

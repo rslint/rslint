@@ -89,5 +89,5 @@ pub trait DDlog: Debug {
     fn dump_index(&self, index: IdxId) -> Result<BTreeSet<DDValue>, String>;
 
     /// Stop the program.
-    fn stop(&mut self) -> Result<(), String>;
+    fn stop(&self) -> Result<(), String>;
 }

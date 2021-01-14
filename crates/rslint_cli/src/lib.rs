@@ -131,6 +131,8 @@ fn run_inner(
     );
     superluminal_perf::end_event();
 
+    thread::spawn(move || analyzer.shutdown());
+
     superluminal_perf::begin_event("emit diagnostics");
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)

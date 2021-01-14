@@ -27,13 +27,12 @@ use crossbeam_channel::{Receiver, Sender};
 use fnv::{FnvHashMap, FnvHashSet};
 use std::{
     borrow::Cow,
-    cmp,
     collections::{hash_map, BTreeSet},
     fmt::{self, Debug, Formatter},
     iter,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
+        Arc, Barrier, Mutex,
     },
     thread::{self, JoinHandle, Thread},
 };
@@ -59,12 +58,6 @@ use timely::order::TotalOrder;
 use timely::progress::{timestamp::Refines, Timestamp};
 use timely::worker::Worker;
 
-/// Message buffer for profiling messages
-const PROF_MSG_BUF_SIZE: usize = 10000;
-
-/// The minimal batch size given to each worker
-const MIN_BATCH_SIZE: usize = 10_000;
-
 type ValTrace<S> = DefaultValTrace<DDValue, DDValue, <S as ScopeParent>::Timestamp, Weight, u32>;
 type KeyTrace<S> = DefaultKeyTrace<DDValue, <S as ScopeParent>::Timestamp, Weight, u32>;
 
@@ -76,6 +69,9 @@ type TKeyEnter<'a, P, T> = TraceEnter<TKeyAgent<P>, T>;
 
 /// Diff associated with records in differential dataflow
 pub type Weight = i32;
+
+/// Message buffer for profiling messages
+const PROF_MSG_BUF_SIZE: usize = 10000;
 
 /// Result type returned by this library
 pub type Response<X> = Result<X, String>;
@@ -756,29 +752,28 @@ enum Reply {
 
 impl Program {
     /// Instantiate the program with `nworkers` timely threads.
-    pub fn run(&self, nworkers: usize) -> Result<RunningProgram, String> {
+    pub fn run(&self, number_workers: usize) -> Result<RunningProgram, String> {
         // Setup channels to communicate with the dataflow.
         // We use async channels to avoid deadlocks when workers are parked in
         // `step_or_park`.  This has the downside of introducing an unbounded buffer
         // that is only guaranteed to be fully flushed when the transaction commits.
-        let (request_send, request_recv): (Vec<_>, Vec<_>) = (0..nworkers)
+        let (request_send, request_recv): (Vec<_>, Vec<_>) = (0..number_workers)
             .map(|_| crossbeam_channel::unbounded::<Msg>())
             .unzip();
-        let request_recv: Arc<Mutex<Vec<Option<_>>>> =
-            Arc::new(Mutex::new(request_recv.into_iter().map(Some).collect()));
+        let request_recv = Arc::from(request_recv);
 
         // Channels for responses from worker threads.
-        let (reply_send, reply_recv): (Vec<_>, Vec<_>) = (0..nworkers)
+        let (reply_send, reply_recv): (Vec<_>, Vec<_>) = (0..number_workers)
             .map(|_| crossbeam_channel::unbounded::<Reply>())
             .unzip();
-        let reply_send: Arc<Mutex<Vec<Option<_>>>> =
-            Arc::new(Mutex::new(reply_send.into_iter().map(Some).collect()));
+        let reply_send = Arc::from(reply_send);
 
-        let (prof_send, prof_recv) = crossbeam_channel::bounded::<ProfMsg>(PROF_MSG_BUF_SIZE);
+        let (prof_send, prof_recv) = crossbeam_channel::bounded(PROF_MSG_BUF_SIZE);
 
         // Channel used by workers 1..n to send their thread handles to worker 0.
-        let (thandle_send, thandle_recv) = crossbeam_channel::bounded::<(usize, Thread)>(0);
-        let thandle_recv = Arc::new(Mutex::new(thandle_recv));
+        let (thread_handle_send, thread_handle_recv) =
+            crossbeam_channel::bounded::<(usize, Thread)>(0);
+        let thread_handle_recv = Arc::new(thread_handle_recv);
 
         // Profile data structure
         let profile = Arc::new(Mutex::new(Profile::new()));
@@ -789,13 +784,11 @@ impl Program {
 
         // Thread to collect profiling data
         let cloned_profile = profile.clone();
-        let prof_thread = thread::Builder::new()
-            .name("ddlog-profiling-thread".to_owned())
-            .spawn(move || Self::prof_thread_func(prof_recv, cloned_profile))
-            .expect("the profiling thread name does not contain null bytes");
+        let prof_thread = thread::spawn(move || Self::prof_thread_func(prof_recv, cloned_profile));
 
         // Shared timestamp managed by worker 0 and read by all other workers
         let frontier_ts = TSAtomic::new(0);
+        let progress_barrier = Arc::new(Barrier::new(number_workers));
 
         // Clone the program so that it can be moved into the timely computation
         let program = Arc::new(self.clone());
@@ -803,18 +796,19 @@ impl Program {
 
         // Start up timely computation.
         let worker_guards = timely::execute(
-            Configuration::Process(nworkers),
+            Configuration::Process(number_workers),
             move |worker: &mut Worker<Allocator>| -> Result<_, String> {
                 let worker = DDlogWorker::new(
                     worker,
                     program.clone(),
                     &frontier_ts,
-                    nworkers,
+                    number_workers,
+                    progress_barrier.clone(),
                     profiling.clone(),
-                    request_recv.clone(),
-                    reply_send.clone(),
-                    thandle_send.clone(),
-                    thandle_recv.clone(),
+                    Arc::clone(&request_recv),
+                    Arc::clone(&reply_send),
+                    thread_handle_send.clone(),
+                    thread_handle_recv.clone(),
                 );
 
                 worker.run()
@@ -893,8 +887,8 @@ impl Program {
     fn prof_thread_func(channel: Receiver<ProfMsg>, profile: Arc<Mutex<Profile>>) {
         loop {
             match channel.recv() {
-                Ok(msg) => {
-                    profile.lock().unwrap().update(&msg);
+                Ok(message) => {
+                    profile.lock().unwrap().update(&message);
                 }
                 _ => return,
             }
@@ -1436,20 +1430,9 @@ impl RunningProgram {
             self.apply_update(update, &mut filtered_updates)?;
         }
 
-        if filtered_updates.is_empty() {
-            return Ok(());
-        }
-
-        let chunk_size = cmp::max(filtered_updates.len() / self.senders.len(), MIN_BATCH_SIZE);
-        filtered_updates
-            .chunks(chunk_size)
-            .map(|chunk| Msg::Update(chunk.to_vec()))
-            .zip((0..self.senders.len()).cycle())
-            .map(|(update, worker_idx)| self.send(worker_idx, update))
-            .collect::<Response<()>>()?;
-
-        self.need_to_flush = true;
-        Ok(())
+        self.send(0, Msg::Update(filtered_updates)).map(|_| {
+            self.need_to_flush = true;
+        })
     }
 
     /// Deletes all values in an input table

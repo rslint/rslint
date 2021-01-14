@@ -39,7 +39,7 @@ pub type DatalogResult<T> = Result<T, String>;
 
 #[derive(Debug)]
 pub struct Datalog {
-    hddlog: HDDlog,
+    pub(super) hddlog: HDDlog,
     transaction_lock: Mutex<()>,
     outputs: Outputs,
 }

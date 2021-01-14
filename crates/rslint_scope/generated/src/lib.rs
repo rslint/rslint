@@ -608,6 +608,8 @@ pub mod typedefs
         pub use ::internment::split;
         pub use ::internment::reverse;
         pub use ::internment::replace;
+        pub use ::internment::parse_dec_u64;
+        pub use ::internment::parse_dec_i64;
         pub use ::internment::len;
         pub use ::internment::join;
         pub use ::internment::ival;

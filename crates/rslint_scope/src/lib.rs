@@ -27,6 +27,7 @@ use datalog::{DatalogInner, DatalogTransaction};
 use differential_datalog::{
     ddval::{DDValConvert, DDValue},
     program::{RelId, Update},
+    DDlog,
 };
 use rslint_parser::{
     ast::{Module, ModuleItem, Script},
@@ -58,6 +59,10 @@ impl ScopeAnalyzer {
             registered_lints: Arc::new(DashMap::new()),
             config_queue: Arc::new(SegQueue::new()),
         })
+    }
+
+    pub fn shutdown(&self) {
+        let _ = self.datalog.hddlog.stop();
     }
 
     pub fn analyze_batch(&self, files: &[(FileId, SyntaxNode)]) -> DatalogResult<()> {

@@ -6,7 +6,6 @@ use csv::Writer;
 use serde::{Deserialize, Serialize};
 
 use fnv::FnvHashMap;
-use serde::export::Formatter;
 use std::fmt;
 use std::fmt::Debug;
 use std::fs::File;
@@ -42,6 +41,7 @@ impl Default for CSVEventType {
 }
 
 /// Map from (worker_id, op_id) to start time for timely events.
+#[repr(transparent)]
 struct StartTimeKeeper<K> {
     start_times: HashMap<K, Duration>,
 }
@@ -232,7 +232,7 @@ pub struct Statistics {
 
 /// Create Debug
 impl Debug for Statistics {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("Statistics")
     }
 }

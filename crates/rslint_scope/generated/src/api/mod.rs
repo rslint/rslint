@@ -352,7 +352,7 @@ impl DDlog for HDDlog {
         self.query_index(idxid, key)
     }
 
-    fn stop(&mut self) -> Result<(), String> {
+    fn stop(&self) -> Result<(), String> {
         self.prog.lock().unwrap().stop()
     }
 }
