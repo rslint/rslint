@@ -134,6 +134,8 @@ pub(crate) const KINDS_SRC: KindsSrc = KindsSrc {
         "module",
         "global",
         "infer",
+        "get",
+        "set",
     ],
     literals: &["NUMBER", "STRING", "REGEX"],
     tokens: &[
@@ -1178,7 +1180,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct Getter {
             decorators: [TsDecorator],
-            /* get */
+            T![get],
             key: PropName,
             parameters: ParameterList,
             body: BlockStmt,
@@ -1186,7 +1188,7 @@ pub(crate) const AST_SRC: AstSrc = AstSrc {
 
         struct Setter {
             decorators: [TsDecorator],
-            /* set */
+            T![set],
             key: PropName,
             parameters: ParameterList,
             body: BlockStmt,

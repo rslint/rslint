@@ -1229,6 +1229,7 @@ pub struct Getter {
 }
 impl Getter {
     pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
+    pub fn get_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![get]) }
     pub fn key(&self) -> Option<PropName> { support::child(&self.syntax) }
     pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
@@ -1240,6 +1241,7 @@ pub struct Setter {
 }
 impl Setter {
     pub fn decorators(&self) -> AstChildren<TsDecorator> { support::children(&self.syntax) }
+    pub fn set_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![set]) }
     pub fn key(&self) -> Option<PropName> { support::child(&self.syntax) }
     pub fn parameters(&self) -> Option<ParameterList> { support::child(&self.syntax) }
     pub fn body(&self) -> Option<BlockStmt> { support::child(&self.syntax) }
