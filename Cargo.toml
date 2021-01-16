@@ -1,15 +1,14 @@
 [workspace]
-members = [
-  "crates/*",
-  "xtask",
-]
+members = ["crates/*", "xtask"]
 default-members = ["crates/rslint_cli"]
 
 [profile]
-release = { lto = true, codegen-units = 1 }
-bench = { lto = true, codegen-units = 1 }
+release = { lto = "fat", codegen-units = 1, debug = 2 }
+bench = { lto = "fat", codegen-units = 1 }
 
 [profile.dev]
 # Disabling debug info speeds up builds a lot, and we do not really
 # rely on debug info for debugging
 debug = 0
+incremental = true
+codegen-units = 16

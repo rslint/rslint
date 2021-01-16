@@ -18,7 +18,19 @@ impl CstRuleStore {
     pub fn builtins(mut self) -> Self {
         self.rules.extend(errors());
         self.rules.extend(style());
+        self.rules.extend(ddlog());
         self
+    }
+
+    pub fn ddlog() -> Self {
+        let mut this = Self::new();
+        this.rules.extend(ddlog());
+        this
+    }
+
+    /// Load a single rule into this store.
+    pub fn load_rule(&mut self, rule: Box<dyn CstRule>) {
+        self.rules.push(rule);
     }
 
     /// Load a list of rules into this store.
@@ -39,5 +51,38 @@ impl CstRuleStore {
             .iter()
             .find(|rule| rule.name() == rule_name.as_ref())
             .cloned()
+    }
+
+    /// Returns whether or not the store contains the given rule
+    pub fn contains(&self, rule_name: impl AsRef<str>) -> bool {
+        self.rules
+            .iter()
+            .any(|rule| rule.name() == rule_name.as_ref())
+    }
+
+    /// Returns the number of currently loaded rules
+    pub fn len(&self) -> usize {
+        self.rules.len()
+    }
+
+    /// Returns whether the rule store is empty or not
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Removes the rules where `filter` returns `true`
+    pub fn filter<F>(&mut self, mut filter: F)
+    where
+        F: FnMut(&dyn CstRule) -> bool,
+    {
+        // TODO: Replace with `Vec::drain_filter()`
+        let mut i = 0;
+        while i != self.rules.len() {
+            if filter(&*self.rules[i]) {
+                self.rules.remove(i);
+            } else {
+                i += 1;
+            }
+        }
     }
 }

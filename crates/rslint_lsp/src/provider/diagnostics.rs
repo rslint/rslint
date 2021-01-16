@@ -66,6 +66,7 @@ pub async fn publish_diagnostics(session: &Session, uri: Url) -> anyhow::Result<
                     verbose,
                     &directives,
                     Arc::clone(&src),
+                    Some(session.analyzer.clone()),
                 ),
             )
         })

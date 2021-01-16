@@ -1,0 +1,18 @@
+import ast
+import utils
+import inputs
+import var_decls
+import name_in_scope
+
+relation IsExported(id: AnyId)
+IsExported(AnyIdFunc { id }) :- Function(id, _, _, _, true).
+IsExported(AnyIdClass { id }) :- Class(id, _, _, _, _, true).
+IsExported(AnyIdStmt { id }) :- VarDecl(id, _, _, true).
+IsExported(AnyIdStmt { id }) :- LetDecl(id, _, _, true).
+IsExported(AnyIdStmt { id }) :- ConstDecl(id, _, _, true).
+IsExported(id) :-
+    FileExport(NamedExport { export_name, export_alias }, export_scope),
+    Some { Spanned { var name, _ }} = export_alias.or_else(export_name),
+    NameInScope(name, export_scope, id),
+    VariableDeclarations(name, scope, id, _),
+    scope.hoisted_scope() == export_scope.

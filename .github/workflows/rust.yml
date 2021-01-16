@@ -27,8 +27,7 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           rust-version: ${{ matrix.rust }}
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo test --verbose --workspace --all-features
+      - run: ./ci.sh test --verbose --all-features
 
   clippy:
     name: Clippy
@@ -42,8 +41,7 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo clippy --workspace --all-targets --verbose --all-features
+      - run: ./ci.sh clippy --all-targets --verbose --all-features
 
   rustfmt:
     name: Formatting
@@ -54,7 +52,7 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           components: rustfmt
-      - run: cargo fmt --all -- --check
+      - run: ./ci.sh fmt -- --check
 
   check-rustdoc-links:
     name: Check doc links
@@ -67,9 +65,14 @@ jobs:
       - uses: hecrj/setup-rust-action@v1
         with:
           rust-version: nightly
-      # Check every crate in the workspace
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo doc --workspace --all-features --document-private-items --no-deps
+      # Check every crate in the workspace except for ignored ones
+      - run: |
+          ignored_crates=("types", "differential_datalog", "rslint_scoping_ddlog")
+          for package in $(cargo metadata --no-deps --format-version=1 | jq -r '.packages[] | .name'); do
+            if [ " ${ignored_crates[@]} " =~ " ${package} " ]; then
+              cargo rustdoc -p "$package" --all-features --lib -- -D warnings
+            fi
+          done
 
   deploy:
     name: Deploy for ${{ matrix.os }}

@@ -1,3 +1,0 @@
-[alias]
-xtask = "run --package xtask --bin xtask --"
-docgen = "run --package xtask docgen"

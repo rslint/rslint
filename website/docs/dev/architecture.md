@@ -44,6 +44,8 @@ If you come from a JavaScript background, Rust crates are essentially the same a
 
 - `rslint_text_edit`: This houses simple structs and methods to represent and apply text edits to strings. It is shared between `rslint_core` (for autofix), `rslint_errors` (for suggestions), `rslint_lsp` (for fix commands), and soon `rslint_parser` (for incremental reparsing).
 
+- `rslint_scope`: This holds all scope analysis logic. It's consumed by `rslint_core` (for both lint passes and for providing scope information to rules). It will soon integrate with `rslint_parser` for a greater level of incrementality. `rslint_scope` utilizes [DDlog](https://github.com/vmware/differential-datalog) for a majority of its analysis.
+
 ## Parallelism
 
 RSLint employs a high level of parallelism to achieve high speeds. This includes:

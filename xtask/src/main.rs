@@ -1,7 +1,7 @@
 use pico_args::Arguments;
 use xtask::{
     codegen::{self, Mode},
-    coverage, docgen,
+    coverage, datalog, docgen,
     glue::pushd,
     project_root, run_rustfmt, Result,
 };
@@ -38,6 +38,17 @@ fn main() -> Result<()> {
             coverage::run(query);
             Ok(())
         }
+        "datalog" => {
+            let skip_trim = args.contains("--skip-trim");
+            let debug = args.contains("--debug");
+            args.finish()?;
+
+            if !skip_trim {
+                datalog::trim_datalog(skip_trim, debug)?;
+            }
+
+            Ok(())
+        }
         _ => {
             eprintln!(
                 "\
@@ -50,7 +61,8 @@ SUBCOMMANDS:
     codegen
     syntax
     docgen
-    coverage"
+    coverage
+    datalog"
             );
             Ok(())
         }

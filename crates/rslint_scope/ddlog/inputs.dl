@@ -1,0 +1,346 @@
+// All datalog input relations, derived from the program's ast
+import ast
+
+input relation File(
+    id: FileId,
+    kind: FileKind,
+    top_level_scope: ScopeId,
+)
+
+primary key (f) (f.id)
+
+input relation FileExport(
+    export: ExportKind,
+    scope: ScopeId,
+)
+
+// The input scope relationships, just map parent<-child for one generation
+// TODO: Scope spans, make clear if a span is implicit or explicit
+input relation InputScope(
+    parent: ScopeId,
+    child: ScopeId,
+)
+
+// TODO: Give scopes a span and a kind
+input relation EveryScope(scope: ScopeId)
+
+// Functions
+input relation Function(
+    id: FuncId,
+    name: Option<Spanned<Name>>,
+    scope: ScopeId,
+    body: ScopeId,
+    exported: bool,
+)
+
+primary key (f) (f.id)
+
+input relation FunctionArg(
+    parent_func: FuncId,
+    pattern: IPattern,
+    implicit: bool,
+)
+
+// Class declarations
+input relation Class(
+    id: ClassId,
+    name: Option<Spanned<Name>>,
+    parent: Option<ExprId>,
+    elements: Option<Vec<IClassElement>>,
+    scope: ScopeId,
+    exported: bool,
+)
+
+primary key (c) (c.id)
+
+// Imports
+input relation ImportDecl(
+    id: ImportId,
+    clause: ImportClause,
+)
+
+// Implicit Globals
+input relation ImplicitGlobal(
+    id: GlobalId,
+    name: Name,
+    privileges: GlobalPriv,
+)
+
+// User Globals
+input relation UserGlobal(
+    id: GlobalId,
+    name: Name,
+    privileges: GlobalPriv,
+)
+
+// Statements
+input relation Statement(
+    id: StmtId,
+    kind: StmtKind,
+    scope: ScopeId,
+    span: Span,
+)
+
+primary key (stmt) (stmt.id)
+
+index StatementById(id: StmtId) on Statement[Statement { .id = id }]
+
+input relation VarDecl(
+    stmt_id: StmtId,
+    pattern: Option<IPattern>,
+    value: Option<ExprId>,
+    exported: bool,
+)
+
+input relation LetDecl(
+    stmt_id: StmtId,
+    pattern: Option<IPattern>,
+    value: Option<ExprId>,
+    exported: bool,
+)
+
+input relation ConstDecl(
+    stmt_id: StmtId,
+    pattern: Option<IPattern>,
+    value: Option<ExprId>,
+    exported: bool,
+)
+
+input relation Return(
+    stmt_id: StmtId,
+    value: Option<ExprId>,
+)
+
+input relation If(
+    stmt_id: StmtId,
+    cond: Option<ExprId>,
+    if_body: Option<StmtId>,
+    else_body: Option<StmtId>,
+)
+
+input relation Break(
+    stmt_id: StmtId,
+    label: Option<Spanned<Name>>,
+)
+
+input relation DoWhile(
+    stmt_id: StmtId,
+    body: Option<StmtId>,
+    cond: Option<ExprId>,
+)
+
+input relation While(
+    stmt_id: StmtId,
+    cond: Option<ExprId>,
+    body: Option<StmtId>,
+)
+
+input relation For(
+    stmt_id: StmtId,
+    init: Option<ForInit>,
+    test: Option<ExprId>,
+    update: Option<ExprId>,
+    body: Option<StmtId>,
+)
+
+input relation ForIn(
+    stmt_id: StmtId,
+    elem: Option<ForInit>,
+    collection: Option<ExprId>,
+    body: Option<StmtId>,
+)
+
+input relation ForOf(
+    stmt_id: StmtId,
+    awaited: bool,
+    elem: Option<ForInit>,
+    collection: Option<ExprId>,
+    body: Option<StmtId>,
+)
+
+input relation Continue(
+    stmt_id: StmtId,
+    label: Option<Spanned<Name>>,
+)
+
+input relation With(
+    stmt_id: StmtId,
+    cond: Option<ExprId>,
+    body: Option<StmtId>,
+)
+
+input relation Label(
+    stmt_id: StmtId,
+    name: Option<Spanned<Name>>,
+    body: Option<StmtId>,
+    body_scope: ScopeId,
+)
+
+// Switch statements & cases
+input relation Switch(
+    stmt_id: StmtId,
+    test: Option<ExprId>,
+)
+
+// TODO: Flatten the cases?
+input relation SwitchCase(
+    stmt_id: StmtId,
+    case: SwitchClause,
+    body: Option<StmtId>,
+)
+
+input relation Throw(
+    stmt_id: StmtId,
+    exception: Option<ExprId>,
+)
+
+input relation Try(
+    stmt_id: StmtId,
+    body: Option<StmtId>,
+    handler: TryHandler,
+    finalizer: Option<StmtId>,
+)
+
+// Expressions
+typedef Expression = Expression {
+    id: ExprId,
+    kind: ExprKind,
+    scope: ScopeId,
+    span: Span,
+}
+input relation Expression[Expression]
+
+primary key (e) (e.id)
+
+index ExpressionById(id: ExprId) on Expression[Expression { .id = id }]
+
+input relation ExprNumber(
+    expr_id: ExprId,
+    value: double,
+)
+
+input relation ExprBigInt(
+    expr_id: ExprId,
+    value: bigint,
+)
+
+input relation ExprString(
+    expr_id: ExprId,
+    value: istring,
+)
+
+input relation ExprBool(
+    expr_id: ExprId,
+    value: bool,
+)
+
+input relation NameRef(
+    expr_id: ExprId,
+    value: Name,
+)
+
+input relation Yield(
+    expr_id: ExprId,
+    value: Option<ExprId>,
+)
+
+input relation Await(
+    expr_id: ExprId,
+    value: Option<ExprId>,
+)
+
+input relation Arrow(
+    expr_id: ExprId,
+    body: Option<(Either<ExprId, StmtId>, ScopeId)>,
+)
+
+// TODO: Inline this into Arrow?
+input relation ArrowParam(
+    expr_id: ExprId,
+    param: IPattern,
+)
+
+input relation UnaryOp(
+    expr_id: ExprId,
+    op: Option<UnaryOperand>,
+    expr: Option<ExprId>,
+)
+
+input relation BinOp(
+    expr_id: ExprId,
+    op: Option<BinOperand>,
+    lhs: Option<ExprId>,
+    rhs: Option<ExprId>,
+)
+
+input relation Ternary(
+    expr_id: ExprId,
+    test: Option<ExprId>,
+    true_val: Option<ExprId>,
+    false_val: Option<ExprId>,
+)
+
+input relation Template(
+    expr_id: ExprId,
+    tag: Option<ExprId>,
+    elements: Vec<ExprId>,
+)
+
+input relation Array(
+    expr_id: ExprId,
+    elements: Vec<ArrayElement>,
+)
+
+input relation Property(
+    expr_id: ExprId,
+    key: Option<PropertyKey>,
+    val: Option<PropertyVal>,
+)
+
+input relation BracketAccess(
+    expr_id: ExprId,
+    object: Option<ExprId>,
+    prop: Option<ExprId>,
+)
+
+input relation DotAccess(
+    expr_id: ExprId,
+    object: Option<ExprId>,
+    prop: Option<Spanned<Name>>,
+)
+
+input relation New(
+    expr_id: ExprId,
+    object: Option<ExprId>,
+    args: Option<Vec<ExprId>>,
+)
+
+input relation Call(
+    expr_id: ExprId,
+    callee: Option<ExprId>,
+    args: Option<Vec<ExprId>>,
+)
+
+input relation Assign(
+    expr_id: ExprId,
+    lhs: Option<Either<IPattern, ExprId>>,
+    rhs: Option<ExprId>,
+    op: Option<AssignOperand>,
+)
+
+input relation InlineFunc(
+    expr_id: ExprId,
+    name: Option<Spanned<Name>>,
+    body: Option<StmtId>,
+)
+
+// TODO: Inline this?
+input relation InlineFuncParam(
+    expr_id: ExprId,
+    param: IPattern,
+)
+
+input relation ClassExpr(
+    expr_id: ExprId,
+    elements: Option<Vec<IClassElement>>,
+)

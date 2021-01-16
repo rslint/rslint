@@ -154,6 +154,7 @@ pub enum Stmt {
     WhileStmt(WhileStmt),
     ForStmt(ForStmt),
     ForInStmt(ForInStmt),
+    ForOfStmt(ForOfStmt),
     ContinueStmt(ContinueStmt),
     BreakStmt(BreakStmt),
     ReturnStmt(ReturnStmt),
@@ -186,6 +187,7 @@ impl AstNode for Stmt {
             WHILE_STMT => Stmt::WhileStmt(WhileStmt { syntax }),
             FOR_STMT => Stmt::ForStmt(ForStmt { syntax }),
             FOR_IN_STMT => Stmt::ForInStmt(ForInStmt { syntax }),
+            FOR_OF_STMT => Stmt::ForOfStmt(ForOfStmt { syntax }),
             CONTINUE_STMT => Stmt::ContinueStmt(ContinueStmt { syntax }),
             BREAK_STMT => Stmt::BreakStmt(BreakStmt { syntax }),
             RETURN_STMT => Stmt::ReturnStmt(ReturnStmt { syntax }),
@@ -209,6 +211,7 @@ impl AstNode for Stmt {
             Stmt::WhileStmt(it) => &it.syntax,
             Stmt::ForStmt(it) => &it.syntax,
             Stmt::ForInStmt(it) => &it.syntax,
+            Stmt::ForOfStmt(it) => &it.syntax,
             Stmt::ContinueStmt(it) => &it.syntax,
             Stmt::BreakStmt(it) => &it.syntax,
             Stmt::ReturnStmt(it) => &it.syntax,
@@ -275,8 +278,8 @@ impl Specifier {
         self.syntax().children().nth(1).and_then(|x| x.try_to())
     }
 
-    pub fn name(&self) -> Option<SyntaxNode> {
-        self.syntax().first_child()
+    pub fn name(&self) -> Option<Name> {
+        self.syntax().first_child().and_then(|name| name.try_to())
     }
 }
 

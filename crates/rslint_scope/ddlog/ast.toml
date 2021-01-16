@@ -1,0 +1,9 @@
+# Provides the `Span` trait
+[dependencies.rslint_errors]
+path = "../../../../rslint_errors"
+version = "0.1.2"
+
+# Provides the `TextRange` struct
+[dependencies.rslint_parser]
+path = "../../../../rslint_parser"
+version = "0.2.1"

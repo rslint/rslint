@@ -1,0 +1,362 @@
+import vec
+import utils
+
+typedef Name = istring
+
+// Ids
+typedef FileId = FileId { id: u32 }
+typedef GlobalId = GlobalId { id: u32, file: Option<FileId> }
+typedef ImportId = ImportId { id: u32, file: FileId }
+typedef ClassId = ClassId { id: u32, file: FileId }
+typedef FuncId = FuncId { id: u32, file: FileId }
+typedef StmtId = StmtId { id: u32, file: FileId }
+typedef ExprId = ExprId { id: u32, file: FileId }
+typedef ScopeId = ScopeId { id: u32, file: FileId }
+typedef ImplicitGlobalId = ImplicitGlobalId { id: u32 }
+
+function any_id(global: GlobalId): AnyId {
+    AnyIdGlobal { global }
+}
+
+function to_string(scope: ScopeId): string {
+    "Scope_${scope.id}"
+}
+
+typedef AnyId =
+    AnyIdGlobal { global: GlobalId }
+    | AnyIdImport { import_: ImportId }
+    | AnyIdClass { class: ClassId }
+    | AnyIdFunc { func: FuncId }
+    | AnyIdStmt { stmt: StmtId }
+    | AnyIdExpr { expr: ExprId }
+    | AnyIdFile { file: FileId }
+
+function file(id: AnyId): Option<FileId> {
+    match (id) {
+        AnyIdGlobal { GlobalId { _, file }} -> file,
+        AnyIdImport { ImportId { _, file }} -> Some { file },
+        AnyIdClass { ClassId { _, file }} -> Some { file },
+        AnyIdFunc { FuncId { _, file }} -> Some { file },
+        AnyIdStmt { StmtId { _, file }} -> Some { file },
+        AnyIdExpr { ExprId { _, file }} -> Some { file },
+        AnyIdFile { file } -> Some { file },
+    }
+}
+
+function to_string(id: AnyId): string {
+    match (id) {
+        AnyIdGlobal { GlobalId { id, _ }} -> "Global_${id}",
+        AnyIdImport { ImportId { id, _ }} -> "Import_${id}",
+        AnyIdClass { ClassId { id, _ }} -> "Class_${id}",
+        AnyIdFunc { FuncId { id, _ }} -> "Func_${id}",
+        AnyIdStmt { StmtId { id, _ }} -> "Stmt_${id}",
+        AnyIdExpr { ExprId { id, _ }} -> "Expr_${id}",
+        AnyIdFile { FileId { id }} -> "File_${id}",
+    }
+}
+
+function is_global(id: AnyId): bool {
+    match (id) {
+        AnyIdGlobal {} -> true,
+        _ -> false,
+    }
+}
+
+function is_function(id: AnyId): bool {
+    match (id) {
+        AnyIdFunc {} -> true,
+        _ -> false,
+    }
+}
+
+function is_expr(id: AnyId): bool {
+    match (id) {
+        AnyIdExpr {} -> true,
+        _ -> false,
+    }
+}
+
+typedef Span = Span { start: u32, end: u32 }
+
+function to_string(span: Span): string {
+    "(${span.start}, ${span.end})"
+}
+
+typedef Spanned<'T> = Spanned { data: 'T, span: Span }
+
+typedef OneOf<'A, 'B, 'C> =
+    First { a: 'A }
+    | Second { b: 'B }
+    | Third { c: 'C }
+
+typedef Pattern =
+    SinglePattern { name: Option<Spanned<Name>> }
+    | RestPattern { rest: Option<Intern<Pattern>> }
+    | AssignPattern { key: Option<Intern<Pattern>>, value: Option<ExprId> }
+    | ObjectPattern { props: Vec<Intern<ObjectPatternProp>> }
+    | ArrayPattern { elems: Vec<Intern<Pattern>> }
+
+function bound_vars(pat: IPattern): Vec<Spanned<Name>> {
+    match (pat.ival()) {
+        SinglePattern { Some { name }} -> [name],
+        RestPattern { Some { rest }} -> rest.bound_vars(),
+        AssignPattern { Some { key }, _ } -> key.bound_vars(),
+        ObjectPattern { props } -> props.flatmap(|prop| prop.bound_vars()),
+        ArrayPattern { elems } -> elems.flatmap(|elem| elem.bound_vars()),
+        _ -> vec_empty()
+    }
+}
+
+typedef ObjectPatternProp =
+    ObjAssignPattern { assign_key: Option<Intern<Pattern>>, assign_value: Option<ExprId> }
+    | ObjKeyValuePattern { key: Option<PropertyKey>, value: Option<Intern<Pattern>> }
+    | ObjRestPattern { rest: Option<Intern<Pattern>> }
+    | ObjSinglePattern { name: Option<Spanned<Name>> }
+
+function bound_vars(pat: IObjectPatternProp): Vec<Spanned<Name>> {
+    match (pat.ival()) {
+        ObjAssignPattern { Some { key }, _ } -> key.bound_vars(),
+        ObjKeyValuePattern { _, Some { value }} -> value.bound_vars(),
+        ObjRestPattern { Some { rest }} -> rest.bound_vars(),
+        ObjSinglePattern { Some { name }} -> [name],
+        _ -> vec_empty()
+    }
+}
+
+typedef IPattern = Intern<Pattern>
+typedef IObjectPatternProp = Intern<ObjectPatternProp>
+
+typedef StmtKind =
+    StmtVarDecl
+    | StmtLetDecl
+    | StmtConstDecl
+    // No statement relation, use expr_id to find the
+    // associated expression
+    | StmtExpr { expr_id: Option<ExprId> }
+    | StmtReturn
+    | StmtIf
+    | StmtBreak
+    | StmtDoWhile
+    | StmtWhile
+    | StmtFor
+    | StmtForIn
+    | StmtForOf
+    | StmtContinue
+    | StmtWith
+    | StmtLabel
+    | StmtSwitch
+    | StmtThrow
+    | StmtTry
+    // No associated relation, they carry no data
+    | StmtDebugger
+    // No associated relation, literally nothing
+    | StmtEmpty
+
+function is_variable_decl(kind: StmtKind): bool {
+    kind == StmtVarDecl
+    or kind == StmtLetDecl
+    or kind == StmtConstDecl
+}
+
+typedef ExprKind =
+    ExprLit { kind: LitKind }
+    | ExprNameRef
+    | ExprYield
+    | ExprAwait
+    | ExprArrow
+    | ExprUnaryOp
+    | ExprBinOp
+    | ExprTernary
+    // No associated relation
+    | ExprThis
+    | ExprTemplate
+    | ExprArray
+    // Associated with the Property relation
+    | ExprObject
+    | ExprGrouping { inner: Option<ExprId> }
+    | ExprBracket
+    | ExprDot
+    | ExprNew
+    | ExprCall
+    | ExprAssign
+    | ExprSequence { exprs: Vec<ExprId> }
+    | ExprNewTarget
+    | ExprImportMeta
+    | ExprInlineFunc
+    | ExprSuperCall { args: Option<Vec<ExprId>> }
+    | ExprImportCall { arg: Option<ExprId> }
+    | ExprClass
+    | ExprUnimplemented
+
+typedef UnaryOperand =
+    UnaryIncrement
+    | UnaryDecrement
+    | UnaryDelete
+    | UnaryVoid
+    | UnaryTypeof
+    | UnaryPlus
+    | UnaryMinus
+    | UnaryBitwiseNot
+    | UnaryLogicalNot
+    | UnaryAwait
+
+typedef BinOperand =
+    BinLessThan
+    | BinGreaterThan
+    | BinLessThanOrEqual
+    | BinGreaterThanOrEqual
+    | BinEquality
+    | BinStrictEquality
+    | BinInequality
+    | BinStrictInequality
+    | BinPlus
+    | BinMinus
+    | BinTimes
+    | BinDivide
+    | BinRemainder
+    | BinExponent
+    | BinLeftShift
+    | BinRightShift
+    | BinUnsignedRightShift
+    | BinBitwiseAnd
+    | BinBitwiseOr
+    | BinBitwiseXor
+    | BinNullishCoalescing
+    | BinLogicalOr
+    | BinLogicalAnd
+    | BinIn
+    | BinInstanceof
+
+typedef AssignOperand =
+    OpAssign
+    | OpAddAssign
+    | OpSubtractAssign
+    | OpTimesAssign
+    | OpRemainderAssign
+    | OpExponentAssign
+    | OpLeftShiftAssign
+    | OpRightShiftAssign
+    | OpUnsignedRightShiftAssign
+    | OpBitwiseAndAssign
+    | OpBitwiseOrAssign
+    | OpBitwiseXorAssign
+    | OpLogicalAndAssign
+    | OpLogicalOrAssign
+    | OpNullishCoalescingAssign
+
+typedef LitKind = LitNumber | LitBigInt | LitString | LitNull | LitBool | LitRegex
+typedef ForInit = ForDecl { stmt_id: Option<StmtId> } | ForExpr { expr_id: ExprId }
+typedef SwitchClause = CaseClause { test: Option<ExprId> } | DefaultClause
+typedef TryHandler = TryHandler { error: Option<IPattern>, body: Option<StmtId> }
+typedef ArrayElement = ArrExpr { expr: ExprId } | ArrSpread { spread: Option<ExprId> }
+
+typedef PropertyKey =
+    ComputedKey { prop: Option<ExprId> }
+    | LiteralKey { lit: ExprId }
+    | IdentKey { ident: Spanned<Name> }
+
+typedef PropertyVal =
+    PropLit { lit: Option<ExprId> }
+    | PropGetter { body: Option<StmtId> }
+    | PropSetter {
+        params: Option<Vec<FuncParam>>,
+        body: Option<StmtId>,
+    }
+    | PropSpread { value: Option<ExprId> }
+    | PropInit { value: Option<ExprId> }
+    | PropIdent
+    | PropMethod {
+        params: Option<Vec<FuncParam>>,
+        body: Option<StmtId>
+    }
+
+function body(prop: PropertyVal): Option<StmtId> {
+    match (prop) {
+        PropGetter { Some { body }} -> Some { body },
+        PropSetter { _, Some { body }} -> Some { body },
+        PropMethod { _, Some { body }} -> Some { body },
+        _ -> None,
+    }
+}
+
+function method_comps(prop: PropertyVal): Option<(Vec<FuncParam>, StmtId)> {
+    match (prop) {
+        PropSetter { Some { params }, Some { body }} -> Some { (params, body) },
+        PropMethod { Some { params }, Some { body }} -> Some { (params, body) },
+        _ -> None,
+    }
+}
+
+typedef FuncParam = FuncParam {
+    pattern: IPattern,
+    implicit: bool,
+}
+
+function bound_vars(param: FuncParam): Vec<(Spanned<Name>, bool)> {
+    param.pattern.bound_vars().map(|v| (v, param.implicit))
+}
+
+// TODO: This needs to be structured better w/more metadata
+typedef ClassElement =
+    ClassEmptyElem
+    | ClassMethod {
+        name: Option<PropertyKey>,
+        params: Option<Vec<FuncParam>>,
+        body: Option<StmtId>,
+        is_static: bool,
+    }
+
+function body(elem: ClassElement): Option<StmtId> {
+    match (elem) {
+        ClassMethod { _, _, Some { body }, _ } -> Some { body },
+        _ -> None,
+    }
+}
+
+function method_comps(elem: ClassElement): Option<(Vec<FuncParam>, StmtId)> {
+    match (elem) {
+        ClassMethod { _, Some { params }, Some { body }, _ } -> Some { (params, body) },
+        _ -> None,
+    }
+}
+
+typedef IClassElement = Intern<ClassElement>
+
+typedef ImportClause =
+    WildcardImport { alias: Option<Spanned<Name>> }
+    | GroupedImport { imports: Vec<NamedImport> }
+    | SingleImport { name: Spanned<Name> }
+
+function free_variables(clause: ImportClause): Vec<Spanned<Name>> {
+    match (clause) {
+        WildcardImport { Some { alias }} -> [alias],
+        GroupedImport { imports } -> imports.filter_map(|named| named.free_variable()),
+        SingleImport { name } -> [name],
+        _ -> vec_empty()
+    }
+}
+
+typedef NamedImport = NamedImport {
+    name: Option<Spanned<Name>>,
+    alias: Option<Spanned<Name>>
+}
+
+function free_variable(clause: NamedImport): Option<Spanned<Name>> {
+    clause.alias.or_else(clause.name)
+}
+
+typedef FileKind = JavaScript { flavor: JSFlavor } | Todo
+
+typedef JSFlavor =
+    Vanilla
+    | Module
+    | TypeScript
+
+typedef ExportKind =
+    WildcardExport
+    | NamedExport {
+        name: Option<Spanned<Name>>,
+        alias: Option<Spanned<Name>>,
+    }
+
+typedef GlobalPriv = ReadonlyGlobal | ReadWriteGlobal

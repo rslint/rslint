@@ -16,6 +16,7 @@ rslint_lexer = { path = "../rslint_lexer", version = "0.1.0" }
 rslint_errors = { path = "../rslint_errors", version = "0.1.0" }
 rslint_text_edit = { path = "../rslint_text_edit", version = "0.1.0" }
 rslint_macros = { path = "../rslint_macros", version = "0.1.0" }
+rslint_scope = { path = "../rslint_scope", version = "0.1.0" }
 serde = { version = "1.0.115", features = ["derive"] }
 typetag = "0.1.5"
 rayon = "1.4.0"
@@ -23,11 +24,11 @@ dyn-clone = "1.0.2"
 text-diff = "0.4.0"
 indoc = "1.0.3"
 schemars = { version = "0.8.0", optional = true }
-tracing = "0.1.21"
+tracing = "0.1.22"
+static_assertions = "1.1.0"
 
 [features]
-schema = ["schemars"]
-
+schema = ["schemars", "rslint_scope/schemars"]
 
 [dev-dependencies]
 criterion = "0.3.3"

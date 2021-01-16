@@ -6,7 +6,7 @@ use dashmap::{
     DashMap,
 };
 use futures::executor::block_on;
-use rslint_core::CstRuleStore;
+use rslint_core::{CstRuleStore, ScopeAnalyzer};
 use serde::Deserialize;
 use serde_json::Value;
 use std::sync::RwLock;
@@ -53,6 +53,7 @@ pub struct Session {
     pub(crate) store: CstRuleStore,
     pub(crate) config: RwLock<Config>,
     pub(crate) config_doc: RwLock<Option<TomlDocument>>,
+    pub(crate) analyzer: ScopeAnalyzer,
 }
 
 impl Session {
@@ -74,6 +75,10 @@ impl Session {
                 })
                 .unwrap_or_default(),
         );
+        let analyzer = match ScopeAnalyzer::new(1) {
+            Ok(analyzer) => analyzer,
+            Err(err) => anyhow::bail!(err),
+        };
 
         Ok(Session {
             client,
@@ -81,6 +86,7 @@ impl Session {
             store,
             config,
             config_doc: RwLock::new(None),
+            analyzer,
         })
     }
 

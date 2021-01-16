@@ -1,0 +1,19 @@
+[package]
+name = "ddlog_derive"
+version = "0.1.0"
+edition = "2018"
+license = "MIT"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = "1.0.48"
+quote = "1.0.8"
+proc-macro2 = "1.0.24"
+
+[dev-dependencies]
+trybuild = "1.0.38"
+differential_datalog = { path = "../differential_datalog" }
+serde_json = "1.0.60"
+serde = { version = "1.0", features = ["derive"] }

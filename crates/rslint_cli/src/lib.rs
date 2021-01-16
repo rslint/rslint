@@ -17,12 +17,21 @@ pub use rslint_errors::{
 
 use colored::*;
 use rayon::prelude::*;
-use rslint_core::{autofix::recursively_apply_fixes, File};
-use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
+use rslint_core::{
+    autofix::recursively_apply_fixes, lint_file, util::find_best_match_for_name, CstRuleStore,
+    File, LintResult, RuleLevel, ScopeAnalyzer,
+};
 use rslint_lexer::Lexer;
+use rslint_parser::SyntaxNode;
 #[allow(unused_imports)]
-use std::process;
-use std::{fs::write, path::PathBuf};
+use std::{
+    fs::write,
+    path::PathBuf,
+    process,
+    sync::mpsc::{self, Receiver, Sender},
+    thread::{self, JoinHandle},
+};
+use tracing::*;
 
 #[allow(unused_must_use, unused_variables)]
 pub fn run(
@@ -34,8 +43,8 @@ pub fn run(
     no_global_config: bool,
 ) {
     let exit_code = run_inner(globs, verbose, fix, dirty, formatter, no_global_config);
-    #[cfg(not(debug_assertions))]
-    process::exit(exit_code);
+    // #[cfg(not(debug_assertions))]
+    // process::exit(exit_code);
 }
 
 /// The inner function for run to call destructors before we call [`process::exit`]
@@ -47,28 +56,44 @@ fn run_inner(
     formatter: Option<String>,
     no_global_config: bool,
 ) -> i32 {
+    let span = span!(Level::INFO, "I/O and Config");
+    let guard = span.enter();
+
     let handle =
         config::Config::new_threaded(no_global_config, |file, d| emit_diagnostic(&d, &file));
     let mut walker = FileWalker::from_glob(collect_globs(globs));
+
     let joined = handle.join();
-    let mut config = joined.expect("config thread paniced");
+    let mut config = joined.expect("config thread panicked");
+
+    drop(guard);
     emit_diagnostics("short", &config.warnings(), &walker);
 
     let mut formatter = formatter.unwrap_or_else(|| config.formatter());
+
     let store = config.rules_store();
     verify_formatter(&mut formatter);
 
     if walker.files.is_empty() {
+        tracing::info!("no files found, returning early");
         lint_err!("No matching files found");
+
         return 2;
     }
 
-    let span = tracing::info_span!("lint files");
-    let guard = span.enter();
+    superluminal_perf::begin_event("start ddlog daemon");
+    let (analyzer, sender, _thread_handle, finished_receiver) =
+        start_ddlog_daemon(walker.files.len());
+    superluminal_perf::end_event();
+
+    superluminal_perf::begin_event("1st lint pass");
     let mut results = walker
         .files
-        .par_values()
-        .map(|file| lint_file(file, &store, verbose))
+        .par_keys()
+        .map_with(sender, |sender, id| {
+            let file = walker.files.get(id).unwrap();
+            lint_file(file, &store, verbose, Some(analyzer.clone()), Some(sender))
+        })
         .filter_map(|res| {
             if let Err(diagnostic) = res {
                 emit_diagnostic(&diagnostic, &walker);
@@ -78,14 +103,44 @@ fn run_inner(
             }
         })
         .collect::<Vec<_>>();
-    drop(guard);
+    superluminal_perf::end_event();
 
+    let ddlog_store = CstRuleStore::ddlog();
+
+    superluminal_perf::begin_event("wait for ddlog signal");
+    finished_receiver.recv().unwrap();
+    superluminal_perf::end_event();
+
+    superluminal_perf::begin_event("2nd lint pass");
+    results.par_extend(
+        walker
+            .files
+            .par_keys()
+            .map(|id| {
+                let file = walker.files.get(id).unwrap();
+                lint_file(file, &ddlog_store, verbose, Some(analyzer.clone()), None)
+            })
+            .filter_map(|res| {
+                if let Err(diagnostic) = res {
+                    emit_diagnostic(&diagnostic, &walker);
+                    None
+                } else {
+                    res.ok()
+                }
+            }),
+    );
+    superluminal_perf::end_event();
+
+    thread::spawn(move || analyzer.shutdown());
+
+    superluminal_perf::begin_event("emit diagnostics");
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)
     } else {
         0
     };
     print_results(&mut results, &walker, &config, fix_count, &formatter);
+    superluminal_perf::end_event();
 
     // print_results remaps the result to the appropriate severity
     // so these diagnostic severities should be accurate
@@ -385,6 +440,64 @@ pub fn emit_diagnostic(diagnostic: &Diagnostic, walker: &dyn file::Files) {
     emitter
         .emit_stderr(&diagnostic, true)
         .expect("failed to throw linter diagnostic")
+}
+
+type DaemonOutput = (
+    ScopeAnalyzer,
+    Sender<(usize, rslint_scope::FileId, SyntaxNode)>,
+    JoinHandle<()>,
+    Receiver<()>,
+);
+
+fn start_ddlog_daemon(number_files: usize) -> DaemonOutput {
+    use rslint_scope::globals::{BUILTIN, ES2021, NODE};
+
+    let (sender, receiver) = mpsc::channel();
+    let (finished_sender, finished_receiver) = mpsc::channel();
+    let analyzer = ScopeAnalyzer::new(3).unwrap();
+
+    let handle = {
+        let analyzer = analyzer.clone();
+        thread::Builder::new()
+            .name("ddlog-daemon".to_owned())
+            .spawn(move || {
+                let analyzer = analyzer;
+
+                superluminal_perf::begin_event("ddlog receive files");
+                let batch = {
+                    let mut batch: Vec<_> = receiver.iter().take(number_files).collect();
+                    batch.sort_unstable_by_key(|&(len, _, _)| len);
+
+                    batch
+                        .into_iter()
+                        .map(|(_, file, node)| (file, node))
+                        .collect::<Vec<_>>()
+                };
+                superluminal_perf::end_event();
+
+                superluminal_perf::begin_event("ddlog flush config queue");
+                analyzer.flush_config_queue().unwrap();
+                superluminal_perf::end_event();
+
+                superluminal_perf::begin_event("ddlog ingest globals");
+                analyzer.inject_globals(BUILTIN).unwrap();
+                analyzer.inject_globals(ES2021).unwrap();
+                analyzer.inject_globals(NODE).unwrap();
+                superluminal_perf::end_event();
+
+                analyzer.enable_profiling(true);
+                superluminal_perf::begin_event("ddlog batch analysis");
+                analyzer.analyze_batch(batch.as_slice()).unwrap();
+                superluminal_perf::end_event();
+                analyzer.enable_profiling(false);
+                std::fs::write("ddlog_profile.txt", analyzer.ddlog_profile()).unwrap();
+
+                finished_sender.send(()).unwrap();
+            })
+            .expect("the thread name does not contain null bytes")
+    };
+
+    (analyzer, sender, handle, finished_receiver)
 }
 
 // TODO: don't use expect because we treat panics as linter bugs

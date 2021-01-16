@@ -8,6 +8,7 @@ use crate::Diagnostic;
 use dyn_clone::DynClone;
 use rslint_errors::Severity;
 use rslint_parser::{SyntaxNode, SyntaxNodeExt, SyntaxToken};
+use rslint_scope::ScopeAnalyzer;
 use rslint_text_edit::apply_indels;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
@@ -92,6 +93,7 @@ pub trait Rule: Debug + DynClone + Send + Sync {
     }
 }
 
+static_assertions::assert_obj_safe!(Rule, CstRule);
 dyn_clone::clone_trait_object!(Rule);
 dyn_clone::clone_trait_object!(CstRule);
 
@@ -125,12 +127,17 @@ pub struct RuleCtx {
     pub diagnostics: Vec<Diagnostic>,
     pub fixer: Option<Fixer>,
     pub src: Arc<str>,
+    pub analyzer: Option<ScopeAnalyzer>,
 }
 
 impl RuleCtx {
     /// Make a new diagnostic builder.
     pub fn err(&mut self, code: impl Into<String>, message: impl Into<String>) -> Diagnostic {
         Diagnostic::error(self.file_id, code.into(), message.into())
+    }
+
+    pub fn extend_err<I: IntoIterator<Item = Diagnostic>>(&mut self, diagnostics: I) {
+        self.diagnostics.extend(diagnostics);
     }
 
     pub fn add_err(&mut self, diagnostic: Diagnostic) {
@@ -153,6 +160,7 @@ impl RuleCtx {
             diagnostics: vec![],
             fixer: None,
             src: Arc::from(String::new()),
+            analyzer: None,
         }
     }
 }

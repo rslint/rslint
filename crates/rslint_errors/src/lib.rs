@@ -17,6 +17,7 @@ pub use formatters::*;
 pub use suggestion::*;
 
 pub use codespan::diagnostic::Severity;
+pub use rslint_rowan::TextRange;
 pub use termcolor;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]

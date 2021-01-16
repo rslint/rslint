@@ -1,0 +1,101 @@
+import vec
+import ast
+import utils
+import group
+import inputs
+import scopes
+import var_decls
+
+/// The origin of a name
+// TODO: More variants
+typedef NameOrigin =
+    /// The name came from an implicit global variable
+    AutoGlobal
+    /// The name was imported
+    | Imported
+    /// The name was defined in the given scope
+    | UserDefined { scope: ScopeId }
+
+// TODO: Reduce the size of this since there are so many copies of it
+typedef NameInScope = NameInScope {
+    /// The name of the symbol
+    name: Name,
+    /// The scope the symbol is in-scope within
+    scope: ScopeId,
+    /// The id of the item that declared the symbol
+    declared: AnyId,
+}
+
+/// The `NameInScope` relation gives every name/symbol/ident that's defined for any given scope.
+/// Names are walked down children scopes, meaning all children have access to the variables of
+/// their parent scope(s). Each rule of `NameInScope` utilizes `NameOccursInScope` to only propigate
+/// *used* variables down scopes to avoid an exponental explosion of names that drastically increases
+/// compute time and memory usage. This allows lazily computing names within scope, since variables
+/// will only be propigated down segments of scope trees where they're actually used, which is
+/// especally important when you consider JS's ungodly amount of global variables (both implicit
+/// and user-defined). All in all it reduces the memory/cpu usage of this relation to be linear
+/// with the amount of code being processed instead of some terrifying exponent.
+///
+/// ```
+/// // 'a defines the `foo` symbol
+/// 'a: { foo }
+///  │
+///  │ // 'b defines the `bar` symbol and inherits
+///  │ // the `foo` symbol
+///  └-'b: { foo, bar }
+/// ```
+///
+relation NameInScope[NameInScope]
+
+// An index that returns all variables avaliable in a given scope
+index Index_VariablesForScope(scope: ScopeId)
+    on NameInScope[NameInScope { .scope = scope }]
+
+// An index that returns all variables by the given name in the given scope
+index Index_VariableInScope(scope: ScopeId, variable: Name)
+    on NameInScope[NameInScope { .name = variable, .scope = scope }]
+
+// Introduce all declared variables where they're used
+NameInScope(name, variable_scope, declared) :-
+    VariableDeclarations(name, scope, declared, _),
+    var variable_scope = scope.hoisted_scope(),
+    NameOccursInScope(variable_scope, name).
+
+// Walk variables down scopes
+NameInScope(name, child, declared) :-
+    NameOccursInScope(child, name),
+    not ScopeOfDeclName(name, child, _),
+    InputScope(parent, child),
+    NameInScope(name, parent, declared).
+
+
+relation ScopeOfDeclName(name: Name, scope: ScopeId, declared: AnyId)
+ScopeOfDeclName(name, scope, declared) :-
+    VariableDeclarations(name, Unhoistable { scope }, declared, _).
+ScopeOfDeclName(name, scope, declared) :-
+    VariableDeclarations(name, Hoistable { scope, _ }, declared, _).
+
+
+/// A record of where variable usages actually happen
+relation NameOccursInScope(scope: ScopeId, name: Name)
+
+/// Add all name references
+NameOccursInScope(scope, name) :-
+    NameRef(id, name),
+    Expression(id, _, scope, _),.
+
+/// Add assignment patterns
+NameOccursInScope(scope, name) :-
+    Assign(id, Some { Left { pattern }}, _, _),
+    Expression(id, _, scope, _),
+    var name = FlatMap(pattern.bound_vars().map(|name| name.data)).
+
+/// Add exports
+NameOccursInScope(scope, name) :-
+    FileExport(NamedExport { export_name, export_alias }, scope),
+    Some { Spanned { var name, _ }} = export_alias.or_else(export_name).
+
+/// Recurse to parent scopes
+NameOccursInScope(parent, name) :-
+    NameOccursInScope(child, name),
+    InputScope(parent, child).

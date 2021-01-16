@@ -1,0 +1,6 @@
+import outputs::no_undef
+import outputs::no_shadow
+import outputs::unused_vars
+import outputs::no_typeof_undef
+import outputs::no_use_before_def
+import outputs::no_unused_labels

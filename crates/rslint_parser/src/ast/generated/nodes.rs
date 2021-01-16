@@ -984,7 +984,7 @@ impl ContinueStmt {
     pub fn continue_token(&self) -> Option<SyntaxToken> {
         support::token(&self.syntax, T![continue])
     }
-    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn name(&self) -> Option<NameRef> { support::child(&self.syntax) }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [;]) }
 }
 #[doc = ""]
@@ -994,7 +994,7 @@ pub struct BreakStmt {
 }
 impl BreakStmt {
     pub fn break_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![break]) }
-    pub fn ident_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T![ident]) }
+    pub fn name(&self) -> Option<NameRef> { support::child(&self.syntax) }
     pub fn semicolon_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T ! [;]) }
 }
 #[doc = ""]
@@ -1677,7 +1677,7 @@ pub struct ClassBody {
 }
 impl ClassBody {
     pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
-    pub fn elements(&self) -> Option<ClassElement> { support::child(&self.syntax) }
+    pub fn elements(&self) -> AstChildren<ClassElement> { support::children(&self.syntax) }
     pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
 }
 #[doc = ""]

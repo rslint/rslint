@@ -1,0 +1,172 @@
+bench = []
+bin = []
+example = []
+test = []
+[badges.maintenance]
+status = "none"
+
+[build-dependencies]
+
+[dependencies]
+abomonation = "0.7"
+erased-serde = "0.3"
+fnv = "1.0.2"
+libc = "0.2"
+num = "0.3"
+once_cell = "1.4.1"
+serde_json = "1.0"
+
+[dependencies.ddlog_bigint]
+features = []
+optional = false
+path = "ddlog_bigint"
+
+[dependencies.ddlog_derive]
+features = []
+optional = false
+path = "../ddlog_derive"
+
+[dependencies.ddlog_log]
+features = []
+optional = false
+path = "ddlog_log"
+
+[dependencies.ddlog_rt]
+features = []
+optional = false
+path = "ddlog_rt"
+
+[dependencies.ddlog_std]
+features = []
+optional = false
+path = "ddlog_std"
+
+[dependencies.debug]
+features = []
+optional = false
+path = "debug"
+
+[dependencies.differential-dataflow]
+branch = "ddlog-2"
+features = []
+git = "https://github.com/ddlog-dev/differential-dataflow"
+optional = false
+
+[dependencies.differential_datalog]
+features = []
+optional = false
+path = "../differential_datalog"
+
+[dependencies.internment]
+features = []
+optional = false
+path = "internment"
+
+[dependencies.ordered-float]
+features = ["serde"]
+optional = false
+version = "2.0.0"
+
+[dependencies.serde]
+features = ["derive"]
+optional = false
+version = "1.0"
+
+[dependencies.time]
+features = ["serde"]
+optional = false
+version = "0.2"
+
+[dependencies.timely]
+branch = "ddlog-2"
+features = []
+git = "https://github.com/ddlog-dev/timely-dataflow"
+optional = false
+
+[dependencies.types__ast]
+features = []
+optional = false
+path = "ast"
+
+[dependencies.types__config]
+features = []
+optional = false
+path = "config"
+
+[dependencies.types__group]
+features = []
+optional = false
+path = "group"
+
+[dependencies.types__inputs]
+features = []
+optional = false
+path = "inputs"
+
+[dependencies.types__outputs__no_unused_labels]
+features = []
+optional = false
+path = "outputs/no_unused_labels"
+
+[dependencies.types__regex]
+features = []
+optional = false
+path = "regex"
+
+[dependencies.types__scopes]
+features = []
+optional = false
+path = "scopes"
+
+[dependencies.types__utils]
+features = []
+optional = false
+path = "utils"
+
+[dependencies.types__variable_decl]
+features = []
+optional = false
+path = "variable_decl"
+
+[dependencies.types__vec]
+features = []
+optional = false
+path = "vec"
+
+[dev-dependencies]
+
+[features]
+c_api = ["differential_datalog/c_api", "ddlog_rt/c_api", "ddlog_std/c_api", "ddlog_bigint/c_api", "ddlog_log/c_api", "debug/c_api", "internment/c_api", "types__outputs__no_unused_labels/c_api", "types__ast/c_api", "types__utils/c_api", "types__inputs/c_api", "types__vec/c_api", "types__group/c_api", "types__scopes/c_api", "types__config/c_api", "types__variable_decl/c_api", "types__regex/c_api"]
+default = []
+
+[lib]
+bench = true
+crate-type = ["lib"]
+doc = true
+doctest = true
+harness = true
+name = "types"
+path = "rslint_scoping.rs"
+plugin = false
+proc-macro = false
+required-features = []
+test = true
+
+[package]
+authors = []
+autobenches = true
+autobins = true
+autoexamples = true
+autotests = true
+categories = []
+edition = "2018"
+keywords = []
+name = "types"
+publish = true
+version = "0.1.0"
+
+[patch]
+
+
+
+[target]

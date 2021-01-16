@@ -1,0 +1,98 @@
+import ast
+import vec
+import regex
+import inputs
+import config
+import scopes
+import var_decls
+import is_exported
+import name_in_scope
+
+output relation UnusedVariables(name: Name, declared: AnyId, span: Span)
+
+// Only hit non-function arguments and non-globals
+UnusedVariables(name, declared, span) :-
+    EnableNoUnusedVars(file, config),
+
+    VariableDeclarations(
+        name,
+        scope,
+        declared,
+        // Ignore function arguments and implict variables
+        &VariableMeta {
+            .is_function_argument = false,
+            .implicitly_declared = false,
+            .declaration_span = Some { span },
+        },
+    ),
+    declared.file() == Some { file },
+
+    // If the variable name matches an ignored pattern, don't analyze it
+    not config.deref().ignored_patterns().regex_set_match(name.ival()),
+    // Ignore global variables
+    not declared.is_global(),
+
+    not IsExported(declared),
+    not NameInScope(name, scope.hoisted_scope(), declared).
+
+// For function arguments it doesn't matter if the parent function is exported or not
+UnusedVariables(name, declared, span) :-
+    EnableNoUnusedVars(file, config),
+
+    VariableDeclarations(
+        name,
+        _,
+        declared,
+        &VariableMeta {
+            .is_function_argument = true,
+            // Ignore implict variables
+            .implicitly_declared = false,
+            .declaration_span = Some { span },
+        },
+    ),
+    declared.file() == Some { file },
+
+    // If the variable name matches an ignored pattern, don't analyze it
+    not config.deref().ignored_patterns().regex_set_match(name.ival()),
+
+    FunctionBodyScope(declared, body_scope),
+    not NameInScope(name, body_scope, declared).
+
+// Handle globals
+UnusedVariables(name, declared, span) :-
+    EnableNoUnusedVars(file, config),
+
+    VariableDeclarations(
+        name,
+        scope,
+        declared @ AnyIdGlobal,
+        // Ignore function arguments and implict variables
+        &VariableMeta {
+            .is_function_argument = false,
+            .implicitly_declared = false,
+            .declaration_span = Some { span },
+        },
+    ),
+    // This allows us to ignore implicit globals since they aren't pinned to a specific file
+    declared.file() == Some { file },
+
+    // If the variable name matches an ignored pattern, don't analyze it
+    not config.deref().ignored_patterns().regex_set_match(name.ival()),
+    
+    not IsExported(declared),
+    not NameInScope(name, scope.unhoisted_scope(), declared).
+
+relation FunctionBodyScope(id: AnyId, body: ScopeId)
+
+FunctionBodyScope(AnyIdFunc { id }, body) :-
+    EnableNoUnusedVars(file, config),
+    Function(id @ FuncId { _, file }, _, _, body, _).
+
+FunctionBodyScope(AnyIdExpr { id }, body) :-
+    EnableNoUnusedVars(file, config),
+    Arrow(id @ ExprId { _, file }, Some { (_, body) }).
+
+FunctionBodyScope(AnyIdExpr { id }, body) :-
+    EnableNoUnusedVars(file, config),
+    InlineFunc(id @ ExprId { _, file }, _, Some { body_id }),
+    Statement(body_id, _, body, _).

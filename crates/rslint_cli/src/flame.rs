@@ -4,14 +4,16 @@ use std::{
     io::{BufWriter, Write},
     sync::mpsc::{Receiver, Sender},
 };
+use tracing::Subscriber;
 use tracing_flame::FlameLayer;
-use tracing_subscriber::Registry;
+use tracing_subscriber::registry::LookupSpan;
 
 const FLAMEGRAPH_FILE: &str = "rslint.svg";
 
 type Writer = BufWriter<ChannelWriter>;
 
-pub fn flame() -> (FlameGuard, FlameLayer<Registry, Writer>) {
+pub fn flame<S: Subscriber + for<'span> LookupSpan<'span>>() -> (FlameGuard, FlameLayer<S, Writer>)
+{
     let (tx, rx) = std::sync::mpsc::channel();
     let write = BufWriter::new(ChannelWriter(Some(tx)));
     let flame = FlameLayer::new(write);

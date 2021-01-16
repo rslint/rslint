@@ -13,4 +13,4 @@ pub use rslint_parser::{
 };
 
 #[doc(no_inline)]
-pub use rslint_errors::{Applicability, Severity};
+pub use rslint_errors::{Applicability, Severity, TextRange};

@@ -3,6 +3,7 @@
 pub mod ast;
 pub mod codegen;
 pub mod coverage;
+pub mod datalog;
 pub mod docgen;
 pub mod glue;
 

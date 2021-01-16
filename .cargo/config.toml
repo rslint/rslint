@@ -1,0 +1,8 @@
+[alias]
+xtask = "run --package xtask --bin xtask --"
+docgen = "run --package xtask docgen"
+datalog = "run --package xtask --bin xtask -- datalog"
+
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld.exe"
+# rustflags = ["-Zshare-generics=y"]

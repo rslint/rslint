@@ -40,23 +40,26 @@ pub mod groups;
 pub mod rule_prelude;
 pub mod util;
 
-pub use self::{
+pub use crate::{
+    directives::{
+        apply_top_level_directives, skip_node, Directive, DirectiveError, DirectiveErrorKind,
+        DirectiveParser,
+    },
     file::File,
     rule::{CstRule, Inferable, Outcome, Rule, RuleCtx, RuleLevel, RuleResult},
     store::CstRuleStore,
 };
 pub use rslint_errors::{Diagnostic, Severity, Span};
-
-pub use crate::directives::{
-    apply_top_level_directives, skip_node, Directive, DirectiveError, DirectiveErrorKind,
-    DirectiveParser,
-};
+pub use rslint_scope::ScopeAnalyzer;
 
 use dyn_clone::clone_box;
 use rayon::prelude::*;
 use rslint_parser::{util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
-use std::collections::HashMap;
-use std::sync::Arc;
+use rslint_scope::FileId;
+use std::{
+    collections::HashMap,
+    sync::{mpsc::Sender, Arc},
+};
 
 /// The result of linting a file.
 // TODO: A lot of this stuff can be shoved behind a "linter options" struct
@@ -113,14 +116,28 @@ impl LintResult<'_> {
 }
 
 /// Lint a file with a specific rule store.
-#[tracing::instrument(skip(file, store, verbose))]
-pub fn lint_file<'s>(
+#[tracing::instrument(skip(store, verbose))]
+pub fn lint_file<'a>(
     file: &File,
-    store: &'s CstRuleStore,
+    store: &'a CstRuleStore,
     verbose: bool,
-) -> Result<LintResult<'s>, Diagnostic> {
-    let (diagnostics, node) = file.parse_with_errors();
-    lint_file_inner(node, diagnostics, file, store, verbose)
+    analyzer: Option<ScopeAnalyzer>,
+    sender: Option<&Sender<(usize, FileId, SyntaxNode)>>,
+) -> Result<LintResult<'a>, Diagnostic> {
+    let (parser_diagnostics, node) = {
+        let span = tracing::info_span!("parsing file");
+        let _guard = span.enter();
+
+        file.parse_with_errors()
+    };
+
+    if let Some(sender) = sender {
+        sender
+            .send((file.source.len(), FileId::new(file.id as u32), node.clone()))
+            .unwrap();
+    }
+
+    lint_file_inner(node, parser_diagnostics, file, store, verbose, analyzer)
 }
 
 /// used by lint_file and incrementally_relint to not duplicate code
@@ -130,6 +147,7 @@ pub(crate) fn lint_file_inner<'s>(
     file: &File,
     store: &'s CstRuleStore,
     verbose: bool,
+    analyzer: Option<ScopeAnalyzer>,
 ) -> Result<LintResult<'s>, Diagnostic> {
     let mut new_store = store.clone();
     let directives::DirectiveResult {
@@ -166,6 +184,7 @@ pub(crate) fn lint_file_inner<'s>(
                     verbose,
                     &directives,
                     src.clone(),
+                    analyzer.clone(),
                 ),
             )
         })
@@ -194,6 +213,7 @@ pub fn run_rule(
     verbose: bool,
     directives: &[Directive],
     src: Arc<str>,
+    analyzer: Option<ScopeAnalyzer>,
 ) -> RuleResult {
     let span = tracing::info_span!("run rule", rule = rule.name());
     let _gaurd = span.enter();
@@ -205,6 +225,7 @@ pub fn run_rule(
         diagnostics: vec![],
         fixer: None,
         src,
+        analyzer,
     };
 
     rule.check_root(&root, &mut ctx);

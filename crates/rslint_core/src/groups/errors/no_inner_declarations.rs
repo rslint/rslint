@@ -42,7 +42,7 @@ declare_lint! {
     /// What declarations to disallow in nested blocks, it can include two possible options:
     /// "functions" and "variables", you can include either or, or both. Disallows only functions
     /// by default.
-    pub disallowed: Vec<String>
+    pub disallowed: Vec<String>,
 }
 
 impl Default for NoInnerDeclarations {

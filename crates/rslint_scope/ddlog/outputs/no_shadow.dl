@@ -1,0 +1,87 @@
+import ast
+import vec
+import utils
+import scopes
+import inputs
+import config
+import var_decls
+import name_in_scope
+
+output relation NoShadow(
+    variable: Name,
+    original: (AnyId, Span),
+    shadower: (AnyId, Span),
+    implicit: bool,
+)
+
+NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false) :-
+    EnableNoShadow(file, config),
+
+    // Get the initial variable
+    ScopeOfDecl(shadowed_scope @ ScopeId { _, file }, shadowed_id),
+
+    // Search the child scopes for visible declarations of the same name
+    DeclarationInDescendent(shadowed_scope, name, shadower_id),
+
+    // A declaration cannot shadow itself
+    shadowed_id != shadower_id,
+
+    VariableDeclarations(
+        name,
+        shadowed_scope_raw,
+        shadowed_id,
+        &VariableMeta {
+            .implicitly_declared = false,
+            .declaration_span = Some { shadowed_span },
+        },
+    ),
+
+    // Filter declarations for one with an identical name
+    VariableDeclarations(
+        name,
+        shadower_scope_raw,
+        shadower_id,
+        &VariableMeta {
+            .implicitly_declared = false,
+            .declaration_span = Some { shadower_span },
+        },
+    ),
+
+    // Within this match all "first", "second", etc. positional references are
+    // in lexical terms, where the first declaration occurs before the second
+    // in the physical source file
+    match ((config.deref().hoisting_enabled(), shadower_scope_raw.is_hoistable(), shadowed_scope_raw.is_hoistable())) {
+        // If a variable is hoisted, the second shadows the first
+        (true, true, true) -> shadower_span < shadowed_span,
+        (true, false, true) -> shadower_span < shadowed_span,
+        (true, true, false) -> shadower_span < shadowed_span,
+
+        // Otherwise this is a valid shadowing
+        (_, _, _) -> true,
+    }.
+
+
+relation DeclarationInDescendent(scope: ScopeId, name: Name, id: AnyId)
+
+DeclarationInDescendent(scope, name, id) :-
+    EnableNoShadow(file, _),
+    ScopeOfDecl(scope @ ScopeId { _, file }, id),
+    VariableDeclarations(name, _, id, _).
+
+DeclarationInDescendent(parent, name, id) :-
+    DeclarationInDescendent(child, name, id),
+    InputScope(parent, child).
+
+
+relation ScopeOfDecl(scope: ScopeId, declared: AnyId)
+
+ScopeOfDecl(scope, declared) :-
+    EnableNoShadow(file, config),
+
+    VariableDeclarations(_, decl_scope, declared, _),
+    (not declared.is_global()) and declared.file() == Some { file },
+    var scope = if (config.deref().hoisting_enabled()) {
+        decl_scope.hoisted_scope()
+    } else {
+        decl_scope.unhoisted_scope()
+    }.
