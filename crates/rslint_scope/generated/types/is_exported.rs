@@ -41,36 +41,47 @@ use ::timely::dataflow::scopes;
 use ::timely::worker;
 
 use ::ddlog_derive::{FromRecord, IntoRecord, Mutator};
-use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::ddval::DDValConvert;
+use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
-
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
 
-
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[derive(
+    Eq,
+    Ord,
+    Clone,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    IntoRecord,
+    Mutator,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+)]
 #[ddlog(rename = "is_exported::IsExported")]
 pub struct IsExported {
-    pub id: types__ast::AnyId
+    pub id: types__ast::AnyId,
 }
-impl abomonation::Abomonation for IsExported{}
+impl abomonation::Abomonation for IsExported {}
 impl ::std::fmt::Display for IsExported {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            IsExported{id} => {
+            IsExported { id } => {
                 __formatter.write_str("is_exported::IsExported{")?;
                 ::std::fmt::Debug::fmt(id, __formatter)?;
                 __formatter.write_str("}")
@@ -83,19 +94,25 @@ impl ::std::fmt::Debug for IsExported {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-pub static __Arng_is_exported_IsExported_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set{
-                                                                                                                                 name: std::borrow::Cow::from(r###"(is_exported::IsExported{.id=(_0: ast::AnyId)}: is_exported::IsExported) /*antijoin*/"###),
-                                                                                                                                 fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                                 {
-                                                                                                                                     match < IsExported>::from_ddvalue(__v) {
-                                                                                                                                         IsExported{id: ref _0} => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                                         _ => None
-                                                                                                                                     }
-                                                                                                                                 }
-                                                                                                                                 __f},
-                                                                                                                                 distinct: true
-                                                                                                                             });
-pub static __Rule_is_exported_IsExported_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdFunc{.func=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=true}: inputs::Function)]. */
+pub static __Arng_is_exported_IsExported_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Set {
+        name: std::borrow::Cow::from(
+            r###"(is_exported::IsExported{.id=(_0: ast::AnyId)}: is_exported::IsExported) /*antijoin*/"###,
+        ),
+        fmfun: {
+            fn __f(__v: DDValue) -> Option<DDValue> {
+                match <IsExported>::from_ddvalue(__v) {
+                    IsExported { id: ref _0 } => Some(((*_0).clone()).into_ddvalue()),
+                    _ => None,
+                }
+            }
+            __f
+        },
+        distinct: true,
+    });
+pub static __Rule_is_exported_IsExported_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdFunc{.func=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::Function[(inputs::Function{.id=(id: ast::FuncId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=true}: inputs::Function)]. */
                                                                                                                       program::Rule::CollectionRule {
                                                                                                                           description: std::borrow::Cow::from("is_exported::IsExported(.id=ast::AnyIdFunc{.func=id}) :- inputs::Function(.id=id, .name=_, .scope=_, .body=_, .exported=true)."),
                                                                                                                           rel: 33,
@@ -112,8 +129,11 @@ pub static __Rule_is_exported_IsExported_0 : ::once_cell::sync::Lazy<program::Ru
                                                                                                                                           __f},
                                                                                                                                           next: Box::new(None)
                                                                                                                                       })
-                                                                                                                      });
-pub static __Rule_is_exported_IsExported_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdClass{.class=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::Class[(inputs::Class{.id=(id: ast::ClassId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=true}: inputs::Class)]. */
+                                                                                                                      },
+    );
+pub static __Rule_is_exported_IsExported_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdClass{.class=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::Class[(inputs::Class{.id=(id: ast::ClassId), .name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .parent=(_: ddlog_std::Option<ast::ExprId>), .elements=(_: ddlog_std::Option<ddlog_std::Vec<ast::IClassElement>>), .scope=(_: ast::ScopeId), .exported=true}: inputs::Class)]. */
                                                                                                                       program::Rule::CollectionRule {
                                                                                                                           description: std::borrow::Cow::from("is_exported::IsExported(.id=ast::AnyIdClass{.class=id}) :- inputs::Class(.id=id, .name=_, .parent=_, .elements=_, .scope=_, .exported=true)."),
                                                                                                                           rel: 16,
@@ -130,8 +150,11 @@ pub static __Rule_is_exported_IsExported_1 : ::once_cell::sync::Lazy<program::Ru
                                                                                                                                           __f},
                                                                                                                                           next: Box::new(None)
                                                                                                                                       })
-                                                                                                                      });
-pub static __Rule_is_exported_IsExported_2 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(id: ast::StmtId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=true}: inputs::VarDecl)]. */
+                                                                                                                      },
+    );
+pub static __Rule_is_exported_IsExported_2: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::VarDecl[(inputs::VarDecl{.stmt_id=(id: ast::StmtId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=true}: inputs::VarDecl)]. */
                                                                                                                       program::Rule::CollectionRule {
                                                                                                                           description: std::borrow::Cow::from("is_exported::IsExported(.id=ast::AnyIdStmt{.stmt=id}) :- inputs::VarDecl(.stmt_id=id, .pattern=_, .value=_, .exported=true)."),
                                                                                                                           rel: 56,
@@ -148,8 +171,11 @@ pub static __Rule_is_exported_IsExported_2 : ::once_cell::sync::Lazy<program::Ru
                                                                                                                                           __f},
                                                                                                                                           next: Box::new(None)
                                                                                                                                       })
-                                                                                                                      });
-pub static __Rule_is_exported_IsExported_3 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::LetDecl[(inputs::LetDecl{.stmt_id=(id: ast::StmtId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=true}: inputs::LetDecl)]. */
+                                                                                                                      },
+    );
+pub static __Rule_is_exported_IsExported_3: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::LetDecl[(inputs::LetDecl{.stmt_id=(id: ast::StmtId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=true}: inputs::LetDecl)]. */
                                                                                                                       program::Rule::CollectionRule {
                                                                                                                           description: std::borrow::Cow::from("is_exported::IsExported(.id=ast::AnyIdStmt{.stmt=id}) :- inputs::LetDecl(.stmt_id=id, .pattern=_, .value=_, .exported=true)."),
                                                                                                                           rel: 42,
@@ -166,8 +192,11 @@ pub static __Rule_is_exported_IsExported_3 : ::once_cell::sync::Lazy<program::Ru
                                                                                                                                           __f},
                                                                                                                                           next: Box::new(None)
                                                                                                                                       })
-                                                                                                                      });
-pub static __Rule_is_exported_IsExported_4 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::ConstDecl[(inputs::ConstDecl{.stmt_id=(id: ast::StmtId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=true}: inputs::ConstDecl)]. */
+                                                                                                                      },
+    );
+pub static __Rule_is_exported_IsExported_4: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* is_exported::IsExported[(is_exported::IsExported{.id=(ast::AnyIdStmt{.stmt=id}: ast::AnyId)}: is_exported::IsExported)] :- inputs::ConstDecl[(inputs::ConstDecl{.stmt_id=(id: ast::StmtId), .pattern=(_: ddlog_std::Option<ast::IPattern>), .value=(_: ddlog_std::Option<ast::ExprId>), .exported=true}: inputs::ConstDecl)]. */
                                                                                                                       program::Rule::CollectionRule {
                                                                                                                           description: std::borrow::Cow::from("is_exported::IsExported(.id=ast::AnyIdStmt{.stmt=id}) :- inputs::ConstDecl(.stmt_id=id, .pattern=_, .value=_, .exported=true)."),
                                                                                                                           rel: 18,
@@ -184,8 +213,11 @@ pub static __Rule_is_exported_IsExported_4 : ::once_cell::sync::Lazy<program::Ru
                                                                                                                                           __f},
                                                                                                                                           next: Box::new(None)
                                                                                                                                       })
-                                                                                                                      });
-pub static __Rule_is_exported_IsExported_5 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* is_exported::IsExported[(is_exported::IsExported{.id=id}: is_exported::IsExported)] :- inputs::FileExport[(inputs::FileExport{.export=(ast::NamedExport{.name=(export_name: ddlog_std::Option<ast::Spanned<ast::Name>>), .alias=(export_alias: ddlog_std::Option<ast::Spanned<ast::Name>>)}: ast::ExportKind), .scope=(export_scope: ast::ScopeId)}: inputs::FileExport)], ((ddlog_std::Some{.x=(ast::Spanned{.data=(var name: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<internment::Intern<string>>>) = ((utils::or_else: function(ddlog_std::Option<ast::Spanned<ast::Name>>, ddlog_std::Option<ast::Spanned<ast::Name>>):ddlog_std::Option<ast::Spanned<internment::Intern<string>>>)(export_alias, export_name))), name_in_scope::NameInScope[(name_in_scope::NameInScope{.name=(name: internment::Intern<string>), .scope=(export_scope: ast::ScopeId), .declared=(id: ast::AnyId)}: name_in_scope::NameInScope)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.name=(name: internment::Intern<string>), .scope=(scope: var_decls::DeclarationScope), .declared_in=(id: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], ((var_decls::hoisted_scope(scope)) == export_scope). */
+                                                                                                                      },
+    );
+pub static __Rule_is_exported_IsExported_5: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* is_exported::IsExported[(is_exported::IsExported{.id=id}: is_exported::IsExported)] :- inputs::FileExport[(inputs::FileExport{.export=(ast::NamedExport{.name=(export_name: ddlog_std::Option<ast::Spanned<ast::Name>>), .alias=(export_alias: ddlog_std::Option<ast::Spanned<ast::Name>>)}: ast::ExportKind), .scope=(export_scope: ast::ScopeId)}: inputs::FileExport)], ((ddlog_std::Some{.x=(ast::Spanned{.data=(var name: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<internment::Intern<string>>>) = ((utils::or_else: function(ddlog_std::Option<ast::Spanned<ast::Name>>, ddlog_std::Option<ast::Spanned<ast::Name>>):ddlog_std::Option<ast::Spanned<internment::Intern<string>>>)(export_alias, export_name))), name_in_scope::NameInScope[(name_in_scope::NameInScope{.name=(name: internment::Intern<string>), .scope=(export_scope: ast::ScopeId), .declared=(id: ast::AnyId)}: name_in_scope::NameInScope)], var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.name=(name: internment::Intern<string>), .scope=(scope: var_decls::DeclarationScope), .declared_in=(id: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], ((var_decls::hoisted_scope(scope)) == export_scope). */
                                                                                                                       program::Rule::CollectionRule {
                                                                                                                           description: std::borrow::Cow::from("is_exported::IsExported(.id=id) :- inputs::FileExport(.export=ast::NamedExport{.name=export_name, .alias=export_alias}, .scope=export_scope), (ddlog_std::Some{.x=ast::Spanned{.data=var name, .span=_}} = (utils::or_else(export_alias, export_name))), name_in_scope::NameInScope(.name=name, .scope=export_scope, .declared=id), var_decls::VariableDeclarations(.name=name, .scope=scope, .declared_in=id, .meta=_), ((var_decls::hoisted_scope(scope)) == export_scope)."),
                                                                                                                           rel: 29,
@@ -246,4 +278,5 @@ pub static __Rule_is_exported_IsExported_5 : ::once_cell::sync::Lazy<program::Ru
                                                                                                                                                                                  }))
                                                                                                                                                          })
                                                                                                                                       })
-                                                                                                                      });
+                                                                                                                      },
+    );

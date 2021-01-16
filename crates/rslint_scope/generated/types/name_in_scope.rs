@@ -41,38 +41,53 @@ use ::timely::dataflow::scopes;
 use ::timely::worker;
 
 use ::ddlog_derive::{FromRecord, IntoRecord, Mutator};
-use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::ddval::DDValConvert;
+use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
-
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
 
-
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[derive(
+    Eq,
+    Ord,
+    Clone,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    IntoRecord,
+    Mutator,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+)]
 #[ddlog(rename = "name_in_scope::NameInScope")]
 pub struct NameInScope {
     pub name: types__ast::Name,
     pub scope: types__ast::ScopeId,
-    pub declared: types__ast::AnyId
+    pub declared: types__ast::AnyId,
 }
-impl abomonation::Abomonation for NameInScope{}
+impl abomonation::Abomonation for NameInScope {}
 impl ::std::fmt::Display for NameInScope {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            NameInScope{name,scope,declared} => {
+            NameInScope {
+                name,
+                scope,
+                declared,
+            } => {
                 __formatter.write_str("name_in_scope::NameInScope{")?;
                 ::std::fmt::Debug::fmt(name, __formatter)?;
                 __formatter.write_str(",")?;
@@ -89,17 +104,30 @@ impl ::std::fmt::Debug for NameInScope {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[derive(
+    Eq,
+    Ord,
+    Clone,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    IntoRecord,
+    Mutator,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+)]
 #[ddlog(rename = "name_in_scope::NameOccursInScope")]
 pub struct NameOccursInScope {
     pub scope: types__ast::ScopeId,
-    pub name: types__ast::Name
+    pub name: types__ast::Name,
 }
-impl abomonation::Abomonation for NameOccursInScope{}
+impl abomonation::Abomonation for NameOccursInScope {}
 impl ::std::fmt::Display for NameOccursInScope {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            NameOccursInScope{scope,name} => {
+            NameOccursInScope { scope, name } => {
                 __formatter.write_str("name_in_scope::NameOccursInScope{")?;
                 ::std::fmt::Debug::fmt(scope, __formatter)?;
                 __formatter.write_str(",")?;
@@ -114,7 +142,19 @@ impl ::std::fmt::Debug for NameOccursInScope {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Serialize, Deserialize, FromRecord)]
+#[derive(
+    Eq,
+    Ord,
+    Clone,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    IntoRecord,
+    Mutator,
+    Serialize,
+    Deserialize,
+    FromRecord,
+)]
 #[ddlog(rename = "name_in_scope::NameOrigin")]
 pub enum NameOrigin {
     #[ddlog(rename = "name_in_scope::AutoGlobal")]
@@ -122,23 +162,21 @@ pub enum NameOrigin {
     #[ddlog(rename = "name_in_scope::Imported")]
     Imported,
     #[ddlog(rename = "name_in_scope::UserDefined")]
-    UserDefined {
-        scope: types__ast::ScopeId
-    }
+    UserDefined { scope: types__ast::ScopeId },
 }
-impl abomonation::Abomonation for NameOrigin{}
+impl abomonation::Abomonation for NameOrigin {}
 impl ::std::fmt::Display for NameOrigin {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            NameOrigin::AutoGlobal{} => {
+            NameOrigin::AutoGlobal {} => {
                 __formatter.write_str("name_in_scope::AutoGlobal{")?;
                 __formatter.write_str("}")
-            },
-            NameOrigin::Imported{} => {
+            }
+            NameOrigin::Imported {} => {
                 __formatter.write_str("name_in_scope::Imported{")?;
                 __formatter.write_str("}")
-            },
-            NameOrigin::UserDefined{scope} => {
+            }
+            NameOrigin::UserDefined { scope } => {
                 __formatter.write_str("name_in_scope::UserDefined{")?;
                 ::std::fmt::Debug::fmt(scope, __formatter)?;
                 __formatter.write_str("}")
@@ -153,21 +191,38 @@ impl ::std::fmt::Debug for NameOrigin {
 }
 impl ::std::default::Default for NameOrigin {
     fn default() -> Self {
-        NameOrigin::AutoGlobal{}
+        NameOrigin::AutoGlobal {}
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[derive(
+    Eq,
+    Ord,
+    Clone,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    IntoRecord,
+    Mutator,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+)]
 #[ddlog(rename = "name_in_scope::ScopeOfDeclName")]
 pub struct ScopeOfDeclName {
     pub name: types__ast::Name,
     pub scope: types__ast::ScopeId,
-    pub declared: types__ast::AnyId
+    pub declared: types__ast::AnyId,
 }
-impl abomonation::Abomonation for ScopeOfDeclName{}
+impl abomonation::Abomonation for ScopeOfDeclName {}
 impl ::std::fmt::Display for ScopeOfDeclName {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            ScopeOfDeclName{name,scope,declared} => {
+            ScopeOfDeclName {
+                name,
+                scope,
+                declared,
+            } => {
                 __formatter.write_str("name_in_scope::ScopeOfDeclName{")?;
                 ::std::fmt::Debug::fmt(name, __formatter)?;
                 __formatter.write_str(",")?;
@@ -184,171 +239,288 @@ impl ::std::fmt::Debug for ScopeOfDeclName {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-pub static __Arng_name_in_scope_NameOccursInScope_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set{
-                                                                                                                                          name: std::borrow::Cow::from(r###"(name_in_scope::NameOccursInScope{.scope=(_0: ast::ScopeId), .name=(_1: internment::Intern<string>)}: name_in_scope::NameOccursInScope) /*semijoin*/"###),
-                                                                                                                                          fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                                          {
-                                                                                                                                              match < NameOccursInScope>::from_ddvalue(__v) {
-                                                                                                                                                  NameOccursInScope{scope: ref _0, name: ref _1} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                                  _ => None
-                                                                                                                                              }
-                                                                                                                                          }
-                                                                                                                                          __f},
-                                                                                                                                          distinct: false
-                                                                                                                                      });
-pub static __Arng_name_in_scope_NameOccursInScope_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                         name: std::borrow::Cow::from(r###"(name_in_scope::NameOccursInScope{.scope=(_1: ast::ScopeId), .name=(_0: internment::Intern<string>)}: name_in_scope::NameOccursInScope) /*join*/"###),
-                                                                                                                                          afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                          {
-                                                                                                                                              let __cloned = __v.clone();
-                                                                                                                                              match < NameOccursInScope>::from_ddvalue(__v) {
-                                                                                                                                                  NameOccursInScope{scope: ref _1, name: ref _0} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                                  _ => None
-                                                                                                                                              }.map(|x|(x,__cloned))
-                                                                                                                                          }
-                                                                                                                                          __f},
-                                                                                                                                          queryable: false
-                                                                                                                                      });
-pub static __Arng_name_in_scope_NameOccursInScope_2 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                         name: std::borrow::Cow::from(r###"(name_in_scope::NameOccursInScope{.scope=(_0: ast::ScopeId), .name=(_: internment::Intern<string>)}: name_in_scope::NameOccursInScope) /*join*/"###),
-                                                                                                                                          afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                          {
-                                                                                                                                              let __cloned = __v.clone();
-                                                                                                                                              match < NameOccursInScope>::from_ddvalue(__v) {
-                                                                                                                                                  NameOccursInScope{scope: ref _0, name: _} => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                                                  _ => None
-                                                                                                                                              }.map(|x|(x,__cloned))
-                                                                                                                                          }
-                                                                                                                                          __f},
-                                                                                                                                          queryable: false
-                                                                                                                                      });
-pub static __Arng_name_in_scope_ScopeOfDeclName_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set{
-                                                                                                                                        name: std::borrow::Cow::from(r###"(name_in_scope::ScopeOfDeclName{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::ScopeOfDeclName) /*antijoin*/"###),
-                                                                                                                                        fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                                        {
-                                                                                                                                            match < ScopeOfDeclName>::from_ddvalue(__v) {
-                                                                                                                                                ScopeOfDeclName{name: ref _0, scope: ref _1, declared: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                                _ => None
-                                                                                                                                            }
-                                                                                                                                        }
-                                                                                                                                        __f},
-                                                                                                                                        distinct: true
-                                                                                                                                    });
-pub static __Arng_name_in_scope_NameInScope_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                   name: std::borrow::Cow::from(r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###),
-                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                    {
-                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                        match < NameInScope>::from_ddvalue(__v) {
-                                                                                                                                            NameInScope{name: ref _0, scope: ref _1, declared: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }.map(|x|(x,__cloned))
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    queryable: false
-                                                                                                                                });
-pub static __Arng_name_in_scope_NameInScope_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set{
-                                                                                                                                    name: std::borrow::Cow::from(r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::NameInScope) /*antijoin*/"###),
-                                                                                                                                    fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                                    {
-                                                                                                                                        match < NameInScope>::from_ddvalue(__v) {
-                                                                                                                                            NameInScope{name: ref _0, scope: ref _1, declared: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    distinct: true
-                                                                                                                                });
-pub static __Arng_name_in_scope_NameInScope_2 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                   name: std::borrow::Cow::from(r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(ast::AnyIdStmt{.stmt=(_: ast::StmtId)}: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###),
-                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                    {
-                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                        match < NameInScope>::from_ddvalue(__v) {
-                                                                                                                                            NameInScope{name: ref _0, scope: ref _1, declared: types__ast::AnyId::AnyIdStmt{stmt: _}} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }.map(|x|(x,__cloned))
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    queryable: false
-                                                                                                                                });
-pub static __Arng_name_in_scope_NameInScope_3 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                   name: std::borrow::Cow::from(r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(ast::AnyIdClass{.class=(_: ast::ClassId)}: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###),
-                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                    {
-                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                        match < NameInScope>::from_ddvalue(__v) {
-                                                                                                                                            NameInScope{name: ref _0, scope: ref _1, declared: types__ast::AnyId::AnyIdClass{class: _}} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }.map(|x|(x,__cloned))
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    queryable: false
-                                                                                                                                });
-pub static __Arng_name_in_scope_NameInScope_4 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                   name: std::borrow::Cow::from(r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(ast::AnyIdFunc{.func=(_: ast::FuncId)}: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###),
-                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                    {
-                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                        match < NameInScope>::from_ddvalue(__v) {
-                                                                                                                                            NameInScope{name: ref _0, scope: ref _1, declared: types__ast::AnyId::AnyIdFunc{func: _}} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }.map(|x|(x,__cloned))
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    queryable: false
-                                                                                                                                });
-pub static __Arng_name_in_scope_NameInScope_5 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set{
-                                                                                                                                    name: std::borrow::Cow::from(r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=_1, .declared=(_2: ast::AnyId)}: name_in_scope::NameInScope) /*antijoin*/"###),
-                                                                                                                                    fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                                    {
-                                                                                                                                        match < NameInScope>::from_ddvalue(__v) {
-                                                                                                                                            NameInScope{name: ref _0, scope: ref _1, declared: ref _2} => Some((ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    distinct: false
-                                                                                                                                });
-pub static __Arng_name_in_scope_NameInScope_6 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Set{
-                                                                                                                                    name: std::borrow::Cow::from(r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(_2: ast::AnyId)}: name_in_scope::NameInScope) /*antijoin*/"###),
-                                                                                                                                    fmfun: {fn __f(__v: DDValue) -> Option<DDValue>
-                                                                                                                                    {
-                                                                                                                                        match < NameInScope>::from_ddvalue(__v) {
-                                                                                                                                            NameInScope{name: ref _0, scope: ref _1, declared: ref _2} => Some((ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    distinct: false
-                                                                                                                                });
-pub static __Arng_name_in_scope_NameInScope_7 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                   name: std::borrow::Cow::from(r###"(name_in_scope::NameInScope{.name=_1, .scope=_0, .declared=(_: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###),
-                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                    {
-                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                        match < NameInScope>::from_ddvalue(__v) {
-                                                                                                                                            NameInScope{name: ref _1, scope: ref _0, declared: _} => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }.map(|x|(x,__cloned))
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    queryable: true
-                                                                                                                                });
-pub static __Arng_name_in_scope_NameInScope_8 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                   name: std::borrow::Cow::from(r###"(name_in_scope::NameInScope{.name=(_: internment::Intern<string>), .scope=_0, .declared=(_: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###),
-                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                    {
-                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                        match < NameInScope>::from_ddvalue(__v) {
-                                                                                                                                            NameInScope{name: _, scope: ref _0, declared: _} => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                                            _ => None
-                                                                                                                                        }.map(|x|(x,__cloned))
-                                                                                                                                    }
-                                                                                                                                    __f},
-                                                                                                                                    queryable: true
-                                                                                                                                });
-pub static __Rule_name_in_scope_NameOccursInScope_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=scope, .name=name}: name_in_scope::NameOccursInScope)] :- inputs::NameRef[(inputs::NameRef{.expr_id=(id: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(id: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]. */
+pub static __Arng_name_in_scope_NameOccursInScope_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Set {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameOccursInScope{.scope=(_0: ast::ScopeId), .name=(_1: internment::Intern<string>)}: name_in_scope::NameOccursInScope) /*semijoin*/"###,
+        ),
+        fmfun: {
+            fn __f(__v: DDValue) -> Option<DDValue> {
+                match <NameOccursInScope>::from_ddvalue(__v) {
+                    NameOccursInScope {
+                        scope: ref _0,
+                        name: ref _1,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+            }
+            __f
+        },
+        distinct: false,
+    });
+pub static __Arng_name_in_scope_NameOccursInScope_1: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameOccursInScope{.scope=(_1: ast::ScopeId), .name=(_0: internment::Intern<string>)}: name_in_scope::NameOccursInScope) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NameOccursInScope>::from_ddvalue(__v) {
+                    NameOccursInScope {
+                        scope: ref _1,
+                        name: ref _0,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_name_in_scope_NameOccursInScope_2: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameOccursInScope{.scope=(_0: ast::ScopeId), .name=(_: internment::Intern<string>)}: name_in_scope::NameOccursInScope) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NameOccursInScope>::from_ddvalue(__v) {
+                    NameOccursInScope {
+                        scope: ref _0,
+                        name: _,
+                    } => Some(((*_0).clone()).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_name_in_scope_ScopeOfDeclName_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Set {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::ScopeOfDeclName{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::ScopeOfDeclName) /*antijoin*/"###,
+        ),
+        fmfun: {
+            fn __f(__v: DDValue) -> Option<DDValue> {
+                match <ScopeOfDeclName>::from_ddvalue(__v) {
+                    ScopeOfDeclName {
+                        name: ref _0,
+                        scope: ref _1,
+                        declared: _,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+            }
+            __f
+        },
+        distinct: true,
+    });
+pub static __Arng_name_in_scope_NameInScope_0: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NameInScope>::from_ddvalue(__v) {
+                    NameInScope {
+                        name: ref _0,
+                        scope: ref _1,
+                        declared: _,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_name_in_scope_NameInScope_1: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Set {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::NameInScope) /*antijoin*/"###,
+        ),
+        fmfun: {
+            fn __f(__v: DDValue) -> Option<DDValue> {
+                match <NameInScope>::from_ddvalue(__v) {
+                    NameInScope {
+                        name: ref _0,
+                        scope: ref _1,
+                        declared: _,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+            }
+            __f
+        },
+        distinct: true,
+    });
+pub static __Arng_name_in_scope_NameInScope_2: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(ast::AnyIdStmt{.stmt=(_: ast::StmtId)}: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NameInScope>::from_ddvalue(__v) {
+                    NameInScope {
+                        name: ref _0,
+                        scope: ref _1,
+                        declared: types__ast::AnyId::AnyIdStmt { stmt: _ },
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_name_in_scope_NameInScope_3: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(ast::AnyIdClass{.class=(_: ast::ClassId)}: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NameInScope>::from_ddvalue(__v) {
+                    NameInScope {
+                        name: ref _0,
+                        scope: ref _1,
+                        declared: types__ast::AnyId::AnyIdClass { class: _ },
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_name_in_scope_NameInScope_4: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(ast::AnyIdFunc{.func=(_: ast::FuncId)}: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NameInScope>::from_ddvalue(__v) {
+                    NameInScope {
+                        name: ref _0,
+                        scope: ref _1,
+                        declared: types__ast::AnyId::AnyIdFunc { func: _ },
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: false,
+    });
+pub static __Arng_name_in_scope_NameInScope_5: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Set {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=_1, .declared=(_2: ast::AnyId)}: name_in_scope::NameInScope) /*antijoin*/"###,
+        ),
+        fmfun: {
+            fn __f(__v: DDValue) -> Option<DDValue> {
+                match <NameInScope>::from_ddvalue(__v) {
+                    NameInScope {
+                        name: ref _0,
+                        scope: ref _1,
+                        declared: ref _2,
+                    } => Some(
+                        (ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone()))
+                            .into_ddvalue(),
+                    ),
+                    _ => None,
+                }
+            }
+            __f
+        },
+        distinct: false,
+    });
+pub static __Arng_name_in_scope_NameInScope_6: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Set {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameInScope{.name=(_0: internment::Intern<string>), .scope=(_1: ast::ScopeId), .declared=(_2: ast::AnyId)}: name_in_scope::NameInScope) /*antijoin*/"###,
+        ),
+        fmfun: {
+            fn __f(__v: DDValue) -> Option<DDValue> {
+                match <NameInScope>::from_ddvalue(__v) {
+                    NameInScope {
+                        name: ref _0,
+                        scope: ref _1,
+                        declared: ref _2,
+                    } => Some(
+                        (ddlog_std::tuple3((*_0).clone(), (*_1).clone(), (*_2).clone()))
+                            .into_ddvalue(),
+                    ),
+                    _ => None,
+                }
+            }
+            __f
+        },
+        distinct: false,
+    });
+pub static __Arng_name_in_scope_NameInScope_7: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameInScope{.name=_1, .scope=_0, .declared=(_: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NameInScope>::from_ddvalue(__v) {
+                    NameInScope {
+                        name: ref _1,
+                        scope: ref _0,
+                        declared: _,
+                    } => Some((ddlog_std::tuple2((*_0).clone(), (*_1).clone())).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: true,
+    });
+pub static __Arng_name_in_scope_NameInScope_8: ::once_cell::sync::Lazy<program::Arrangement> =
+    ::once_cell::sync::Lazy::new(|| program::Arrangement::Map {
+        name: std::borrow::Cow::from(
+            r###"(name_in_scope::NameInScope{.name=(_: internment::Intern<string>), .scope=_0, .declared=(_: ast::AnyId)}: name_in_scope::NameInScope) /*join*/"###,
+        ),
+        afun: {
+            fn __f(__v: DDValue) -> Option<(DDValue, DDValue)> {
+                let __cloned = __v.clone();
+                match <NameInScope>::from_ddvalue(__v) {
+                    NameInScope {
+                        name: _,
+                        scope: ref _0,
+                        declared: _,
+                    } => Some(((*_0).clone()).into_ddvalue()),
+                    _ => None,
+                }
+                .map(|x| (x, __cloned))
+            }
+            __f
+        },
+        queryable: true,
+    });
+pub static __Rule_name_in_scope_NameOccursInScope_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=scope, .name=name}: name_in_scope::NameOccursInScope)] :- inputs::NameRef[(inputs::NameRef{.expr_id=(id: ast::ExprId), .value=(name: internment::Intern<string>)}: inputs::NameRef)], inputs::Expression[(inputs::Expression{.id=(id: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)]. */
                                                                                                                                program::Rule::ArrangementRule {
                                                                                                                                    description: std::borrow::Cow::from( "name_in_scope::NameOccursInScope(.scope=scope, .name=name) :- inputs::NameRef(.expr_id=id, .value=name), inputs::Expression(.id=id, .kind=_, .scope=scope, .span=_)."),
                                                                                                                                    arr: ( 43, 0),
@@ -371,8 +543,11 @@ pub static __Rule_name_in_scope_NameOccursInScope_0 : ::once_cell::sync::Lazy<pr
                                                                                                                                               __f},
                                                                                                                                               next: Box::new(None)
                                                                                                                                           }
-                                                                                                                               });
-pub static __Rule_name_in_scope_NameOccursInScope_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=scope, .name=name}: name_in_scope::NameOccursInScope)] :- inputs::Assign[(inputs::Assign{.expr_id=(id: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pattern: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(id: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((vec::map: function(ddlog_std::Vec<ast::Spanned<ast::Name>>, function(ast::Spanned<ast::Name>):internment::Intern<string>):ddlog_std::Vec<internment::Intern<string>>)(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pattern)), (function(name: ast::Spanned<ast::Name>):internment::Intern<string>{(name.data)})))). */
+                                                                                                                               },
+    );
+pub static __Rule_name_in_scope_NameOccursInScope_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=scope, .name=name}: name_in_scope::NameOccursInScope)] :- inputs::Assign[(inputs::Assign{.expr_id=(id: ast::ExprId), .lhs=(ddlog_std::Some{.x=(ddlog_std::Left{.l=(pattern: internment::Intern<ast::Pattern>)}: ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>)}: ddlog_std::Option<ddlog_std::Either<internment::Intern<ast::Pattern>,ast::ExprId>>), .rhs=(_: ddlog_std::Option<ast::ExprId>), .op=(_: ddlog_std::Option<ast::AssignOperand>)}: inputs::Assign)], inputs::Expression[(inputs::Expression{.id=(id: ast::ExprId), .kind=(_: ast::ExprKind), .scope=(scope: ast::ScopeId), .span=(_: ast::Span)}: inputs::Expression)], var name = FlatMap(((vec::map: function(ddlog_std::Vec<ast::Spanned<ast::Name>>, function(ast::Spanned<ast::Name>):internment::Intern<string>):ddlog_std::Vec<internment::Intern<string>>)(((ast::bound_vars: function(internment::Intern<ast::Pattern>):ddlog_std::Vec<ast::Spanned<ast::Name>>)(pattern)), (function(name: ast::Spanned<ast::Name>):internment::Intern<string>{(name.data)})))). */
                                                                                                                                program::Rule::ArrangementRule {
                                                                                                                                    description: std::borrow::Cow::from( "name_in_scope::NameOccursInScope(.scope=scope, .name=name) :- inputs::Assign(.expr_id=id, .lhs=ddlog_std::Some{.x=ddlog_std::Left{.l=pattern}}, .rhs=_, .op=_), inputs::Expression(.id=id, .kind=_, .scope=scope, .span=_), var name = FlatMap((vec::map((ast::bound_vars(pattern)), (function(name: ast::Spanned<ast::Name>):internment::Intern<string>{(name.data)}))))."),
                                                                                                                                    arr: ( 10, 0),
@@ -428,8 +603,11 @@ pub static __Rule_name_in_scope_NameOccursInScope_1 : ::once_cell::sync::Lazy<pr
                                                                                                                                                                                           }))
                                                                                                                                                                   }))
                                                                                                                                           }
-                                                                                                                               });
-pub static __Rule_name_in_scope_NameOccursInScope_2 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=scope, .name=name}: name_in_scope::NameOccursInScope)] :- inputs::FileExport[(inputs::FileExport{.export=(ast::NamedExport{.name=(export_name: ddlog_std::Option<ast::Spanned<ast::Name>>), .alias=(export_alias: ddlog_std::Option<ast::Spanned<ast::Name>>)}: ast::ExportKind), .scope=(scope: ast::ScopeId)}: inputs::FileExport)], ((ddlog_std::Some{.x=(ast::Spanned{.data=(var name: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<internment::Intern<string>>>) = ((utils::or_else: function(ddlog_std::Option<ast::Spanned<ast::Name>>, ddlog_std::Option<ast::Spanned<ast::Name>>):ddlog_std::Option<ast::Spanned<internment::Intern<string>>>)(export_alias, export_name))). */
+                                                                                                                               },
+    );
+pub static __Rule_name_in_scope_NameOccursInScope_2: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=scope, .name=name}: name_in_scope::NameOccursInScope)] :- inputs::FileExport[(inputs::FileExport{.export=(ast::NamedExport{.name=(export_name: ddlog_std::Option<ast::Spanned<ast::Name>>), .alias=(export_alias: ddlog_std::Option<ast::Spanned<ast::Name>>)}: ast::ExportKind), .scope=(scope: ast::ScopeId)}: inputs::FileExport)], ((ddlog_std::Some{.x=(ast::Spanned{.data=(var name: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<internment::Intern<string>>>) = ((utils::or_else: function(ddlog_std::Option<ast::Spanned<ast::Name>>, ddlog_std::Option<ast::Spanned<ast::Name>>):ddlog_std::Option<ast::Spanned<internment::Intern<string>>>)(export_alias, export_name))). */
                                                                                                                                program::Rule::CollectionRule {
                                                                                                                                    description: std::borrow::Cow::from("name_in_scope::NameOccursInScope(.scope=scope, .name=name) :- inputs::FileExport(.export=ast::NamedExport{.name=export_name, .alias=export_alias}, .scope=scope), (ddlog_std::Some{.x=ast::Spanned{.data=var name, .span=_}} = (utils::or_else(export_alias, export_name)))."),
                                                                                                                                    rel: 29,
@@ -450,8 +628,11 @@ pub static __Rule_name_in_scope_NameOccursInScope_2 : ::once_cell::sync::Lazy<pr
                                                                                                                                                    __f},
                                                                                                                                                    next: Box::new(None)
                                                                                                                                                })
-                                                                                                                               });
-pub static __Rule_name_in_scope_NameOccursInScope_3 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=parent, .name=name}: name_in_scope::NameOccursInScope)] :- name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=(child: ast::ScopeId), .name=(name: internment::Intern<string>)}: name_in_scope::NameOccursInScope)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId)}: inputs::InputScope)]. */
+                                                                                                                               },
+    );
+pub static __Rule_name_in_scope_NameOccursInScope_3: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=parent, .name=name}: name_in_scope::NameOccursInScope)] :- name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=(child: ast::ScopeId), .name=(name: internment::Intern<string>)}: name_in_scope::NameOccursInScope)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId)}: inputs::InputScope)]. */
                                                                                                                                program::Rule::ArrangementRule {
                                                                                                                                    description: std::borrow::Cow::from( "name_in_scope::NameOccursInScope(.scope=parent, .name=name) :- name_in_scope::NameOccursInScope(.scope=child, .name=name), inputs::InputScope(.parent=parent, .child=child)."),
                                                                                                                                    arr: ( 62, 2),
@@ -474,8 +655,11 @@ pub static __Rule_name_in_scope_NameOccursInScope_3 : ::once_cell::sync::Lazy<pr
                                                                                                                                               __f},
                                                                                                                                               next: Box::new(None)
                                                                                                                                           }
-                                                                                                                               });
-pub static __Rule_name_in_scope_ScopeOfDeclName_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* name_in_scope::ScopeOfDeclName[(name_in_scope::ScopeOfDeclName{.name=name, .scope=scope, .declared=declared}: name_in_scope::ScopeOfDeclName)] :- var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.name=(name: internment::Intern<string>), .scope=(var_decls::Unhoistable{.scope=(scope: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)]. */
+                                                                                                                               },
+    );
+pub static __Rule_name_in_scope_ScopeOfDeclName_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* name_in_scope::ScopeOfDeclName[(name_in_scope::ScopeOfDeclName{.name=name, .scope=scope, .declared=declared}: name_in_scope::ScopeOfDeclName)] :- var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.name=(name: internment::Intern<string>), .scope=(var_decls::Unhoistable{.scope=(scope: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)]. */
                                                                                                                              program::Rule::CollectionRule {
                                                                                                                                  description: std::borrow::Cow::from("name_in_scope::ScopeOfDeclName(.name=name, .scope=scope, .declared=declared) :- var_decls::VariableDeclarations(.name=name, .scope=var_decls::Unhoistable{.scope=scope}, .declared_in=declared, .meta=_)."),
                                                                                                                                  rel: 86,
@@ -492,8 +676,11 @@ pub static __Rule_name_in_scope_ScopeOfDeclName_0 : ::once_cell::sync::Lazy<prog
                                                                                                                                                  __f},
                                                                                                                                                  next: Box::new(None)
                                                                                                                                              })
-                                                                                                                             });
-pub static __Rule_name_in_scope_ScopeOfDeclName_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* name_in_scope::ScopeOfDeclName[(name_in_scope::ScopeOfDeclName{.name=name, .scope=scope, .declared=declared}: name_in_scope::ScopeOfDeclName)] :- var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.name=(name: internment::Intern<string>), .scope=(var_decls::Hoistable{.hoisted=(scope: ast::ScopeId), .unhoisted=(_: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)]. */
+                                                                                                                             },
+    );
+pub static __Rule_name_in_scope_ScopeOfDeclName_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* name_in_scope::ScopeOfDeclName[(name_in_scope::ScopeOfDeclName{.name=name, .scope=scope, .declared=declared}: name_in_scope::ScopeOfDeclName)] :- var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.name=(name: internment::Intern<string>), .scope=(var_decls::Hoistable{.hoisted=(scope: ast::ScopeId), .unhoisted=(_: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)]. */
                                                                                                                              program::Rule::CollectionRule {
                                                                                                                                  description: std::borrow::Cow::from("name_in_scope::ScopeOfDeclName(.name=name, .scope=scope, .declared=declared) :- var_decls::VariableDeclarations(.name=name, .scope=var_decls::Hoistable{.hoisted=scope, .unhoisted=_}, .declared_in=declared, .meta=_)."),
                                                                                                                                  rel: 86,
@@ -510,8 +697,11 @@ pub static __Rule_name_in_scope_ScopeOfDeclName_1 : ::once_cell::sync::Lazy<prog
                                                                                                                                                  __f},
                                                                                                                                                  next: Box::new(None)
                                                                                                                                              })
-                                                                                                                             });
-pub static __Rule_name_in_scope_NameInScope_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* name_in_scope::NameInScope[(name_in_scope::NameInScope{.name=name, .scope=variable_scope, .declared=declared}: name_in_scope::NameInScope)] :- var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.name=(name: internment::Intern<string>), .scope=(scope: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], ((var variable_scope: ast::ScopeId) = (var_decls::hoisted_scope(scope))), name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=(variable_scope: ast::ScopeId), .name=(name: internment::Intern<string>)}: name_in_scope::NameOccursInScope)]. */
+                                                                                                                             },
+    );
+pub static __Rule_name_in_scope_NameInScope_0: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* name_in_scope::NameInScope[(name_in_scope::NameInScope{.name=name, .scope=variable_scope, .declared=declared}: name_in_scope::NameInScope)] :- var_decls::VariableDeclarations[(var_decls::VariableDeclarations{.name=(name: internment::Intern<string>), .scope=(scope: var_decls::DeclarationScope), .declared_in=(declared: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations)], ((var variable_scope: ast::ScopeId) = (var_decls::hoisted_scope(scope))), name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=(variable_scope: ast::ScopeId), .name=(name: internment::Intern<string>)}: name_in_scope::NameOccursInScope)]. */
                                                                                                                          program::Rule::CollectionRule {
                                                                                                                              description: std::borrow::Cow::from("name_in_scope::NameInScope(.name=name, .scope=variable_scope, .declared=declared) :- var_decls::VariableDeclarations(.name=name, .scope=scope, .declared_in=declared, .meta=_), (var variable_scope = (var_decls::hoisted_scope(scope))), name_in_scope::NameOccursInScope(.scope=variable_scope, .name=name)."),
                                                                                                                              rel: 86,
@@ -543,8 +733,11 @@ pub static __Rule_name_in_scope_NameInScope_0 : ::once_cell::sync::Lazy<program:
                                                                                                                                                                 next: Box::new(None)
                                                                                                                                                             })
                                                                                                                                          })
-                                                                                                                         });
-pub static __Rule_name_in_scope_NameInScope_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* name_in_scope::NameInScope[(name_in_scope::NameInScope{.name=name, .scope=child, .declared=declared}: name_in_scope::NameInScope)] :- name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=(child: ast::ScopeId), .name=(name: internment::Intern<string>)}: name_in_scope::NameOccursInScope)], not name_in_scope::ScopeOfDeclName[(name_in_scope::ScopeOfDeclName{.name=(name: internment::Intern<string>), .scope=(child: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::ScopeOfDeclName)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId)}: inputs::InputScope)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.name=(name: internment::Intern<string>), .scope=(parent: ast::ScopeId), .declared=(declared: ast::AnyId)}: name_in_scope::NameInScope)]. */
+                                                                                                                         },
+    );
+pub static __Rule_name_in_scope_NameInScope_1: ::once_cell::sync::Lazy<program::Rule> =
+    ::once_cell::sync::Lazy::new(
+        || /* name_in_scope::NameInScope[(name_in_scope::NameInScope{.name=name, .scope=child, .declared=declared}: name_in_scope::NameInScope)] :- name_in_scope::NameOccursInScope[(name_in_scope::NameOccursInScope{.scope=(child: ast::ScopeId), .name=(name: internment::Intern<string>)}: name_in_scope::NameOccursInScope)], not name_in_scope::ScopeOfDeclName[(name_in_scope::ScopeOfDeclName{.name=(name: internment::Intern<string>), .scope=(child: ast::ScopeId), .declared=(_: ast::AnyId)}: name_in_scope::ScopeOfDeclName)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId)}: inputs::InputScope)], name_in_scope::NameInScope[(name_in_scope::NameInScope{.name=(name: internment::Intern<string>), .scope=(parent: ast::ScopeId), .declared=(declared: ast::AnyId)}: name_in_scope::NameInScope)]. */
                                                                                                                          program::Rule::ArrangementRule {
                                                                                                                              description: std::borrow::Cow::from( "name_in_scope::NameInScope(.name=name, .scope=child, .declared=declared) :- name_in_scope::NameOccursInScope(.scope=child, .name=name), not name_in_scope::ScopeOfDeclName(.name=name, .scope=child, .declared=_), inputs::InputScope(.parent=parent, .child=child), name_in_scope::NameInScope(.name=name, .scope=parent, .declared=declared)."),
                                                                                                                              arr: ( 62, 1),
@@ -605,4 +798,5 @@ pub static __Rule_name_in_scope_NameInScope_1 : ::once_cell::sync::Lazy<program:
                                                                                                                                                                                })
                                                                                                                                                             }))
                                                                                                                                     }
-                                                                                                                         });
+                                                                                                                         },
+    );

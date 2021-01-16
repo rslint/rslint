@@ -41,25 +41,23 @@ use ::timely::dataflow::scopes;
 use ::timely::worker;
 
 use ::ddlog_derive::{FromRecord, IntoRecord, Mutator};
-use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::ddval::DDValConvert;
+use ::differential_datalog::ddval::DDValue;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
-
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
-
 
 use abomonation::Abomonation;
 /// Rust implementation of DDlog standard library functions and types.
@@ -1780,17 +1778,30 @@ pub fn htons(x: &u16) -> u16 {
 
 pub type DDEpoch = u64;
 pub type DDIteration = u64;
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[derive(
+    Eq,
+    Ord,
+    Clone,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    IntoRecord,
+    Mutator,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+)]
 #[ddlog(rename = "ddlog_std::DDNestedTS")]
 pub struct DDNestedTS {
     pub epoch: DDEpoch,
-    pub iter: DDIteration
+    pub iter: DDIteration,
 }
-impl abomonation::Abomonation for DDNestedTS{}
+impl abomonation::Abomonation for DDNestedTS {}
 impl ::std::fmt::Display for DDNestedTS {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            DDNestedTS{epoch,iter} => {
+            DDNestedTS { epoch, iter } => {
                 __formatter.write_str("ddlog_std::DDNestedTS{")?;
                 ::std::fmt::Debug::fmt(epoch, __formatter)?;
                 __formatter.write_str(",")?;
@@ -1806,17 +1817,30 @@ impl ::std::fmt::Debug for DDNestedTS {
     }
 }
 pub type DDWeight = s64;
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Default, Serialize, Deserialize, FromRecord)]
+#[derive(
+    Eq,
+    Ord,
+    Clone,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    IntoRecord,
+    Mutator,
+    Default,
+    Serialize,
+    Deserialize,
+    FromRecord,
+)]
 #[ddlog(rename = "ddlog_std::DDlogGroup")]
 pub struct DDlogGroup<K, V> {
     pub key: K,
-    pub vals: Vec<V>
+    pub vals: Vec<V>,
 }
-impl <K: ::ddlog_rt::Val, V: ::ddlog_rt::Val> abomonation::Abomonation for DDlogGroup<K, V>{}
-impl <K: ::std::fmt::Debug, V: ::std::fmt::Debug> ::std::fmt::Display for DDlogGroup<K, V> {
+impl<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val> abomonation::Abomonation for DDlogGroup<K, V> {}
+impl<K: ::std::fmt::Debug, V: ::std::fmt::Debug> ::std::fmt::Display for DDlogGroup<K, V> {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            DDlogGroup{key,vals} => {
+            DDlogGroup { key, vals } => {
                 __formatter.write_str("ddlog_std::DDlogGroup{")?;
                 ::std::fmt::Debug::fmt(key, __formatter)?;
                 __formatter.write_str(",")?;
@@ -1826,33 +1850,41 @@ impl <K: ::std::fmt::Debug, V: ::std::fmt::Debug> ::std::fmt::Display for DDlogG
         }
     }
 }
-impl <K: ::std::fmt::Debug, V: ::std::fmt::Debug> ::std::fmt::Debug for DDlogGroup<K, V> {
+impl<K: ::std::fmt::Debug, V: ::std::fmt::Debug> ::std::fmt::Debug for DDlogGroup<K, V> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Serialize, Deserialize, FromRecord)]
+#[derive(
+    Eq,
+    Ord,
+    Clone,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    IntoRecord,
+    Mutator,
+    Serialize,
+    Deserialize,
+    FromRecord,
+)]
 #[ddlog(rename = "ddlog_std::Either")]
 pub enum Either<A, B> {
     #[ddlog(rename = "ddlog_std::Left")]
-    Left {
-        l: A
-    },
+    Left { l: A },
     #[ddlog(rename = "ddlog_std::Right")]
-    Right {
-        r: B
-    }
+    Right { r: B },
 }
-impl <A: ::ddlog_rt::Val, B: ::ddlog_rt::Val> abomonation::Abomonation for Either<A, B>{}
-impl <A: ::std::fmt::Debug, B: ::std::fmt::Debug> ::std::fmt::Display for Either<A, B> {
+impl<A: ::ddlog_rt::Val, B: ::ddlog_rt::Val> abomonation::Abomonation for Either<A, B> {}
+impl<A: ::std::fmt::Debug, B: ::std::fmt::Debug> ::std::fmt::Display for Either<A, B> {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            Either::Left{l} => {
+            Either::Left { l } => {
                 __formatter.write_str("ddlog_std::Left{")?;
                 ::std::fmt::Debug::fmt(l, __formatter)?;
                 __formatter.write_str("}")
-            },
-            Either::Right{r} => {
+            }
+            Either::Right { r } => {
                 __formatter.write_str("ddlog_std::Right{")?;
                 ::std::fmt::Debug::fmt(r, __formatter)?;
                 __formatter.write_str("}")
@@ -1860,36 +1892,44 @@ impl <A: ::std::fmt::Debug, B: ::std::fmt::Debug> ::std::fmt::Display for Either
         }
     }
 }
-impl <A: ::std::fmt::Debug, B: ::std::fmt::Debug> ::std::fmt::Debug for Either<A, B> {
+impl<A: ::std::fmt::Debug, B: ::std::fmt::Debug> ::std::fmt::Debug for Either<A, B> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-impl <A: ::std::default::Default, B: ::std::default::Default> ::std::default::Default for Either<A, B> {
+impl<A: ::std::default::Default, B: ::std::default::Default> ::std::default::Default
+    for Either<A, B>
+{
     fn default() -> Self {
-        Either::Left{l : ::std::default::Default::default()}
+        Either::Left {
+            l: ::std::default::Default::default(),
+        }
     }
 }
-#[serde(from="::std::option::Option<A>", into="::std::option::Option<A>", bound(serialize="A: Clone+Serialize"))]
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Serialize, Deserialize)]
+#[serde(
+    from = "::std::option::Option<A>",
+    into = "::std::option::Option<A>",
+    bound(serialize = "A: Clone+Serialize")
+)]
+#[derive(
+    Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Serialize, Deserialize,
+)]
 #[ddlog(rename = "ddlog_std::Option")]
 pub enum Option<A> {
     #[ddlog(rename = "ddlog_std::None")]
     None,
     #[ddlog(rename = "ddlog_std::Some")]
-    Some {
-        x: A
-    }
+    Some { x: A },
 }
-impl <A: ::ddlog_rt::Val> abomonation::Abomonation for Option<A>{}
-impl <A: ::std::fmt::Debug> ::std::fmt::Display for Option<A> {
+impl<A: ::ddlog_rt::Val> abomonation::Abomonation for Option<A> {}
+impl<A: ::std::fmt::Debug> ::std::fmt::Display for Option<A> {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            Option::None{} => {
+            Option::None {} => {
                 __formatter.write_str("ddlog_std::None{")?;
                 __formatter.write_str("}")
-            },
-            Option::Some{x} => {
+            }
+            Option::Some { x } => {
                 __formatter.write_str("ddlog_std::Some{")?;
                 ::std::fmt::Debug::fmt(x, __formatter)?;
                 __formatter.write_str("}")
@@ -1897,38 +1937,46 @@ impl <A: ::std::fmt::Debug> ::std::fmt::Display for Option<A> {
         }
     }
 }
-impl <A: ::std::fmt::Debug> ::std::fmt::Debug for Option<A> {
+impl<A: ::std::fmt::Debug> ::std::fmt::Debug for Option<A> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-impl <A: ::std::default::Default> ::std::default::Default for Option<A> {
+impl<A: ::std::default::Default> ::std::default::Default for Option<A> {
     fn default() -> Self {
-        Option::None{}
+        Option::None {}
     }
 }
-#[derive(Eq, Ord, Clone, Hash, PartialEq, PartialOrd, IntoRecord, Mutator, Serialize, Deserialize, FromRecord)]
+#[derive(
+    Eq,
+    Ord,
+    Clone,
+    Hash,
+    PartialEq,
+    PartialOrd,
+    IntoRecord,
+    Mutator,
+    Serialize,
+    Deserialize,
+    FromRecord,
+)]
 #[ddlog(rename = "ddlog_std::Result")]
 pub enum Result<V, E> {
     #[ddlog(rename = "ddlog_std::Ok")]
-    Ok {
-        res: V
-    },
+    Ok { res: V },
     #[ddlog(rename = "ddlog_std::Err")]
-    Err {
-        err: E
-    }
+    Err { err: E },
 }
-impl <V: ::ddlog_rt::Val, E: ::ddlog_rt::Val> abomonation::Abomonation for Result<V, E>{}
-impl <V: ::std::fmt::Debug, E: ::std::fmt::Debug> ::std::fmt::Display for Result<V, E> {
+impl<V: ::ddlog_rt::Val, E: ::ddlog_rt::Val> abomonation::Abomonation for Result<V, E> {}
+impl<V: ::std::fmt::Debug, E: ::std::fmt::Debug> ::std::fmt::Display for Result<V, E> {
     fn fmt(&self, __formatter: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         match self {
-            Result::Ok{res} => {
+            Result::Ok { res } => {
                 __formatter.write_str("ddlog_std::Ok{")?;
                 ::std::fmt::Debug::fmt(res, __formatter)?;
                 __formatter.write_str("}")
-            },
-            Result::Err{err} => {
+            }
+            Result::Err { err } => {
                 __formatter.write_str("ddlog_std::Err{")?;
                 ::std::fmt::Debug::fmt(err, __formatter)?;
                 __formatter.write_str("}")
@@ -1936,14 +1984,18 @@ impl <V: ::std::fmt::Debug, E: ::std::fmt::Debug> ::std::fmt::Display for Result
         }
     }
 }
-impl <V: ::std::fmt::Debug, E: ::std::fmt::Debug> ::std::fmt::Debug for Result<V, E> {
+impl<V: ::std::fmt::Debug, E: ::std::fmt::Debug> ::std::fmt::Debug for Result<V, E> {
     fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
         ::std::fmt::Display::fmt(&self, f)
     }
 }
-impl <V: ::std::default::Default, E: ::std::default::Default> ::std::default::Default for Result<V, E> {
+impl<V: ::std::default::Default, E: ::std::default::Default> ::std::default::Default
+    for Result<V, E>
+{
     fn default() -> Self {
-        Result::Ok{res : ::std::default::Default::default()}
+        Result::Ok {
+            res: ::std::default::Default::default(),
+        }
     }
 }
 pub type s128 = i128;
@@ -2049,414 +2101,536 @@ pub type s8 = i8;
 /* fn vec_with_capacity<A: ::ddlog_rt::Val>(len: & u64) -> Vec<A> */
 /* fn vec_with_length<A: ::ddlog_rt::Val>(len: & u64, x: & A) -> Vec<A> */
 /* fn vec_zip<X: ::ddlog_rt::Val,Y: ::ddlog_rt::Val>(v1: & Vec<X>, v2: & Vec<Y>) -> Vec<tuple2<X, Y>> */
-pub fn and_then<T: ::ddlog_rt::Val,U: ::ddlog_rt::Val>(o: & Option<T>, f: & Box<dyn ddlog_rt::Closure<*const T, Option<U>>>) -> Option<U>
-{   match (*o) {
-        Option::None{} => (Option::None{}),
-        Option::Some{x: ref x} => f.call(x)
+pub fn and_then<T: ::ddlog_rt::Val, U: ::ddlog_rt::Val>(
+    o: &Option<T>,
+    f: &Box<dyn ddlog_rt::Closure<*const T, Option<U>>>,
+) -> Option<U> {
+    match (*o) {
+        Option::None {} => (Option::None {}),
+        Option::Some { x: ref x } => f.call(x),
     }
 }
-pub fn append<X: ::ddlog_rt::Val>(v: &mut Vec<X>, other: & Vec<X>) -> ()
-{   vec_append(v, other)
+pub fn append<X: ::ddlog_rt::Val>(v: &mut Vec<X>, other: &Vec<X>) -> () {
+    vec_append(v, other)
 }
-pub fn contains___Stringval___Stringval___Boolval(s1: & String, s2: & String) -> bool
-{   string_contains(s1, s2)
+pub fn contains___Stringval___Stringval___Boolval(s1: &String, s2: &String) -> bool {
+    string_contains(s1, s2)
 }
-pub fn contains_ddlog_std_Vec__X_X___Boolval<X: ::ddlog_rt::Val>(v: & Vec<X>, x: & X) -> bool
-{   vec_contains(v, x)
+pub fn contains_ddlog_std_Vec__X_X___Boolval<X: ::ddlog_rt::Val>(v: &Vec<X>, x: &X) -> bool {
+    vec_contains(v, x)
 }
-pub fn contains_ddlog_std_Set__X_X___Boolval<X: ::ddlog_rt::Val>(s: & Set<X>, v: & X) -> bool
-{   set_contains(s, v)
+pub fn contains_ddlog_std_Set__X_X___Boolval<X: ::ddlog_rt::Val>(s: &Set<X>, v: &X) -> bool {
+    set_contains(s, v)
 }
-pub fn contains_key<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(m: & Map<K, V>, k: & K) -> bool
-{   map_contains_key(m, k)
+pub fn contains_key<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(m: &Map<K, V>, k: &K) -> bool {
+    map_contains_key(m, k)
 }
-pub fn count<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K, V>) -> u64
-{   group_count(g)
+pub fn count<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(g: &Group<K, V>) -> u64 {
+    group_count(g)
 }
-pub fn difference<X: ::ddlog_rt::Val>(s1: & Set<X>, s2: & Set<X>) -> Set<X>
-{   set_difference(s1, s2)
+pub fn difference<X: ::ddlog_rt::Val>(s1: &Set<X>, s2: &Set<X>) -> Set<X> {
+    set_difference(s1, s2)
 }
-pub fn ends_with(s: & String, suffix: & String) -> bool
-{   string_ends_with(s, suffix)
+pub fn ends_with(s: &String, suffix: &String) -> bool {
+    string_ends_with(s, suffix)
 }
-pub fn first<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K, V>) -> V
-{   group_first(g)
+pub fn first<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(g: &Group<K, V>) -> V {
+    group_first(g)
 }
-pub fn get<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(m: & Map<K, V>, k: & K) -> Option<V>
-{   map_get(m, k)
+pub fn get<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(m: &Map<K, V>, k: &K) -> Option<V> {
+    map_get(m, k)
 }
-pub fn group_unzip<K: ::ddlog_rt::Val,X: ::ddlog_rt::Val,Y: ::ddlog_rt::Val>(g: & Group<K, tuple2<X, Y>>) -> tuple2<Vec<X>, Vec<Y>>
-{   let ref mut xs: Vec<X> = vec_with_capacity((&size_ddlog_std_Group__K_V___Bitval64::<K, tuple2<X, Y>>(g)));
-    let ref mut ys: Vec<Y> = vec_with_capacity((&size_ddlog_std_Group__K_V___Bitval64::<K, tuple2<X, Y>>(g)));
+pub fn group_unzip<K: ::ddlog_rt::Val, X: ::ddlog_rt::Val, Y: ::ddlog_rt::Val>(
+    g: &Group<K, tuple2<X, Y>>,
+) -> tuple2<Vec<X>, Vec<Y>> {
+    let ref mut xs: Vec<X> =
+        vec_with_capacity((&size_ddlog_std_Group__K_V___Bitval64::<K, tuple2<X, Y>>(g)));
+    let ref mut ys: Vec<Y> =
+        vec_with_capacity((&size_ddlog_std_Group__K_V___Bitval64::<K, tuple2<X, Y>>(g)));
     for ref v in g.iter() {
         {
             let tuple2(ref mut x, ref mut y): tuple2<X, Y> = (*v).clone();
             vec_push(xs, x);
             vec_push(ys, y)
         }
-    };
+    }
     tuple2((*xs).clone(), (*ys).clone())
 }
-pub fn insert_ddlog_std_Map__K_V_K_V___Tuple0__<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(m: &mut Map<K, V>, k: & K, v: & V) -> ()
-{   map_insert(m, k, v)
+pub fn insert_ddlog_std_Map__K_V_K_V___Tuple0__<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(
+    m: &mut Map<K, V>,
+    k: &K,
+    v: &V,
+) -> () {
+    map_insert(m, k, v)
 }
-pub fn insert_ddlog_std_Set__X_X___Tuple0__<X: ::ddlog_rt::Val>(s: &mut Set<X>, v: & X) -> ()
-{   set_insert(s, v)
+pub fn insert_ddlog_std_Set__X_X___Tuple0__<X: ::ddlog_rt::Val>(s: &mut Set<X>, v: &X) -> () {
+    set_insert(s, v)
 }
-pub fn insert_imm_ddlog_std_Map__K_V_K_V_ddlog_std_Map__K_V<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(m: & Map<K, V>, k: & K, v: & V) -> Map<K, V>
-{   map_insert_imm(m, k, v)
+pub fn insert_imm_ddlog_std_Map__K_V_K_V_ddlog_std_Map__K_V<
+    K: ::ddlog_rt::Val,
+    V: ::ddlog_rt::Val,
+>(
+    m: &Map<K, V>,
+    k: &K,
+    v: &V,
+) -> Map<K, V> {
+    map_insert_imm(m, k, v)
 }
-pub fn insert_imm_ddlog_std_Set__X_X_ddlog_std_Set__X<X: ::ddlog_rt::Val>(s: & Set<X>, v: & X) -> Set<X>
-{   set_insert_imm(s, v)
+pub fn insert_imm_ddlog_std_Set__X_X_ddlog_std_Set__X<X: ::ddlog_rt::Val>(
+    s: &Set<X>,
+    v: &X,
+) -> Set<X> {
+    set_insert_imm(s, v)
 }
-pub fn intersection<X: ::ddlog_rt::Val>(s1: & Set<X>, s2: & Set<X>) -> Set<X>
-{   set_intersection(s1, s2)
+pub fn intersection<X: ::ddlog_rt::Val>(s1: &Set<X>, s2: &Set<X>) -> Set<X> {
+    set_intersection(s1, s2)
 }
-pub fn is_empty_ddlog_std_Vec__X___Boolval<X: ::ddlog_rt::Val>(v: & Vec<X>) -> bool
-{   vec_is_empty(v)
+pub fn is_empty_ddlog_std_Vec__X___Boolval<X: ::ddlog_rt::Val>(v: &Vec<X>) -> bool {
+    vec_is_empty(v)
 }
-pub fn is_empty_ddlog_std_Map__K_V___Boolval<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(m: & Map<K, V>) -> bool
-{   map_is_empty(m)
+pub fn is_empty_ddlog_std_Map__K_V___Boolval<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(
+    m: &Map<K, V>,
+) -> bool {
+    map_is_empty(m)
 }
-pub fn is_empty_ddlog_std_Set__X___Boolval<X: ::ddlog_rt::Val>(s: & Set<X>) -> bool
-{   set_is_empty(s)
+pub fn is_empty_ddlog_std_Set__X___Boolval<X: ::ddlog_rt::Val>(s: &Set<X>) -> bool {
+    set_is_empty(s)
 }
-pub fn is_err<V: ::ddlog_rt::Val,E: ::ddlog_rt::Val>(res: & Result<V, E>) -> bool
-{   match (*res) {
-        Result::Ok{res: _} => false,
-        Result::Err{err: _} => true
+pub fn is_err<V: ::ddlog_rt::Val, E: ::ddlog_rt::Val>(res: &Result<V, E>) -> bool {
+    match (*res) {
+        Result::Ok { res: _ } => false,
+        Result::Err { err: _ } => true,
     }
 }
-pub fn is_none<A: ::ddlog_rt::Val>(x: & Option<A>) -> bool
-{   match (*x) {
-        Option::None{} => true,
-        _ => false
+pub fn is_none<A: ::ddlog_rt::Val>(x: &Option<A>) -> bool {
+    match (*x) {
+        Option::None {} => true,
+        _ => false,
     }
 }
-pub fn is_ok<V: ::ddlog_rt::Val,E: ::ddlog_rt::Val>(res: & Result<V, E>) -> bool
-{   match (*res) {
-        Result::Ok{res: _} => true,
-        Result::Err{err: _} => false
+pub fn is_ok<V: ::ddlog_rt::Val, E: ::ddlog_rt::Val>(res: &Result<V, E>) -> bool {
+    match (*res) {
+        Result::Ok { res: _ } => true,
+        Result::Err { err: _ } => false,
     }
 }
-pub fn is_some<A: ::ddlog_rt::Val>(x: & Option<A>) -> bool
-{   match (*x) {
-        Option::Some{x: _} => true,
-        _ => false
+pub fn is_some<A: ::ddlog_rt::Val>(x: &Option<A>) -> bool {
+    match (*x) {
+        Option::Some { x: _ } => true,
+        _ => false,
     }
 }
-pub fn join(strings: & Vec<String>, sep: & String) -> String
-{   string_join(strings, sep)
+pub fn join(strings: &Vec<String>, sep: &String) -> String {
+    string_join(strings, sep)
 }
-pub fn key<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K, V>) -> K
-{   group_key(g)
+pub fn key<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(g: &Group<K, V>) -> K {
+    group_key(g)
 }
-pub fn keys<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(m: & Map<K, V>) -> Vec<K>
-{   map_keys(m)
+pub fn keys<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(m: &Map<K, V>) -> Vec<K> {
+    map_keys(m)
 }
-pub fn len___Stringval___Bitval64(s: & String) -> u64
-{   string_len(s)
+pub fn len___Stringval___Bitval64(s: &String) -> u64 {
+    string_len(s)
 }
-pub fn len_ddlog_std_Vec__X___Bitval64<X: ::ddlog_rt::Val>(v: & Vec<X>) -> u64
-{   vec_len(v)
+pub fn len_ddlog_std_Vec__X___Bitval64<X: ::ddlog_rt::Val>(v: &Vec<X>) -> u64 {
+    vec_len(v)
 }
-pub fn map_ddlog_std_Option__A___Closureimm_A_ret_B_ddlog_std_Option__B<A: ::ddlog_rt::Val,B: ::ddlog_rt::Val>(opt: & Option<A>, f: & Box<dyn ddlog_rt::Closure<*const A, B>>) -> Option<B>
-{   match (*opt) {
-        Option::None{} => (Option::None{}),
-        Option::Some{x: ref x} => (Option::Some{x: f.call(x)})
+pub fn map_ddlog_std_Option__A___Closureimm_A_ret_B_ddlog_std_Option__B<
+    A: ::ddlog_rt::Val,
+    B: ::ddlog_rt::Val,
+>(
+    opt: &Option<A>,
+    f: &Box<dyn ddlog_rt::Closure<*const A, B>>,
+) -> Option<B> {
+    match (*opt) {
+        Option::None {} => (Option::None {}),
+        Option::Some { x: ref x } => (Option::Some { x: f.call(x) }),
     }
 }
-pub fn map_ddlog_std_Result__V1_E___Closureimm_V1_ret_V2_ddlog_std_Result__V2_E<V1: ::ddlog_rt::Val,E: ::ddlog_rt::Val,V2: ::ddlog_rt::Val>(res: & Result<V1, E>, f: & Box<dyn ddlog_rt::Closure<*const V1, V2>>) -> Result<V2, E>
-{   match (*res) {
-        Result::Err{err: ref e} => (Result::Err{err: (*e).clone()}),
-        Result::Ok{res: ref x} => (Result::Ok{res: f.call(x)})
+pub fn map_ddlog_std_Result__V1_E___Closureimm_V1_ret_V2_ddlog_std_Result__V2_E<
+    V1: ::ddlog_rt::Val,
+    E: ::ddlog_rt::Val,
+    V2: ::ddlog_rt::Val,
+>(
+    res: &Result<V1, E>,
+    f: &Box<dyn ddlog_rt::Closure<*const V1, V2>>,
+) -> Result<V2, E> {
+    match (*res) {
+        Result::Err { err: ref e } => (Result::Err { err: (*e).clone() }),
+        Result::Ok { res: ref x } => (Result::Ok { res: f.call(x) }),
     }
 }
-pub fn map_err<V: ::ddlog_rt::Val,E1: ::ddlog_rt::Val,E2: ::ddlog_rt::Val>(res: & Result<V, E1>, f: & Box<dyn ddlog_rt::Closure<*const E1, E2>>) -> Result<V, E2>
-{   match (*res) {
-        Result::Err{err: ref e} => (Result::Err{err: f.call(e)}),
-        Result::Ok{res: ref x} => (Result::Ok{res: (*x).clone()})
+pub fn map_err<V: ::ddlog_rt::Val, E1: ::ddlog_rt::Val, E2: ::ddlog_rt::Val>(
+    res: &Result<V, E1>,
+    f: &Box<dyn ddlog_rt::Closure<*const E1, E2>>,
+) -> Result<V, E2> {
+    match (*res) {
+        Result::Err { err: ref e } => (Result::Err { err: f.call(e) }),
+        Result::Ok { res: ref x } => (Result::Ok { res: (*x).clone() }),
     }
 }
-pub fn max_A_A_A<A: ::ddlog_rt::Val>(x: & A, y: & A) -> A
-{   if ((&*x) > (&*y)) {
+pub fn max_A_A_A<A: ::ddlog_rt::Val>(x: &A, y: &A) -> A {
+    if ((&*x) > (&*y)) {
         (*x).clone()
     } else {
         (*y).clone()
     }
 }
-pub fn max_ddlog_std_Group__K_V_V<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K, V>) -> V
-{   group_max(g)
+pub fn max_ddlog_std_Group__K_V_V<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(g: &Group<K, V>) -> V {
+    group_max(g)
 }
-pub fn min_A_A_A<A: ::ddlog_rt::Val>(x: & A, y: & A) -> A
-{   if ((&*x) < (&*y)) {
+pub fn min_A_A_A<A: ::ddlog_rt::Val>(x: &A, y: &A) -> A {
+    if ((&*x) < (&*y)) {
         (*x).clone()
     } else {
         (*y).clone()
     }
 }
-pub fn min_ddlog_std_Group__K_V_V<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K, V>) -> V
-{   group_min(g)
+pub fn min_ddlog_std_Group__K_V_V<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(g: &Group<K, V>) -> V {
+    group_min(g)
 }
-pub fn nth_ddlog_std_Group__K_V___Bitval64_ddlog_std_Option__V<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K, V>, n: & u64) -> Option<V>
-{   group_nth(g, n)
+pub fn nth_ddlog_std_Group__K_V___Bitval64_ddlog_std_Option__V<
+    K: ::ddlog_rt::Val,
+    V: ::ddlog_rt::Val,
+>(
+    g: &Group<K, V>,
+    n: &u64,
+) -> Option<V> {
+    group_nth(g, n)
 }
-pub fn nth_ddlog_std_Vec__X___Bitval64_ddlog_std_Option__X<X: ::ddlog_rt::Val>(v: & Vec<X>, n: & u64) -> Option<X>
-{   vec_nth(v, n)
+pub fn nth_ddlog_std_Vec__X___Bitval64_ddlog_std_Option__X<X: ::ddlog_rt::Val>(
+    v: &Vec<X>,
+    n: &u64,
+) -> Option<X> {
+    vec_nth(v, n)
 }
-pub fn nth_ddlog_std_Set__X___Bitval64_ddlog_std_Option__X<X: ::ddlog_rt::Val>(s: & Set<X>, n: & u64) -> Option<X>
-{   set_nth(s, n)
+pub fn nth_ddlog_std_Set__X___Bitval64_ddlog_std_Option__X<X: ::ddlog_rt::Val>(
+    s: &Set<X>,
+    n: &u64,
+) -> Option<X> {
+    set_nth(s, n)
 }
-pub fn ok_or<T: ::ddlog_rt::Val,E: ::ddlog_rt::Val>(o: & Option<T>, e: & E) -> Result<T, E>
-{   match (*o) {
-        Option::Some{x: ref x} => (Result::Ok{res: (*x).clone()}),
-        Option::None{} => (Result::Err{err: (*e).clone()})
+pub fn ok_or<T: ::ddlog_rt::Val, E: ::ddlog_rt::Val>(o: &Option<T>, e: &E) -> Result<T, E> {
+    match (*o) {
+        Option::Some { x: ref x } => (Result::Ok { res: (*x).clone() }),
+        Option::None {} => (Result::Err { err: (*e).clone() }),
     }
 }
-pub fn ok_or_else<T: ::ddlog_rt::Val,E: ::ddlog_rt::Val>(o: & Option<T>, e: & Box<dyn ddlog_rt::Closure<(), E>>) -> Result<T, E>
-{   match (*o) {
-        Option::Some{x: ref x} => (Result::Ok{res: (*x).clone()}),
-        Option::None{} => (Result::Err{err: e.call(())})
+pub fn ok_or_else<T: ::ddlog_rt::Val, E: ::ddlog_rt::Val>(
+    o: &Option<T>,
+    e: &Box<dyn ddlog_rt::Closure<(), E>>,
+) -> Result<T, E> {
+    match (*o) {
+        Option::Some { x: ref x } => (Result::Ok { res: (*x).clone() }),
+        Option::None {} => (Result::Err { err: e.call(()) }),
     }
 }
-pub fn pop<X: ::ddlog_rt::Val>(v: &mut Vec<X>) -> Option<X>
-{   vec_pop(v)
+pub fn pop<X: ::ddlog_rt::Val>(v: &mut Vec<X>) -> Option<X> {
+    vec_pop(v)
 }
-pub fn pow32___Bitval8___Bitval32___Bitval8(base: & u8, exp: & u32) -> u8
-{   u8_pow32(base, exp)
+pub fn pow32___Bitval8___Bitval32___Bitval8(base: &u8, exp: &u32) -> u8 {
+    u8_pow32(base, exp)
 }
-pub fn pow32___Bitval16___Bitval32___Bitval16(base: & u16, exp: & u32) -> u16
-{   u16_pow32(base, exp)
+pub fn pow32___Bitval16___Bitval32___Bitval16(base: &u16, exp: &u32) -> u16 {
+    u16_pow32(base, exp)
 }
-pub fn pow32___Bitval32___Bitval32___Bitval32(base: & u32, exp: & u32) -> u32
-{   u32_pow32(base, exp)
+pub fn pow32___Bitval32___Bitval32___Bitval32(base: &u32, exp: &u32) -> u32 {
+    u32_pow32(base, exp)
 }
-pub fn pow32___Bitval64___Bitval32___Bitval64(base: & u64, exp: & u32) -> u64
-{   u64_pow32(base, exp)
+pub fn pow32___Bitval64___Bitval32___Bitval64(base: &u64, exp: &u32) -> u64 {
+    u64_pow32(base, exp)
 }
-pub fn pow32___Bitval128___Bitval32___Bitval128(base: & u128, exp: & u32) -> u128
-{   u128_pow32(base, exp)
+pub fn pow32___Bitval128___Bitval32___Bitval128(base: &u128, exp: &u32) -> u128 {
+    u128_pow32(base, exp)
 }
-pub fn pow32___Signedval8___Bitval32___Signedval8(base: & s8, exp: & u32) -> s8
-{   s8_pow32(base, exp)
+pub fn pow32___Signedval8___Bitval32___Signedval8(base: &s8, exp: &u32) -> s8 {
+    s8_pow32(base, exp)
 }
-pub fn pow32___Signedval16___Bitval32___Signedval16(base: & s16, exp: & u32) -> s16
-{   s16_pow32(base, exp)
+pub fn pow32___Signedval16___Bitval32___Signedval16(base: &s16, exp: &u32) -> s16 {
+    s16_pow32(base, exp)
 }
-pub fn pow32___Signedval32___Bitval32___Signedval32(base: & s32, exp: & u32) -> s32
-{   s32_pow32(base, exp)
+pub fn pow32___Signedval32___Bitval32___Signedval32(base: &s32, exp: &u32) -> s32 {
+    s32_pow32(base, exp)
 }
-pub fn pow32___Signedval64___Bitval32___Signedval64(base: & s64, exp: & u32) -> s64
-{   s64_pow32(base, exp)
+pub fn pow32___Signedval64___Bitval32___Signedval64(base: &s64, exp: &u32) -> s64 {
+    s64_pow32(base, exp)
 }
-pub fn pow32___Signedval128___Bitval32___Signedval128(base: & s128, exp: & u32) -> s128
-{   s128_pow32(base, exp)
+pub fn pow32___Signedval128___Bitval32___Signedval128(base: &s128, exp: &u32) -> s128 {
+    s128_pow32(base, exp)
 }
-pub fn pow32___Intval___Bitval32___Intval(base: & ::ddlog_bigint::Int, exp: & u32) -> ::ddlog_bigint::Int
-{   bigint_pow32(base, exp)
+pub fn pow32___Intval___Bitval32___Intval(
+    base: &::ddlog_bigint::Int,
+    exp: &u32,
+) -> ::ddlog_bigint::Int {
+    bigint_pow32(base, exp)
 }
-pub fn push<X: ::ddlog_rt::Val>(v: &mut Vec<X>, x: & X) -> ()
-{   vec_push(v, x)
+pub fn push<X: ::ddlog_rt::Val>(v: &mut Vec<X>, x: &X) -> () {
+    vec_push(v, x)
 }
-pub fn push_imm<X: ::ddlog_rt::Val>(v: & Vec<X>, x: & X) -> Vec<X>
-{   vec_push_imm(v, x)
+pub fn push_imm<X: ::ddlog_rt::Val>(v: &Vec<X>, x: &X) -> Vec<X> {
+    vec_push_imm(v, x)
 }
-pub fn remove<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(m: &mut Map<K, V>, k: & K) -> Option<V>
-{   map_remove(m, k)
+pub fn remove<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(m: &mut Map<K, V>, k: &K) -> Option<V> {
+    map_remove(m, k)
 }
-pub fn replace(s: & String, from: & String, to: & String) -> String
-{   string_replace(s, from, to)
+pub fn replace(s: &String, from: &String, to: &String) -> String {
+    string_replace(s, from, to)
 }
-pub fn resize<X: ::ddlog_rt::Val>(v: &mut Vec<X>, new_len: & u64, value: & X) -> ()
-{   vec_resize(v, new_len, value)
+pub fn resize<X: ::ddlog_rt::Val>(v: &mut Vec<X>, new_len: &u64, value: &X) -> () {
+    vec_resize(v, new_len, value)
 }
-pub fn reverse(s: & String) -> String
-{   string_reverse(s)
+pub fn reverse(s: &String) -> String {
+    string_reverse(s)
 }
-pub fn setref_unions<K: ::ddlog_rt::Val,A: ::ddlog_rt::Val>(g: & Group<K, Ref<Set<A>>>) -> Ref<Set<A>>
-{   group_setref_unions(g)
+pub fn setref_unions<K: ::ddlog_rt::Val, A: ::ddlog_rt::Val>(
+    g: &Group<K, Ref<Set<A>>>,
+) -> Ref<Set<A>> {
+    group_setref_unions(g)
 }
-pub fn size_ddlog_std_Group__K_V___Bitval64<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K, V>) -> u64
-{   group_count(g)
+pub fn size_ddlog_std_Group__K_V___Bitval64<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(
+    g: &Group<K, V>,
+) -> u64 {
+    group_count(g)
 }
-pub fn size_ddlog_std_Map__K_V___Bitval64<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(m: & Map<K, V>) -> u64
-{   map_size(m)
+pub fn size_ddlog_std_Map__K_V___Bitval64<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(
+    m: &Map<K, V>,
+) -> u64 {
+    map_size(m)
 }
-pub fn size_ddlog_std_Set__X___Bitval64<X: ::ddlog_rt::Val>(s: & Set<X>) -> u64
-{   set_size(s)
+pub fn size_ddlog_std_Set__X___Bitval64<X: ::ddlog_rt::Val>(s: &Set<X>) -> u64 {
+    set_size(s)
 }
-pub fn sort<X: ::ddlog_rt::Val>(v: &mut Vec<X>) -> ()
-{   vec_sort(v)
+pub fn sort<X: ::ddlog_rt::Val>(v: &mut Vec<X>) -> () {
+    vec_sort(v)
 }
-pub fn sort_imm<X: ::ddlog_rt::Val>(v: & Vec<X>) -> Vec<X>
-{   vec_sort_imm(v)
+pub fn sort_imm<X: ::ddlog_rt::Val>(v: &Vec<X>) -> Vec<X> {
+    vec_sort_imm(v)
 }
-pub fn split(s: & String, sep: & String) -> Vec<String>
-{   string_split(s, sep)
+pub fn split(s: &String, sep: &String) -> Vec<String> {
+    string_split(s, sep)
 }
-pub fn starts_with(s: & String, prefix: & String) -> bool
-{   string_starts_with(s, prefix)
+pub fn starts_with(s: &String, prefix: &String) -> bool {
+    string_starts_with(s, prefix)
 }
-pub fn substr(s: & String, start: & u64, end: & u64) -> String
-{   string_substr(s, start, end)
+pub fn substr(s: &String, start: &u64, end: &u64) -> String {
+    string_substr(s, start, end)
 }
-pub fn swap_nth<X: ::ddlog_rt::Val>(v: &mut Vec<X>, idx: & u64, value: &mut X) -> bool
-{   vec_swap_nth(v, idx, value)
+pub fn swap_nth<X: ::ddlog_rt::Val>(v: &mut Vec<X>, idx: &u64, value: &mut X) -> bool {
+    vec_swap_nth(v, idx, value)
 }
-pub fn to_bytes(s: & String) -> Vec<u8>
-{   string_to_bytes(s)
+pub fn to_bytes(s: &String) -> Vec<u8> {
+    string_to_bytes(s)
 }
-pub fn to_lowercase(s: & String) -> String
-{   string_to_lowercase(s)
+pub fn to_lowercase(s: &String) -> String {
+    string_to_lowercase(s)
 }
-pub fn to_map_ddlog_std_Group__K1___Tuple2__K2_V_ddlog_std_Map__K2_V<K1: ::ddlog_rt::Val,K2: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K1, tuple2<K2, V>>) -> Map<K2, V>
-{   group_to_map(g)
+pub fn to_map_ddlog_std_Group__K1___Tuple2__K2_V_ddlog_std_Map__K2_V<
+    K1: ::ddlog_rt::Val,
+    K2: ::ddlog_rt::Val,
+    V: ::ddlog_rt::Val,
+>(
+    g: &Group<K1, tuple2<K2, V>>,
+) -> Map<K2, V> {
+    group_to_map(g)
 }
-pub fn to_map_ddlog_std_Vec____Tuple2__K_V_ddlog_std_Map__K_V<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(v: & Vec<tuple2<K, V>>) -> Map<K, V>
-{   let ref mut res: Map<K, V> = map_empty();
+pub fn to_map_ddlog_std_Vec____Tuple2__K_V_ddlog_std_Map__K_V<
+    K: ::ddlog_rt::Val,
+    V: ::ddlog_rt::Val,
+>(
+    v: &Vec<tuple2<K, V>>,
+) -> Map<K, V> {
+    let ref mut res: Map<K, V> = map_empty();
     for kv in v.iter() {
         {
             insert_ddlog_std_Map__K_V_K_V___Tuple0__::<K, V>(res, (&(kv.0)), (&(kv.1)));
             ()
         }
-    };
+    }
     (*res).clone()
 }
-pub fn to_set_ddlog_std_Option__X_ddlog_std_Set__X<X: ::ddlog_rt::Val>(o: & Option<X>) -> Set<X>
-{   match (*o) {
-        Option::Some{x: ref x} => set_singleton(x),
-        Option::None{} => set_empty()
+pub fn to_set_ddlog_std_Option__X_ddlog_std_Set__X<X: ::ddlog_rt::Val>(o: &Option<X>) -> Set<X> {
+    match (*o) {
+        Option::Some { x: ref x } => set_singleton(x),
+        Option::None {} => set_empty(),
     }
 }
-pub fn to_set_ddlog_std_Group__K_V_ddlog_std_Set__V<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K, V>) -> Set<V>
-{   group_to_set(g)
+pub fn to_set_ddlog_std_Group__K_V_ddlog_std_Set__V<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(
+    g: &Group<K, V>,
+) -> Set<V> {
+    group_to_set(g)
 }
-pub fn to_set_ddlog_std_Vec__A_ddlog_std_Set__A<A: ::ddlog_rt::Val>(s: & Vec<A>) -> Set<A>
-{   vec_to_set(s)
+pub fn to_set_ddlog_std_Vec__A_ddlog_std_Set__A<A: ::ddlog_rt::Val>(s: &Vec<A>) -> Set<A> {
+    vec_to_set(s)
 }
-pub fn to_setmap<K1: ::ddlog_rt::Val,K2: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K1, tuple2<K2, V>>) -> Map<K2, Set<V>>
-{   group_to_setmap(g)
+pub fn to_setmap<K1: ::ddlog_rt::Val, K2: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(
+    g: &Group<K1, tuple2<K2, V>>,
+) -> Map<K2, Set<V>> {
+    group_to_setmap(g)
 }
-pub fn to_string_ddlog_std_DDNestedTS___Stringval(ts: & DDNestedTS) -> String
-{   ::ddlog_rt::string_append_str(::ddlog_rt::string_append(::ddlog_rt::string_append_str(::ddlog_rt::string_append(String::from(r###"("###), (&__builtin_2string((&ts.epoch)))), r###","###), (&__builtin_2string((&ts.iter)))), r###")"###)
+pub fn to_string_ddlog_std_DDNestedTS___Stringval(ts: &DDNestedTS) -> String {
+    ::ddlog_rt::string_append_str(
+        ::ddlog_rt::string_append(
+            ::ddlog_rt::string_append_str(
+                ::ddlog_rt::string_append(
+                    String::from(r###"("###),
+                    (&__builtin_2string((&ts.epoch))),
+                ),
+                r###","###,
+            ),
+            (&__builtin_2string((&ts.iter))),
+        ),
+        r###")"###,
+    )
 }
-pub fn to_string___Boolval___Stringval(x: & bool) -> String
-{   __builtin_2string(x)
+pub fn to_string___Boolval___Stringval(x: &bool) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Intval___Stringval(x: & ::ddlog_bigint::Int) -> String
-{   __builtin_2string(x)
+pub fn to_string___Intval___Stringval(x: &::ddlog_bigint::Int) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Floatval___Stringval(x: & ::ordered_float::OrderedFloat<f32>) -> String
-{   __builtin_2string(x)
+pub fn to_string___Floatval___Stringval(x: &::ordered_float::OrderedFloat<f32>) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Doubleval___Stringval(x: & ::ordered_float::OrderedFloat<f64>) -> String
-{   __builtin_2string(x)
+pub fn to_string___Doubleval___Stringval(x: &::ordered_float::OrderedFloat<f64>) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Signedval8___Stringval(x: & s8) -> String
-{   __builtin_2string(x)
+pub fn to_string___Signedval8___Stringval(x: &s8) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Signedval16___Stringval(x: & s16) -> String
-{   __builtin_2string(x)
+pub fn to_string___Signedval16___Stringval(x: &s16) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Signedval32___Stringval(x: & s32) -> String
-{   __builtin_2string(x)
+pub fn to_string___Signedval32___Stringval(x: &s32) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Signedval64___Stringval(x: & s64) -> String
-{   __builtin_2string(x)
+pub fn to_string___Signedval64___Stringval(x: &s64) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Signedval128___Stringval(x: & s128) -> String
-{   __builtin_2string(x)
+pub fn to_string___Signedval128___Stringval(x: &s128) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Bitval8___Stringval(x: & u8) -> String
-{   __builtin_2string(x)
+pub fn to_string___Bitval8___Stringval(x: &u8) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Bitval16___Stringval(x: & u16) -> String
-{   __builtin_2string(x)
+pub fn to_string___Bitval16___Stringval(x: &u16) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Bitval32___Stringval(x: & u32) -> String
-{   __builtin_2string(x)
+pub fn to_string___Bitval32___Stringval(x: &u32) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Bitval64___Stringval(x: & u64) -> String
-{   __builtin_2string(x)
+pub fn to_string___Bitval64___Stringval(x: &u64) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Bitval128___Stringval(x: & u128) -> String
-{   __builtin_2string(x)
+pub fn to_string___Bitval128___Stringval(x: &u128) -> String {
+    __builtin_2string(x)
 }
-pub fn to_string___Stringval___Stringval(x: & String) -> String
-{   __builtin_2string(x)
+pub fn to_string___Stringval___Stringval(x: &String) -> String {
+    __builtin_2string(x)
 }
-pub fn to_uppercase(s: & String) -> String
-{   string_to_uppercase(s)
+pub fn to_uppercase(s: &String) -> String {
+    string_to_uppercase(s)
 }
-pub fn to_vec_ddlog_std_Option__X_ddlog_std_Vec__X<X: ::ddlog_rt::Val>(o: & Option<X>) -> Vec<X>
-{   match (*o) {
-        Option::Some{x: ref x} => vec_singleton(x),
-        Option::None{} => vec_empty()
+pub fn to_vec_ddlog_std_Option__X_ddlog_std_Vec__X<X: ::ddlog_rt::Val>(o: &Option<X>) -> Vec<X> {
+    match (*o) {
+        Option::Some { x: ref x } => vec_singleton(x),
+        Option::None {} => vec_empty(),
     }
 }
-pub fn to_vec_ddlog_std_Group__K_V_ddlog_std_Vec__V<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(g: & Group<K, V>) -> Vec<V>
-{   group_to_vec(g)
+pub fn to_vec_ddlog_std_Group__K_V_ddlog_std_Vec__V<K: ::ddlog_rt::Val, V: ::ddlog_rt::Val>(
+    g: &Group<K, V>,
+) -> Vec<V> {
+    group_to_vec(g)
 }
-pub fn to_vec_ddlog_std_Set__A_ddlog_std_Vec__A<A: ::ddlog_rt::Val>(s: & Set<A>) -> Vec<A>
-{   set_to_vec(s)
+pub fn to_vec_ddlog_std_Set__A_ddlog_std_Vec__A<A: ::ddlog_rt::Val>(s: &Set<A>) -> Vec<A> {
+    set_to_vec(s)
 }
-pub fn trim(s: & String) -> String
-{   string_trim(s)
+pub fn trim(s: &String) -> String {
+    string_trim(s)
 }
-pub fn truncate<X: ::ddlog_rt::Val>(v: &mut Vec<X>, len: & u64) -> ()
-{   vec_truncate(v, len)
+pub fn truncate<X: ::ddlog_rt::Val>(v: &mut Vec<X>, len: &u64) -> () {
+    vec_truncate(v, len)
 }
-pub fn union_ddlog_std_Group__K_ddlog_std_Set__A_ddlog_std_Set__A<K: ::ddlog_rt::Val,A: ::ddlog_rt::Val>(g: & Group<K, Set<A>>) -> Set<A>
-{   group_set_unions(g)
+pub fn union_ddlog_std_Group__K_ddlog_std_Set__A_ddlog_std_Set__A<
+    K: ::ddlog_rt::Val,
+    A: ::ddlog_rt::Val,
+>(
+    g: &Group<K, Set<A>>,
+) -> Set<A> {
+    group_set_unions(g)
 }
-pub fn union_ddlog_std_Group__K_ddlog_std_Ref__ddlog_std_Set__A_ddlog_std_Ref__ddlog_std_Set__A<K: ::ddlog_rt::Val,A: ::ddlog_rt::Val>(g: & Group<K, Ref<Set<A>>>) -> Ref<Set<A>>
-{   group_setref_unions(g)
+pub fn union_ddlog_std_Group__K_ddlog_std_Ref__ddlog_std_Set__A_ddlog_std_Ref__ddlog_std_Set__A<
+    K: ::ddlog_rt::Val,
+    A: ::ddlog_rt::Val,
+>(
+    g: &Group<K, Ref<Set<A>>>,
+) -> Ref<Set<A>> {
+    group_setref_unions(g)
 }
-pub fn union_ddlog_std_Map__K_V_ddlog_std_Map__K_V_ddlog_std_Map__K_V<K: ::ddlog_rt::Val,V: ::ddlog_rt::Val>(m1: & Map<K, V>, m2: & Map<K, V>) -> Map<K, V>
-{   map_union(m1, m2)
+pub fn union_ddlog_std_Map__K_V_ddlog_std_Map__K_V_ddlog_std_Map__K_V<
+    K: ::ddlog_rt::Val,
+    V: ::ddlog_rt::Val,
+>(
+    m1: &Map<K, V>,
+    m2: &Map<K, V>,
+) -> Map<K, V> {
+    map_union(m1, m2)
 }
-pub fn union_ddlog_std_Set__X_ddlog_std_Set__X_ddlog_std_Set__X<X: ::ddlog_rt::Val>(s1: & Set<X>, s2: & Set<X>) -> Set<X>
-{   set_union(s1, s2)
+pub fn union_ddlog_std_Set__X_ddlog_std_Set__X_ddlog_std_Set__X<X: ::ddlog_rt::Val>(
+    s1: &Set<X>,
+    s2: &Set<X>,
+) -> Set<X> {
+    set_union(s1, s2)
 }
-pub fn union_ddlog_std_Vec__ddlog_std_Set__X_ddlog_std_Set__X<X: ::ddlog_rt::Val>(sets: & Vec<Set<X>>) -> Set<X>
-{   set_unions(sets)
+pub fn union_ddlog_std_Vec__ddlog_std_Set__X_ddlog_std_Set__X<X: ::ddlog_rt::Val>(
+    sets: &Vec<Set<X>>,
+) -> Set<X> {
+    set_unions(sets)
 }
-pub fn unions<X: ::ddlog_rt::Val>(sets: & Vec<Set<X>>) -> Set<X>
-{   set_unions(sets)
+pub fn unions<X: ::ddlog_rt::Val>(sets: &Vec<Set<X>>) -> Set<X> {
+    set_unions(sets)
 }
-pub fn unwrap_or_ddlog_std_Option__A_A_A<A: ::ddlog_rt::Val>(x: & Option<A>, def: & A) -> A
-{   match (*x) {
-        Option::Some{x: ref v} => (*v).clone(),
-        Option::None{} => (*def).clone()
+pub fn unwrap_or_ddlog_std_Option__A_A_A<A: ::ddlog_rt::Val>(x: &Option<A>, def: &A) -> A {
+    match (*x) {
+        Option::Some { x: ref v } => (*v).clone(),
+        Option::None {} => (*def).clone(),
     }
 }
-pub fn unwrap_or_ddlog_std_Result__V_E_V_V<V: ::ddlog_rt::Val,E: ::ddlog_rt::Val>(res: & Result<V, E>, def: & V) -> V
-{   match (*res) {
-        Result::Ok{res: ref v} => (*v).clone(),
-        Result::Err{err: _} => (*def).clone()
+pub fn unwrap_or_ddlog_std_Result__V_E_V_V<V: ::ddlog_rt::Val, E: ::ddlog_rt::Val>(
+    res: &Result<V, E>,
+    def: &V,
+) -> V {
+    match (*res) {
+        Result::Ok { res: ref v } => (*v).clone(),
+        Result::Err { err: _ } => (*def).clone(),
     }
 }
-pub fn unwrap_or_default_ddlog_std_Option__A_A<A: ::ddlog_rt::Val>(opt: & Option<A>) -> A
-{   option_unwrap_or_default(opt)
+pub fn unwrap_or_default_ddlog_std_Option__A_A<A: ::ddlog_rt::Val>(opt: &Option<A>) -> A {
+    option_unwrap_or_default(opt)
 }
-pub fn unwrap_or_default_ddlog_std_Result__V_E_V<V: ::ddlog_rt::Val,E: ::ddlog_rt::Val>(res: & Result<V, E>) -> V
-{   result_unwrap_or_default(res)
+pub fn unwrap_or_default_ddlog_std_Result__V_E_V<V: ::ddlog_rt::Val, E: ::ddlog_rt::Val>(
+    res: &Result<V, E>,
+) -> V {
+    result_unwrap_or_default(res)
 }
-pub fn unzip<X: ::ddlog_rt::Val,Y: ::ddlog_rt::Val>(v: & Vec<tuple2<X, Y>>) -> tuple2<Vec<X>, Vec<Y>>
-{   let ref mut v1: Vec<X> = vec_with_capacity((&len_ddlog_std_Vec__X___Bitval64::<tuple2<X, Y>>(v)));
-    let ref mut v2: Vec<Y> = vec_with_capacity((&len_ddlog_std_Vec__X___Bitval64::<tuple2<X, Y>>(v)));
+pub fn unzip<X: ::ddlog_rt::Val, Y: ::ddlog_rt::Val>(
+    v: &Vec<tuple2<X, Y>>,
+) -> tuple2<Vec<X>, Vec<Y>> {
+    let ref mut v1: Vec<X> =
+        vec_with_capacity((&len_ddlog_std_Vec__X___Bitval64::<tuple2<X, Y>>(v)));
+    let ref mut v2: Vec<Y> =
+        vec_with_capacity((&len_ddlog_std_Vec__X___Bitval64::<tuple2<X, Y>>(v)));
     for val in v.iter() {
         {
             push::<X>(v1, (&(val.0)));
             push::<Y>(v2, (&(val.1)));
             ()
         }
-    };
+    }
     tuple2((*v1).clone(), (*v2).clone())
 }
-pub fn update_nth<X: ::ddlog_rt::Val>(v: &mut Vec<X>, idx: & u64, value: & X) -> bool
-{   vec_update_nth(v, idx, value)
+pub fn update_nth<X: ::ddlog_rt::Val>(v: &mut Vec<X>, idx: &u64, value: &X) -> bool {
+    vec_update_nth(v, idx, value)
 }
-pub fn zip<X: ::ddlog_rt::Val,Y: ::ddlog_rt::Val>(v1: & Vec<X>, v2: & Vec<Y>) -> Vec<tuple2<X, Y>>
-{   vec_zip(v1, v2)
+pub fn zip<X: ::ddlog_rt::Val, Y: ::ddlog_rt::Val>(v1: &Vec<X>, v2: &Vec<Y>) -> Vec<tuple2<X, Y>> {
+    vec_zip(v1, v2)
 }

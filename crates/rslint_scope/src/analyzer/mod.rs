@@ -47,6 +47,7 @@ impl<'ddlog> Visit<'ddlog, Pattern> for AnalyzerInner {
             Pattern::ArrayPattern(array) => DatalogPattern::ArrayPattern {
                 elems: self.visit(scope, array.elements()).into(),
             },
+            Pattern::ExprPattern(expr) => todo!(),
         })
     }
 }
