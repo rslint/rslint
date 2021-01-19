@@ -20,8 +20,8 @@ impl EcmaRegexValidator {
         }
         let parser = crate::Parser::new(&pat, 0, 0, self.ecma_version, u_flag).unwrap();
         parser.parse().map(|_| ()).map_err(|e| {
-            let offset = e.primary.unwrap().span.range.start;
-            format!("{} at position {}", e.title, offset)
+            let offset = e.span.abs_end();
+            format!("{} at position {}", e.message, offset)
         })
     }
 }

@@ -5,7 +5,7 @@ use ir::CharacterClass;
 use crate::{
     ir::{self, AssertionKind, Node},
     unicode::*,
-    Diagnostic, Result, Span,
+    Error, Result, Span,
 };
 
 fn is_syntax_character(cp: char) -> bool {
@@ -162,10 +162,10 @@ impl<'pat> Parser<'pat> {
         let flags = match validate_flags(&pattern[right_slash + 1..], ecma_version) {
             Ok(flags) => flags,
             Err(err) => {
-                return Err(
-                    Diagnostic::new(file_id, rslint_errors::Severity::Error, err)
-                        .primary(right_slash + offset..pattern.len() + offset, ""),
-                );
+                return Err(Error::new(
+                    err,
+                    Span::new(offset, right_slash, pattern.len()),
+                ));
             }
         };
 
@@ -185,8 +185,8 @@ impl<'pat> Parser<'pat> {
         })
     }
 
-    fn error(&mut self, title: impl Into<String>) -> Diagnostic {
-        Diagnostic::new(self.file_id, rslint_errors::Severity::Error, title)
+    fn error(&mut self, title: impl Into<String>) -> Error {
+        Error::new(title.into(), Span::new(0, 0, 0))
     }
 
     fn next(&mut self) -> Option<char> {

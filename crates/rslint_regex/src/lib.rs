@@ -15,12 +15,11 @@ mod unicode;
 
 pub use parser::*;
 
-use rslint_errors::Diagnostic;
 use std::ops::Range;
 
-pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Span {
     /// The offset in the whole file to calculate the absolute position.
     pub offset: usize,
@@ -51,8 +50,30 @@ impl Span {
     }
 }
 
-impl rslint_errors::Span for Span {
-    fn as_range(&self) -> std::ops::Range<usize> {
-        self.abs_start()..self.abs_end()
+impl From<Range<usize>> for Span {
+    fn from(range: Range<usize>) -> Self {
+        Span::new(0, range.start, range.end)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Error {
+    pub span: Span,
+    pub message: String,
+}
+
+impl Error {
+    pub fn new(message: impl ToString, span: Span) -> Self {
+        Self {
+            span,
+            message: message.to_string(),
+        }
+    }
+
+    pub(crate) fn primary(self, span: impl Into<Span>, _msg: &str) -> Self {
+        Self {
+            span: span.into(),
+            message: self.message,
+        }
     }
 }

@@ -3,7 +3,6 @@
 
 use crate::Span;
 use bitflags::bitflags;
-use rslint_errors::Diagnostic;
 
 bitflags! {
     pub struct Flags: u8 {
@@ -20,67 +19,6 @@ bitflags! {
         const U = 0b00010000;
         /// "Sticky" mode
         const Y = 0b00100000;
-    }
-}
-
-impl Flags {
-    /// Tries to parse a set of regex flags from a given string.
-    ///
-    /// The `offset` and `file_id` arguments are used in the resulting `Diagnostic`
-    /// if an error occurrs.
-    pub fn parse(raw_flags: &str, offset: usize, file_id: usize) -> Result<Self, Diagnostic> {
-        // TODO: Probably support mulitple errors?
-        let mut indicies = [0usize; 6];
-        let mut flags = Flags::empty();
-
-        for (idx, c) in raw_flags.chars().enumerate() {
-            let flag = match c {
-                'g' => Flags::G,
-                'm' => Flags::M,
-                'i' => Flags::I,
-                's' => Flags::S,
-                'u' => Flags::U,
-                'y' => Flags::Y,
-                c => {
-                    let idx = idx + offset;
-                    let d =
-                        Diagnostic::error(file_id, "regex", format!("invalid regex flag: `{}`", c))
-                            .primary(idx..idx + 1, "");
-                    return Err(d);
-                }
-            };
-
-            if flags.contains(flag) {
-                let first_idx = indicies[flag.ffs()];
-                let idx = idx + offset;
-                let d =
-                    Diagnostic::error(file_id, "regex", format!("duplicate regex flag: `{}`", c))
-                        .primary(idx..idx + 1, "flag defined here...")
-                        .secondary(
-                            first_idx..first_idx + 1,
-                            "...but it already was defined here",
-                        );
-                return Err(d);
-            }
-            indicies[flag.ffs()] = offset + idx;
-
-            flags |= flag;
-        }
-
-        Ok(flags)
-    }
-
-    /// Find-First-Set implementation
-    fn ffs(&self) -> usize {
-        match *self {
-            Self::G => 0,
-            Self::M => 1,
-            Self::I => 2,
-            Self::S => 3,
-            Self::U => 4,
-            Self::Y => 5,
-            _ => unreachable!(),
-        }
     }
 }
 
