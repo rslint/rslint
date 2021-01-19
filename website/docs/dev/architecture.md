@@ -44,6 +44,8 @@ If you come from a JavaScript background, Rust crates are essentially the same a
 
 - `rslint_text_edit`: This houses simple structs and methods to represent and apply text edits to strings. It is shared between `rslint_core` (for autofix), `rslint_errors` (for suggestions), `rslint_lsp` (for fix commands), and soon `rslint_parser` (for incremental reparsing).
 
+- `rslint_regex`: This crate is simply a RegEx parser for ES2021 and below. It turns raw patterns into a struct/enum based AST to be used for more detailed analyses on the pattern in the linter.
+
 ## Parallelism
 
 RSLint employs a high level of parallelism to achieve high speeds. This includes:
