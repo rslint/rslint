@@ -10,3 +10,4 @@ repository = "https://github.com/RDambrosio016/RSLint"
 [dependencies]
 rslint_errors = { path = "../rslint_errors", version = "0.1.0" }
 bitflags = "1.2.1"
+once_cell = "1.5.2"

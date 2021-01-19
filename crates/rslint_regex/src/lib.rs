@@ -5,14 +5,18 @@
 //! [RegEx syntax]: https://tc39.es/ecma262/#sec-patterns
 
 #![deny(rust_2018_idioms)]
-#![warn(clippy::pedantic)]
 
 mod ir;
+#[allow(clippy::range_plus_one)]
 mod parser;
+#[cfg(test)]
+mod tests;
+mod unicode;
 
 pub use parser::*;
 
 use rslint_errors::Diagnostic;
+use std::ops::Range;
 
 pub type Result<T, E = Diagnostic> = std::result::Result<T, E>;
 
@@ -40,6 +44,10 @@ impl Span {
     /// Calculates the absolute end using `self.offset + self.end`.
     pub fn abs_end(&self) -> usize {
         self.offset + self.end
+    }
+
+    pub fn as_range(&self) -> Range<usize> {
+        self.start..self.end
     }
 }
 

@@ -1749,6 +1749,7 @@ name = "rslint_regex"
 version = "0.1.0"
 dependencies = [
  "bitflags",
+ "once_cell",
  "rslint_errors",
 ]
 
