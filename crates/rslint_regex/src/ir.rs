@@ -64,6 +64,28 @@ pub enum Node {
     NamedBackReference(Span, String),
 }
 
+impl Node {
+    pub fn span(&self) -> Option<Span> {
+        Some(
+            match self {
+                Node::Empty => return None,
+                Node::Disjunction(s, _) => s,
+                Node::Assertion(s, _) => s,
+                Node::Alternative(s, _) => s,
+                Node::Literal(s, _) => s,
+                Node::PerlClass(s, _, _) => s,
+                Node::BackReference(s, _) => s,
+                Node::Dot(s) => s,
+                Node::CharacterClass(s, _) => s,
+                Node::Group(s, _) => s,
+                Node::Quantifier(s, _, _, _) => s,
+                Node::NamedBackReference(s, _) => s,
+            }
+            .to_owned(),
+        )
+    }
+}
+
 /// A grouped pattern which can later be referred to
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Group {
