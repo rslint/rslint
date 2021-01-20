@@ -341,7 +341,7 @@ impl Parser<'_> {
 
     /// Infer the total number of groups in the regex using a mini parser.
     /// Taken from v8:
-    /// https://source.chromium.org/chromium/chromium/src/+/master:v8/src/regexp/regexp-parser.cc;l=728-734;drc=7ccffaf0933ccc647c744bf66971bcf5f33a676a
+    /// <https://source.chromium.org/chromium/chromium/src/+/master:v8/src/regexp/regexp-parser.cc;l=728-734;drc=7ccffaf0933ccc647c744bf66971bcf5f33a676a>
     fn infer_total_group_count(&mut self) {
         let mut n = 0;
         while let Some(c) = self.next() {
