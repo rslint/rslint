@@ -1,4 +1,4 @@
-//! Taken from https://github.com/denoland/deno_lint/blob/master/src/js_regex/unicode.rs
+//! Taken from <https://github.com/denoland/deno_lint/blob/master/src/js_regex/unicode.rs>
 
 use once_cell::sync::Lazy;
 use std::collections::HashSet;

@@ -1,4 +1,4 @@
-//! in part taken from https://github.com/denoland/deno_lint/blob/master/src/js_regex/mod.rs
+//! in part taken from <https://github.com/denoland/deno_lint/blob/master/src/js_regex/mod.rs>
 
 use crate::unicode::EcmaVersion;
 
