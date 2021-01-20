@@ -15,8 +15,9 @@ mod unicode;
 
 pub use parser::*;
 
-use ir::*;
+pub use ir::*;
 use std::ops::Range;
+pub use unicode::EcmaVersion;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
@@ -47,13 +48,20 @@ impl Span {
     }
 
     pub fn as_range(&self) -> Range<usize> {
-        self.start..self.end
+        self.abs_start()..self.abs_end()
     }
 }
 
 impl From<Range<usize>> for Span {
     fn from(range: Range<usize>) -> Self {
         Span::new(0, range.start, range.end)
+    }
+}
+
+#[cfg(feature = "rslint_errors")]
+impl rslint_errors::Span for Span {
+    fn as_range(&self) -> Range<usize> {
+        self.abs_start()..self.abs_end()
     }
 }
 

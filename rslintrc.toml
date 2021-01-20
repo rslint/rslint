@@ -1,2 +1,2 @@
 [rules]
-groups = ["errors"]
+groups = ["errors", "regex"]

@@ -57,5 +57,11 @@ async () => {
 }
 ```
 :::
+::: details More correct examples
+
+```js
+for (let i of await foo) {}
+```
+:::
 
 [Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/errors/no_await_in_loop.rs)

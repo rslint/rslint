@@ -1652,11 +1652,13 @@ dependencies = [
  "criterion",
  "dyn-clone",
  "indoc",
+ "once_cell",
  "rayon",
  "rslint_errors",
  "rslint_lexer",
  "rslint_macros",
  "rslint_parser",
+ "rslint_regex",
  "rslint_text_edit",
  "schemars",
  "serde",
@@ -1750,6 +1752,7 @@ version = "0.1.0"
 dependencies = [
  "bitflags",
  "once_cell",
+ "rslint_errors",
 ]
 
 [[package]]

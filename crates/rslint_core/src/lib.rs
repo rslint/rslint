@@ -244,6 +244,7 @@ pub fn get_group_rules_by_name(group_name: &str) -> Option<Vec<Box<dyn CstRule>>
     Some(match group_name {
         "errors" => errors(),
         "style" => style(),
+        "regex" => regex(),
         _ => return None,
     })
 }

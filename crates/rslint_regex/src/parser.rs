@@ -92,7 +92,7 @@ impl Default for State {
     }
 }
 
-fn validate_flags(flags_str: &str, ecma_version: EcmaVersion) -> Result<ir::Flags, String> {
+pub fn validate_flags(flags_str: &str, ecma_version: EcmaVersion) -> Result<ir::Flags, String> {
     let mut existing_flags = HashSet::<char>::new();
     let mut flags = ir::Flags::empty();
 
@@ -171,7 +171,7 @@ impl<'pat> Parser<'pat> {
 
         Ok(Self {
             pattern: pat,
-            offset: offset + left_slash,
+            offset: offset + left_slash + 1,
             file_id,
             cur: 0,
             state: State {
@@ -183,6 +183,30 @@ impl<'pat> Parser<'pat> {
             strict: strict || flags.contains(ir::Flags::U),
             flags,
         })
+    }
+
+    pub fn new_from_pattern_and_flags(
+        pattern: &'pat str,
+        file_id: usize,
+        offset: usize,
+        ecma_version: EcmaVersion,
+        strict: bool,
+        flags: ir::Flags,
+    ) -> Self {
+        Self {
+            pattern,
+            offset,
+            file_id,
+            cur: 0,
+            state: State {
+                u_flag: flags.contains(ir::Flags::U) && ecma_version >= EcmaVersion::ES2015,
+                n_flag: flags.contains(ir::Flags::U) && ecma_version >= EcmaVersion::ES2018,
+                ..Default::default()
+            },
+            ecma_version,
+            strict: strict || flags.contains(ir::Flags::U),
+            flags,
+        }
     }
 
     fn error(&mut self, title: impl Into<String>) -> Error {

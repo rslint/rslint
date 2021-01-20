@@ -389,6 +389,9 @@
             },
             {
               "pattern": "style"
+            },
+            {
+              "pattern": "regex"
             }
           ]
         },

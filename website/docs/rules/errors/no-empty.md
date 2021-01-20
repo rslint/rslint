@@ -80,6 +80,10 @@ if (foo) { /* */ }
 ```js
 switch (bar) { /* */ }
 ```
+
+```js
+class Foo { constructor() {} }
+```
 :::
 
 [Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/errors/no_empty.rs)

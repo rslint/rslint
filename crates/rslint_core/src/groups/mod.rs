@@ -1,9 +1,11 @@
 //! All of the groups of built in rules in the linter.
 
 pub mod errors;
+pub mod regex;
 pub mod style;
 
 pub use errors::errors;
+pub use regex::regex;
 pub use style::style;
 
 /// Macro for easily making a rule group hashmap.
