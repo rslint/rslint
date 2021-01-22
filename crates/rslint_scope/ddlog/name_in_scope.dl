@@ -4,17 +4,15 @@ import utils
 import group
 import inputs
 import scopes
+import config
 import var_decls
 
-/// The origin of a name
-// TODO: More variants
-typedef NameOrigin =
-    /// The name came from an implicit global variable
-    AutoGlobal
-    /// The name was imported
-    | Imported
-    /// The name was defined in the given scope
-    | UserDefined { scope: ScopeId }
+relation NeedsSymbolResolution(file: FileId)
+NeedsSymbolResolution(file) :- EnableNoTypeofUndef(file, _).
+NeedsSymbolResolution(file) :- EnableNoUndef(file, _).
+NeedsSymbolResolution(file) :- EnableNoUseBeforeDef(file, _).
+NeedsSymbolResolution(file) :- EnableNoUnusedVars(file, _).
+
 
 // TODO: Reduce the size of this since there are so many copies of it
 typedef NameInScope = NameInScope {
@@ -57,7 +55,9 @@ index Index_VariableInScope(scope: ScopeId, variable: Name)
 
 // Introduce all declared variables where they're used
 NameInScope(name, variable_scope, declared) :-
+    NeedsSymbolResolution(file),
     VariableDeclarations(name, scope, declared, _),
+    declared.file() == Some { file },
     var variable_scope = scope.hoisted_scope(),
     NameOccursInScope(variable_scope, name).
 
@@ -69,11 +69,14 @@ NameInScope(name, child, declared) :-
     NameInScope(name, parent, declared).
 
 
+/// The scopes that variable declarations occur in
 relation ScopeOfDeclName(name: Name, scope: ScopeId, declared: AnyId)
 ScopeOfDeclName(name, scope, declared) :-
-    VariableDeclarations(name, Unhoistable { scope }, declared, _).
+    NeedsSymbolResolution(file),
+    VariableDeclarations(name, Unhoistable { scope @ ScopeId { _, file }}, declared, _).
 ScopeOfDeclName(name, scope, declared) :-
-    VariableDeclarations(name, Hoistable { scope, _ }, declared, _).
+    NeedsSymbolResolution(file),
+    VariableDeclarations(name, Hoistable { scope @ ScopeId { _, file }, _ }, declared, _).
 
 
 /// A record of where variable usages actually happen
@@ -81,18 +84,21 @@ relation NameOccursInScope(scope: ScopeId, name: Name)
 
 /// Add all name references
 NameOccursInScope(scope, name) :-
-    NameRef(id, name),
+    NeedsSymbolResolution(file),
+    NameRef(id @ ExprId { _, file }, name),
     Expression(id, _, scope, _),.
 
 /// Add assignment patterns
 NameOccursInScope(scope, name) :-
-    Assign(id, Some { Left { pattern }}, _, _),
+    NeedsSymbolResolution(file),
+    Assign(id @ ExprId { _, file }, Some { Left { pattern }}, _, _),
     Expression(id, _, scope, _),
     var name = FlatMap(pattern.bound_vars().map(|name| name.data)).
 
 /// Add exports
 NameOccursInScope(scope, name) :-
-    FileExport(NamedExport { export_name, export_alias }, scope),
+    NeedsSymbolResolution(file),
+    FileExport(NamedExport { export_name, export_alias }, scope @ ScopeId { _, file }),
     Some { Spanned { var name, _ }} = export_alias.or_else(export_name).
 
 /// Recurse to parent scopes

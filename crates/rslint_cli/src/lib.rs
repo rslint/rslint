@@ -71,7 +71,8 @@ fn run_inner(
 
     let mut formatter = formatter.unwrap_or_else(|| config.formatter());
 
-    let store = config.rules_store();
+    let mut store = config.rules_store();
+    store.load_rules(rslint_core::groups::ddlog());
     verify_formatter(&mut formatter);
 
     if walker.files.is_empty() {
@@ -454,7 +455,7 @@ fn start_ddlog_daemon(number_files: usize) -> DaemonOutput {
 
     let (sender, receiver) = mpsc::channel();
     let (finished_sender, finished_receiver) = mpsc::channel();
-    let analyzer = ScopeAnalyzer::new(3).unwrap();
+    let analyzer = ScopeAnalyzer::new(2).unwrap();
 
     let handle = {
         let analyzer = analyzer.clone();

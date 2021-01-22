@@ -3,10 +3,9 @@ use crate::{
     profile::{get_prof_context, with_prof_context, ProfMsg},
     program::{
         arrange::{ArrangedCollection, Arrangements},
-        timestamp::TSAtomic,
         ArrId, Dep, Msg, ProgNode, Program, Reply, Update, TS,
     },
-    program::{RelId, Weight},
+    program::{RelId, TKeyAgent, TValAgent, Weight},
     variable::Variable,
 };
 use crossbeam_channel::{Receiver, Sender, TryRecvError};
@@ -27,7 +26,7 @@ use std::{
     rc::Rc,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Barrier,
+        Arc,
     },
     thread::{self, Thread},
     time::Duration,
@@ -39,6 +38,8 @@ use timely::{
     progress::frontier::AntichainRef,
     worker::Worker,
 };
+
+use super::{RecursiveRelation, Relation};
 
 type SessionData = (
     FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
@@ -56,13 +57,9 @@ pub struct DDlogWorker<'a> {
     worker: &'a mut Worker<Allocator>,
     /// The program this worker is executing
     program: Arc<Program>,
-    /// The atomically synchronized timestamp for the transaction
-    /// frontier
-    frontier_timestamp: &'a TSAtomic,
+    running: &'a AtomicBool,
     /// Peer workers' thread handles, only used by worker 0.
     peers: FnvHashMap<usize, Thread>,
-    /// The progress barrier used for transactions
-    progress_barrier: Arc<Barrier>,
     /// Information on which metrics are enabled and a
     /// channel for sending profiling data
     profiling: ProfilingData,
@@ -78,9 +75,8 @@ impl<'a> DDlogWorker<'a> {
     pub(super) fn new(
         worker: &'a mut Worker<Allocator>,
         program: Arc<Program>,
-        frontier_timestamp: &'a TSAtomic,
+        running: &'a AtomicBool,
         num_workers: usize,
-        progress_barrier: Arc<Barrier>,
         profiling: ProfilingData,
         request_receivers: Arc<[Receiver<Msg>]>,
         reply_senders: Arc<[Sender<Reply>]>,
@@ -117,9 +113,8 @@ impl<'a> DDlogWorker<'a> {
         Self {
             worker,
             program,
-            frontier_timestamp,
+            running,
             peers,
-            progress_barrier,
             profiling,
             request_receiver: request_receivers[worker_index].clone(),
             reply_sender: reply_senders[worker_index].clone(),
@@ -136,16 +131,6 @@ impl<'a> DDlogWorker<'a> {
         self.worker.index()
     }
 
-    /// Set the current transaction frontier's timestamp
-    fn set_frontier_timestamp(&self, timestamp: TS) {
-        self.frontier_timestamp.store(timestamp, Ordering::Relaxed);
-    }
-
-    /// Get the current transaction frontier's timestamp
-    fn frontier_timestamp(&self) -> TS {
-        self.frontier_timestamp.load(Ordering::Relaxed)
-    }
-
     /// Unpark every other worker thread
     fn unpark_peers(&self) {
         for thread in self.peers.values() {
@@ -155,183 +140,147 @@ impl<'a> DDlogWorker<'a> {
 
     pub fn run(mut self) -> Result<(), String> {
         // Initialize profiling
-        self.init_profiling();
+        // self.init_profiling();
 
         let probe = ProbeHandle::new();
         let (mut all_sessions, mut traces) = self.session_dataflow(probe.clone())?;
 
-        let mut epoch: TS = 0;
-
-        // feed initial data to sessions
-        if self.is_leader() {
-            for (relid, v) in self.program.init_data.iter() {
-                all_sessions
-                    .get_mut(relid)
-                    .ok_or_else(|| format!("no session found for relation ID {}", relid))?
-                    .update(v.clone(), 1);
-            }
-
-            epoch += 1;
-            self.advance(&mut all_sessions, &mut traces, epoch);
-            self.flush(&mut all_sessions, &probe);
-
-            self.reply_sender
-                .send(Reply::FlushAck)
-                .map_err(|e| format!("failed to send ACK: {}", e))?;
-        }
+        self.ingest_initial_data(&mut all_sessions, &mut traces, &probe)?;
 
         // Close session handles for non-input sessions;
         // close all sessions for workers other than worker 0.
         let mut sessions: FnvHashMap<RelId, InputSession<TS, DDValue, Weight>> = all_sessions
             .drain()
-            .filter(|&(relid, _)| self.is_leader() && self.program.get_relation(relid).input)
+            .filter(|&(relid, _)| self.program.get_relation(relid).input)
             .collect();
 
-        // Only worker 0 receives data
-        if self.is_leader() {
-            loop {
-                // Non-blocking receive, so that we can do some garbage collecting
-                // when there is no real work to do.
-                match self.request_receiver.try_recv() {
-                    Ok(Msg::Update(mut updates)) => {
-                        //println!("updates: {:?}", updates);
-                        for update in updates.drain(..) {
-                            match update {
-                                Update::Insert { relid, v } => {
-                                    sessions
-                                        .get_mut(&relid)
-                                        .ok_or_else(|| {
-                                            format!("no session found for relation ID {}", relid)
-                                        })?
-                                        .update(v, 1);
-                                }
-                                Update::DeleteValue { relid, v } => {
-                                    sessions
-                                        .get_mut(&relid)
-                                        .ok_or_else(|| {
-                                            format!("no session found for relation ID {}", relid)
-                                        })?
-                                        .update(v, -1);
-                                }
-                                Update::InsertOrUpdate { .. } => {
-                                    return Err("InsertOrUpdate command received by worker thread"
-                                        .to_string());
-                                }
-                                Update::DeleteKey { .. } => {
-                                    // workers don't know about keys
-                                    return Err(
-                                        "DeleteKey command received by worker thread".to_string()
-                                    );
-                                }
-                                Update::Modify { .. } => {
-                                    return Err(
-                                        "Modify command received by worker thread".to_string()
-                                    );
-                                }
-                            }
-                        }
-                    }
+        'worker_loop: while self.running.load(Ordering::Acquire) {
+            // Non-blocking receive, so that we can do some garbage collecting
+            // when there is no real work to do.
+            match self.request_receiver.try_recv() {
+                Ok(Msg::Update { updates, timestamp }) => {
+                    // Update inputs with the given updates at the given timestamp
+                    self.batch_update(&mut sessions, updates, timestamp)?;
 
-                    Ok(Msg::Flush) => {
-                        //println!("flushing");
-                        epoch += 1;
-                        self.advance(&mut sessions, &mut traces, epoch);
-                        self.flush(&mut sessions, &probe);
+                    // After we've applied a batch of updates we step so we
+                    // push data down a little bit
+                    self.worker.step();
+                }
 
-                        //println!("flushed");
+                // The `Flush` message gives us the timestamp to advance to, so advance there
+                // before flushing & compacting all previous timestamp's traces
+                Ok(Msg::Flush { timestamp }) => {
+                    self.advance(&mut sessions, &mut traces, timestamp);
+                    self.flush(&mut sessions, &probe);
+
+                    // Only the leader sends back a flush acknowledgement even though
+                    // all workers receive the flush signal
+                    if self.is_leader() {
                         self.reply_sender
                             .send(Reply::FlushAck)
                             .map_err(|e| format!("failed to send ACK: {}", e))?;
                     }
+                }
 
-                    Ok(Msg::Query(arrid, key)) => {
-                        self.handle_query(&mut traces, arrid, key)?;
-                    }
+                // Handle queries
+                Ok(Msg::Query(arrid, key)) => self.handle_query(&mut traces, arrid, key)?,
 
-                    Ok(Msg::Stop) => {
-                        self.stop_all_workers();
-                        break;
-                    }
+                // If the channel is empty do nothing
+                Err(TryRecvError::Empty) => {}
 
-                    Err(TryRecvError::Empty) => {
-                        // Command channel empty: use idle time to work on garbage collection.
-                        // This will block when there is no more compaction left to do.
-                        // The sender must unpark worker 0 after sending to the channel.
-                        self.worker.step_or_park(None);
-                    }
-
-                    Err(TryRecvError::Disconnected) => {
-                        eprintln!("sender disconnected");
-                        self.stop_all_workers();
-
-                        break;
-                    }
+                // On either the stop message or a channel disconnection we can shut down
+                // the computation
+                Ok(Msg::Stop) | Err(TryRecvError::Disconnected) => {
+                    // TODO: Log worker #n disconnection
+                    self.stop_all_workers();
+                    break 'worker_loop;
                 }
             }
 
-        // worker_index != 0
-        } else {
-            loop {
-                // Differential does not require any synchronization between workers: as
-                // long as we keep calling `step_or_park`, all workers will eventually
-                // process all inputs.  Barriers in the following code are needed so that
-                // worker 0 can know exactly when all other workers have processed all data
-                // for the `frontier_ts` timestamp, so that it knows when a transaction has
-                // been fully committed and produced all its outputs.
-                self.progress_barrier.wait();
-                let time = self.frontier_timestamp.load(Ordering::SeqCst);
+            // After each command received we step, if there's no timely work to be done
+            // our thread will be parked until it's re-awoken by a command
+            self.worker.step_or_park(None);
+        }
 
-                // TS::max_value() == 0xffffffffffffffff*
-                if time == TS::max_value() {
-                    return Ok(());
+        Ok(())
+    }
+
+    /// Applies updates to the current worker's input sessions
+    fn batch_update(
+        &self,
+        sessions: &mut FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
+        updates: Vec<Update<DDValue>>,
+        timestamp: TS,
+    ) -> Result<(), String> {
+        for update in updates {
+            match update {
+                Update::Insert { relid, v } => {
+                    sessions
+                        .get_mut(&relid)
+                        .ok_or_else(|| format!("no session found for relation ID {}", relid))?
+                        .update_at(v, timestamp, 1);
                 }
 
-                // `sessions` is empty, but we must advance trace frontiers, so we
-                // don't hinder trace compaction.
-                self.advance(&mut sessions, &mut traces, time);
-                while probe.less_than(&time) {
-                    if !self.worker.step_or_park(None) {
-                        // Dataflow terminated.
-                        return Ok(());
-                    }
+                Update::DeleteValue { relid, v } => {
+                    sessions
+                        .get_mut(&relid)
+                        .ok_or_else(|| format!("no session found for relation ID {}", relid))?
+                        .update_at(v, timestamp, -1);
                 }
 
-                self.progress_barrier.wait();
-                // We're all caught up with `frontier_ts` and can now spend some time
-                // garbage collecting.  The `step_or_park` call below will block if there
-                // is no more garbage collecting left to do.  It will wake up when one of
-                // the following conditions occurs: (1) there is more garbage collecting to
-                // do as a result of other threads making progress, (2) new inputs have
-                // been received, (3) worker 0 unparked the thread, (4) main thread sent
-                // us a message and unparked the thread.  We check if the frontier has been
-                // advanced by worker 0 and, if so, go back to the barrier to synchronize
-                // with other workers.
-                while self.frontier_timestamp.load(Ordering::SeqCst) == time {
-                    // Non-blocking receive, so that we can do some garbage collecting
-                    // when there is no real work to do.
-                    match self.request_receiver.try_recv() {
-                        Ok(Msg::Query(arrid, key)) => {
-                            self.handle_query(&mut traces, arrid, key)?;
-                        }
+                Update::InsertOrUpdate { .. } => {
+                    return Err("InsertOrUpdate command received by worker thread".to_string());
+                }
 
-                        Ok(msg) => {
-                            return Err(format!(
-                                "Worker {} received unexpected message: {:?}",
-                                self.worker_index(),
-                                msg,
-                            ));
-                        }
+                Update::DeleteKey { .. } => {
+                    // workers don't know about keys
+                    return Err("DeleteKey command received by worker thread".to_string());
+                }
 
-                        Err(TryRecvError::Empty) => {
-                            // Command channel empty: use idle time to work on garbage collection.
-                            self.worker.step_or_park(None);
-                        }
-
-                        // The sender disconnected, so we can gracefully exit
-                        Err(TryRecvError::Disconnected) => break,
-                    }
+                Update::Modify { .. } => {
+                    return Err("Modify command received by worker thread".to_string());
                 }
             }
+        }
+
+        Ok(())
+    }
+
+    /// Feeds the startup data into the computation
+    fn ingest_initial_data<Trace>(
+        &mut self,
+        sessions: &mut FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
+        traces: &mut BTreeMap<ArrId, Trace>,
+        probe: &ProbeHandle<TS>,
+    ) -> Result<(), String>
+    where
+        Trace: TraceReader<Key = DDValue, Val = DDValue, Time = TS, R = Weight>,
+        Trace::Batch: BatchReader<DDValue, DDValue, TS, Weight>,
+        Trace::Cursor: Cursor<DDValue, DDValue, TS, Weight>,
+    {
+        // We immediately advance to a timestamp of 1, since timestamp 0 will contain
+        // our initial data
+        let timestamp = 1;
+
+        // Only the leader introduces data into the input sessions
+        if self.is_leader() {
+            for (relid, v) in self.program.init_data.iter() {
+                sessions
+                    .get_mut(relid)
+                    .ok_or_else(|| format!("no session found for relation ID {}", relid))?
+                    .update_at(v.clone(), timestamp - 1, 1);
+            }
+        }
+
+        // All workers advance to timestamp 1 and flush their inputs
+        self.advance(sessions, traces, timestamp);
+        self.flush(sessions, probe);
+
+        // Only the leader sends back a flush acknowledgement to the coordinator thread
+        if self.is_leader() {
+            self.reply_sender
+                .send(Reply::FlushAck)
+                .map_err(|e| format!("failed to send ACK: {}", e))?;
         }
 
         Ok(())
@@ -342,18 +291,18 @@ impl<'a> DDlogWorker<'a> {
         &self,
         sessions: &mut FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
         traces: &mut BTreeMap<ArrId, Trace>,
-        epoch: TS,
+        timestamp: TS,
     ) where
         Trace: TraceReader<Key = DDValue, Val = DDValue, Time = TS, R = Weight>,
         Trace::Batch: BatchReader<DDValue, DDValue, TS, Weight>,
         Trace::Cursor: Cursor<DDValue, DDValue, TS, Weight>,
     {
-        for (_, session_input) in sessions.iter_mut() {
-            session_input.advance_to(epoch);
+        for session_input in sessions.values_mut() {
+            session_input.advance_to(timestamp);
         }
 
-        for (_, trace) in traces.iter_mut() {
-            let e = [epoch];
+        for trace in traces.values_mut() {
+            let e = [timestamp];
             let ac = AntichainRef::new(&e);
             trace.distinguish_since(ac);
             trace.advance_by(ac);
@@ -366,33 +315,21 @@ impl<'a> DDlogWorker<'a> {
         sessions: &mut FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
         probe: &ProbeHandle<TS>,
     ) {
-        for (_, relation_input) in sessions.iter_mut() {
+        for relation_input in sessions.values_mut() {
             relation_input.flush();
         }
 
-        if let Some((_, session)) = sessions.iter_mut().next() {
-            // Do nothing if timestamp has not advanced since the last
-            // transaction (i.e., no updates have arrived).
-            if self.frontier_timestamp() < *session.time() {
-                self.set_frontier_timestamp(*session.time());
-                self.unpark_peers();
-
-                self.progress_barrier.wait();
-                while probe.less_than(session.time()) {
-                    self.worker.step_or_park(None);
-                }
-
-                self.progress_barrier.wait();
-            }
+        if let Some(session) = sessions.values_mut().next() {
+            self.unpark_peers();
+            self.worker.step_while(|| probe.less_than(session.time()));
         }
     }
 
     /// Stop all worker threads by setting the frontier timestamp
     /// to the maximum and unparking all other workers
     fn stop_all_workers(&self) {
-        self.set_frontier_timestamp(TS::max_value());
+        self.running.store(false, Ordering::Release);
         self.unpark_peers();
-        self.progress_barrier.wait();
     }
 
     /// Handle a query
@@ -546,264 +483,354 @@ impl<'a> DDlogWorker<'a> {
     fn session_dataflow(&mut self, mut probe: ProbeHandle<TS>) -> Result<SessionData, String> {
         let program = self.program.clone();
 
-        self.worker.dataflow::<TS, _, _>(|outer: &mut Child<Worker<Allocator>, TS>| -> Result<_, String> {
-            let mut sessions : FnvHashMap<RelId, InputSession<TS, DDValue, Weight>> = FnvHashMap::default();
-            let mut collections : FnvHashMap<RelId, Collection<Child<Worker<Allocator>, TS>, DDValue, Weight>> =
-                    HashMap::with_capacity_and_hasher(program.nodes.len(), FnvBuildHasher::default());
-            let mut arrangements = FnvHashMap::default();
+        self.worker.dataflow::<TS, _, _>(
+            |outer: &mut Child<Worker<Allocator>, TS>| -> Result<_, String> {
+                let mut sessions: FnvHashMap<RelId, InputSession<TS, DDValue, Weight>> =
+                    FnvHashMap::default();
+                let mut collections: FnvHashMap<
+                    RelId,
+                    Collection<Child<Worker<Allocator>, TS>, DDValue, Weight>,
+                > = HashMap::with_capacity_and_hasher(
+                    program.nodes.len(),
+                    FnvBuildHasher::default(),
+                );
+                let mut arrangements = FnvHashMap::default();
 
-            for (nodeid, node) in program.nodes.iter().enumerate() {
-                match node {
-                    ProgNode::Rel{rel} => {
-                        // Relation may already be in the map if it was created by an `Apply` node
-                        let mut collection = collections
-                            .remove(&rel.id)
-                            .unwrap_or_else(|| {
-                                let (session, collection) = outer.new_collection::<DDValue,Weight>();
-                                sessions.insert(rel.id, session);
+                for (node_id, node) in program.nodes.iter().enumerate() {
+                    match *node {
+                        ProgNode::Rel { ref rel } => build_relation_node(
+                            rel,
+                            outer,
+                            &*program,
+                            &mut sessions,
+                            &mut collections,
+                            &mut arrangements,
+                        )?,
 
-                                collection
+                        ProgNode::Apply { tfun } => tfun()(&mut collections),
+
+                        ProgNode::SCC { ref rels } => build_strongly_connected_nodes(
+                            rels,
+                            node_id,
+                            outer,
+                            &*program,
+                            &mut sessions,
+                            &mut collections,
+                            &mut arrangements,
+                        )?,
+                    }
+                }
+
+                for (relid, collection) in collections {
+                    // notify client about changes
+                    if let Some(relation_callback) = &program.get_relation(relid).change_cb {
+                        let relation_callback = relation_callback.clone();
+
+                        let consolidated =
+                            with_prof_context(&format!("consolidate {}", relid), || {
+                                collection.consolidate()
                             });
 
-                        // apply rules
-                        let rule_collections = rel
-                            .rules
-                            .iter()
-                            .map(|rule| {
-                                program.mk_rule(
-                                    rule,
-                                    |rid| collections.get(&rid),
-                                    Arrangements {
-                                        arrangements1: &arrangements,
-                                        arrangements2: &FnvHashMap::default(),
-                                    },
-                                )
-                            });
+                        let inspected = with_prof_context(&format!("inspect {}", relid), || {
+                            consolidated.inspect(move |x| {
+                                // assert!(x.2 == 1 || x.2 == -1, "x: {:?}", x);
+                                (relation_callback)(relid, &x.0, x.2)
+                            })
+                        });
 
-                        collection = with_prof_context(
-                            &format!("concatenate rules for {}", rel.name),
-                            || collection.concatenate(rule_collections),
-                        );
+                        with_prof_context(&format!("probe {}", relid), || {
+                            inspected.probe_with(&mut probe)
+                        });
+                    }
+                }
 
-                        // don't distinct input collections, as this is already done by the set_update logic
-                        if !rel.input && rel.distinct {
-                            collection = with_prof_context(
-                                &format!("{}.threshold_total", rel.name),
-                                || collection.threshold_total(|_, c| if *c == 0 { 0 } else { 1 }),
-                            );
+                // Attach probes to index arrangements, so we know when all updates
+                // for a given epoch have been added to the arrangement, and return
+                // arrangement trace.
+                let mut traces: BTreeMap<ArrId, _> = BTreeMap::new();
+                for ((relid, arrid), arr) in arrangements.into_iter() {
+                    if let ArrangedCollection::Map(arranged) = arr {
+                        if program.get_relation(relid).arrangements[arrid].queryable() {
+                            arranged
+                                .as_collection(|k, _| k.clone())
+                                .probe_with(&mut probe);
+                            traces.insert((relid, arrid), arranged.trace.clone());
                         }
+                    }
+                }
 
-                        // create arrangements
-                        for (i,arr) in rel.arrangements.iter().enumerate() {
-                            with_prof_context(
-                                arr.name(),
-                                || arrangements.insert(
-                                    (rel.id, i),
-                                    arr.build_arrangement_root(&collection),
-                                ),
-                            );
-                        }
+                Ok((sessions, traces))
+            },
+        )
+    }
+}
 
-                        collections.insert(rel.id, collection);
+fn build_relation_node<'a>(
+    relation: &Relation,
+    outer: &mut Child<'a, Worker<Allocator>, TS>,
+    program: &Program,
+    sessions: &mut FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
+    collections: &mut FnvHashMap<
+        RelId,
+        Collection<Child<'a, Worker<Allocator>, TS>, DDValue, Weight>,
+    >,
+    arrangements: &mut FnvHashMap<
+        ArrId,
+        ArrangedCollection<
+            Child<'a, Worker<Allocator>, TS>,
+            TValAgent<Child<Worker<Allocator>, TS>>,
+            TKeyAgent<Child<Worker<Allocator>, TS>>,
+        >,
+    >,
+) -> Result<(), String> {
+    outer.region_named(&format!("Relation `{}`", relation.name), |region| {
+        // Relation may already be in the map if it was created by an `Apply` node
+        let mut collection = if let Some(collection) = collections.remove(&relation.id) {
+            collection.enter(region)
+        } else {
+            let (session, collection) = region.new_collection::<DDValue, Weight>();
+            sessions.insert(relation.id, session);
+
+            collection
+        };
+
+        // apply rules
+        let rule_collections = relation.rules.iter().map(|rule| {
+            program
+                .mk_rule(
+                    rule,
+                    |rid| collections.get(&rid),
+                    Arrangements {
+                        arrangements1: &arrangements,
+                        arrangements2: &FnvHashMap::default(),
                     },
-                    &ProgNode::Apply { tfun } => {
-                        tfun()(&mut collections);
-                    },
-                    ProgNode::SCC { rels } => {
-                        // Preallocate the memory required to store the new relations
-                        sessions.reserve(rels.len());
-                        collections.reserve(rels.len());
+                )
+                .enter(region)
+        });
 
-                        // create collections; add them to map; we will overwrite them with
-                        // updated collections returned from the inner scope.
-                        for r in rels.iter() {
-                            let (session, collection) = outer.new_collection::<DDValue,Weight>();
-                            //assert!(!r.rel.input, "input relation in nested scope: {}", r.rel.name);
-                            if r.rel.input {
-                                return Err(format!("input relation in nested scope: {}", r.rel.name));
-                            }
+        if !(relation.rules.is_empty() || relation.rules.len() == 1) {
+            collection =
+                with_prof_context(&format!("concatenate rules for {}", relation.name), || {
+                    collection.concatenate(rule_collections)
+                });
+        }
 
-                            sessions.insert(r.rel.id, session);
-                            collections.insert(r.rel.id, collection);
-                        }
+        // don't distinct input collections, as this is already done by the set_update logic
+        if !relation.input && relation.distinct {
+            collection = with_prof_context(&format!("{}.threshold_total", relation.name), || {
+                collection.threshold_total(|_, c| if *c == 0 { 0 } else { 1 })
+            });
+        }
 
-                        // create a nested scope for mutually recursive relations
-                        let new_collections = outer.scoped("recursive component", |inner| -> Result<_, String> {
-                            // create variables for relations defined in the SCC.
-                            let mut vars = HashMap::with_capacity_and_hasher(rels.len(), FnvBuildHasher::default());
-                            // arrangements created inside the nested scope
-                            let mut local_arrangements = FnvHashMap::default();
-                            // arrangements entered from global scope
-                            let mut inner_arrangements = FnvHashMap::default();
+        // create arrangements
+        for (i, arrangement) in relation.arrangements.iter().enumerate() {
+            with_prof_context(arrangement.name(), || {
+                arrangements.insert(
+                    (relation.id, i),
+                    arrangement.build_arrangement_root(&collection.leave()),
+                )
+            });
+        }
 
-                            for r in rels.iter() {
-                                let var = Variable::from(
-                                    &collections
-                                        .get(&r.rel.id)
-                                        .ok_or_else(|| format!("failed to find collection with relation ID {}", r.rel.id))?
-                                        .enter(inner),
-                                    r.distinct,
-                                    &r.rel.name,
-                                );
+        collections.insert(relation.id, collection.leave());
+    });
 
-                                vars.insert(r.rel.id, var);
-                            }
+    Ok(())
+}
 
-                            // create arrangements
-                            for rel in rels {
-                                for (i, arr) in rel.rel.arrangements.iter().enumerate() {
-                                    // check if arrangement is actually used inside this node
-                                    if program.arrangement_used_by_nodes((rel.rel.id, i)).any(|n| n == nodeid) {
-                                        with_prof_context(
-                                            &format!("local {}", arr.name()),
-                                            || local_arrangements.insert(
-                                                (rel.rel.id, i),
-                                                arr.build_arrangement(&*vars.get(&rel.rel.id)?),
-                                            ),
-                                        );
-                                    }
-                                }
-                            }
+fn build_strongly_connected_nodes<'a>(
+    relations: &[RecursiveRelation],
+    node_id: RelId,
+    outer: &mut Child<'a, Worker<Allocator>, TS>,
+    program: &Program,
+    sessions: &mut FnvHashMap<RelId, InputSession<TS, DDValue, Weight>>,
+    collections: &mut FnvHashMap<
+        RelId,
+        Collection<Child<'a, Worker<Allocator>, TS>, DDValue, Weight>,
+    >,
+    arrangements: &mut FnvHashMap<
+        ArrId,
+        ArrangedCollection<
+            Child<'a, Worker<Allocator>, TS>,
+            TValAgent<Child<Worker<Allocator>, TS>>,
+            TKeyAgent<Child<Worker<Allocator>, TS>>,
+        >,
+    >,
+) -> Result<(), String> {
+    // Preallocate the memory required to store the new relations
+    sessions.reserve(relations.len());
+    collections.reserve(relations.len());
 
-                            let dependencies = Program::dependencies(rels.iter().map(|relation| &relation.rel));
+    // create collections; add them to map; we will overwrite them with
+    // updated collections returned from the inner scope.
+    for r in relations.iter() {
+        let (session, collection) = outer.new_collection::<DDValue, Weight>();
+        //assert!(!r.rel.input, "input relation in nested scope: {}", r.rel.name);
+        if r.rel.input {
+            return Err(format!("input relation in nested scope: {}", r.rel.name));
+        }
 
-                            // collections entered from global scope
-                            let mut inner_collections = HashMap::with_capacity_and_hasher(dependencies.len(), FnvBuildHasher::default());
+        sessions.insert(r.rel.id, session);
+        collections.insert(r.rel.id, collection);
+    }
 
-                            for dep in dependencies {
-                                match dep {
-                                    Dep::Rel(relid) => {
-                                        assert!(!vars.contains_key(&relid));
-                                        let collection = collections
-                                            .get(&relid)
-                                            .ok_or_else(|| format!("failed to find collection with relation ID {}", relid))?
-                                            .enter(inner);
+    // create a nested scope for mutually recursive relations
+    let new_collections = outer.scoped(
+        &format!(
+            "recursive component between {:?}",
+            relations
+                .iter()
+                .map(|rel| &*rel.rel.name)
+                .collect::<Vec<&str>>(),
+        ),
+        |inner| -> Result<_, String> {
+            // create variables for relations defined in the SCC.
+            let mut vars =
+                HashMap::with_capacity_and_hasher(relations.len(), FnvBuildHasher::default());
+            // arrangements created inside the nested scope
+            let mut local_arrangements = FnvHashMap::default();
+            // arrangements entered from global scope
+            let mut inner_arrangements = FnvHashMap::default();
 
-                                        inner_collections.insert(relid, collection);
-                                    },
-                                    Dep::Arr(arrid) => {
-                                        let arrangement = arrangements
-                                            .get(&arrid)
-                                            .ok_or_else(|| format!("Arr: unknown arrangement {:?}", arrid))?
-                                            .enter(inner);
+            for r in relations.iter() {
+                let var = Variable::from(
+                    &collections
+                        .get(&r.rel.id)
+                        .ok_or_else(|| {
+                            format!("failed to find collection with relation ID {}", r.rel.id)
+                        })?
+                        .enter(inner),
+                    r.distinct,
+                    &r.rel.name,
+                );
 
-                                        inner_arrangements.insert(arrid, arrangement);
-                                    }
-                                }
-                            }
+                vars.insert(r.rel.id, var);
+            }
 
-                            // apply rules to variables
-                            for rel in rels {
-                                for rule in &rel.rel.rules {
-                                    let c = program.mk_rule(
-                                        rule,
-                                        |rid| {
-                                            vars
-                                                .get(&rid)
-                                                .map(|v| &(**v))
-                                                .or_else(|| inner_collections.get(&rid))
-                                        },
-                                        Arrangements {
-                                            arrangements1: &local_arrangements,
-                                            arrangements2: &inner_arrangements,
-                                        },
-                                    );
+            // create arrangements
+            for rel in relations {
+                for (i, arr) in rel.rel.arrangements.iter().enumerate() {
+                    // check if arrangement is actually used inside this node
+                    if program
+                        .arrangement_used_by_nodes((rel.rel.id, i))
+                        .any(|n| n == node_id)
+                    {
+                        with_prof_context(&format!("local {}", arr.name()), || {
+                            local_arrangements.insert(
+                                (rel.rel.id, i),
+                                arr.build_arrangement(&*vars.get(&rel.rel.id)?),
+                            )
+                        });
+                    }
+                }
+            }
 
-                                    vars
-                                        .get_mut(&rel.rel.id)
-                                        .ok_or_else(|| format!("no variable found for relation ID {}", rel.rel.id))?
-                                        .add(&c);
-                                }
-                            }
+            let dependencies =
+                Program::dependencies(relations.iter().map(|relation| &relation.rel));
 
-                            // bring new relations back to the outer scope
-                            let mut new_collections = HashMap::with_capacity_and_hasher(rels.len(), FnvBuildHasher::default());
-                            for rel in rels {
-                                let var = vars
-                                    .get(&rel.rel.id)
-                                    .ok_or_else(|| format!("no variable found for relation ID {}", rel.rel.id))?;
+            // collections entered from global scope
+            let mut inner_collections =
+                HashMap::with_capacity_and_hasher(dependencies.len(), FnvBuildHasher::default());
 
-                                let mut collection = var.leave();
-                                // var.distinct() will be called automatically by var.drop() if var has `distinct` flag set
-                                if rel.rel.distinct && !rel.distinct {
-                                    collection = with_prof_context(
-                                        &format!("{}.distinct_total", rel.rel.name),
-                                        || collection.threshold_total(|_,c| if *c == 0 { 0 } else { 1 }),
-                                    );
-                                }
+            for dep in dependencies {
+                match dep {
+                    Dep::Rel(relid) => {
+                        assert!(!vars.contains_key(&relid));
+                        let collection = collections
+                            .get(&relid)
+                            .ok_or_else(|| {
+                                format!("failed to find collection with relation ID {}", relid)
+                            })?
+                            .enter(inner);
 
-                                new_collections.insert(rel.rel.id, collection);
-                            }
+                        inner_collections.insert(relid, collection);
+                    }
 
-                            Ok(new_collections)
+                    Dep::Arr(arrid) => {
+                        let arrangement = arrangements
+                            .get(&arrid)
+                            .ok_or_else(|| format!("Arr: unknown arrangement {:?}", arrid))?
+                            .enter(inner);
+
+                        inner_arrangements.insert(arrid, arrangement);
+                    }
+                }
+            }
+
+            // apply rules to variables
+            for rel in relations {
+                for rule in &rel.rel.rules {
+                    let c = program.mk_rule(
+                        rule,
+                        |rid| {
+                            vars.get(&rid)
+                                .map(|v| &(**v))
+                                .or_else(|| inner_collections.get(&rid))
+                        },
+                        Arrangements {
+                            arrangements1: &local_arrangements,
+                            arrangements2: &inner_arrangements,
+                        },
+                    );
+
+                    vars.get_mut(&rel.rel.id)
+                        .ok_or_else(|| format!("no variable found for relation ID {}", rel.rel.id))?
+                        .add(&c);
+                }
+            }
+
+            // bring new relations back to the outer scope
+            let mut new_collections =
+                HashMap::with_capacity_and_hasher(relations.len(), FnvBuildHasher::default());
+
+            for rel in relations {
+                let var = vars
+                    .get(&rel.rel.id)
+                    .ok_or_else(|| format!("no variable found for relation ID {}", rel.rel.id))?;
+
+                let mut collection = var.leave();
+                // var.distinct() will be called automatically by var.drop() if var has `distinct` flag set
+                if rel.rel.distinct && !rel.distinct {
+                    collection =
+                        with_prof_context(&format!("{}.distinct_total", rel.rel.name), || {
+                            collection.threshold_total(|_, c| if *c == 0 { 0 } else { 1 })
+                        });
+                }
+
+                new_collections.insert(rel.rel.id, collection);
+            }
+
+            Ok(new_collections)
+        },
+    )?;
+
+    // add new collections to the map
+    collections.extend(new_collections);
+
+    // create arrangements
+    for rel in relations {
+        for (i, arr) in rel.rel.arrangements.iter().enumerate() {
+            // only if the arrangement is used outside of this node
+            if arr.queryable()
+                || program
+                    .arrangement_used_by_nodes((rel.rel.id, i))
+                    .any(|n| n != node_id)
+            {
+                with_prof_context(
+                    &format!("global {}", arr.name()),
+                    || -> Result<_, String> {
+                        let collection = collections.get(&rel.rel.id).ok_or_else(|| {
+                            format!("no collection found for relation ID {}", rel.rel.id)
                         })?;
 
-                        // add new collections to the map
-                        collections.extend(new_collections);
-
-                        // create arrangements
-                        for rel in rels {
-                            for (i, arr) in rel.rel.arrangements.iter().enumerate() {
-                                // only if the arrangement is used outside of this node
-                                if arr.queryable() || program.arrangement_used_by_nodes((rel.rel.id, i)).any(|n| n != nodeid) {
-                                    with_prof_context(
-                                        &format!("global {}", arr.name()),
-                                        || -> Result<_, String> {
-                                            let collection = collections
-                                                .get(&rel.rel.id)
-                                                .ok_or_else(|| format!("no collection found for relation ID {}", rel.rel.id))?;
-
-                                            Ok(arrangements.insert((rel.rel.id, i), arr.build_arrangement(collection)))
-                                        }
-                                    )?;
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            for (relid, collection) in collections {
-                // notify client about changes
-                if let Some(relation_callback) = &program.get_relation(relid).change_cb {
-                    let relation_callback = relation_callback.clone();
-
-                    let consolidated = with_prof_context(
-                        &format!("consolidate {}", relid),
-                        || collection.consolidate(),
-                    );
-
-                    let inspected = with_prof_context(
-                        &format!("inspect {}", relid),
-                        || consolidated.inspect(move |x| {
-                            // assert!(x.2 == 1 || x.2 == -1, "x: {:?}", x);
-                            (relation_callback)(relid, &x.0, x.2)
-                        }),
-                    );
-
-                    with_prof_context(
-                        &format!("probe {}", relid),
-                        || inspected.probe_with(&mut probe),
-                    );
-                }
+                        Ok(arrangements.insert((rel.rel.id, i), arr.build_arrangement(collection)))
+                    },
+                )?;
             }
-
-            // Attach probes to index arrangements, so we know when all updates
-            // for a given epoch have been added to the arrangement, and return
-            // arrangement trace.
-            let mut traces: BTreeMap<ArrId, _> = BTreeMap::new();
-            for ((relid, arrid), arr) in arrangements.into_iter() {
-                if let ArrangedCollection::Map(arranged) = arr {
-                    if program.get_relation(relid).arrangements[arrid].queryable() {
-                        arranged.as_collection(|k,_| k.clone()).probe_with(&mut probe);
-                        traces.insert((relid, arrid), arranged.trace.clone());
-                    }
-                }
-            }
-
-            Ok((sessions, traces))
-        })
+        }
     }
+
+    Ok(())
 }
 
 #[derive(Clone)]

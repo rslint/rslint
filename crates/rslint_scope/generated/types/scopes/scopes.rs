@@ -213,7 +213,7 @@ pub static __Arng_scopes_NeedsScopeChildren_0 : ::once_cell::sync::Lazy<program:
                                                                                                                                     afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                     {
                                                                                                                                         let __cloned = __v.clone();
-                                                                                                                                        match < NeedsScopeChildren>::from_ddvalue(__v) {
+                                                                                                                                        match <NeedsScopeChildren>::from_ddvalue(__v) {
                                                                                                                                             NeedsScopeChildren{scope: ref _0} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                                             _ => None
                                                                                                                                         }.map(|x|(x,__cloned))
@@ -226,7 +226,7 @@ pub static __Arng_scopes_FunctionLevelScope_0 : ::once_cell::sync::Lazy<program:
                                                                                                                                     afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                     {
                                                                                                                                         let __cloned = __v.clone();
-                                                                                                                                        match < FunctionLevelScope>::from_ddvalue(__v) {
+                                                                                                                                        match <FunctionLevelScope>::from_ddvalue(__v) {
                                                                                                                                             FunctionLevelScope{scope: ref _0, nearest: _, id: _} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                                             _ => None
                                                                                                                                         }.map(|x|(x,__cloned))
@@ -239,7 +239,7 @@ pub static __Arng_scopes_NeedsScopeParents_0 : ::once_cell::sync::Lazy<program::
                                                                                                                                    afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                    {
                                                                                                                                        let __cloned = __v.clone();
-                                                                                                                                       match < NeedsScopeParents>::from_ddvalue(__v) {
+                                                                                                                                       match <NeedsScopeParents>::from_ddvalue(__v) {
                                                                                                                                            NeedsScopeParents{scope: ref _0} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                                            _ => None
                                                                                                                                        }.map(|x|(x,__cloned))
@@ -252,7 +252,7 @@ pub static __Arng_scopes_ScopeFamily_0 : ::once_cell::sync::Lazy<program::Arrang
                                                                                                                              afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                              {
                                                                                                                                  let __cloned = __v.clone();
-                                                                                                                                 match < ScopeFamily>::from_ddvalue(__v) {
+                                                                                                                                 match <ScopeFamily>::from_ddvalue(__v) {
                                                                                                                                      ScopeFamily{parent: ref _0, child: _} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                                      _ => None
                                                                                                                                  }.map(|x|(x,__cloned))
@@ -265,7 +265,7 @@ pub static __Arng_scopes_ScopeFamily_1 : ::once_cell::sync::Lazy<program::Arrang
                                                                                                                              afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                              {
                                                                                                                                  let __cloned = __v.clone();
-                                                                                                                                 match < ScopeFamily>::from_ddvalue(__v) {
+                                                                                                                                 match <ScopeFamily>::from_ddvalue(__v) {
                                                                                                                                      ScopeFamily{parent: _, child: ref _0} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                                      _ => None
                                                                                                                                  }.map(|x|(x,__cloned))
@@ -278,7 +278,7 @@ pub static __Arng_scopes_ScopeFamily_2 : ::once_cell::sync::Lazy<program::Arrang
                                                                                                                              afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                              {
                                                                                                                                  let __cloned = __v.clone();
-                                                                                                                                 match < ScopeFamily>::from_ddvalue(__v) {
+                                                                                                                                 match <ScopeFamily>::from_ddvalue(__v) {
                                                                                                                                      ScopeFamily{parent: ref _0, child: _} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                                      _ => None
                                                                                                                                  }.map(|x|(x,__cloned))
@@ -364,7 +364,7 @@ pub static __Rule_scopes_FunctionLevelScope_2 : ::once_cell::sync::Lazy<program:
                                                                                                                                                                                         description: std::borrow::Cow::from("inputs::Class(.id=class, .name=_, .parent=_, .elements=ddlog_std::Some{.x=elements}, .scope=_, .exported=_), var body = FlatMap((vec::filter_map(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{(ast::body((internment::ival(elem))))})))), inputs::Statement(.id=body, .kind=_, .scope=scope, .span=_)"),
                                                                                                                                                                                         ffun: None,
                                                                                                                                                                                         arrangement: (47,0),
-                                                                                                                                                                                        jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                                                                                        jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                         {
                                                                                                                                                                                             let ref class = *<types__ast::ClassId>::from_ddvalue_ref( __v1 );
                                                                                                                                                                                             let ref scope = match *<types__inputs::Statement>::from_ddvalue_ref(__v2) {
@@ -421,7 +421,7 @@ pub static __Rule_scopes_FunctionLevelScope_3 : ::once_cell::sync::Lazy<program:
                                                                                                                                                                                         description: std::borrow::Cow::from("inputs::ClassExpr(.expr_id=expr, .elements=ddlog_std::Some{.x=elements}), var body = FlatMap((vec::filter_map(elements, (function(elem: internment::Intern<ast::ClassElement>):ddlog_std::Option<ast::StmtId>{(ast::body((internment::ival(elem))))})))), inputs::Statement(.id=body, .kind=_, .scope=scope, .span=_)"),
                                                                                                                                                                                         ffun: None,
                                                                                                                                                                                         arrangement: (47,0),
-                                                                                                                                                                                        jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                                                                                        jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                         {
                                                                                                                                                                                             let ref expr = *<types__ast::ExprId>::from_ddvalue_ref( __v1 );
                                                                                                                                                                                             let ref scope = match *<types__inputs::Statement>::from_ddvalue_ref(__v2) {
@@ -444,7 +444,7 @@ pub static __Rule_scopes_FunctionLevelScope_4 : ::once_cell::sync::Lazy<program:
                                                                                                                                         description: std::borrow::Cow::from("inputs::InlineFunc(.expr_id=expr, .name=_, .body=ddlog_std::Some{.x=body}), inputs::Statement(.id=body, .kind=_, .scope=scope, .span=_)"),
                                                                                                                                         ffun: None,
                                                                                                                                         arrangement: (47,0),
-                                                                                                                                        jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                                        jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                         {
                                                                                                                                             let (ref expr, ref body) = match *<types__inputs::InlineFunc>::from_ddvalue_ref(__v1) {
                                                                                                                                                 types__inputs::InlineFunc{expr_id: ref expr, name: _, body: ddlog_std::Option::Some{x: ref body}} => ((*expr).clone(), (*body).clone()),
@@ -483,7 +483,7 @@ pub static __Rule_scopes_FunctionLevelScope_5 : ::once_cell::sync::Lazy<program:
                                                                                                                                                                 description: std::borrow::Cow::from("inputs::Property(.expr_id=expr, .key=_, .val=ddlog_std::Some{.x=val}), (ddlog_std::Some{.x=var body} = (ast::body(val))), inputs::Statement(.id=body, .kind=_, .scope=scope, .span=_)"),
                                                                                                                                                                 ffun: None,
                                                                                                                                                                 arrangement: (47,0),
-                                                                                                                                                                jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                                                                jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                 {
                                                                                                                                                                     let ref expr = *<types__ast::ExprId>::from_ddvalue_ref( __v1 );
                                                                                                                                                                     let ref scope = match *<types__inputs::Statement>::from_ddvalue_ref(__v2) {
@@ -518,12 +518,12 @@ pub static __Rule_scopes_FunctionLevelScope_6 : ::once_cell::sync::Lazy<program:
 pub static __Rule_scopes_FunctionLevelScope_7 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=child, .nearest=scope, .id=id}: scopes::FunctionLevelScope)] :- scopes::FunctionLevelScope[(scopes::FunctionLevelScope{.scope=(parent: ast::ScopeId), .nearest=(scope: ast::ScopeId), .id=(id: ast::AnyId)}: scopes::FunctionLevelScope)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId)}: inputs::InputScope)], var __group = (scope, id).group_by(child), (((var scope: ast::ScopeId), (var id: ast::AnyId)) = ((group::arg_max: function(ddlog_std::Group<ast::ScopeId,(ast::ScopeId, ast::AnyId)>, function((ast::ScopeId, ast::AnyId)):ast::ScopeId):(ast::ScopeId, ast::AnyId))(__group, (function(scope: (ast::ScopeId, ast::AnyId)):ast::ScopeId{(scope.0)})))). */
                                                                                                                          program::Rule::ArrangementRule {
                                                                                                                              description: std::borrow::Cow::from( "scopes::FunctionLevelScope(.scope=child, .nearest=scope, .id=id) :- scopes::FunctionLevelScope(.scope=parent, .nearest=scope, .id=id), inputs::InputScope(.parent=parent, .child=child), var __group = (scope, id).group_by(child), ((var scope, var id) = (group::arg_max(__group, (function(scope: (ast::ScopeId, ast::AnyId)):ast::ScopeId{(scope.0)}))))."),
-                                                                                                                             arr: ( 80, 0),
+                                                                                                                             arr: ( 81, 0),
                                                                                                                              xform: XFormArrangement::Join{
                                                                                                                                         description: std::borrow::Cow::from("scopes::FunctionLevelScope(.scope=parent, .nearest=scope, .id=id), inputs::InputScope(.parent=parent, .child=child)"),
                                                                                                                                         ffun: None,
                                                                                                                                         arrangement: (40,1),
-                                                                                                                                        jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                                        jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                         {
                                                                                                                                             let (ref parent, ref scope, ref id) = match *<FunctionLevelScope>::from_ddvalue_ref(__v1) {
                                                                                                                                                 FunctionLevelScope{scope: ref parent, nearest: ref scope, id: ref id} => ((*parent).clone(), (*scope).clone(), (*id).clone()),
@@ -688,7 +688,7 @@ pub static __Rule_scopes_ScopeOfId_5 : ::once_cell::sync::Lazy<program::Rule> = 
                                                                                                                                description: std::borrow::Cow::from("inputs::ImportDecl(.id=(id@ ast::ImportId{.id=_, .file=file}), .clause=_), inputs::File(.id=file, .kind=_, .top_level_scope=scope)"),
                                                                                                                                ffun: None,
                                                                                                                                arrangement: (28,0),
-                                                                                                                               jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                               jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                {
                                                                                                                                    let (ref id, ref file) = match *<types__inputs::ImportDecl>::from_ddvalue_ref(__v1) {
                                                                                                                                        types__inputs::ImportDecl{id: ref id, clause: _} => match id {
@@ -746,12 +746,12 @@ pub static __Rule_scopes_IsHoistable_1 : ::once_cell::sync::Lazy<program::Rule> 
 pub static __Rule_scopes_ScopeFamily_0 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeFamily[(scopes::ScopeFamily{.parent=parent, .child=child}: scopes::ScopeFamily)] :- scopes::NeedsScopeChildren[(scopes::NeedsScopeChildren{.scope=(parent: ast::ScopeId)}: scopes::NeedsScopeChildren)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId)}: inputs::InputScope)], (parent != child). */
                                                                                                                   program::Rule::ArrangementRule {
                                                                                                                       description: std::borrow::Cow::from( "scopes::ScopeFamily(.parent=parent, .child=child) :- scopes::NeedsScopeChildren(.scope=parent), inputs::InputScope(.parent=parent, .child=child), (parent != child)."),
-                                                                                                                      arr: ( 82, 0),
+                                                                                                                      arr: ( 83, 0),
                                                                                                                       xform: XFormArrangement::Join{
                                                                                                                                  description: std::borrow::Cow::from("scopes::NeedsScopeChildren(.scope=parent), inputs::InputScope(.parent=parent, .child=child)"),
                                                                                                                                  ffun: None,
                                                                                                                                  arrangement: (40,1),
-                                                                                                                                 jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                                 jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                  {
                                                                                                                                      let ref parent = match *<NeedsScopeChildren>::from_ddvalue_ref(__v1) {
                                                                                                                                          NeedsScopeChildren{scope: ref parent} => (*parent).clone(),
@@ -771,12 +771,12 @@ pub static __Rule_scopes_ScopeFamily_0 : ::once_cell::sync::Lazy<program::Rule> 
 pub static __Rule_scopes_ScopeFamily_1 : ::once_cell::sync::Lazy<program::Rule> = ::once_cell::sync::Lazy::new(|| /* scopes::ScopeFamily[(scopes::ScopeFamily{.parent=parent, .child=child}: scopes::ScopeFamily)] :- scopes::NeedsScopeParents[(scopes::NeedsScopeParents{.scope=(child: ast::ScopeId)}: scopes::NeedsScopeParents)], inputs::InputScope[(inputs::InputScope{.parent=(parent: ast::ScopeId), .child=(child: ast::ScopeId)}: inputs::InputScope)], (parent != child). */
                                                                                                                   program::Rule::ArrangementRule {
                                                                                                                       description: std::borrow::Cow::from( "scopes::ScopeFamily(.parent=parent, .child=child) :- scopes::NeedsScopeParents(.scope=child), inputs::InputScope(.parent=parent, .child=child), (parent != child)."),
-                                                                                                                      arr: ( 83, 0),
+                                                                                                                      arr: ( 84, 0),
                                                                                                                       xform: XFormArrangement::Join{
                                                                                                                                  description: std::borrow::Cow::from("scopes::NeedsScopeParents(.scope=child), inputs::InputScope(.parent=parent, .child=child)"),
                                                                                                                                  ffun: None,
                                                                                                                                  arrangement: (40,0),
-                                                                                                                                 jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                                 jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                  {
                                                                                                                                      let ref child = match *<NeedsScopeParents>::from_ddvalue_ref(__v1) {
                                                                                                                                          NeedsScopeParents{scope: ref child} => (*child).clone(),
@@ -800,8 +800,8 @@ pub static __Rule_scopes_ScopeFamily_2 : ::once_cell::sync::Lazy<program::Rule> 
                                                                                                                       xform: XFormArrangement::Join{
                                                                                                                                  description: std::borrow::Cow::from("inputs::InputScope(.parent=interum, .child=child), scopes::ScopeFamily(.parent=parent, .child=interum)"),
                                                                                                                                  ffun: None,
-                                                                                                                                 arrangement: (84,1),
-                                                                                                                                 jfun: {fn __f(_: &DDValue ,__v1: &DDValue,__v2: &DDValue) -> Option<DDValue>
+                                                                                                                                 arrangement: (85,1),
+                                                                                                                                 jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                  {
                                                                                                                                      let (ref interum, ref child) = match *<types__inputs::InputScope>::from_ddvalue_ref(__v1) {
                                                                                                                                          types__inputs::InputScope{parent: ref interum, child: ref child} => ((*interum).clone(), (*child).clone()),

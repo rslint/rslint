@@ -13,6 +13,7 @@ c_api = []
 [dependencies]
 #differential-dataflow = "0.11.0"
 differential-dataflow = { git = "https://github.com/ddlog-dev/differential-dataflow", branch = "ddlog-2" }
+dogsdogsdogs = { git = "https://github.com/ddlog-dev/differential-dataflow", branch = "ddlog-2" }
 #timely = "0.11"
 timely = { git = "https://github.com/ddlog-dev/timely-dataflow", branch = "ddlog-2" }
 
@@ -28,7 +29,7 @@ erased-serde = "0.3"
 crossbeam-channel = "0.5.0"
 
 [dev-dependencies]
-byteorder = "0.4.2"
-getopts = "0.2.14"
-itertools = "^0.6"
-serde_derive = "1.0"
+byteorder = "1.4.2"
+getopts = "0.2.21"
+itertools = "0.10.0"
+serde_derive = "1.0.119"

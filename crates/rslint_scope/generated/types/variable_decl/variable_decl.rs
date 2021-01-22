@@ -139,7 +139,7 @@ pub static __Arng_variable_decl_VariableDecl_0 : ::once_cell::sync::Lazy<program
                                                                                                                                      afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                      {
                                                                                                                                          let __cloned = __v.clone();
-                                                                                                                                         match < VariableDecl>::from_ddvalue(__v) {
+                                                                                                                                         match <VariableDecl>::from_ddvalue(__v) {
                                                                                                                                              VariableDecl{stmt: ref _0, kind: _, pattern: _, value: ddlog_std::Option::Some{x: _}, exported: _} => Some(((*_0).clone()).into_ddvalue()),
                                                                                                                                              _ => None
                                                                                                                                          }.map(|x|(x,__cloned))

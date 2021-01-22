@@ -41,23 +41,25 @@ use ::timely::dataflow::scopes;
 use ::timely::worker;
 
 use ::ddlog_derive::{FromRecord, IntoRecord, Mutator};
-use ::differential_datalog::ddval::DDValConvert;
 use ::differential_datalog::ddval::DDValue;
+use ::differential_datalog::ddval::DDValConvert;
 use ::differential_datalog::program;
 use ::differential_datalog::program::TupleTS;
-use ::differential_datalog::program::Weight;
 use ::differential_datalog::program::XFormArrangement;
 use ::differential_datalog::program::XFormCollection;
+use ::differential_datalog::program::Weight;
 use ::differential_datalog::record::FromRecord;
 use ::differential_datalog::record::IntoRecord;
 use ::differential_datalog::record::Mutator;
 use ::serde::Deserialize;
 use ::serde::Serialize;
 
+
 // `usize` and `isize` are builtin Rust types; we therefore declare an alias to DDlog's `usize` and
 // `isize`.
 pub type std_usize = u64;
 pub type std_isize = i64;
+
 
 use arc_interner::ArcIntern;
 use ddlog_std::Vec as DDlogVec;
@@ -351,51 +353,51 @@ pub type istring = Intern<String>;
 /* fn istring_to_uppercase(s: & istring) -> String */
 /* fn istring_trim(s: & istring) -> String */
 /* fn ival<A: ::ddlog_rt::Val>(s: & Intern<A>) -> A */
-pub fn contains(s1: &istring, s2: &String) -> bool {
-    istring_contains(s1, s2)
+pub fn contains(s1: & istring, s2: & String) -> bool
+{   istring_contains(s1, s2)
 }
-pub fn ends_with(s: &istring, suffix: &String) -> bool {
-    istring_ends_with(s, suffix)
+pub fn ends_with(s: & istring, suffix: & String) -> bool
+{   istring_ends_with(s, suffix)
 }
-pub fn join(strings: &ddlog_std::Vec<istring>, sep: &String) -> String {
-    istring_join(strings, sep)
+pub fn join(strings: & ddlog_std::Vec<istring>, sep: & String) -> String
+{   istring_join(strings, sep)
 }
-pub fn len(s: &istring) -> u64 {
-    istring_len(s)
+pub fn len(s: & istring) -> u64
+{   istring_len(s)
 }
-pub fn parse_dec_i64(s: &istring) -> ddlog_std::Option<i64> {
-    ddlog_std::parse_dec_i64(ival(s))
+pub fn parse_dec_i64(s: & istring) -> ddlog_std::Option<i64>
+{   ddlog_std::parse_dec_i64(ival(s))
 }
-pub fn parse_dec_u64(s: &istring) -> ddlog_std::Option<u64> {
-    ddlog_std::parse_dec_u64(ival(s))
+pub fn parse_dec_u64(s: & istring) -> ddlog_std::Option<u64>
+{   ddlog_std::parse_dec_u64(ival(s))
 }
-pub fn replace(s: &istring, from: &String, to: &String) -> String {
-    istring_replace(s, from, to)
+pub fn replace(s: & istring, from: & String, to: & String) -> String
+{   istring_replace(s, from, to)
 }
-pub fn reverse(s: &istring) -> String {
-    istring_reverse(s)
+pub fn reverse(s: & istring) -> String
+{   istring_reverse(s)
 }
-pub fn split(s: &istring, sep: &String) -> ddlog_std::Vec<String> {
-    istring_split(s, sep)
+pub fn split(s: & istring, sep: & String) -> ddlog_std::Vec<String>
+{   istring_split(s, sep)
 }
-pub fn starts_with(s: &istring, prefix: &String) -> bool {
-    istring_starts_with(s, prefix)
+pub fn starts_with(s: & istring, prefix: & String) -> bool
+{   istring_starts_with(s, prefix)
 }
-pub fn substr(s: &istring, start: &u64, end: &u64) -> String {
-    istring_substr(s, start, end)
+pub fn substr(s: & istring, start: & u64, end: & u64) -> String
+{   istring_substr(s, start, end)
 }
-pub fn to_bytes(s: &istring) -> ddlog_std::Vec<u8> {
-    istring_to_bytes(s)
+pub fn to_bytes(s: & istring) -> ddlog_std::Vec<u8>
+{   istring_to_bytes(s)
 }
-pub fn to_lowercase(s: &istring) -> String {
-    istring_to_lowercase(s)
+pub fn to_lowercase(s: & istring) -> String
+{   istring_to_lowercase(s)
 }
-pub fn to_string(s: &istring) -> String {
-    (*ival(s)).clone()
+pub fn to_string(s: & istring) -> String
+{   (*ival(s)).clone()
 }
-pub fn to_uppercase(s: &istring) -> String {
-    istring_to_uppercase(s)
+pub fn to_uppercase(s: & istring) -> String
+{   istring_to_uppercase(s)
 }
-pub fn trim(s: &istring) -> String {
-    istring_trim(s)
+pub fn trim(s: & istring) -> String
+{   istring_trim(s)
 }

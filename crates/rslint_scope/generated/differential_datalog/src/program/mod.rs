@@ -32,11 +32,11 @@ use std::{
     iter,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Barrier, Mutex,
+        Arc, Mutex,
     },
     thread::{self, JoinHandle, Thread},
 };
-use timestamp::{TSAtomic, ToTupleTS};
+use timestamp::ToTupleTS;
 use worker::{DDlogWorker, ProfilingData};
 
 use differential_dataflow::difference::Semigroup;
@@ -49,6 +49,7 @@ use differential_dataflow::trace::implementations::ord::OrdValSpine as DefaultVa
 use differential_dataflow::trace::wrappers::enter::TraceEnter;
 use differential_dataflow::trace::{BatchReader, Cursor, TraceReader};
 use differential_dataflow::Collection;
+use dogsdogsdogs::operators::lookup_map;
 use timely::communication::{
     initialize::{Configuration, WorkerGuards},
     Allocator,
@@ -71,7 +72,7 @@ type TKeyEnter<'a, P, T> = TraceEnter<TKeyAgent<P>, T>;
 pub type Weight = i32;
 
 /// Message buffer for profiling messages
-const PROF_MSG_BUF_SIZE: usize = 10000;
+const PROF_MSG_BUF_SIZE: usize = 10_000;
 
 /// Result type returned by this library
 pub type Response<X> = Result<X, String>;
@@ -90,6 +91,10 @@ pub type ArrId = (RelId, usize);
 /// Function type used to map the content of a relation
 /// (see `XFormCollection::Map`).
 pub type MapFunc = fn(DDValue) -> DDValue;
+
+/// Function type used to extract join key from a relation
+/// (see `XFormCollection::StreamJoin`).
+pub type KeyFunc = fn(&DDValue) -> Option<DDValue>;
 
 /// (see `XFormCollection::FlatMap`).
 pub type FlatMapFunc = fn(DDValue) -> Option<Box<dyn Iterator<Item = DDValue>>>;
@@ -111,13 +116,21 @@ pub type InspectFunc = fn(&DDValue, TupleTS, Weight) -> ();
 pub type ArrangeFunc = fn(DDValue) -> Option<(DDValue, DDValue)>;
 
 /// Function type used to assemble the result of a join into a value.
-/// Takes join key and a pair of values from the two joined relation
+/// Takes join key and a pair of values from the two joined relations
 /// (see `XFormArrangement::Join`).
 pub type JoinFunc = fn(&DDValue, &DDValue, &DDValue) -> Option<DDValue>;
+
+/// Similar to JoinFunc, but only takes values from the two joined
+/// relations, and not the key (`XFormArrangement::StreamJoin`).
+pub type ValJoinFunc = fn(&DDValue, &DDValue) -> Option<DDValue>;
 
 /// Function type used to assemble the result of a semijoin into a value.
 /// Takes join key and value (see `XFormArrangement::Semijoin`).
 pub type SemijoinFunc = fn(&DDValue, &DDValue, &()) -> Option<DDValue>;
+
+/// Similar to SemijoinFunc, but only takes one value.
+/// (see `XFormCollection::StreamSemijoin`).
+pub type StreamSemijoinFunc = fn(&DDValue) -> Option<DDValue>;
 
 /// Aggregation function: aggregates multiple values into a single value.
 pub type AggFunc = fn(&DDValue, &[(&DDValue, Weight)]) -> Option<DDValue>;
@@ -329,6 +342,38 @@ pub enum XFormArrangement {
         /// Antijoin returns a collection: apply `next` transformation to it.
         next: Box<Option<XFormCollection>>,
     },
+    /// Streaming join: join arrangement with a collection.
+    /// This outputs a collection obtained by matching each value
+    /// in the input collection against the arrangement without
+    /// arranging the collection first.
+    StreamJoin {
+        description: Cow<'static, str>,
+        /// Filter arrangement before join.
+        ffun: Option<FilterFunc>,
+        /// Relation to join with.
+        rel: RelId,
+        /// Extract join key from the _collection_.
+        kfun: KeyFunc,
+        /// Function used to put together ouput value.  The first argument comes
+        /// from the arrangement, the second from the collection.
+        jfun: ValJoinFunc,
+        /// Join returns a collection: apply `next` transformation to it.
+        next: Box<Option<XFormCollection>>,
+    },
+    /// Streaming semijoin.
+    StreamSemijoin {
+        description: Cow<'static, str>,
+        /// Filter arrangement before join.
+        ffun: Option<FilterFunc>,
+        /// Relation to join with.
+        rel: RelId,
+        /// Extract join key from the relation.
+        kfun: KeyFunc,
+        /// Function used to put together ouput value.
+        jfun: StreamSemijoinFunc,
+        /// Join returns a collection: apply `next` transformation to it.
+        next: Box<Option<XFormCollection>>,
+    },
 }
 
 impl XFormArrangement {
@@ -340,6 +385,8 @@ impl XFormArrangement {
             XFormArrangement::Join { description, .. } => &description,
             XFormArrangement::Semijoin { description, .. } => &description,
             XFormArrangement::Antijoin { description, .. } => &description,
+            XFormArrangement::StreamJoin { description, .. } => &description,
+            XFormArrangement::StreamSemijoin { description, .. } => &description,
         }
     }
 
@@ -387,6 +434,22 @@ impl XFormArrangement {
                 deps.insert(Dep::Arr(*arrangement));
                 deps
             }
+            XFormArrangement::StreamJoin { rel, next, .. } => {
+                let mut deps = match **next {
+                    None => FnvHashSet::default(),
+                    Some(ref n) => n.dependencies(),
+                };
+                deps.insert(Dep::Rel(*rel));
+                deps
+            }
+            XFormArrangement::StreamSemijoin { rel, next, .. } => {
+                let mut deps = match **next {
+                    None => FnvHashSet::default(),
+                    Some(ref n) => n.dependencies(),
+                };
+                deps.insert(Dep::Rel(*rel));
+                deps
+            }
         }
     }
 }
@@ -430,6 +493,35 @@ pub enum XFormCollection {
         ifun: InspectFunc,
         next: Box<Option<XFormCollection>>,
     },
+    /// Streaming join: join collection with an arrangement.
+    /// This outputs a collection obtained by matching each value
+    /// in the input collection against the arrangement without
+    /// arranging the collection first.
+    StreamJoin {
+        description: Cow<'static, str>,
+        /// Function to arrange collection into key/value pairs.
+        afun: ArrangeFunc,
+        /// Arrangement to join with.
+        arrangement: ArrId,
+        /// Function used to put together ouput values (the first argument
+        /// comes from the collection, the second -- from the arrangement).
+        jfun: ValJoinFunc,
+        /// Join returns a collection: apply `next` transformation to it.
+        next: Box<Option<XFormCollection>>,
+    },
+    /// Streaming semijoin.
+    StreamSemijoin {
+        description: Cow<'static, str>,
+        /// Function to arrange collection into key/value pairs.
+        afun: ArrangeFunc,
+        /// Arrangement to join with.
+        arrangement: ArrId,
+        /// Function used to put together ouput values (the first argument
+        /// comes from the collection, the second -- from the arrangement).
+        jfun: StreamSemijoinFunc,
+        /// Join returns a collection: apply `next` transformation to it.
+        next: Box<Option<XFormCollection>>,
+    },
 }
 
 impl XFormCollection {
@@ -441,6 +533,8 @@ impl XFormCollection {
             XFormCollection::Filter { description, .. } => &description,
             XFormCollection::FilterMap { description, .. } => &description,
             XFormCollection::Inspect { description, .. } => &description,
+            XFormCollection::StreamJoin { description, .. } => &description,
+            XFormCollection::StreamSemijoin { description, .. } => &description,
         }
     }
 
@@ -467,6 +561,26 @@ impl XFormCollection {
                 None => FnvHashSet::default(),
                 Some(ref n) => n.dependencies(),
             },
+            XFormCollection::StreamJoin {
+                arrangement, next, ..
+            } => {
+                let mut deps = match **next {
+                    None => FnvHashSet::default(),
+                    Some(ref n) => n.dependencies(),
+                };
+                deps.insert(Dep::Arr(*arrangement));
+                deps
+            }
+            XFormCollection::StreamSemijoin {
+                arrangement, next, ..
+            } => {
+                let mut deps = match **next {
+                    None => FnvHashSet::default(),
+                    Some(ref n) => n.dependencies(),
+                };
+                deps.insert(Dep::Arr(*arrangement));
+                deps
+            }
         }
     }
 }
@@ -643,6 +757,7 @@ pub struct RunningProgram {
     worker_guards: Option<WorkerGuards<Result<(), String>>>,
     transaction_in_progress: bool,
     need_to_flush: bool,
+    timestamp: TS,
     /// CPU profiling enabled (can be expensive).
     profile_cpu: Arc<AtomicBool>,
     /// Consume timely_events and output them to CSV file. Can be expensive.
@@ -729,10 +844,18 @@ impl RelationInstance {
 /// to worker 0 only.
 #[derive(Debug, Clone)]
 enum Msg {
-    /// Update input relation (worker 0 only).
-    Update(Vec<Update<DDValue>>),
-    /// Propagate changes through the pipeline (worker 0 only).
-    Flush,
+    /// Update input relation
+    Update {
+        /// The batch of updates
+        updates: Vec<Update<DDValue>>,
+        /// The timestamp these updates belong to
+        timestamp: TS,
+    },
+    /// Propagate changes through the pipeline
+    Flush {
+        /// The timestamp to advance to
+        timestamp: TS,
+    },
     /// Query arrangement.  If the second argument is `None`, returns
     /// all values in the collection; otherwise returns values associated
     /// with the specified key.
@@ -787,8 +910,7 @@ impl Program {
         let prof_thread = thread::spawn(move || Self::prof_thread_func(prof_recv, cloned_profile));
 
         // Shared timestamp managed by worker 0 and read by all other workers
-        let frontier_ts = TSAtomic::new(0);
-        let progress_barrier = Arc::new(Barrier::new(number_workers));
+        let running = AtomicBool::new(true);
 
         // Clone the program so that it can be moved into the timely computation
         let program = Arc::new(self.clone());
@@ -801,9 +923,8 @@ impl Program {
                 let worker = DDlogWorker::new(
                     worker,
                     program.clone(),
-                    &frontier_ts,
+                    &running,
                     number_workers,
-                    progress_barrier.clone(),
                     profiling.clone(),
                     Arc::clone(&request_recv),
                     Arc::clone(&reply_send),
@@ -875,6 +996,7 @@ impl Program {
             worker_guards: Some(worker_guards),
             transaction_in_progress: false,
             need_to_flush: false,
+            timestamp: 1,
             profile_cpu,
             profile_timely,
             prof_thread_handle: Some(prof_thread),
@@ -988,33 +1110,37 @@ impl Program {
             .collect()
     }
 
-    fn xform_collection<'a, 'b, P, T>(
+    fn xform_collection<'a, 'b, P, T, LC>(
         col: Collection<Child<'a, P, T>, DDValue, Weight>,
         xform: &Option<XFormCollection>,
         arrangements: &Arrangements<'a, 'b, P, T>,
+        lookup_collection: &LC,
     ) -> Collection<Child<'a, P, T>, DDValue, Weight>
     where
         P: ScopeParent,
         P::Timestamp: Lattice,
         T: Refines<P::Timestamp> + Lattice + Timestamp + Ord,
         T: ToTupleTS,
+        LC: Fn(RelId) -> Option<&'b Collection<Child<'a, P, T>, DDValue, Weight>>,
     {
         match xform {
             None => col,
-            Some(ref x) => Self::xform_collection_ref(&col, x, arrangements),
+            Some(ref x) => Self::xform_collection_ref(&col, x, arrangements, lookup_collection),
         }
     }
 
-    fn xform_collection_ref<'a, 'b, P, T>(
+    fn xform_collection_ref<'a, 'b, P, T, LC>(
         col: &Collection<Child<'a, P, T>, DDValue, Weight>,
         xform: &XFormCollection,
         arrangements: &Arrangements<'a, 'b, P, T>,
+        lookup_collection: &LC,
     ) -> Collection<Child<'a, P, T>, DDValue, Weight>
     where
         P: ScopeParent,
         P::Timestamp: Lattice,
         T: Refines<P::Timestamp> + Lattice + Timestamp + Ord,
         T: ToTupleTS,
+        LC: Fn(RelId) -> Option<&'b Collection<Child<'a, P, T>, DDValue, Weight>>,
     {
         match *xform {
             XFormCollection::Arrange {
@@ -1023,7 +1149,7 @@ impl Program {
                 ref next,
             } => {
                 let arr = with_prof_context(&description, || col.flat_map(afun).arrange_by_key());
-                Self::xform_arrangement(&arr, &*next, arrangements)
+                Self::xform_arrangement(&arr, &*next, arrangements, lookup_collection)
             }
             XFormCollection::Map {
                 ref description,
@@ -1031,7 +1157,7 @@ impl Program {
                 ref next,
             } => {
                 let mapped = with_prof_context(&description, || col.map(mfun));
-                Self::xform_collection(mapped, &*next, arrangements)
+                Self::xform_collection(mapped, &*next, arrangements, lookup_collection)
             }
             XFormCollection::FlatMap {
                 ref description,
@@ -1041,7 +1167,7 @@ impl Program {
                 let flattened = with_prof_context(&description, || {
                     col.flat_map(move |x| fmfun(x).into_iter().flatten())
                 });
-                Self::xform_collection(flattened, &*next, arrangements)
+                Self::xform_collection(flattened, &*next, arrangements, lookup_collection)
             }
             XFormCollection::Filter {
                 ref description,
@@ -1049,7 +1175,7 @@ impl Program {
                 ref next,
             } => {
                 let filtered = with_prof_context(&description, || col.filter(ffun));
-                Self::xform_collection(filtered, &*next, arrangements)
+                Self::xform_collection(filtered, &*next, arrangements, lookup_collection)
             }
             XFormCollection::FilterMap {
                 ref description,
@@ -1057,7 +1183,7 @@ impl Program {
                 ref next,
             } => {
                 let flattened = with_prof_context(&description, || col.flat_map(fmfun));
-                Self::xform_collection(flattened, &*next, arrangements)
+                Self::xform_collection(flattened, &*next, arrangements, lookup_collection)
             }
             XFormCollection::Inspect {
                 ref description,
@@ -1067,15 +1193,82 @@ impl Program {
                 let inspect = with_prof_context(&description, || {
                     col.inspect(move |(v, ts, w)| ifun(v, ts.to_tuple_ts(), *w))
                 });
-                Self::xform_collection(inspect, &*next, arrangements)
+                Self::xform_collection(inspect, &*next, arrangements, lookup_collection)
+            }
+            XFormCollection::StreamJoin {
+                ref description,
+                afun,
+                arrangement,
+                jfun,
+                ref next,
+            } => {
+                let join = with_prof_context(&description, || {
+                    // arrange input collection
+                    let collection_with_keys = col.flat_map(afun);
+                    let arr = match arrangements.lookup_arr(arrangement) {
+                        A::Arrangement1(ArrangedCollection::Map(arranged)) => arranged.clone(),
+                        A::Arrangement1(ArrangedCollection::Set(_)) => {
+                            panic!("StreamJoin: not a map arrangement {:?}", arrangement)
+                        }
+                        _ => panic!("StreamJoin in nested scope: {}", description),
+                    };
+                    lookup_map(
+                        &collection_with_keys,
+                        arr,
+                        |(k, _), key| *key = k.clone(),
+                        move |v1, w1, v2, w2| (jfun(&v1.1, v2), w1 * w2),
+                        ().into_ddvalue(),
+                        ().into_ddvalue(),
+                        ().into_ddvalue(),
+                    )
+                    // Filter out `None`'s.
+                    // FIXME: We wouldn't need this if `lookup_map` allowed `output_func`
+                    // to return `Option`.
+                    .flat_map(|v| v)
+                });
+                Self::xform_collection(join, &*next, arrangements, lookup_collection)
+            }
+            XFormCollection::StreamSemijoin {
+                ref description,
+                afun,
+                arrangement,
+                jfun,
+                ref next,
+            } => {
+                let join = with_prof_context(&description, || {
+                    // arrange input collection
+                    let collection_with_keys = col.flat_map(afun);
+                    let arr = match arrangements.lookup_arr(arrangement) {
+                        A::Arrangement1(ArrangedCollection::Set(arranged)) => arranged.clone(),
+                        A::Arrangement1(ArrangedCollection::Map(_)) => {
+                            panic!("StreamSemijoin: not a set arrangement {:?}", arrangement)
+                        }
+                        _ => panic!("StreamSemijoin in nested scope: {}", description),
+                    };
+                    lookup_map(
+                        &collection_with_keys,
+                        arr,
+                        |(k, _), key| *key = k.clone(),
+                        move |v1, w1, _, w2| (jfun(&v1.1), w1 * w2),
+                        ().into_ddvalue(),
+                        ().into_ddvalue(),
+                        ().into_ddvalue(),
+                    )
+                    // Filter out `None`'s.
+                    // FIXME: We wouldn't need this if `lookup_map` allowed `output_func`
+                    // to return `Option`.
+                    .flat_map(|v| v)
+                });
+                Self::xform_collection(join, &*next, arrangements, lookup_collection)
             }
         }
     }
 
-    fn xform_arrangement<'a, 'b, P, T, TR>(
+    fn xform_arrangement<'a, 'b, P, T, TR, LC>(
         arr: &Arranged<Child<'a, P, T>, TR>,
         xform: &XFormArrangement,
         arrangements: &Arrangements<'a, 'b, P, T>,
+        lookup_collection: &LC,
     ) -> Collection<Child<'a, P, T>, DDValue, Weight>
     where
         P: ScopeParent,
@@ -1085,6 +1278,7 @@ impl Program {
         TR: TraceReader<Key = DDValue, Val = DDValue, Time = T, R = Weight> + Clone + 'static,
         TR::Batch: BatchReader<DDValue, DDValue, T, Weight>,
         TR::Cursor: Cursor<DDValue, DDValue, T, Weight>,
+        LC: Fn(RelId) -> Option<&'b Collection<Child<'a, P, T>, DDValue, Weight>>,
     {
         match *xform {
             XFormArrangement::FlatMap {
@@ -1099,6 +1293,7 @@ impl Program {
                     }),
                     &*next,
                     arrangements,
+                    lookup_collection,
                 )
             }),
             XFormArrangement::FilterMap {
@@ -1110,6 +1305,7 @@ impl Program {
                     arr.flat_map_ref(move |_, v| fmfun(v.clone())),
                     &*next,
                     arrangements,
+                    lookup_collection,
                 )
             }),
             XFormArrangement::Aggregate {
@@ -1139,7 +1335,7 @@ impl Program {
                         },
                     )
                 });
-                Self::xform_collection(col, &*next, arrangements)
+                Self::xform_collection(col, &*next, arrangements, lookup_collection)
             }
             XFormArrangement::Join {
                 ref description,
@@ -1155,7 +1351,7 @@ impl Program {
                             |f| arr.filter(move |_, v| f(v)).join_core(arranged, jfun),
                         )
                     });
-                    Self::xform_collection(col, &*next, arrangements)
+                    Self::xform_collection(col, &*next, arrangements, lookup_collection)
                 }
                 A::Arrangement2(ArrangedCollection::Map(arranged)) => {
                     let col = with_prof_context(&description, || {
@@ -1164,7 +1360,7 @@ impl Program {
                             |f| arr.filter(move |_, v| f(v)).join_core(arranged, jfun),
                         )
                     });
-                    Self::xform_collection(col, &*next, arrangements)
+                    Self::xform_collection(col, &*next, arrangements, lookup_collection)
                 }
 
                 _ => panic!("Join: not a map arrangement {:?}", arrangement),
@@ -1183,7 +1379,7 @@ impl Program {
                             |f| arr.filter(move |_, v| f(v)).join_core(arranged, jfun),
                         )
                     });
-                    Self::xform_collection(col, &*next, arrangements)
+                    Self::xform_collection(col, &*next, arrangements, lookup_collection)
                 }
                 A::Arrangement2(ArrangedCollection::Set(arranged)) => {
                     let col = with_prof_context(&description, || {
@@ -1192,7 +1388,7 @@ impl Program {
                             |f| arr.filter(move |_, v| f(v)).join_core(arranged, jfun),
                         )
                     });
-                    Self::xform_collection(col, &*next, arrangements)
+                    Self::xform_collection(col, &*next, arrangements, lookup_collection)
                 }
                 _ => panic!("Semijoin: not a set arrangement {:?}", arrangement),
             },
@@ -1212,7 +1408,7 @@ impl Program {
                             },
                         )
                     });
-                    Self::xform_collection(col, &*next, arrangements)
+                    Self::xform_collection(col, &*next, arrangements, lookup_collection)
                 }
                 A::Arrangement2(ArrangedCollection::Set(arranged)) => {
                     let col = with_prof_context(&description, || {
@@ -1224,10 +1420,113 @@ impl Program {
                             },
                         )
                     });
-                    Self::xform_collection(col, &*next, arrangements)
+                    Self::xform_collection(col, &*next, arrangements, lookup_collection)
                 }
                 _ => panic!("Antijoin: not a set arrangement {:?}", arrangement),
             },
+            XFormArrangement::StreamJoin {
+                ref description,
+                ffun,
+                rel,
+                kfun,
+                jfun,
+                ref next,
+            } => {
+                let col = with_prof_context(&description, || {
+                    // Map `rel` into `(key, value)` pairs, filtering out
+                    // records where `kfun` returns `None`.
+                    // FIXME: The key will need to be cloned below.  To avoid
+                    // this overhead, we need a version of `lookup_map` that
+                    // allows key function to return `Option`.
+                    let kfun = kfun;
+                    let jfun = jfun;
+                    let collection_with_keys = lookup_collection(rel)
+                        .unwrap_or_else(|| panic!("xform_arrangement: unknown relation {:?}", rel))
+                        .flat_map(move |v| kfun(&v).map(|k| (k, v)));
+                    // Filter the arrangement if `ffun` is supplied.
+                    let join = ffun.map_or_else(
+                        || {
+                            lookup_map(
+                                &collection_with_keys,
+                                arr.clone(),
+                                |(k, _), key| *key = k.clone(),
+                                move |v1, w1, v2, w2| (jfun(v2, &v1.1), w1 * w2),
+                                ().into_ddvalue(),
+                                ().into_ddvalue(),
+                                ().into_ddvalue(),
+                            )
+                        },
+                        |f| {
+                            lookup_map(
+                                &collection_with_keys,
+                                arr.filter(move |_, v| f(v)),
+                                |(k, _), key| *key = k.clone(),
+                                move |v1, w1, v2, w2| (jfun(v2, &v1.1), w1 * w2),
+                                ().into_ddvalue(),
+                                ().into_ddvalue(),
+                                ().into_ddvalue(),
+                            )
+                        },
+                    );
+
+                    // Filter out `None`'s.
+                    // FIXME: We wouldn't need this if `lookup_map` allowed `output_func`
+                    // to return `Option`.
+                    join.flat_map(|v| v)
+                });
+                Self::xform_collection(col, &*next, arrangements, lookup_collection)
+            }
+            XFormArrangement::StreamSemijoin {
+                ref description,
+                ffun,
+                rel,
+                kfun,
+                jfun,
+                ref next,
+            } => {
+                let col = with_prof_context(&description, || {
+                    // Extract join key from `rel`, filtering out
+                    // FIXME: The key will need to be cloned below.  To avoid
+                    // this overhead, we need a version of `lookup_map` that
+                    // allows key function to return `Option`.
+                    let kfun = kfun;
+                    let jfun = jfun;
+                    let collection_keys = lookup_collection(rel)
+                        .unwrap_or_else(|| panic!("xform_arrangement: unknown relation {:?}", rel))
+                        .flat_map(move |v| kfun(&v));
+                    // Filter the arrangement if `ffun` is supplied.
+                    let join = ffun.map_or_else(
+                        || {
+                            lookup_map(
+                                &collection_keys,
+                                arr.clone(),
+                                |k, key| *key = k.clone(),
+                                move |_, w1, v2, w2| (jfun(v2), w1 * w2),
+                                ().into_ddvalue(),
+                                ().into_ddvalue(),
+                                ().into_ddvalue(),
+                            )
+                        },
+                        |f| {
+                            lookup_map(
+                                &collection_keys,
+                                arr.filter(move |_, v| f(v)),
+                                |k, key| *key = k.clone(),
+                                move |_, w1, v2, w2| (jfun(v2), w1 * w2),
+                                ().into_ddvalue(),
+                                ().into_ddvalue(),
+                                ().into_ddvalue(),
+                            )
+                        },
+                    );
+
+                    // Filter out `None`'s.
+                    // FIXME: We wouldn't need this if `lookup_map` allowed `output_func`
+                    // to return `Option`.
+                    join.flat_map(|v| v)
+                });
+                Self::xform_collection(col, &*next, arrangements, lookup_collection)
+            }
         }
     }
 
@@ -1266,13 +1565,14 @@ impl Program {
                     .unwrap_or_else(|| panic!("mk_rule: unknown relation {:?}", rel)),
                 x,
                 &arrangements,
+                &lookup_collection,
             ),
             Rule::ArrangementRule { arr, xform, .. } => match arrangements.lookup_arr(*arr) {
                 A::Arrangement1(ArrangedCollection::Map(arranged)) => {
-                    Self::xform_arrangement(arranged, xform, &arrangements)
+                    Self::xform_arrangement(arranged, xform, &arrangements, &lookup_collection)
                 }
                 A::Arrangement2(ArrangedCollection::Map(arranged)) => {
-                    Self::xform_arrangement(arranged, xform, &arrangements)
+                    Self::xform_arrangement(arranged, xform, &arrangements, &lookup_collection)
                 }
                 _ => panic!("Rule starts with a set arrangement {:?}", *arr),
             },
@@ -1301,7 +1601,8 @@ impl RunningProgram {
         if self.worker_guards.is_none() {
             // Already stopped.
             return Ok(());
-        };
+        }
+
         self.flush()
             .and_then(|_| self.send(0, Msg::Stop))
             .and_then(|_| {
@@ -1430,9 +1731,24 @@ impl RunningProgram {
             self.apply_update(update, &mut filtered_updates)?;
         }
 
-        self.send(0, Msg::Update(filtered_updates)).map(|_| {
-            self.need_to_flush = true;
-        })
+        if filtered_updates.is_empty() {
+            return Ok(());
+        }
+
+        // cmp::max(filtered_updates.len() / self.senders.len(), MIN_BATCH_SIZE);
+        let chunk_size = filtered_updates.len() / self.senders.len();
+        filtered_updates
+            .chunks(chunk_size)
+            .map(|chunk| Msg::Update {
+                updates: chunk.to_vec(),
+                timestamp: self.timestamp,
+            })
+            .zip((0..self.senders.len()).cycle())
+            .map(|(update, worker_idx)| self.send(worker_idx, update))
+            .collect::<Response<()>>()?;
+
+        self.need_to_flush = true;
+        Ok(())
     }
 
     /// Deletes all values in an input table
@@ -1970,8 +2286,13 @@ impl RunningProgram {
             return Ok(());
         }
 
-        self.send(0, Msg::Flush).and_then(|()| {
+        self.broadcast(Msg::Flush {
+            timestamp: self.timestamp + 1,
+        })
+        .and_then(|()| {
+            self.timestamp += 1;
             self.need_to_flush = false;
+
             match self.reply_recv[0].recv() {
                 Err(_) => Err(
                     "failed to receive flush ack message from timely dataflow thread".to_string(),

@@ -109,6 +109,7 @@ macro_rules! rule_test {
     };
 }
 
+mod no_lints;
 mod no_shadow;
 mod no_undef;
 mod no_unused_labels;

@@ -8,10 +8,7 @@ use differential_dataflow::{
     difference::{Diff, Monoid},
     hashable::Hashable,
     lattice::Lattice,
-    operators::{
-        arrange::arrangement::{ArrangeBySelf, Arranged},
-        Consolidate, JoinCore, Reduce,
-    },
+    operators::{arrange::arrangement::Arranged, Consolidate, JoinCore, Reduce},
     trace::{BatchReader, Cursor, TraceReader},
     Collection, Data, ExchangeData,
 };
@@ -28,9 +25,11 @@ pub(super) enum ArrangedCollection<S, T1, T2>
 where
     S: Scope,
     S::Timestamp: Lattice + Ord,
+
     T1: TraceReader<Key = DDValue, Val = DDValue, Time = S::Timestamp, R = Weight> + Clone,
     T1::Batch: BatchReader<DDValue, DDValue, S::Timestamp, Weight>,
     T1::Cursor: Cursor<DDValue, DDValue, S::Timestamp, Weight>,
+
     T2: TraceReader<Key = DDValue, Val = (), Time = S::Timestamp, R = Weight> + Clone,
     T2::Batch: BatchReader<DDValue, (), S::Timestamp, Weight>,
     T2::Cursor: Cursor<DDValue, (), S::Timestamp, Weight>,
@@ -183,7 +182,7 @@ where
             // For each value with weight w != 1, compute an adjustment record with the same value and
             // weight (1-w)
             &collection
-                .arrange_by_self()
+                .map(|x| (x, ()))
                 .reduce(|_, src, dst| {
                     // If the input weight is 1, don't produce a surplus record.
                     if !src[0].1.is_one() {
