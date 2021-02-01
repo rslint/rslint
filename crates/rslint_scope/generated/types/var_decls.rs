@@ -200,45 +200,6 @@ pub static __Arng_var_decls_VariableDeclarations_0 : ::once_cell::sync::Lazy<pro
                                                                                                                                          queryable: false
                                                                                                                                      });
 pub static __Arng_var_decls_VariableDeclarations_1 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                        name: std::borrow::Cow::from(r###"(var_decls::VariableDeclarations{.name=(_: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(_: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations) /*join*/"###),
-                                                                                                                                         afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                         {
-                                                                                                                                             let __cloned = __v.clone();
-                                                                                                                                             match <VariableDeclarations>::from_ddvalue(__v) {
-                                                                                                                                                 VariableDeclarations{name: _, scope: _, declared_in: _, meta: _} => Some((()).into_ddvalue()),
-                                                                                                                                                 _ => None
-                                                                                                                                             }.map(|x|(x,__cloned))
-                                                                                                                                         }
-                                                                                                                                         __f},
-                                                                                                                                         queryable: false
-                                                                                                                                     });
-pub static __Arng_var_decls_VariableDeclarations_2 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                        name: std::borrow::Cow::from(r###"(var_decls::VariableDeclarations{.name=(_: internment::Intern<string>), .scope=(var_decls::Unhoistable{.scope=(ast::ScopeId{.id=(_: bit<32>), .file=(_0: ast::FileId)}: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(_: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations) /*join*/"###),
-                                                                                                                                         afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                         {
-                                                                                                                                             let __cloned = __v.clone();
-                                                                                                                                             match <VariableDeclarations>::from_ddvalue(__v) {
-                                                                                                                                                 VariableDeclarations{name: _, scope: DeclarationScope::Unhoistable{scope: types__ast::ScopeId{id: _, file: ref _0}}, declared_in: _, meta: _} => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                                                 _ => None
-                                                                                                                                             }.map(|x|(x,__cloned))
-                                                                                                                                         }
-                                                                                                                                         __f},
-                                                                                                                                         queryable: false
-                                                                                                                                     });
-pub static __Arng_var_decls_VariableDeclarations_3 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                                        name: std::borrow::Cow::from(r###"(var_decls::VariableDeclarations{.name=(_: internment::Intern<string>), .scope=(var_decls::Hoistable{.hoisted=(ast::ScopeId{.id=(_: bit<32>), .file=(_0: ast::FileId)}: ast::ScopeId), .unhoisted=(_: ast::ScopeId)}: var_decls::DeclarationScope), .declared_in=(_: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations) /*join*/"###),
-                                                                                                                                         afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                                         {
-                                                                                                                                             let __cloned = __v.clone();
-                                                                                                                                             match <VariableDeclarations>::from_ddvalue(__v) {
-                                                                                                                                                 VariableDeclarations{name: _, scope: DeclarationScope::Hoistable{hoisted: types__ast::ScopeId{id: _, file: ref _0}, unhoisted: _}, declared_in: _, meta: _} => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                                                 _ => None
-                                                                                                                                             }.map(|x|(x,__cloned))
-                                                                                                                                         }
-                                                                                                                                         __f},
-                                                                                                                                         queryable: false
-                                                                                                                                     });
-pub static __Arng_var_decls_VariableDeclarations_4 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                                         name: std::borrow::Cow::from(r###"(var_decls::VariableDeclarations{.name=(_: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(_0: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations) /*join*/"###),
                                                                                                                                          afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                          {
@@ -251,7 +212,7 @@ pub static __Arng_var_decls_VariableDeclarations_4 : ::once_cell::sync::Lazy<pro
                                                                                                                                          __f},
                                                                                                                                          queryable: false
                                                                                                                                      });
-pub static __Arng_var_decls_VariableDeclarations_5 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+pub static __Arng_var_decls_VariableDeclarations_2 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                                         name: std::borrow::Cow::from(r###"(var_decls::VariableDeclarations{.name=(_0: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(_1: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=(_: bool), .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(_: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations) /*join*/"###),
                                                                                                                                          afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                          {
@@ -267,7 +228,20 @@ pub static __Arng_var_decls_VariableDeclarations_5 : ::once_cell::sync::Lazy<pro
                                                                                                                                          __f},
                                                                                                                                          queryable: false
                                                                                                                                      });
-pub static __Arng_var_decls_VariableDeclarations_6 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+pub static __Arng_var_decls_VariableDeclarations_3 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+                                                                                                                                        name: std::borrow::Cow::from(r###"(var_decls::VariableDeclarations{.name=(_: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(_: ast::AnyId), .meta=(_: ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations) /*join*/"###),
+                                                                                                                                         afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
+                                                                                                                                         {
+                                                                                                                                             let __cloned = __v.clone();
+                                                                                                                                             match <VariableDeclarations>::from_ddvalue(__v) {
+                                                                                                                                                 VariableDeclarations{name: _, scope: _, declared_in: _, meta: _} => Some((()).into_ddvalue()),
+                                                                                                                                                 _ => None
+                                                                                                                                             }.map(|x|(x,__cloned))
+                                                                                                                                         }
+                                                                                                                                         __f},
+                                                                                                                                         queryable: false
+                                                                                                                                     });
+pub static __Arng_var_decls_VariableDeclarations_4 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                                         name: std::borrow::Cow::from(r###"(var_decls::VariableDeclarations{.name=(_: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(_: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=false, .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(_: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations) /*join*/"###),
                                                                                                                                          afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                          {
@@ -283,7 +257,7 @@ pub static __Arng_var_decls_VariableDeclarations_6 : ::once_cell::sync::Lazy<pro
                                                                                                                                          __f},
                                                                                                                                          queryable: false
                                                                                                                                      });
-pub static __Arng_var_decls_VariableDeclarations_7 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+pub static __Arng_var_decls_VariableDeclarations_5 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                                         name: std::borrow::Cow::from(r###"(var_decls::VariableDeclarations{.name=(_: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(_: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=true, .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(_: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations) /*join*/"###),
                                                                                                                                          afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                          {
@@ -299,7 +273,7 @@ pub static __Arng_var_decls_VariableDeclarations_7 : ::once_cell::sync::Lazy<pro
                                                                                                                                          __f},
                                                                                                                                          queryable: false
                                                                                                                                      });
-pub static __Arng_var_decls_VariableDeclarations_8 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
+pub static __Arng_var_decls_VariableDeclarations_6 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                                         name: std::borrow::Cow::from(r###"(var_decls::VariableDeclarations{.name=(_: internment::Intern<string>), .scope=(_: var_decls::DeclarationScope), .declared_in=(ast::AnyIdGlobal{.global=(_: ast::GlobalId)}: ast::AnyId), .meta=((&(var_decls::VariableMeta{.is_function_argument=false, .implicitly_declared=false, .declaration_span=(ddlog_std::Some{.x=(_: ast::Span)}: ddlog_std::Option<ast::Span>)}: var_decls::VariableMeta)): ddlog_std::Ref<var_decls::VariableMeta>)}: var_decls::VariableDeclarations) /*join*/"###),
                                                                                                                                          afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
                                                                                                                                          {
@@ -386,7 +360,7 @@ pub static __Rule_var_decls_VariableDeclarations_1 : ::once_cell::sync::Lazy<pro
                                                                                                                                   xform: XFormArrangement::Join{
                                                                                                                                              description: std::borrow::Cow::from("inputs::Class(.id=class, .name=ddlog_std::Some{.x=ast::Spanned{.data=name, .span=span}}, .parent=_, .elements=_, .scope=class_scope, .exported=_), scopes::FunctionLevelScope(.scope=class_scope, .nearest=hoisted_scope, .id=_)"),
                                                                                                                                              ffun: None,
-                                                                                                                                             arrangement: (81,0),
+                                                                                                                                             arrangement: (80,0),
                                                                                                                                              jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                              {
                                                                                                                                                  let (ref class, ref name, ref span, ref class_scope) = match *<types__inputs::Class>::from_ddvalue_ref(__v1) {
@@ -569,7 +543,7 @@ pub static __Rule_var_decls_VariableDeclarations_4 : ::once_cell::sync::Lazy<pro
                                                                                                                                                                      next: Box::new(XFormArrangement::Join{
                                                                                                                                                                                         description: std::borrow::Cow::from("inputs::VarDecl(.stmt_id=stmt, .pattern=ddlog_std::Some{.x=pat}, .value=_, .exported=_), inputs::Statement(.id=stmt, .kind=_, .scope=stmt_scope, .span=_), scopes::FunctionLevelScope(.scope=stmt_scope, .nearest=nearest_scope, .id=_)"),
                                                                                                                                                                                         ffun: None,
-                                                                                                                                                                                        arrangement: (81,0),
+                                                                                                                                                                                        arrangement: (80,0),
                                                                                                                                                                                         jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                                                                         {
                                                                                                                                                                                             let ddlog_std::tuple3(ref stmt, ref pat, ref stmt_scope) = *<ddlog_std::tuple3<types__ast::StmtId, internment::Intern<types__ast::Pattern>, types__ast::ScopeId>>::from_ddvalue_ref( __v1 );
@@ -630,7 +604,7 @@ pub static __Rule_var_decls_VariableDeclarations_5 : ::once_cell::sync::Lazy<pro
                                                                                                                                   xform: XFormArrangement::Join{
                                                                                                                                              description: std::borrow::Cow::from("inputs::Function(.id=func, .name=ddlog_std::Some{.x=ast::Spanned{.data=name, .span=span}}, .scope=func_scope, .body=_, .exported=_), scopes::FunctionLevelScope(.scope=func_scope, .nearest=nearest_scope, .id=_)"),
                                                                                                                                              ffun: None,
-                                                                                                                                             arrangement: (81,0),
+                                                                                                                                             arrangement: (80,0),
                                                                                                                                              jfun: {fn __f(_: &DDValue, __v1: &DDValue, __v2: &DDValue) -> Option<DDValue>
                                                                                                                                              {
                                                                                                                                                  let (ref func, ref name, ref span, ref func_scope) = match *<types__inputs::Function>::from_ddvalue_ref(__v1) {

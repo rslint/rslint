@@ -1808,19 +1808,6 @@ pub static __Arng_inputs_File_0 : ::once_cell::sync::Lazy<program::Arrangement> 
                                                                                                                       __f},
                                                                                                                       queryable: false
                                                                                                                   });
-pub static __Arng_inputs_FileExport_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
-                                                                                                                           name: std::borrow::Cow::from(r###"(inputs::FileExport{.export=(ast::NamedExport{.name=(_: ddlog_std::Option<ast::Spanned<ast::Name>>), .alias=(_: ddlog_std::Option<ast::Spanned<ast::Name>>)}: ast::ExportKind), .scope=(ast::ScopeId{.id=(_: bit<32>), .file=(_0: ast::FileId)}: ast::ScopeId)}: inputs::FileExport) /*join*/"###),
-                                                                                                                            afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>
-                                                                                                                            {
-                                                                                                                                let __cloned = __v.clone();
-                                                                                                                                match <FileExport>::from_ddvalue(__v) {
-                                                                                                                                    FileExport{export: types__ast::ExportKind::NamedExport{name: _, alias: _}, scope: types__ast::ScopeId{id: _, file: ref _0}} => Some(((*_0).clone()).into_ddvalue()),
-                                                                                                                                    _ => None
-                                                                                                                                }.map(|x|(x,__cloned))
-                                                                                                                            }
-                                                                                                                            __f},
-                                                                                                                            queryable: false
-                                                                                                                        });
 pub static __Arng_inputs_Function_0 : ::once_cell::sync::Lazy<program::Arrangement> = ::once_cell::sync::Lazy::new(|| program::Arrangement::Map{
                                                                                                                          name: std::borrow::Cow::from(r###"(inputs::Function{.id=(_0: ast::FuncId), .name=(ddlog_std::Some{.x=(ast::Spanned{.data=(_: internment::Intern<string>), .span=(_: ast::Span)}: ast::Spanned<internment::Intern<string>>)}: ddlog_std::Option<ast::Spanned<internment::Intern<string>>>), .scope=(_: ast::ScopeId), .body=(_: ast::ScopeId), .exported=(_: bool)}: inputs::Function) /*join*/"###),
                                                                                                                           afun: {fn __f(__v: DDValue) -> Option<(DDValue,DDValue)>

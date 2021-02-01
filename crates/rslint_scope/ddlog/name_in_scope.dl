@@ -7,6 +7,38 @@ import scopes
 import config
 import var_decls
 
+/// A relation transformer to preform symbol resolution on JS files
+extern transformer ResolveSymbols(
+    /// A stream of the files which need symbol resolution to run on them
+    FilesToResolve: relation[NeedsSymbolResolution],
+
+    /// A stream of all variable declarations
+    VariableDeclarations: relation[VariableDeclarations],
+
+    /// A stream containing all parent->child scope associations
+    InputScopes: relation[InputScope],
+
+    /// A stream containing all expressions
+    Expressions: relation[Expression],
+
+    /// A stream containing all name references
+    NameRefs: relation[NameRef],
+
+    /// A stream containing all assignments
+    Assignments: relation[Assign],
+
+    /// A stream containing all file exports
+    FileExports: relation[FileExport],
+) -> (
+    /// A stream of the resolved names
+    NameInScope: relation[NameInScope],
+
+    /// A relation containing all scopes that variables
+    /// have been declared in
+    ScopeOfDeclName: relation[ScopeOfDeclName],
+)
+
+
 relation NeedsSymbolResolution(file: FileId)
 NeedsSymbolResolution(file) :- EnableNoTypeofUndef(file, _).
 NeedsSymbolResolution(file) :- EnableNoUndef(file, _).
@@ -23,6 +55,30 @@ typedef NameInScope = NameInScope {
     /// The id of the item that declared the symbol
     declared: AnyId,
 }
+
+relation NameInScope[NameInScope]
+
+typedef ScopeOfDeclName = ScopeOfDeclName {
+    name: Name,
+    scope: ScopeId,
+    declared: AnyId,
+}
+
+relation ScopeOfDeclName[ScopeOfDeclName]
+
+apply ResolveSymbols(
+    NeedsSymbolResolution,
+    VariableDeclarations,
+    InputScope,
+    Expression,
+    NameRef,
+    Assign,
+    FileExport,
+) -> (
+    NameInScope,
+    ScopeOfDeclName,
+)
+
 
 /// The `NameInScope` relation gives every name/symbol/ident that's defined for any given scope.
 /// Names are walked down children scopes, meaning all children have access to the variables of
@@ -43,7 +99,7 @@ typedef NameInScope = NameInScope {
 ///  └-'b: { foo, bar }
 /// ```
 ///
-relation NameInScope[NameInScope]
+// relation NameInScope[NameInScope]
 
 // An index that returns all variables avaliable in a given scope
 index Index_VariablesForScope(scope: ScopeId)
@@ -54,54 +110,55 @@ index Index_VariableInScope(scope: ScopeId, variable: Name)
     on NameInScope[NameInScope { .name = variable, .scope = scope }]
 
 // Introduce all declared variables where they're used
-NameInScope(name, variable_scope, declared) :-
-    NeedsSymbolResolution(file),
-    VariableDeclarations(name, scope, declared, _),
-    declared.file() == Some { file },
-    var variable_scope = scope.hoisted_scope(),
-    NameOccursInScope(variable_scope, name).
-
-// Walk variables down scopes
-NameInScope(name, child, declared) :-
-    NameOccursInScope(child, name),
-    not ScopeOfDeclName(name, child, _),
-    InputScope(parent, child),
-    NameInScope(name, parent, declared).
-
-
-/// The scopes that variable declarations occur in
-relation ScopeOfDeclName(name: Name, scope: ScopeId, declared: AnyId)
-ScopeOfDeclName(name, scope, declared) :-
-    NeedsSymbolResolution(file),
-    VariableDeclarations(name, Unhoistable { scope @ ScopeId { _, file }}, declared, _).
-ScopeOfDeclName(name, scope, declared) :-
-    NeedsSymbolResolution(file),
-    VariableDeclarations(name, Hoistable { scope @ ScopeId { _, file }, _ }, declared, _).
+// NameInScope(name, variable_scope, declared) :-
+//     NeedsSymbolResolution(file),
+//     VariableDeclarations(name, scope, declared, _),
+//     declared.file() == Some { file },
+//     var variable_scope = scope.hoisted_scope(),
+//     NameOccursInScope(variable_scope, name).
+// 
+// // Walk variables down scopes
+// NameInScope(name, child, declared) :-
+//     NameOccursInScope(child, name),
+//     not ScopeOfDeclName(name, child, _),
+//     InputScope(parent, child),
+//     NameInScope(name, parent, declared).
 
 
-/// A record of where variable usages actually happen
-relation NameOccursInScope(scope: ScopeId, name: Name)
-
-/// Add all name references
-NameOccursInScope(scope, name) :-
-    NeedsSymbolResolution(file),
-    NameRef(id @ ExprId { _, file }, name),
-    Expression(id, _, scope, _),.
-
-/// Add assignment patterns
-NameOccursInScope(scope, name) :-
-    NeedsSymbolResolution(file),
-    Assign(id @ ExprId { _, file }, Some { Left { pattern }}, _, _),
-    Expression(id, _, scope, _),
-    var name = FlatMap(pattern.bound_vars().map(|name| name.data)).
-
-/// Add exports
-NameOccursInScope(scope, name) :-
-    NeedsSymbolResolution(file),
-    FileExport(NamedExport { export_name, export_alias }, scope @ ScopeId { _, file }),
-    Some { Spanned { var name, _ }} = export_alias.or_else(export_name).
-
-/// Recurse to parent scopes
-NameOccursInScope(parent, name) :-
-    NameOccursInScope(child, name),
-    InputScope(parent, child).
+// /// The scopes that variable declarations occur in
+// relation ScopeOfDeclName(name: Name, scope: ScopeId, declared: AnyId)
+// ScopeOfDeclName(name, scope, declared) :-
+//     NeedsSymbolResolution(file),
+//     VariableDeclarations(name, Unhoistable { scope @ ScopeId { _, file }}, declared, _).
+// ScopeOfDeclName(name, scope, declared) :-
+//     NeedsSymbolResolution(file),
+//     VariableDeclarations(name, Hoistable { scope @ ScopeId { _, file }, _ }, declared, _).
+// 
+// 
+// /// A record of where variable usages actually happen
+// relation NameOccursInScope(scope: ScopeId, name: Name)
+// 
+// /// Add all name references
+// NameOccursInScope(scope, name) :-
+//     NeedsSymbolResolution(file),
+//     NameRef(id @ ExprId { _, file }, name),
+//     Expression(id, _, scope, _),.
+// 
+// /// Add assignment patterns
+// NameOccursInScope(scope, name) :-
+//     NeedsSymbolResolution(file),
+//     Assign(id @ ExprId { _, file }, Some { Left { pattern }}, _, _),
+//     Expression(id, _, scope, _),
+//     var name = FlatMap(pattern.bound_vars().map(|name| name.data)).
+// 
+// /// Add exports
+// NameOccursInScope(scope, name) :-
+//     NeedsSymbolResolution(file),
+//     FileExport(NamedExport { export_name, export_alias }, scope @ ScopeId { _, file }),
+//     Some { Spanned { var name, _ }} = export_alias.or_else(export_name).
+// 
+// /// Recurse to parent scopes
+// NameOccursInScope(parent, name) :-
+//     NameOccursInScope(child, name),
+//     InputScope(parent, child).
+// 

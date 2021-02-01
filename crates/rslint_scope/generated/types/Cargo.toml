@@ -1,172 +1,46 @@
-bench = []
-bin = []
-example = []
-test = []
-[badges.maintenance]
-status = "none"
-
-[build-dependencies]
-
-[dependencies]
-abomonation = "0.7"
-erased-serde = "0.3"
-fnv = "1.0.2"
-libc = "0.2"
-num = "0.3"
-once_cell = "1.4.1"
-serde_json = "1.0"
-
-[dependencies.ddlog_bigint]
-features = []
-optional = false
-path = "ddlog_bigint"
-
-[dependencies.ddlog_derive]
-features = []
-optional = false
-path = "../ddlog_derive"
-
-[dependencies.ddlog_log]
-features = []
-optional = false
-path = "ddlog_log"
-
-[dependencies.ddlog_rt]
-features = []
-optional = false
-path = "ddlog_rt"
-
-[dependencies.ddlog_std]
-features = []
-optional = false
-path = "ddlog_std"
-
-[dependencies.debug]
-features = []
-optional = false
-path = "debug"
-
-[dependencies.differential-dataflow]
-branch = "ddlog-2"
-features = []
-git = "https://github.com/ddlog-dev/differential-dataflow"
-optional = false
-
-[dependencies.differential_datalog]
-features = []
-optional = false
-path = "../differential_datalog"
-
-[dependencies.internment]
-features = []
-optional = false
-path = "internment"
-
-[dependencies.ordered-float]
-features = ["serde"]
-optional = false
-version = "2.0.0"
-
-[dependencies.serde]
-features = ["derive"]
-optional = false
-version = "1.0"
-
-[dependencies.time]
-features = ["serde"]
-optional = false
-version = "0.2"
-
-[dependencies.timely]
-branch = "ddlog-2"
-features = []
-git = "https://github.com/ddlog-dev/timely-dataflow"
-optional = false
-
-[dependencies.types__ast]
-features = []
-optional = false
-path = "ast"
-
-[dependencies.types__config]
-features = []
-optional = false
-path = "config"
-
-[dependencies.types__group]
-features = []
-optional = false
-path = "group"
-
-[dependencies.types__inputs]
-features = []
-optional = false
-path = "inputs"
-
-[dependencies.types__outputs__no_unused_labels]
-features = []
-optional = false
-path = "outputs/no_unused_labels"
-
-[dependencies.types__regex]
-features = []
-optional = false
-path = "regex"
-
-[dependencies.types__scopes]
-features = []
-optional = false
-path = "scopes"
-
-[dependencies.types__utils]
-features = []
-optional = false
-path = "utils"
-
-[dependencies.types__variable_decl]
-features = []
-optional = false
-path = "variable_decl"
-
-[dependencies.types__vec]
-features = []
-optional = false
-path = "vec"
-
-[dev-dependencies]
+[package]
+name = "types"
+version = "0.1.0"
+edition = "2018"
 
 [features]
-c_api = ["differential_datalog/c_api", "ddlog_rt/c_api", "ddlog_std/c_api", "ddlog_bigint/c_api", "ddlog_log/c_api", "debug/c_api", "internment/c_api", "types__outputs__no_unused_labels/c_api", "types__ast/c_api", "types__utils/c_api", "types__inputs/c_api", "types__vec/c_api", "types__group/c_api", "types__scopes/c_api", "types__config/c_api", "types__variable_decl/c_api", "types__regex/c_api"]
 default = []
+flatbuf = ["differential_datalog/flatbuf","ddlog_rt/flatbuf", "ddlog_std/flatbuf", "ddlog_bigint/flatbuf", "ddlog_log/flatbuf", "debug/flatbuf", "internment/flatbuf", "types__outputs__no_unused_labels/flatbuf", "types__ast/flatbuf", "types__utils/flatbuf", "types__inputs/flatbuf", "types__vec/flatbuf", "types__group/flatbuf", "types__scopes/flatbuf", "types__config/flatbuf", "types__variable_decl/flatbuf", "types__regex/flatbuf"]
+c_api = ["differential_datalog/c_api","ddlog_rt/c_api", "ddlog_std/c_api", "ddlog_bigint/c_api", "ddlog_log/c_api", "debug/c_api", "internment/c_api", "types__outputs__no_unused_labels/c_api", "types__ast/c_api", "types__utils/c_api", "types__inputs/c_api", "types__vec/c_api", "types__group/c_api", "types__scopes/c_api", "types__config/c_api", "types__variable_decl/c_api", "types__regex/c_api"]
+
+[dependencies]
+differential_datalog = { path = "../differential_datalog" }
+ddlog_derive = { path = "../ddlog_derive" }
+abomonation = "0.7"
+ordered-float = { version = "2.0.0", features = ["serde"] }
+fnv = "1.0.2"
+once_cell = "1.4.1"
+libc = "0.2"
+time = { version = "0.2", features = ["serde"] }
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+num = "0.3"
+erased-serde = "0.3"
+differential-dataflow = { git = "https://github.com/ddlog-dev/differential-dataflow", branch = "ddlog-2" }
+timely = { git = "https://github.com/ddlog-dev/timely-dataflow", branch = "ddlog-2" }
+
+ddlog_rt = { path = "ddlog_rt" }
+ddlog_std = { path = "ddlog_std" }
+ddlog_bigint = { path = "ddlog_bigint" }
+ddlog_log = { path = "ddlog_log" }
+debug = { path = "debug" }
+internment = { path = "internment" }
+types__outputs__no_unused_labels = { path = "outputs/no_unused_labels" }
+types__ast = { path = "ast" }
+types__utils = { path = "utils" }
+types__inputs = { path = "inputs" }
+types__vec = { path = "vec" }
+types__group = { path = "group" }
+types__scopes = { path = "scopes" }
+types__config = { path = "config" }
+types__variable_decl = { path = "variable_decl" }
+types__regex = { path = "regex" }
 
 [lib]
-bench = true
-crate-type = ["lib"]
-doc = true
-doctest = true
-harness = true
 name = "types"
 path = "rslint_scoping.rs"
-plugin = false
-proc-macro = false
-required-features = []
-test = true
-
-[package]
-authors = []
-autobenches = true
-autobins = true
-autoexamples = true
-autotests = true
-categories = []
-edition = "2018"
-keywords = []
-name = "types"
-publish = true
-version = "0.1.0"
-
-[patch]
-
-
-
-[target]

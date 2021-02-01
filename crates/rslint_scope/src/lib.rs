@@ -62,7 +62,7 @@ impl ScopeAnalyzer {
     }
 
     pub fn shutdown(&self) {
-        let _ = self.datalog.hddlog.stop();
+        self.datalog.hddlog.stop().unwrap();
     }
 
     pub fn analyze_batch(&self, files: &[(FileId, SyntaxNode)]) -> DatalogResult<()> {

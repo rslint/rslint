@@ -31,5 +31,5 @@ ddlog_bigint = { path = "../ddlog_bigint" }
 [lib]
 name = "internment"
 path = "internment.rs"
-[dependencies.arc-interner]
-version="0.1"
+[dependencies.internment]
+version="0.4.1"

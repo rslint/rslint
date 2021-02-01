@@ -27,9 +27,11 @@ use crossbeam_channel::{Receiver, Sender};
 use fnv::{FnvHashMap, FnvHashSet};
 use std::{
     borrow::Cow,
+    cmp,
     collections::{hash_map, BTreeSet},
     fmt::{self, Debug, Formatter},
-    iter,
+    iter::{self, Cycle, Skip},
+    ops::Range,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc, Mutex,
@@ -766,6 +768,7 @@ pub struct RunningProgram {
     prof_thread_handle: Option<JoinHandle<()>>,
     /// Profiling statistics.
     pub profile: Arc<Mutex<Profile>>,
+    worker_round_robbin: Skip<Cycle<Range<usize>>>,
 }
 
 // Right now this Debug implementation is more or less a short cut.
@@ -854,7 +857,7 @@ enum Msg {
     /// Propagate changes through the pipeline
     Flush {
         /// The timestamp to advance to
-        timestamp: TS,
+        advance_to: TS,
     },
     /// Query arrangement.  If the second argument is `None`, returns
     /// all values in the collection; otherwise returns values associated
@@ -1001,6 +1004,7 @@ impl Program {
             profile_timely,
             prof_thread_handle: Some(prof_thread),
             profile,
+            worker_round_robbin: (0..number_workers).cycle().skip(0),
         })
     }
 
@@ -1604,7 +1608,7 @@ impl RunningProgram {
         }
 
         self.flush()
-            .and_then(|_| self.send(0, Msg::Stop))
+            .and_then(|_| self.broadcast(Msg::Stop))
             .and_then(|_| {
                 self.worker_guards.take().map_or(Ok(()), |worker_guards| {
                     worker_guards
@@ -1628,7 +1632,7 @@ impl RunningProgram {
         }
 
         self.transaction_in_progress = true;
-        Result::Ok(())
+        Ok(())
     }
 
     /// Commit a transaction.
@@ -1735,17 +1739,21 @@ impl RunningProgram {
             return Ok(());
         }
 
-        // cmp::max(filtered_updates.len() / self.senders.len(), MIN_BATCH_SIZE);
-        let chunk_size = filtered_updates.len() / self.senders.len();
+        let mut worker_round_robbin = self.worker_round_robbin.clone();
+
+        let chunk_size = cmp::max(filtered_updates.len() / self.senders.len(), 5000);
         filtered_updates
             .chunks(chunk_size)
             .map(|chunk| Msg::Update {
                 updates: chunk.to_vec(),
                 timestamp: self.timestamp,
             })
-            .zip((0..self.senders.len()).cycle())
+            .zip(&mut worker_round_robbin)
             .map(|(update, worker_idx)| self.send(worker_idx, update))
             .collect::<Response<()>>()?;
+
+        let next = worker_round_robbin.next().unwrap_or(0);
+        self.worker_round_robbin = (0..self.senders.len()).cycle().skip(next);
 
         self.need_to_flush = true;
         Ok(())
@@ -2287,7 +2295,7 @@ impl RunningProgram {
         }
 
         self.broadcast(Msg::Flush {
-            timestamp: self.timestamp + 1,
+            advance_to: self.timestamp + 1,
         })
         .and_then(|()| {
             self.timestamp += 1;
