@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added `File` from rslint_cli
 - Added the `regex` group
 - Added `no-invalid-regexp`
+- Added `util::regex`
 
 ### Changed
 
