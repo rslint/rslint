@@ -856,15 +856,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "flatbuffers"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a788f068dd10687940565bf4b5480ee943176cbd114b12e811074bcf7c04e4b9"
-dependencies = [
- "smallvec",
-]
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1318,6 +1309,16 @@ checksum = "7507624b29483431c0ba2d82aece8ca6cdba9382bff4ddd0f7490560c056098d"
 dependencies = [
  "winapi 0.2.8",
  "winapi-build",
+]
+
+[[package]]
+name = "lasso"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17823787ed7c3f2ce99d4865d41edd4407b2fb6d9e71d534ec69d832a3ec2df3"
+dependencies = [
+ "dashmap 4.0.2",
+ "hashbrown",
 ]
 
 [[package]]
@@ -2253,7 +2254,6 @@ dependencies = [
  "differential-dataflow",
  "differential_datalog",
  "erased-serde",
- "flatbuffers",
  "fnv",
  "internment 0.1.0",
  "libc",
@@ -2270,6 +2270,7 @@ dependencies = [
  "types__config",
  "types__group",
  "types__inputs",
+ "types__intern",
  "types__outputs__no_unused_labels",
  "types__regex",
  "types__scopes",
@@ -3096,6 +3097,7 @@ name = "types"
 version = "0.1.0"
 dependencies = [
  "abomonation",
+ "abomonation_derive",
  "ddlog_bigint",
  "ddlog_derive",
  "ddlog_log",
@@ -3104,6 +3106,7 @@ dependencies = [
  "debug",
  "differential-dataflow",
  "differential_datalog",
+ "dogsdogsdogs",
  "erased-serde",
  "fnv",
  "internment 0.1.0",
@@ -3119,6 +3122,7 @@ dependencies = [
  "types__config",
  "types__group",
  "types__inputs",
+ "types__intern",
  "types__outputs__no_unused_labels",
  "types__regex",
  "types__scopes",
@@ -3241,6 +3245,34 @@ dependencies = [
  "types__ast",
  "types__utils",
  "types__vec",
+]
+
+[[package]]
+name = "types__intern"
+version = "0.1.0"
+dependencies = [
+ "abomonation",
+ "ddlog_bigint",
+ "ddlog_derive",
+ "ddlog_log",
+ "ddlog_rt",
+ "ddlog_std",
+ "debug",
+ "differential-dataflow",
+ "differential_datalog",
+ "erased-serde",
+ "fnv",
+ "fxhash",
+ "internment 0.1.0",
+ "lasso",
+ "libc",
+ "num",
+ "once_cell",
+ "ordered-float",
+ "serde",
+ "serde_json",
+ "time",
+ "timely",
 ]
 
 [[package]]

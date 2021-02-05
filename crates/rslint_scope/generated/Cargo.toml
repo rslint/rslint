@@ -1,95 +1,193 @@
-[package]
-name = "rslint_scoping"
-version = "0.1.0"
-edition = "2018"
-autobins = false
-build = "src/build.rs"
+bench = []
+bin = []
+example = []
+test = []
+[badges.maintenance]
+status = "none"
 
-[features]
-default = []
-flatbuf = ["flatbuffers", "differential_datalog/flatbuf", "types/flatbuf"]
-profile = ["cpuprofiler"]
-ovsdb = []
-command-line = []
-nested_ts_32 = ["differential_datalog/nested_ts_32"]
-c_api = ["differential_datalog/c_api", "types/c_api"]
-
-[target.'cfg(not(windows))'.build-dependencies]
-libtool = "0.1"
-
-[dependencies.differential_datalog]
-path = "./differential_datalog"
+[build-dependencies]
 
 [dependencies]
 abomonation = "0.7"
-time = { version = "0.2", features = ["serde"] }
-ordered-float = { version = "2.0.0", features = ["serde"] }
-cpuprofiler = { version = "0.0", optional = true }
-#differential-dataflow = "0.11.0"
-differential-dataflow = { git = "https://github.com/ddlog-dev/differential-dataflow", branch = "ddlog-2" }
-#timely = "0.11"
-timely = { git = "https://github.com/ddlog-dev/timely-dataflow", branch = "ddlog-2" }
+crossbeam-channel = "0.5.0"
+erased-serde = "0.3"
 fnv = "1.0.2"
-once_cell = "1.4.1"
 libc = "0.2"
 num-traits = "0.2"
-num = { version = "0.3", features = ["serde"] }
-serde = { version = "1.0", features = ["derive"] }
-erased-serde = "0.3"
-crossbeam-channel = "0.5.0"
+once_cell = "1.4.1"
 
-# FlatBuffers dependency enabled by the `flatbuf` feature.
-# flatbuffers crate version must be in sync with the flatc compiler and Java
-# libraries: flatbuffers "0.6" <-> FlatBuffers "1.11.0".
-flatbuffers = { version = "0.6", optional = true }
+[dependencies.cpuprofiler]
+features = []
+optional = true
+version = "0.0"
 
-[[bin]]
-name = "rslint_scoping_cli"
-path = "src/main.rs"
-required-features = ["command-line"]
+[dependencies.ddlog_bigint]
+features = []
+optional = false
+path = "types/ddlog_bigint"
 
-# [lib] section must be in the end
+[dependencies.ddlog_log]
+features = []
+optional = false
+path = "types/ddlog_log"
 
-[lib]
-name = "rslint_scoping_ddlog"
-# Compiler will append the crate-type attribute here as well as the
-# build profile and workspace definition
-# crate-type = ["rlib", "staticlib"]
+[dependencies.ddlog_rt]
+features = []
+optional = false
+path = "types/ddlog_rt"
 
-crate-type = ["rlib", "staticlib"]
+[dependencies.ddlog_std]
+features = []
+optional = false
+path = "types/ddlog_std"
 
+[dependencies.debug]
+features = []
+optional = false
+path = "types/debug"
+
+[dependencies.differential-dataflow]
+branch = "ddlog-2"
+features = []
+git = "https://github.com/ddlog-dev/differential-dataflow"
+optional = false
+
+[dependencies.differential_datalog]
+features = []
+optional = false
+path = "./differential_datalog"
+
+[dependencies.internment]
+features = []
+optional = false
+path = "types/internment"
+
+[dependencies.num]
+features = ["serde"]
+optional = false
+version = "0.3"
+
+[dependencies.ordered-float]
+features = ["serde"]
+optional = false
+version = "2.0.0"
+
+[dependencies.serde]
+features = ["derive"]
+optional = false
+version = "1.0"
+
+[dependencies.time]
+features = ["serde"]
+optional = false
+version = "0.2"
+
+[dependencies.timely]
+branch = "ddlog-2"
+features = []
+git = "https://github.com/ddlog-dev/timely-dataflow"
+optional = false
 
 [dependencies.types]
+features = []
+optional = false
 path = "types/"
+
 [dependencies.types__ast]
+features = []
+optional = false
 path = "types/ast"
+
 [dependencies.types__config]
+features = []
+optional = false
 path = "types/config"
-[dependencies.ddlog_bigint]
-path = "types/ddlog_bigint"
-[dependencies.ddlog_log]
-path = "types/ddlog_log"
-[dependencies.ddlog_rt]
-path = "types/ddlog_rt"
-[dependencies.ddlog_std]
-path = "types/ddlog_std"
-[dependencies.debug]
-path = "types/debug"
+
 [dependencies.types__group]
+features = []
+optional = false
 path = "types/group"
+
 [dependencies.types__inputs]
+features = []
+optional = false
 path = "types/inputs"
-[dependencies.internment]
-path = "types/internment"
+
+[dependencies.types__intern]
+features = []
+optional = false
+path = "types/intern"
+
 [dependencies.types__outputs__no_unused_labels]
+features = []
+optional = false
 path = "types/outputs/no_unused_labels"
+
 [dependencies.types__regex]
+features = []
+optional = false
 path = "types/regex"
+
 [dependencies.types__scopes]
+features = []
+optional = false
 path = "types/scopes"
+
 [dependencies.types__utils]
+features = []
+optional = false
 path = "types/utils"
+
 [dependencies.types__variable_decl]
+features = []
+optional = false
 path = "types/variable_decl"
+
 [dependencies.types__vec]
+features = []
+optional = false
 path = "types/vec"
+
+[dev-dependencies]
+
+[features]
+c_api = ["differential_datalog/c_api", "types/c_api"]
+default = []
+nested_ts_32 = ["differential_datalog/nested_ts_32"]
+profile = ["cpuprofiler"]
+
+[lib]
+bench = true
+crate-type = ["lib"]
+doc = true
+doctest = true
+harness = true
+name = "rslint_scoping_ddlog"
+plugin = false
+proc-macro = false
+required-features = []
+test = true
+
+[package]
+authors = []
+autobenches = true
+autobins = false
+autoexamples = true
+autotests = true
+build = "src/build.rs"
+categories = []
+edition = "2018"
+keywords = []
+name = "rslint_scoping"
+publish = true
+version = "0.1.0"
+
+[patch]
+
+
+[target."cfg(not(windows))".build-dependencies]
+libtool = "0.1"
+
+[target."cfg(not(windows))".dependencies]
+
+[target."cfg(not(windows))".dev-dependencies]

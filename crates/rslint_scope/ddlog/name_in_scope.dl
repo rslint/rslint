@@ -5,6 +5,7 @@ import group
 import inputs
 import scopes
 import config
+import intern
 import var_decls
 
 /// A relation transformer to preform symbol resolution on JS files

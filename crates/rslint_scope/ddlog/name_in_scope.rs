@@ -1,5 +1,5 @@
 use crate::var_decls::{DeclarationScope, VariableDeclarations};
-use ddlog_std::{Either, Option as DDlogOption, Vec as DDlogVec};
+use ddlog_std::{Either, Option as DDlogOption, Ref, Vec as DDlogVec};
 use differential_dataflow::{
     collection::Collection,
     difference::Semigroup,
@@ -20,7 +20,7 @@ use timely::dataflow::{channels::pact::Pipeline, operators::Operator, Scope, Sco
 use types__ast::{ExportKind, ExprId, FileId, Name, ScopeId};
 use types__inputs::{Assign, Expression, FileExport, InputScope, NameRef};
 
-#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments, non_snake_case)]
 pub fn ResolveSymbols<
     S,
     D,
@@ -116,7 +116,10 @@ where
             convert_collection("Marshal InputScopes", input_scopes, convert_input_scopes)
                 .map(|scope| (scope.parent.file, scope));
 
-        semijoin_arranged(&input_scopes, &files_to_resolve).map(|(_, scope)| scope)
+        semijoin_arranged(&input_scopes, &files_to_resolve)
+            .map(|(_, scope)| scope)
+            .filter(|scope| scope.parent != scope.child)
+            .distinct_core()
     };
 
     let input_scopes_by_parent = input_scopes
@@ -244,7 +247,8 @@ where
         // `expr` has already been filtered here to only contain the expressions
         // for which symbol resolution is enabled, so this does double duty
         .join_core(&exprs, |expr_id, name_ref, expr| {
-            iter::once((expr.scope, name_ref.value.to_string()))
+            // TODO: Use `intern::IString`
+            iter::once((expr.scope, Ref::from(name_ref.value.to_string())))
         });
 
     let assignments = assignments
@@ -267,7 +271,7 @@ where
             let scope = expr.scope;
             bound_variables
                 .into_iter()
-                .map(move |name| (scope, name.data.to_string()))
+                .map(move |name| (scope, Ref::from(name.data.to_string())))
         });
 
     let file_exports = {
@@ -283,27 +287,35 @@ where
             if let ExportKind::NamedExport { name, alias } = export.export {
                 ddlog_std::std2option(alias)
                     .or_else(|| name.into())
-                    .map(|name| (scope, name.data.to_string()))
+                    .map(|name| (scope, Ref::from(name.data.to_string())))
             } else {
                 None
             }
         })
     };
 
-    name_refs
-        .concat(&assignments)
-        .concat(&file_exports)
-        .iterate(|symbols| {
-            symbols
-                .arrange_by_key()
-                .join_core(
-                    &input_scopes_by_child.enter(&symbols.scope()),
-                    |_child, name, &parent| iter::once((parent, name.clone())),
-                )
-                .concat(symbols)
-                .distinct_core()
-        })
-        .map(|(scope, name)| (name, scope))
+    let symbols = name_refs.concat(&assignments).concat(&file_exports);
+
+    symbols
+        .arrange_by_key()
+        .join_core(
+            &symbols
+                .map(|(child, _)| (child, child))
+                .iterate(|transitive_parents| {
+                    transitive_parents
+                        .map(|(child, parent)| (parent, child))
+                        .arrange_by_key()
+                        .join_core(
+                            &input_scopes_by_child.enter(&transitive_parents.scope()),
+                            |_parent, &child, &grandparent| iter::once((child, grandparent)),
+                        )
+                        .concat(transitive_parents)
+                        .distinct_core()
+                })
+                .arrange_by_key(),
+            |_child, name, &parent| iter::once((name.clone(), parent)),
+        )
+        .map(|(name, scope)| (name.to_string(), scope))
 }
 
 fn convert_collection<S, D, R, T, F, N>(

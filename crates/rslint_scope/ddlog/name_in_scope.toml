@@ -1,0 +1,6 @@
+[dependencies.dogsdogsdogs]
+git = "https://github.com/ddlog-dev/differential-dataflow"
+branch = "ddlog-2"
+
+[dependencies.abomonation_derive]
+version = "0.5.0"

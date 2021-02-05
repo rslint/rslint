@@ -600,6 +600,14 @@ pub mod typedefs
         pub use ::types__inputs::Arrow;
         pub use ::types__inputs::Array;
     }
+    pub mod intern
+    {
+        pub use ::types__intern::IString;
+        pub use ::types__intern::IObj;
+        pub use ::types__intern::string_intern;
+        pub use ::types__intern::istring_str;
+        pub use ::types__intern::istring_ord;
+    }
     pub mod internment
     {
         pub use ::internment::istring;
