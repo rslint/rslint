@@ -6,12 +6,12 @@ use differential_dataflow::{
     difference::{Abelian, Semigroup},
     lattice::Lattice,
     operators::{
-        arrange::{ArrangeByKey, ArrangeBySelf, Arranged, TraceAgent},
+        arrange::{Arrange, ArrangeByKey, ArrangeBySelf, Arranged, TraceAgent},
         Consolidate, Iterate, Join, JoinCore, Threshold,
     },
     trace::{
         implementations::ord::{OrdKeySpine, OrdValSpine},
-        TraceReader,
+        BatchReader, Cursor, TraceReader,
     },
     AsCollection, Data, ExchangeData, Hashable,
 };
@@ -23,13 +23,10 @@ use std::{
     num::NonZeroU32,
     ops::Mul,
 };
-use timely::{
-    dataflow::{
-        channels::pact::{Exchange as ExchangePipeline, Pipeline},
-        operators::Operator,
-        Scope, ScopeParent, Stream,
-    },
-    worker::AsWorker,
+use timely::dataflow::{
+    channels::pact::{Exchange, Pipeline},
+    operators::Operator,
+    Scope, ScopeParent, Stream,
 };
 use types__ast::{ExportKind, ExprId, FileId, Name, ScopeId};
 use types__inputs::{Assign, Expression, FileExport, InputScope, NameRef};
@@ -73,7 +70,7 @@ pub fn ResolveSymbols<
     convert_scope_of_decl_name: DeclName,
 ) -> (Collection<S, D, Weight>, Collection<S, D, Weight>)
 where
-    S: Scope + AsWorker,
+    S: Scope,
     S::Timestamp: Lattice,
     D: Data,
     Files: Fn(D) -> NeedsSymbolResolution + 'static,
@@ -86,24 +83,20 @@ where
     ScopeName: Fn(NameInScope) -> D + 'static,
     DeclName: Fn(ScopeOfDeclName) -> D + 'static,
 {
-    let num_workers = files_to_resolve.scope().peers() as u64;
-
     // Files that require name resolution stored as a keyed arrangement of `FileId`s
     let files_to_resolve = files_to_resolve
         .map_named("Marshal & Key FilesToResolve by FileId", move |file| {
             convert_files_to_resolve(file).file
         })
-        .exchange(move |file| file.id as u64 % num_workers)
         .arrange_by_self_named("Arrange FilesToResolve");
 
     // Expressions for enabled files, arranged by their expression ids
     let expressions = {
-        let exprs_by_file = expressions
-            .map_named("Marshal & Key Expressions by ExprId", move |file| {
+        let exprs_by_file =
+            expressions.map_named("Marshal & Key Expressions by ExprId", move |file| {
                 let expr = convert_expressions(file);
                 (expr.id.file, expr)
-            })
-            .exchange(move |(file, _)| file.id as u64 % num_workers);
+            });
 
         // Only select expressions for which symbol resolution is enabled
         semijoin_arranged(&exprs_by_file, &files_to_resolve)
@@ -113,31 +106,31 @@ where
     };
 
     let variable_declarations = {
-        let variable_declarations = variable_declarations
-            .map_named(
-                "Marshal & Key VariableDeclarations by FileId",
-                move |decl| {
-                    let decl = convert_variable_declarations(decl);
-                    let file = match decl.scope {
-                        DeclarationScope::Unhoistable { scope } => scope.file,
-                        DeclarationScope::Hoistable { hoisted, .. } => hoisted.file,
-                    };
+        let variable_declarations = variable_declarations.map_named(
+            "Marshal & Key VariableDeclarations by FileId",
+            move |decl| {
+                let decl = convert_variable_declarations(decl);
+                let file = match decl.scope {
+                    DeclarationScope::Unhoistable { scope } => scope.file,
+                    DeclarationScope::Hoistable { hoisted, .. } => hoisted.file,
+                };
 
-                    (file, decl)
-                },
-            )
-            .exchange(move |(file, _)| file.id as u64 % num_workers);
+                (file, decl)
+            },
+        );
 
-        semijoin_arranged(&variable_declarations, &files_to_resolve)
+        semijoin_arranged_exchange(
+            &variable_declarations,
+            |file, _| file.id as u64,
+            &files_to_resolve,
+        )
     };
 
     let input_scopes = {
-        let input_scopes = input_scopes
-            .map_named("Marshal InputScopes", move |scope| {
-                let scope = convert_input_scopes(scope);
-                (scope.parent.file, scope)
-            })
-            .exchange(move |(file, _)| file.id as u64 % num_workers);
+        let input_scopes = input_scopes.map_named("Marshal InputScopes", move |scope| {
+            let scope = convert_input_scopes(scope);
+            (scope.parent.file, scope)
+        });
 
         semijoin_arranged(&input_scopes, &files_to_resolve)
             .map(|(_, scope)| scope)
@@ -147,13 +140,12 @@ where
 
     let input_scopes_by_parent = input_scopes
         .map(|scope| (scope.parent, scope.child))
-        .arrange_by_key();
+        .arrange_by_key_exchange(|scope, _| scope.file.id as u64);
     let input_scopes_by_child = input_scopes
         .map(|scope| (scope.child, scope.parent))
-        .arrange_by_key();
+        .arrange_by_key_exchange(|scope, _| scope.file.id as u64);
 
     let symbol_occurrences = collect_name_occurrences(
-        num_workers,
         &files_to_resolve,
         &expressions,
         &input_scopes_by_child,
@@ -164,7 +156,7 @@ where
         file_exports,
         convert_file_exports,
     )
-    .arrange_by_self();
+    .arrange_by_self_pipelined();
 
     let scope_of_decl_name = variable_declarations.map(|(_, decl)| {
         let scope = match decl.scope {
@@ -177,7 +169,7 @@ where
 
     let decl_names_by_name_and_scope = scope_of_decl_name
         .map(|(name, scope, _)| (name, scope))
-        .arrange_by_self();
+        .arrange_by_self_exchange(|(_name, scope)| scope.file.id as u64);
 
     let name_in_scope = {
         let concrete_declarations = variable_declarations.map(|(_, decl)| {
@@ -189,35 +181,39 @@ where
             ((IStr::new(&*decl.name), hoisted_scope), decl.declared_in)
         });
 
-        semijoin_arranged(&concrete_declarations, &symbol_occurrences)
-            .iterate(|names| {
-                let parent_propagations = antijoin_arranged(
-                    &names
-                        .map(|((name, parent), decl)| (parent, (name, decl)))
-                        .join_core(
-                            &input_scopes_by_parent.enter(&names.scope()),
-                            |_parent, &(name, decl), &child| iter::once(((name, child), decl)),
-                        )
-                        .arrange_by_key(),
-                    &decl_names_by_name_and_scope.enter(&names.scope()),
-                );
+        semijoin_arranged_exchange(
+            &concrete_declarations,
+            |(_, scope), _| scope.file.id as u64,
+            &symbol_occurrences,
+        )
+        .iterate(|names| {
+            let parent_propagations = antijoin_arranged(
+                &names
+                    .map(|((name, parent), decl)| (parent, (name, decl)))
+                    .join_core(
+                        &input_scopes_by_parent.enter(&names.scope()),
+                        |_parent, &(name, decl), &child| iter::once(((name, child), decl)),
+                    )
+                    .arrange_by_key_pipelined(),
+                &decl_names_by_name_and_scope.enter(&names.scope()),
+            );
 
-                semijoin_arranged(
-                    &parent_propagations,
-                    &symbol_occurrences.enter(&names.scope()),
-                )
-                .concat(&names)
-                .distinct_core()
-            })
-            .map(move |((name, scope), declared)| {
-                let name = NameInScope {
-                    name: Intern::new(name.to_string()),
-                    scope,
-                    declared,
-                };
+            semijoin_arranged_pipelined(
+                &parent_propagations,
+                &symbol_occurrences.enter(&names.scope()),
+            )
+            .concat(&names)
+            .distinct_pipelined()
+        })
+        .map(move |((name, scope), declared)| {
+            let name = NameInScope {
+                name: Intern::new(name.to_string()),
+                scope,
+                declared,
+            };
 
-                convert_name_in_scope(name)
-            })
+            convert_name_in_scope(name)
+        })
     };
 
     (
@@ -236,8 +232,6 @@ where
 /// Collects all usages of symbols within files that need symbol resolution
 #[allow(clippy::clippy::too_many_arguments)]
 fn collect_name_occurrences<S, D, R, A1, A2, A3, Names, Assigns, Exports>(
-    num_workers: u64,
-
     files: &Arranged<S, A1>,
     exprs: &Arranged<S, A2>,
     input_scopes_by_child: &Arranged<S, A3>,
@@ -269,7 +263,6 @@ where
             let name = convert_name_refs(name);
             (name.expr_id, IStr::new(&*name.value))
         })
-        .exchange(move |(expr, _)| expr.file.id as u64 % num_workers)
         // Join all name references to their corresponding expressions
         // `expr` has already been filtered here to only contain the expressions
         // for which symbol resolution is enabled, so this does double duty
@@ -282,7 +275,6 @@ where
             let assign = convert_assignments(assign);
             (assign.expr_id, assign)
         })
-        .exchange(move |(expr, _)| expr.file.id as u64 % num_workers)
         // Join assignments onto their corresponding expressions and extract all
         // variables they bind to, doing double duty to only process
         .join_core(&exprs, |expr_id, assign, expr| {
@@ -302,42 +294,48 @@ where
         });
 
     let file_exports = {
-        let file_exports = file_exports
-            .map_named("Marshal & Key FileExports by FileId", move |export| {
+        let file_exports =
+            file_exports.map_named("Marshal & Key FileExports by FileId", move |export| {
                 let export = convert_file_exports(export);
                 (export.scope.file, (export.export, export.scope))
-            })
-            .exchange(move |(file, _)| file.id as u64 % num_workers);
+            });
 
-        semijoin_arranged(&file_exports, files).flat_map(|(_, (export, scope))| {
-            if let ExportKind::NamedExport { name, alias } = export {
-                ddlog_std::std2option(alias)
-                    .or_else(|| name.into())
-                    .map(|name| (scope, IStr::new(&*name.data)))
-            } else {
-                None
-            }
-        })
+        semijoin_arranged_exchange(&file_exports, |file, _| file.id as u64, files).flat_map(
+            |(_, (export, scope))| {
+                if let ExportKind::NamedExport { name, alias } = export {
+                    ddlog_std::std2option(alias)
+                        .or_else(|| name.into())
+                        .map(|name| (scope, IStr::new(&*name.data)))
+                } else {
+                    None
+                }
+            },
+        )
     };
 
     let symbols = name_refs.concat(&assignments).concat(&file_exports);
-    symbols.arrange_by_key().join_core(
-        &symbols
-            .map(|(child, _)| (child, child))
-            .iterate(|transitive_parents| {
-                transitive_parents
-                    .map(|(child, parent)| (parent, child))
-                    .arrange_by_key()
-                    .join_core(
-                        &input_scopes_by_child.enter(&transitive_parents.scope()),
-                        |_parent, &child, &grandparent| iter::once((child, grandparent)),
-                    )
-                    .concat(transitive_parents)
-                    .distinct_core()
-            })
-            .arrange_by_key(),
-        |_child, &name, &parent| iter::once((name, parent)),
-    )
+    let symbols_arranged = symbols.arrange_by_key_exchange(|scope, _| scope.file.id as u64);
+
+    let propagated_symbols = symbols
+        .map(|(child, _)| (child, child))
+        .iterate(|transitive_parents| {
+            let arranged_parents = transitive_parents
+                .map(|(child, parent)| (parent, child))
+                .arrange_by_key_exchange(|scope, _| scope.file.id as u64);
+
+            arranged_parents
+                .join_core(
+                    &input_scopes_by_child.enter(&transitive_parents.scope()),
+                    |_parent, &child, &grandparent| iter::once((child, grandparent)),
+                )
+                .concat(transitive_parents)
+                .distinct_pipelined()
+        })
+        .arrange_by_key_pipelined();
+
+    symbols_arranged.join_core(&propagated_symbols, |_child, &name, &parent| {
+        iter::once((name, parent))
+    })
 }
 
 fn convert_collection<S, D, R, T, F, N>(
@@ -371,6 +369,44 @@ where
     A: TraceReader<Key = K, Val = (), Time = S::Timestamp, R = R2> + Clone + 'static,
 {
     let arranged_values = values.arrange_by_key();
+    arranged_values.join_core(keys, |key, value, _| Some((key.clone(), value.clone())))
+}
+
+fn semijoin_arranged_pipelined<S, K, V, R, R2, A>(
+    values: &Collection<S, (K, V), R>,
+    keys: &Arranged<S, A>,
+) -> Collection<S, (K, V), <R as Mul<R2>>::Output>
+where
+    S: Scope,
+    S::Timestamp: Lattice,
+    K: ExchangeData + Hashable,
+    V: ExchangeData,
+    R: ExchangeData + Semigroup + Mul<R2>,
+    R2: Semigroup,
+    <R as Mul<R2>>::Output: Semigroup,
+    A: TraceReader<Key = K, Val = (), Time = S::Timestamp, R = R2> + Clone + 'static,
+{
+    let arranged_values = values.arrange_by_key_pipelined();
+    arranged_values.join_core(keys, |key, value, _| Some((key.clone(), value.clone())))
+}
+
+fn semijoin_arranged_exchange<S, K, V, R, R2, A, F>(
+    values: &Collection<S, (K, V), R>,
+    route: F,
+    keys: &Arranged<S, A>,
+) -> Collection<S, (K, V), <R as Mul<R2>>::Output>
+where
+    S: Scope,
+    S::Timestamp: Lattice,
+    K: ExchangeData + Hashable,
+    V: ExchangeData,
+    R: ExchangeData + Semigroup + Mul<R2>,
+    R2: Semigroup,
+    <R as Mul<R2>>::Output: Semigroup,
+    A: TraceReader<Key = K, Val = (), Time = S::Timestamp, R = R2> + Clone + 'static,
+    F: Fn(&K, &V) -> u64 + 'static,
+{
+    let arranged_values = values.arrange_by_key_exchange(route);
     arranged_values.join_core(keys, |key, value, _| Some((key.clone(), value.clone())))
 }
 
@@ -456,63 +492,161 @@ where
     }
 }
 
-pub trait ExchangeExt<D> {
-    fn exchange<F>(&self, route: F) -> Self
+pub trait ArrangeByKeyExt<K, V> {
+    type Output;
+
+    fn arrange_by_key_exchange<F>(&self, route: F) -> Self::Output
     where
-        F: Fn(&D) -> u64 + 'static,
-        Self: Sized,
+        F: Fn(&K, &V) -> u64 + 'static,
     {
-        self.exchange_named("Exchange", route)
+        self.arrange_by_key_exchange_named("ArrangeByKeyExchange", route)
     }
 
-    fn exchange_named<F>(&self, name: &str, route: F) -> Self
+    fn arrange_by_key_exchange_named<F>(&self, name: &str, route: F) -> Self::Output
     where
-        F: Fn(&D) -> u64 + 'static,
-        Self: Sized;
-}
+        F: Fn(&K, &V) -> u64 + 'static;
 
-impl<S, D> ExchangeExt<D> for Stream<S, D>
-where
-    S: Scope,
-    D: ExchangeData,
-{
-    fn exchange_named<F>(&self, name: &str, route: F) -> Self
-    where
-        F: Fn(&D) -> u64 + 'static,
-        Self: Sized,
-    {
-        self.unary(
-            ExchangePipeline::new(route),
-            name,
-            move |_capability, _info| {
-                let mut buffer = Vec::new();
-
-                move |input, output| {
-                    input.for_each(|time, data| {
-                        data.swap(&mut buffer);
-                        output.session(&time).give_vec(&mut buffer);
-                    });
-                }
-            },
-        )
+    fn arrange_by_key_pipelined(&self) -> Self::Output {
+        self.arrange_by_key_pipelined_named("ArrangeByKeyPipelined")
     }
+
+    fn arrange_by_key_pipelined_named(&self, name: &str) -> Self::Output;
 }
 
-impl<S, D, R> ExchangeExt<D> for Collection<S, D, R>
+impl<S, K, V, R> ArrangeByKeyExt<K, V> for Collection<S, (K, V), R>
 where
     S: Scope,
-    S::Timestamp: ExchangeData,
+    S::Timestamp: Lattice,
+    K: ExchangeData + Hashable,
+    V: ExchangeData,
     R: Semigroup + ExchangeData,
-    D: ExchangeData,
 {
-    fn exchange_named<F>(&self, name: &str, route: F) -> Self
+    #[allow(clippy::type_complexity)]
+    type Output = Arranged<S, TraceAgent<OrdValSpine<K, V, S::Timestamp, R>>>;
+
+    fn arrange_by_key_exchange_named<F>(&self, name: &str, route: F) -> Self::Output
+    where
+        F: Fn(&K, &V) -> u64 + 'static,
+    {
+        let exchange = Exchange::new(move |((key, value), _time, _diff)| route(key, value));
+        self.arrange_core(exchange, name)
+    }
+
+    fn arrange_by_key_pipelined_named(&self, name: &str) -> Self::Output {
+        self.arrange_core(Pipeline, name)
+    }
+}
+
+pub trait ArrangeBySelfExt<K> {
+    type Output;
+
+    fn arrange_by_self_exchange<F>(&self, route: F) -> Self::Output
+    where
+        F: Fn(&K) -> u64 + 'static,
+    {
+        self.arrange_by_self_exchange_named("ArrangeBySelfExchange", route)
+    }
+
+    fn arrange_by_self_exchange_named<F>(&self, name: &str, route: F) -> Self::Output
+    where
+        F: Fn(&K) -> u64 + 'static;
+
+    fn arrange_by_self_pipelined(&self) -> Self::Output {
+        self.arrange_by_self_pipelined_named("ArrangeBySelfPipelined")
+    }
+
+    fn arrange_by_self_pipelined_named(&self, name: &str) -> Self::Output;
+}
+
+impl<S, K, R> ArrangeBySelfExt<K> for Collection<S, K, R>
+where
+    S: Scope,
+    S::Timestamp: Lattice,
+    K: ExchangeData + Hashable,
+    R: Semigroup + ExchangeData,
+{
+    type Output = Arranged<S, TraceAgent<OrdKeySpine<K, S::Timestamp, R>>>;
+
+    fn arrange_by_self_exchange_named<F>(&self, name: &str, route: F) -> Self::Output
+    where
+        F: Fn(&K) -> u64 + 'static,
+    {
+        let exchange = Exchange::new(move |((key, ()), _time, _diff)| route(key));
+        self.map(|key| (key, ())).arrange_core(exchange, name)
+    }
+
+    fn arrange_by_self_pipelined_named(&self, name: &str) -> Self::Output {
+        self.map(|key| (key, ())).arrange_core(Pipeline, name)
+    }
+}
+
+pub trait DistinctExt<D, R1, R2 = R1> {
+    type Output;
+
+    fn distinct_exchange<F>(&self, route: F) -> Self::Output
     where
         F: Fn(&D) -> u64 + 'static,
-        Self: Sized,
     {
-        self.inner
-            .exchange_named(name, move |(data, _time, _diff)| route(data))
-            .as_collection()
+        self.distinct_exchange_named("DistinctExchange", route)
+    }
+
+    fn distinct_exchange_named<F>(&self, name: &str, route: F) -> Self::Output
+    where
+        F: Fn(&D) -> u64 + 'static;
+
+    fn distinct_pipelined(&self) -> Self::Output {
+        self.distinct_pipelined_named("DistinctPipelined")
+    }
+
+    fn distinct_pipelined_named(&self, name: &str) -> Self::Output;
+}
+
+impl<S, D, R1, R2> DistinctExt<D, R1, R2> for Collection<S, D, R1>
+where
+    S: Scope,
+    S::Timestamp: Lattice,
+    D: ExchangeData + Hashable,
+    R1: Semigroup + ExchangeData,
+    R2: Semigroup + Abelian + From<i8>,
+{
+    type Output = Collection<S, D, R2>;
+
+    fn distinct_exchange_named<F>(&self, name: &str, route: F) -> Self::Output
+    where
+        F: Fn(&D) -> u64 + 'static,
+    {
+        self.arrange_by_self_exchange(route)
+            .threshold_named(name, |_, _| R2::from(1))
+    }
+
+    fn distinct_pipelined_named(&self, name: &str) -> Self::Output {
+        self.arrange_by_self_pipelined()
+            .threshold_named(name, |_, _| R2::from(1))
+    }
+}
+
+impl<S, K, R1, R2, A> DistinctExt<K, R1, R2> for Arranged<S, A>
+where
+    S: Scope,
+    S::Timestamp: Lattice,
+    K: ExchangeData + Hashable,
+    R1: Semigroup + ExchangeData,
+    R2: Semigroup + Abelian + From<i8>,
+    A: TraceReader<Key = K, Val = (), Time = S::Timestamp, R = R1> + Clone + 'static,
+    A::Batch: BatchReader<K, (), S::Timestamp, R1>,
+    A::Cursor: Cursor<K, (), S::Timestamp, R1>,
+{
+    type Output = Collection<S, K, R2>;
+
+    fn distinct_exchange_named<F>(&self, name: &str, route: F) -> Self::Output
+    where
+        F: Fn(&K) -> u64 + 'static,
+    {
+        self.threshold_named(name, |_, _| R2::from(1))
+    }
+
+    fn distinct_pipelined_named(&self, name: &str) -> Self::Output {
+        self.threshold_named(name, |_, _| R2::from(1))
     }
 }
 
