@@ -150,7 +150,7 @@ where
         .map_named("Marshal & Key FilesToResolve by FileId", move |file| {
             convert_files_to_resolve(file).file
         })
-        .arrange_by_self_named("Arrange FilesToResolve");
+        .arrange_by_self_exchange(|file| file.id as u64);
 
     // Expressions for enabled files, arranged by their expression ids
     let expressions = {
@@ -164,7 +164,7 @@ where
         semijoin_arranged(&exprs_by_file, &files_to_resolve)
             // Key expressions by their `ExprId` and arrange them
             .map(|(_, expr)| (expr.id, expr))
-            .arrange_by_key_named("Arrange Expressions")
+            .arrange_by_key_exchange(|expr, _| expr.file.id as u64)
     };
 
     let variable_declarations = {
@@ -197,15 +197,15 @@ where
         semijoin_arranged(&input_scopes, &files_to_resolve)
             .map(|(_, scope)| scope)
             .filter(|scope| scope.parent != scope.child)
-            .distinct_core()
+            .distinct_exchange(|scope| scope.parent.file.id as u64)
     };
 
     let input_scopes_by_parent = input_scopes
         .map(|scope| (scope.parent, scope.child))
-        .arrange_by_key_exchange(|scope, _| scope.file.id as u64);
+        .arrange_by_key_pipelined();
     let input_scopes_by_child = input_scopes
         .map(|scope| (scope.child, scope.parent))
-        .arrange_by_key_exchange(|scope, _| scope.file.id as u64);
+        .arrange_by_key_pipelined();
 
     let symbol_occurrences = collect_name_occurrences(
         &files_to_resolve,
@@ -231,7 +231,7 @@ where
 
     let decl_names_by_name_and_scope = scope_of_decl_name
         .map(|(name, scope, _)| (name, scope))
-        .arrange_by_self_exchange(|(_name, scope)| scope.file.id as u64);
+        .arrange_by_self_pipelined();
 
     let name_in_scope = {
         let concrete_declarations = variable_declarations.map(|(_, decl)| {
@@ -243,39 +243,35 @@ where
             ((IStr::new(&*decl.name), hoisted_scope), decl.declared_in)
         });
 
-        semijoin_arranged_exchange(
-            &concrete_declarations,
-            |(_, scope), _| scope.file.id as u64,
-            &symbol_occurrences,
-        )
-        .iterate(|names| {
-            let parent_propagations = antijoin_arranged(
-                &names
-                    .map(|((name, parent), decl)| (parent, (name, decl)))
-                    .join_core(
-                        &input_scopes_by_parent.enter(&names.scope()),
-                        |_parent, &(name, decl), &child| iter::once(((name, child), decl)),
-                    )
-                    .arrange_by_key_pipelined(),
-                &decl_names_by_name_and_scope.enter(&names.scope()),
-            );
+        semijoin_arranged_pipelined(&concrete_declarations, &symbol_occurrences)
+            .iterate(|names| {
+                let parent_propagations = antijoin_arranged(
+                    &names
+                        .map(|((name, parent), decl)| (parent, (name, decl)))
+                        .join_core(
+                            &input_scopes_by_parent.enter(&names.scope()),
+                            |_parent, &(name, decl), &child| iter::once(((name, child), decl)),
+                        )
+                        .arrange_by_key_pipelined(),
+                    &decl_names_by_name_and_scope.enter(&names.scope()),
+                );
 
-            semijoin_arranged_pipelined(
-                &parent_propagations,
-                &symbol_occurrences.enter(&names.scope()),
-            )
-            .concat(&names)
-            .distinct_pipelined()
-        })
-        .map(move |((name, scope), declared)| {
-            let name = NameInScope {
-                name: Intern::new(name.to_string()),
-                scope,
-                declared,
-            };
+                semijoin_arranged_pipelined(
+                    &parent_propagations,
+                    &symbol_occurrences.enter(&names.scope()),
+                )
+                .concat(&names)
+                .distinct_pipelined()
+            })
+            .map(move |((name, scope), declared)| {
+                let name = NameInScope {
+                    name: Intern::new(name.to_string()),
+                    scope,
+                    declared,
+                };
 
-            convert_name_in_scope(name)
-        })
+                convert_name_in_scope(name)
+            })
     };
 
     (
@@ -325,6 +321,7 @@ where
             let name = convert_name_refs(name);
             (name.expr_id, IStr::new(&*name.value))
         })
+        .arrange_by_key_exchange(|expr, _| expr.file.id as u64)
         // Join all name references to their corresponding expressions
         // `expr` has already been filtered here to only contain the expressions
         // for which symbol resolution is enabled, so this does double duty
@@ -337,6 +334,7 @@ where
             let assign = convert_assignments(assign);
             (assign.expr_id, assign)
         })
+        .arrange_by_key_exchange(|expr, _| expr.file.id as u64)
         // Join assignments onto their corresponding expressions and extract all
         // variables they bind to, doing double duty to only process
         .join_core(&exprs, |expr_id, assign, expr| {
@@ -376,14 +374,14 @@ where
     };
 
     let symbols = name_refs.concat(&assignments).concat(&file_exports);
-    let symbols_arranged = symbols.arrange_by_key_exchange(|scope, _| scope.file.id as u64);
+    let symbols_arranged = symbols.arrange_by_key_pipelined();
 
     let propagated_symbols = symbols
         .map(|(child, _)| (child, child))
         .iterate(|transitive_parents| {
             let arranged_parents = transitive_parents
                 .map(|(child, parent)| (parent, child))
-                .arrange_by_key_exchange(|scope, _| scope.file.id as u64);
+                .arrange_by_key_pipelined();
 
             arranged_parents
                 .join_core(
