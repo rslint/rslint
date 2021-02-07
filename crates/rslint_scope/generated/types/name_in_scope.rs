@@ -161,19 +161,15 @@ where
                 let expr = convert_expressions(file);
                 (expr.id.file, expr)
             })
-            // Note: making this into a `.arrange_by_key_exchange()` while
-            //       making the post-semijoin arrange pipelined causes
-            //       fairly severe of performance loss, although I'm unsure
-            //       as to why
-            .arrange_by_key_named("ArrangeByKeyExchange: Expression");
+            .arrange_by_key_exchange_named("ArrangeByKeyExchange: Expressions", |file, _| {
+                file.id as u64
+            });
 
         // Only select expressions for which symbol resolution is enabled
         semijoin_arrangements(&exprs_by_file, &files_to_resolve)
             // Key expressions by their `ExprId` and arrange them
             .map(|(_, expr)| (expr.id, expr))
-            .arrange_by_key_exchange_named("ArrangeByKeyExchange: Expressions", |file, _| {
-                file.id as u64
-            })
+            .arrange_by_key_pipelined_named("ArrangeByKeyPipelined: Expressions")
     };
 
     let variable_declarations = {
