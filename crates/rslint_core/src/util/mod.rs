@@ -3,8 +3,6 @@
 mod const_exprs;
 mod style;
 
-pub mod regex;
-
 pub use const_exprs::*;
 pub use style::*;
 

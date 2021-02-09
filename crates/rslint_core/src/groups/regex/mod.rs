@@ -12,7 +12,7 @@ use rslint_regex::{validate_flags, EcmaVersion, Flags, Parser, Regex};
 use std::sync::Mutex;
 use std::{collections::HashMap, ops::Range};
 
-type RegexResult = Result<Regex, (Range<usize>, String)>;
+type RegexResult = Result<(Regex, Range<usize>), (Range<usize>, String)>;
 
 pub(crate) static REGEX_MAP: Lazy<Mutex<HashMap<Range<usize>, RegexResult>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
@@ -20,7 +20,8 @@ pub(crate) static REGEX_MAP: Lazy<Mutex<HashMap<Range<usize>, RegexResult>>> =
 group! {
     /// Rules which relate to regular expressions.
     regex,
-    no_invalid_regexp::NoInvalidRegexp
+    no_invalid_regexp::NoInvalidRegexp,
+    simplify_regex::SimplifyRegex
 }
 
 pub(crate) fn maybe_parse_and_store_regex(
@@ -61,6 +62,8 @@ fn collect_regex_from_node(node: &SyntaxNode, file_id: usize) -> Option<RegexRes
                 });
 
                 if let Some((pat, range)) = pat {
+                    let range = range.as_range();
+                    let new_range = range.start + 1..range.end - 1;
                     let flags = if let Some((flags, flag_range)) = flags {
                         match validate_flags(&flags.to_string(), EcmaVersion::ES2021) {
                             Ok(f) => f,
@@ -82,7 +85,7 @@ fn collect_regex_from_node(node: &SyntaxNode, file_id: usize) -> Option<RegexRes
                         flags,
                     );
                     Some(match parser.parse() {
-                        Ok(r) => Ok(r),
+                        Ok(r) => Ok((r, new_range)),
                         Err(err) => Err((err.span.as_range(), err.message)),
                     })
                 } else {
@@ -101,6 +104,8 @@ fn collect_regex_from_node(node: &SyntaxNode, file_id: usize) -> Option<RegexRes
                 EcmaVersion::ES2021,
                 false,
             );
+            let range = node.as_range();
+            let new_range = range.start + 1..range.end - 1;
             let res = match parser {
                 Ok(p) => p.parse(),
                 Err(err) => {
@@ -108,7 +113,7 @@ fn collect_regex_from_node(node: &SyntaxNode, file_id: usize) -> Option<RegexRes
                 }
             };
             Some(match res {
-                Ok(r) => Ok(r),
+                Ok(r) => Ok((r, new_range)),
                 Err(err) => Err((err.span.as_range(), err.message)),
             })
         }

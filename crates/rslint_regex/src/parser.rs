@@ -457,6 +457,8 @@ impl Parser<'_> {
 
         Ok(if terms.is_empty() {
             Node::Empty
+        } else if terms.len() == 1 {
+            terms.pop().unwrap()
         } else {
             Node::Alternative(self.span(start), terms)
         })
@@ -644,7 +646,7 @@ impl Parser<'_> {
             '.' => Node::Dot(self.span(start)),
             '\\' if self.peek() == Some('c') && extended => {
                 self.next();
-                Node::Literal(self.span(start), 'c')
+                Node::Literal(self.span(start), 'c', 'c'.into())
             }
             '\\' => self.atom_escape(start, extended)?,
             '[' => self.character_class()?,
@@ -658,19 +660,19 @@ impl Parser<'_> {
                 } else {
                     self.rewind(start);
                     self.next();
-                    Node::Literal(self.span(start), '{')
+                    Node::Literal(self.span(start), '{', '{'.into())
                 }
             }
             c if extended => {
                 if !DISALLOWED_PATTERN_CHARS.contains(&c) {
-                    Node::Literal(self.span(start), c)
+                    Node::Literal(self.span(start), c, c.into())
                 } else {
                     return Err(self.error("expected an atom").primary(self.span(start), ""));
                 }
             }
             c => {
                 if !is_syntax_character(c) {
-                    Node::Literal(self.span(start), c)
+                    Node::Literal(self.span(start), c, c.into())
                 } else {
                     return Err(self.error("expected an atom").primary(self.span(start), ""));
                 }
@@ -809,7 +811,7 @@ impl Parser<'_> {
         if let Some(c) = self.peek() {
             if c != '\\' && c != ']' {
                 self.next();
-                return Ok(Some(Node::Literal(self.span(start), c)));
+                return Ok(Some(Node::Literal(self.span(start), c, c.into())));
             }
         }
 
@@ -822,7 +824,7 @@ impl Parser<'_> {
                         .error("invalid character class escape")
                         .primary(self.span(start), ""));
                 } else {
-                    return Ok(Some(Node::Literal(self.span(start), 'c')));
+                    return Ok(Some(Node::Literal(self.span(start), 'c', 'c'.into())));
                 }
             }
 
@@ -834,11 +836,11 @@ impl Parser<'_> {
     #[inline]
     fn character_class_escape(&mut self, start: usize) -> Result<Node> {
         if self.eat('b') {
-            return Ok(Node::Literal(self.span(start), '\x08'));
+            return Ok(Node::Literal(self.span(start), '\x08', "\\b".into()));
         }
 
         if self.state.u_flag && self.eat('-') {
-            return Ok(Node::Literal(self.span(start), '-'));
+            return Ok(Node::Literal(self.span(start), '-', '-'.into()));
         }
 
         if !self.strict && !self.state.u_flag && self.peek() == Some('c') {
@@ -849,6 +851,7 @@ impl Parser<'_> {
                     return Ok(Node::Literal(
                         self.span(start),
                         char::from_u32(c as u32 % 0x20).unwrap(),
+                        self.pattern[start..self.cur].to_string(),
                     ));
                 } else {
                     self.cur -= 1;
@@ -881,16 +884,17 @@ impl Parser<'_> {
                         members.push(ir::CharacterClassMember::Single(Node::Literal(
                             self.span(inner_start),
                             '-',
+                            '-'.into(),
                         )));
                         continue;
                     };
 
                     let min = match atom {
-                        Node::Literal(_, c) => Some(c as u32),
+                        Node::Literal(_, c, _) => Some(c as u32),
                         _ => None,
                     };
                     let max = match end {
-                        Node::Literal(_, c) => Some(c as u32),
+                        Node::Literal(_, c, _) => Some(c as u32),
                         _ => None,
                     };
 
@@ -994,11 +998,11 @@ impl Parser<'_> {
         let span = self.span(start);
         let node = match c {
             // ControlEscape
-            't' => Node::Literal(span, '\t'),
-            'n' => Node::Literal(span, '\n'),
-            'v' => Node::Literal(span, '\x0B'),
-            'f' => Node::Literal(span, '\x0C'),
-            'r' => Node::Literal(span, '\r'),
+            't' => Node::Literal(span, '\t', "\\t".into()),
+            'n' => Node::Literal(span, '\n', "\\n".into()),
+            'v' => Node::Literal(span, '\x0B', "\\v".into()),
+            'f' => Node::Literal(span, '\x0C', "\\f".into()),
+            'r' => Node::Literal(span, '\r', "\\r".into()),
 
             'k' if self.state.n_flag => {
                 let name = self.group_name()?;
@@ -1007,16 +1011,19 @@ impl Parser<'_> {
             }
             'c' if extended => {
                 self.cur -= 1;
-                Node::Literal(self.span(start), '\\')
+                Node::Literal(self.span(start), '\\', '\\'.into())
             }
             'c' if self.peek().map_or(false, |c| c.is_ascii_alphabetic()) => {
                 let c = self.next().unwrap();
                 Node::Literal(
                     self.span(start),
                     std::char::from_u32((c as u32) % 32).unwrap(),
+                    self.pattern[start..self.cur].into(),
                 )
             }
-            '0' if !self.peek().map_or(false, |c| c.is_digit(10)) => Node::Literal(span, '\0'),
+            '0' if !self.peek().map_or(false, |c| c.is_digit(10)) => {
+                Node::Literal(span, '\0', "\\0".into())
+            }
             '0' | '4' if !self.strict && !self.state.u_flag => {
                 self.cur -= 1;
                 let n;
@@ -1034,7 +1041,11 @@ impl Parser<'_> {
                 } else {
                     n = n1;
                 }
-                Node::Literal(self.span(start), char::from_u32(n).unwrap())
+                Node::Literal(
+                    self.span(start),
+                    char::from_u32(n).unwrap(),
+                    self.pattern[start..self.cur].into(),
+                )
             }
             'x' => {
                 let digit_start = self.cur;
@@ -1045,14 +1056,22 @@ impl Parser<'_> {
                             return Err(err);
                         } else {
                             self.rewind(digit_start);
-                            return Ok(Node::Literal(span, 'x'));
+                            return Ok(Node::Literal(span, 'x', "\\x".into()));
                         }
                     }
                 };
 
-                Node::Literal(self.span(start), char::from_u32(digits).unwrap())
+                Node::Literal(
+                    self.span(start),
+                    char::from_u32(digits).unwrap(),
+                    self.pattern[start..self.cur].into(),
+                )
             }
-            'u' => Node::Literal(self.span(start), self.unicode_escape(false)?),
+            'u' => Node::Literal(
+                self.span(start),
+                self.unicode_escape(false)?,
+                self.pattern[start..self.cur].into(),
+            ),
             'd' | 'D' => Node::PerlClass(span, ir::ClassPerlKind::Digit, c == 'D'),
             'w' | 'W' => Node::PerlClass(span, ir::ClassPerlKind::Word, c == 'W'),
             's' | 'S' => Node::PerlClass(span, ir::ClassPerlKind::Space, c == 'S'),
@@ -1087,12 +1106,13 @@ impl Parser<'_> {
                     return Ok(Node::Literal(
                         self.span(start),
                         char::from_u32(num).unwrap(),
+                        self.pattern[start..self.cur].into(),
                     ));
                 }
 
                 Node::BackReference(self.span(start), num)
             }
-            '/' if self.state.u_flag => Node::Literal(span, '/'),
+            '/' if self.state.u_flag => Node::Literal(span, '/', "\\/".into()),
             c => {
                 let valid = if self.state.u_flag {
                     is_syntax_character(c) || c == '/'
@@ -1105,7 +1125,7 @@ impl Parser<'_> {
                 };
 
                 if valid {
-                    Node::Literal(span, c)
+                    Node::Literal(span, c, self.pattern[start..self.cur].into())
                 } else {
                     return Err(self
                         .error("invalid escape sequence")
