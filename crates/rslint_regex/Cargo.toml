@@ -1,6 +1,6 @@
 [package]
 name = "rslint_regex"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["RSLint developers"]
 edition = "2018"
 description = "RegEx parser for the ECMAScript definition"

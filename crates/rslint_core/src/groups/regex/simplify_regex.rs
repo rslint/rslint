@@ -1,28 +1,33 @@
 use super::maybe_parse_and_store_regex;
 use crate::rule_prelude::*;
+// use rslint_regex::Span;
 use rslint_regex::*;
 
 macro_rules! visitor {
-    ($regex:expr) => {
-        #[derive(Default)]
-        struct Visitor {
+    ($regex:expr, $src:expr) => {
+        struct Visitor<'a> {
             ran: bool,
+            #[allow(dead_code)]
+            src: &'a str,
         }
-        let mut new = Visitor::default();
+        let mut new = Visitor {
+            ran: false,
+            src: $src,
+        };
         new.visit_regex($regex);
         return new.ran;
     };
 }
 
 macro_rules! run_passes {
-    ($self:expr, $err:expr, $regex:expr, $($pass:ident => $msg:literal),*) => {
+    ($self:expr, $err:expr, $regex:expr, $src:expr, $($pass:ident => $msg:literal),* $(,)?) => {
         // nothing to see here, just working around rustc macro bug
         #[allow(unused_parens)]
         let ($(mut $pass),*) = ($(stringify!($pass).len() == 0),*);
         loop {
             let mut new = false;
             $(
-                let new_run = $self.$pass($regex);
+                let new_run = $self.$pass($regex, $src);
                 $pass = $pass || new_run;
                 new = new || new_run;
             )*
@@ -53,9 +58,15 @@ impl CstRule for SimplifyRegex {
             .err(self.name(), "this regular expression can be simplified")
             .primary(range.clone(), "");
 
+        let src = ctx.src.as_ref();
+
         run_passes! {
-            self, err, &mut regex,
-            remove_redundant_group_quantifiers => "`(a*)*` can be simplified to `(a*)`"
+            self, err, &mut regex, src,
+            remove_redundant_group_quantifiers => "`(a*)*` can be simplified to `(a*)`",
+            // this pass should run before `[0-9]` -> `\d` so that it tries to simplify the longest sequence first
+            // without simplifying `[a-zA-Z0-9_]` to `[a-zA-Z\d_]`
+            use_explicit_word_escape => r"`[a-zA-Z0-9_]` is equivalent to `\w`",
+            use_explicit_digit_escape => r"`[0-9]` is equivalent to `\d`"
         }
 
         if !err.footers.is_empty() {
@@ -70,9 +81,9 @@ impl CstRule for SimplifyRegex {
 
 impl SimplifyRegex {
     /// `(a*)*` -> `(a*)`
-    pub fn remove_redundant_group_quantifiers(&self, regex: &mut Regex) -> bool {
-        visitor!(regex);
-        impl VisitAllMut for Visitor {
+    pub fn remove_redundant_group_quantifiers(&self, regex: &mut Regex, src: &str) -> bool {
+        visitor!(regex, src);
+        impl VisitAllMut for Visitor<'_> {
             fn visit_node(&mut self, node: &mut Node) {
                 if let Node::Quantifier(_, inner, QuantifierKind::Multiple, _) = node {
                     let group = (**inner).to_owned();
@@ -84,6 +95,70 @@ impl SimplifyRegex {
                             *node = group;
                             self.ran = true;
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    /// `[0-9]` -> `\d` and `[a0-9]` -> `[a\d]`
+    pub fn use_explicit_digit_escape(&self, regex: &mut Regex, src: &str) -> bool {
+        visitor!(regex, src);
+        impl VisitAllMut for Visitor<'_> {
+            fn visit_node(&mut self, node: &mut Node) {
+                if let Node::CharacterClass(_, class) = node {
+                    let contains = class
+                        .members
+                        .iter()
+                        .any(|member| member.is(self.src, "0-9"));
+                    if contains {
+                        self.ran = true;
+                        if class.members.len() == 1 {
+                            *node = dbg!(Node::from_string("\\d")).unwrap();
+                        } else {
+                            let element = class
+                                .members
+                                .iter_mut()
+                                .find(|member| member.is(self.src, "0-9"))
+                                .unwrap();
+                            *element =
+                                CharacterClassMember::Single(Node::from_string("\\d").unwrap());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// `[0-9]` -> `\d` and `[a0-9]` -> `[a\d]`
+    pub fn use_explicit_word_escape(&self, regex: &mut Regex, src: &str) -> bool {
+        visitor!(regex, src);
+        impl VisitAllMut for Visitor<'_> {
+            fn visit_node(&mut self, node: &mut Node) {
+                if let Node::CharacterClass(_, class) = node {
+                    let (mut a_to_z, mut a_to_z_cap, mut zero_to_nine, mut underscore) =
+                        (None, None, None, None);
+                    for member in &mut class.members {
+                        if member.is(self.src, "a-z") {
+                            a_to_z = Some(member);
+                        } else if member.is(self.src, "A-Z") {
+                            a_to_z_cap = Some(member);
+                        } else if member.is(self.src, "0-9") {
+                            zero_to_nine = Some(member);
+                        } else if member.is(self.src, "_") {
+                            underscore = Some(member);
+                        }
+                    }
+                    if let (Some(a_to_z), Some(a_to_z_cap), Some(zero_to_nine), Some(underscore)) =
+                        (a_to_z, a_to_z_cap, zero_to_nine, underscore)
+                    {
+                        self.ran = true;
+                        let new = CharacterClassMember::Single(Node::Empty);
+                        *a_to_z = new.clone();
+                        *a_to_z_cap = new.clone();
+                        *zero_to_nine = new;
+                        *underscore =
+                            CharacterClassMember::Single(Node::from_string("\\w").unwrap());
                     }
                 }
             }

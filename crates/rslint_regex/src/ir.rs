@@ -1,7 +1,7 @@
 //! The intermediate representation of a RegEx
 //! in a tree based structure.
 
-use crate::Span;
+use crate::{Parser, Span};
 use bitflags::bitflags;
 
 bitflags! {
@@ -66,6 +66,7 @@ pub enum Node {
 }
 
 impl Node {
+    /// if this node is an alternative, yield an iterator over those nodes, otherwise yield the node itself.
     pub fn expanded_nodes(&mut self) -> Box<dyn Iterator<Item = &mut Node> + '_> {
         if let Node::Alternative(_, nodes) = self {
             Box::new((*nodes).iter_mut())
@@ -74,6 +75,7 @@ impl Node {
         }
     }
 
+    /// get the span of this node, returns [`None`] if the node is an empty node.
     pub fn span(&self) -> Option<Span> {
         Some(
             match self {
@@ -92,6 +94,39 @@ impl Node {
             }
             .to_owned(),
         )
+    }
+
+    /// check if this node is equal to some text
+    pub fn is(&self, src: impl AsRef<str>, text: impl AsRef<str>) -> bool {
+        if let Some(span) = self.span() {
+            &src.as_ref()[span.as_range()] == text.as_ref()
+        } else {
+            text.as_ref().is_empty()
+        }
+    }
+
+    pub fn text<'a>(&self, src: &'a str) -> &'a str {
+        if let Some(span) = self.span() {
+            &src[span.as_range()]
+        } else {
+            ""
+        }
+    }
+
+    /// create a new node from a string. This method is mostly just used for making simple nodes
+    /// for replacement.
+    pub fn from_string(string: impl AsRef<str>) -> Option<Self> {
+        Parser::new_from_pattern_and_flags(
+            string.as_ref(),
+            0,
+            0,
+            crate::EcmaVersion::ES2021,
+            false,
+            Flags::empty(),
+        )
+        .parse()
+        .ok()
+        .map(|x| x.node)
     }
 }
 
@@ -240,17 +275,17 @@ pub enum QuantifierKind {
 }
 
 impl QuantifierKind {
-    /// Returns `true` if the quantifier_kind is [`AtLeastOne`].
+    /// Returns `true` if the quantifier_kind is [`QuantifierKind::AtLeastOne`].
     pub fn is_at_least_one(&self) -> bool {
         matches!(self, Self::AtLeastOne)
     }
 
-    /// Returns `true` if the quantifier_kind is [`Multiple`].
+    /// Returns `true` if the quantifier_kind is [`QuantifierKind::Multiple`].
     pub fn is_multiple(&self) -> bool {
         matches!(self, Self::Multiple)
     }
 
-    /// Returns `true` if the quantifier_kind is [`Optional`].
+    /// Returns `true` if the quantifier_kind is [`QuantifierKind::Optional`].
     pub fn is_optional(&self) -> bool {
         matches!(self, Self::Optional)
     }
@@ -267,6 +302,18 @@ pub struct CharacterClass {
 pub enum CharacterClassMember {
     Range(Node, Node),
     Single(Node),
+}
+
+impl CharacterClassMember {
+    pub fn is(&self, src: impl AsRef<str>, text: impl AsRef<str>) -> bool {
+        let src = src.as_ref();
+        match self {
+            CharacterClassMember::Range(a, b) => {
+                format!("{}-{}", a.text(src), b.text(src)) == text.as_ref()
+            }
+            CharacterClassMember::Single(node) => node.text(src) == text.as_ref(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

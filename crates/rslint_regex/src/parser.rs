@@ -912,6 +912,7 @@ impl Parser<'_> {
                         }
                         _ => {}
                     }
+                    members.push(ir::CharacterClassMember::Range(atom, end));
                 }
             } else {
                 break;
