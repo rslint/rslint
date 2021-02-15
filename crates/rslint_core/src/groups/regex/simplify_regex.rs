@@ -1,6 +1,6 @@
 use super::maybe_parse_and_store_regex;
 use crate::rule_prelude::*;
-// use rslint_regex::Span;
+use rslint_regex::Span;
 use rslint_regex::*;
 
 macro_rules! visitor {
@@ -66,7 +66,10 @@ impl CstRule for SimplifyRegex {
             // this pass should run before `[0-9]` -> `\d` so that it tries to simplify the longest sequence first
             // without simplifying `[a-zA-Z0-9_]` to `[a-zA-Z\d_]`
             use_explicit_word_escape => r"`[a-zA-Z0-9_]` is equivalent to `\w`",
-            use_explicit_digit_escape => r"`[0-9]` is equivalent to `\d`"
+            use_explicit_digit_escape => r"`[0-9]` is equivalent to `\d`",
+            use_explicit_star_quantifier => r"`a{0,}` is equivalent to `a*`",
+            use_explicit_plus_quantifier => r"`a{1,}` is equivalent to `a+`",
+            collapse_contiguous_literals => "contiguous literals can be turned into a quantifier"
         }
 
         if !err.footers.is_empty() {
@@ -114,7 +117,7 @@ impl SimplifyRegex {
                     if contains {
                         self.ran = true;
                         if class.members.len() == 1 {
-                            *node = dbg!(Node::from_string("\\d")).unwrap();
+                            *node = Node::from_string("\\d").unwrap();
                         } else {
                             let element = class
                                 .members
@@ -159,6 +162,83 @@ impl SimplifyRegex {
                         *zero_to_nine = new;
                         *underscore =
                             CharacterClassMember::Single(Node::from_string("\\w").unwrap());
+                    }
+                }
+            }
+        }
+    }
+
+    /// `a{0,}` -> `a*`
+    pub fn use_explicit_star_quantifier(&self, regex: &mut Regex, src: &str) -> bool {
+        visitor!(regex, src);
+        impl VisitAllMut for Visitor<'_> {
+            fn visit_quantifier(
+                &mut self,
+                _: &Span,
+                _: &mut Node,
+                kind: &mut QuantifierKind,
+                _: &mut bool,
+            ) {
+                if *kind == QuantifierKind::Between(0, None) {
+                    *kind = QuantifierKind::Multiple;
+                    self.ran = true;
+                }
+            }
+        }
+    }
+
+    /// `a{1,}` -> `a+`
+    pub fn use_explicit_plus_quantifier(&self, regex: &mut Regex, src: &str) -> bool {
+        visitor!(regex, src);
+        impl VisitAllMut for Visitor<'_> {
+            fn visit_quantifier(
+                &mut self,
+                _: &Span,
+                _: &mut Node,
+                kind: &mut QuantifierKind,
+                _: &mut bool,
+            ) {
+                if *kind == QuantifierKind::Between(1, None) {
+                    *kind = QuantifierKind::AtLeastOne;
+                    self.ran = true;
+                }
+            }
+        }
+    }
+
+    /// `aaa` -> `a{3}`
+    pub fn collapse_contiguous_literals(&self, regex: &mut Regex, src: &str) -> bool {
+        visitor!(regex, src);
+        impl VisitAllMut for Visitor<'_> {
+            fn visit_node(&mut self, node: &mut Node) {
+                if let Node::Alternative(_, nodes) = node {
+                    let mut iter = nodes.iter_mut().peekable();
+                    while let Some(node) = iter.next() {
+                        if let Node::Literal(_, c, _) = node {
+                            let mut number = 0;
+                            let mut node_stack = vec![];
+                            while let Some(next) = iter.peek() {
+                                match next {
+                                    Node::Literal(_, next_c, _) if next_c == c => {
+                                        node_stack.push(iter.next().unwrap());
+                                        number += 1;
+                                    }
+                                    _ => break,
+                                }
+                            }
+                            if number != 0 {
+                                for node in node_stack {
+                                    *node = Node::Empty;
+                                }
+                                *node = Node::Quantifier(
+                                    node.span().unwrap().to_owned(),
+                                    Box::new(node.to_owned()),
+                                    QuantifierKind::Number(number as u32 + 1),
+                                    false,
+                                );
+                                self.ran = true;
+                            }
+                        }
                     }
                 }
             }
