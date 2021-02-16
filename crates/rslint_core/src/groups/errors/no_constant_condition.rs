@@ -39,6 +39,7 @@ declare_lint! {
     #[derive(Default)]
     NoConstantCondition,
     errors,
+    tags(Recommended),
     "no-constant-condition"
 }
 

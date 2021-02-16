@@ -23,6 +23,7 @@ declare_lint! {
     #[serde(default)]
     NoExtraBooleanCast,
     errors,
+    tags(Recommended),
     "no-extra-boolean-cast",
     /// If this option is `true`, this rule will also check for unnecessary boolean
     /// cast inside logical expression, which is disabled by default.

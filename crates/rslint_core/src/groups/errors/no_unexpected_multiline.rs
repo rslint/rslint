@@ -64,6 +64,7 @@ declare_lint! {
     #[derive(Default)]
     NoUnexpectedMultiline,
     errors,
+    tags(Recommended),
     "no-unexpected-multiline"
 }
 

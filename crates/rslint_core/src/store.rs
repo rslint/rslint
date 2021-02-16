@@ -18,6 +18,18 @@ impl CstRuleStore {
     pub fn builtins(mut self) -> Self {
         self.rules.extend(errors());
         self.rules.extend(style());
+        self.rules.extend(regex());
+        self
+    }
+
+    /// All recommended rules from every group.
+    pub fn recommended(mut self) -> Self {
+        self.rules
+            .extend(errors().into_iter().filter(|x| x.recommended()));
+        self.rules
+            .extend(style().into_iter().filter(|x| x.recommended()));
+        self.rules
+            .extend(regex().into_iter().filter(|x| x.recommended()));
         self
     }
 

@@ -23,6 +23,7 @@ declare_lint! {
     #[serde(default)]
     ValidTypeof,
     errors,
+    tags(Recommended),
     "valid-typeof",
 
     /**

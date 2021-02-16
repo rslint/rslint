@@ -314,7 +314,7 @@ impl Config {
     pub fn rules_store(&self) -> CstRuleStore {
         let rule_cfg = match &self.repr.rules {
             Some(rules) => rules,
-            None => return CstRuleStore::new().builtins(),
+            None => return CstRuleStore::new().recommended(),
         };
 
         let rules = unique_rules(rule_cfg.errors.clone(), rule_cfg.warnings.clone());

@@ -40,6 +40,7 @@ declare_lint! {
     #[serde(default)]
     UseIsnan,
     errors,
+    tags(Recommended),
     "use-isnan",
     /// Switch statements use `===` internally to match an expression, therefore `switch (NaN)` and `case NaN` will never match.
     /// This rule disables uses like that which are always incorrect (true by default)

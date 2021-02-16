@@ -30,6 +30,7 @@ declare_lint! {
     #[serde(default)]
     NoConfusingArrow,
     errors,
+    tags(Recommended),
     "no-confusing-arrow",
     /// Relaxes the rule and accepts parenthesis as a valid "confusion-preventing" syntax.
     /// `true` by default.

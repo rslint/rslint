@@ -41,6 +41,7 @@ declare_lint! {
     #[derive(Default)]
     NoAsyncPromiseExecutor,
     errors,
+    tags(Recommended),
     "no-async-promise-executor"
 }
 

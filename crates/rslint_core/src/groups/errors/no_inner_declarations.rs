@@ -38,6 +38,7 @@ declare_lint! {
     #[serde(default)]
     NoInnerDeclarations,
     errors,
+    tags(Recommended),
     "no-inner-declarations",
     /// What declarations to disallow in nested blocks, it can include two possible options:
     /// "functions" and "variables", you can include either or, or both. Disallows only functions

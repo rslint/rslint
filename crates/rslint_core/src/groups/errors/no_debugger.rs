@@ -20,6 +20,7 @@ declare_lint! {
     #[derive(Default)]
     NoDebugger,
     errors,
+    tags(Recommended),
     "no-debugger"
 }
 

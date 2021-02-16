@@ -60,6 +60,7 @@ declare_lint! {
     #[derive(Default)]
     GetterReturn,
     errors,
+    tags(Recommended),
     "getter-return",
     /// Whether to allow implicitly returning undefined with `return;`.
     /// `true` by default.

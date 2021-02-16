@@ -37,6 +37,7 @@ declare_lint! {
     #[derive(Default)]
     ForDirection,
     errors,
+    tags(Recommended),
     "for-direction"
 }
 

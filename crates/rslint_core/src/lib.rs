@@ -42,7 +42,7 @@ pub mod util;
 
 pub use self::{
     file::File,
-    rule::{CstRule, Inferable, Outcome, Rule, RuleCtx, RuleLevel, RuleResult},
+    rule::{CstRule, Inferable, Outcome, Rule, RuleCtx, RuleLevel, RuleResult, Tag},
     store::CstRuleStore,
 };
 pub use rslint_errors::{Diagnostic, Severity, Span};

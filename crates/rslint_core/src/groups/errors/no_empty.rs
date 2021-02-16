@@ -33,6 +33,7 @@ declare_lint! {
     #[serde(default)]
     NoEmpty,
     errors,
+    tags(Recommended),
     "no-empty",
     /// Whether to disallow empty block statements in function declarations, arrow functions,
     /// getters, setters, and methods.

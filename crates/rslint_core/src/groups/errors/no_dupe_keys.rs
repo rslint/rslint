@@ -22,6 +22,7 @@ declare_lint! {
     #[derive(Default)]
     NoDupeKeys,
     errors,
+    tags(Recommended),
     "no-dupe-keys"
 }
 

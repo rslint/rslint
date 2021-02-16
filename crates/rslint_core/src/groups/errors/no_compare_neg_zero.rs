@@ -33,6 +33,7 @@ declare_lint! {
     #[derive(Default)]
     NoCompareNegZero,
     errors,
+    tags(Recommended),
     "no-compare-neg-zero"
 }
 

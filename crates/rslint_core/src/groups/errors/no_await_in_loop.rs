@@ -41,6 +41,7 @@ declare_lint! {
     #[derive(Default)]
     NoAwaitInLoop,
     errors,
+    tags(Recommended),
     "no-await-in-loop"
 }
 

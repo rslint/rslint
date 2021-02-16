@@ -36,6 +36,7 @@ declare_lint! {
     #[derive(Default)]
     NoDuplicateCases,
     errors,
+    tags(Recommended),
     "no-duplicate-cases"
 }
 

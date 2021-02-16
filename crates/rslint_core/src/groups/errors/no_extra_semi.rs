@@ -25,6 +25,7 @@ declare_lint! {
     #[derive(Default)]
     NoExtraSemi,
     errors,
+    tags(Recommended),
     "no-extra-semi"
 }
 

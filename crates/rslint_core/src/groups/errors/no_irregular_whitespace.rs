@@ -47,6 +47,7 @@ declare_lint! {
     #[serde(default)]
     NoIrregularWhitespace,
     errors,
+    tags(Recommended),
     "no-irregular-whitespace",
     /// Whether to allow any whitespace in string literals (true by default)
     pub skip_strings: bool,

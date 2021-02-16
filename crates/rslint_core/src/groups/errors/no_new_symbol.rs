@@ -25,6 +25,7 @@ declare_lint! {
     #[derive(Default)]
     NoNewSymbol,
     errors,
+    tags(Recommended),
     "no-new-symbol",
 }
 

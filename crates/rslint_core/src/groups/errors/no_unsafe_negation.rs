@@ -29,6 +29,7 @@ declare_lint! {
     #[derive(Default)]
     NoUnsafeNegation,
     errors,
+    tags(Recommended),
     "no-unsafe-negation"
 }
 

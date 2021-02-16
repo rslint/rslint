@@ -37,6 +37,7 @@ declare_lint! {
     #[serde(default)]
     NoCondAssign,
     errors,
+    tags(Recommended),
     "no-cond-assign",
     /// Allow an assignment if they are enclosed in parentheses to allow
     /// things like reassigning a variable.

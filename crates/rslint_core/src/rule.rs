@@ -17,6 +17,17 @@ use std::ops::{Deref, DerefMut, Drop};
 use std::rc::Rc;
 use std::sync::Arc;
 
+/// A tag describing properties present on a rule, such as if the rule is recommended or if it runs on only some languages.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Tag {
+    /// This rule runs by default if no configuration is provided.
+    Recommended,
+    /// This rule should only run on JavaScript files.
+    OnlyJS,
+    /// This rule should only run on TypeScript files.
+    OnlyTS,
+}
+
 /// The main type of rule run by the runner. The rule takes individual
 /// nodes inside of a Concrete Syntax Tree and checks them.
 /// It may also take individual syntax tokens.
@@ -86,6 +97,15 @@ pub trait Rule: Debug + DynClone + Send + Sync {
     fn docs(&self) -> &'static str {
         ""
     }
+    /// A list of tags present on this rule. Empty by default.
+    fn tags(&self) -> &'static [Tag] {
+        &[]
+    }
+    /// Whether this rule is recommended, this is a simple helper around [`Self::tags`].
+    fn recommended(&self) -> bool {
+        self.tags().iter().any(|x| x == &Tag::Recommended)
+    }
+
     #[cfg(feature = "schema")]
     fn schema(&self) -> Option<schemars::schema::RootSchema> {
         None
@@ -310,8 +330,11 @@ macro_rules! __declare_lint_inner {
         // The rule struct name
         $name:ident,
         $group:ident,
+        $(
+            tags($($tag:ident),* $(,)?),
+        )?
         // A unique kebab-case name for the rule
-        $code:expr
+        $code:literal
         $(,
             // Any fields for the rule
             $(
@@ -355,6 +378,12 @@ macro_rules! __declare_lint_inner {
             fn docs(&self) -> &'static str {
                 $doc
             }
+
+            $(
+                fn tags(&self) -> &'static [$crate::Tag] {
+                    &[$($crate::Tag::$tag),*]
+                }
+            )?
 
             #[cfg(feature = "schema")]
             fn schema(&self) -> Option<schemars::schema::RootSchema> {

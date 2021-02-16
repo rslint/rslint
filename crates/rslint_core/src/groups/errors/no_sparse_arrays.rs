@@ -24,6 +24,7 @@ declare_lint! {
     #[derive(Default)]
     NoSparseArrays,
     errors,
+    tags(Recommended),
     "no-sparse-arrays"
 }
 

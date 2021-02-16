@@ -99,6 +99,7 @@ declare_lint! {
     #[derive(Default)]
     NoSetterReturn,
     errors,
+    tags(Recommended),
     "no-setter-return",
 }
 

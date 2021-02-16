@@ -22,6 +22,7 @@ declare_lint! {
     #[derive(Default)]
     NoInvalidRegexp,
     regex,
+    tags(Recommended),
     "no-invalid-regexp"
 }
 

@@ -36,6 +36,7 @@ declare_lint! {
     #[derive(Default)]
     NoPrototypeBuiltins,
     errors,
+    tags(Recommended),
     "no-prototype-builtins"
 }
 
