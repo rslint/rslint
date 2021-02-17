@@ -166,6 +166,11 @@
               "pattern": "no-confusing-arrow"
             },
             {
+              "title": "Disallows defining a class method more than once, unless that method is overload in TypeScript.",
+              "description": "",
+              "pattern": "no-dupe-class-members"
+            },
+            {
               "title": "Enforce or disallow spaces inside of blocks after the opening and closing brackets.",
               "description": "",
               "pattern": "block-spacing"
@@ -242,6 +247,10 @@
             },
             "no-debugger": {
               "title": "NoDebugger",
+              "type": "object"
+            },
+            "no-dupe-class-members": {
+              "title": "NoDupeClassMembers",
               "type": "object"
             },
             "no-dupe-keys": {
@@ -465,6 +474,10 @@
             },
             "no-debugger": {
               "title": "NoDebugger",
+              "type": "object"
+            },
+            "no-dupe-class-members": {
+              "title": "NoDupeClassMembers",
               "type": "object"
             },
             "no-dupe-keys": {
