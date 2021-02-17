@@ -61,18 +61,6 @@ NoShadow(name, (shadowed_id, shadowed_span), (shadower_id, shadower_span), false
     }.
 
 
-relation DeclarationInDescendent(scope: ScopeId, name: Name, id: AnyId)
-
-DeclarationInDescendent(scope, name, id) :-
-    EnableNoShadow(file, _),
-    ScopeOfDecl(scope @ ScopeId { _, file }, id),
-    VariableDeclarations(name, _, id, _).
-
-DeclarationInDescendent(parent, name, id) :-
-    DeclarationInDescendent(child, name, id),
-    InputScope(parent, child).
-
-
 relation ScopeOfDecl(scope: ScopeId, declared: AnyId)
 
 ScopeOfDecl(scope, declared) :-
@@ -85,3 +73,37 @@ ScopeOfDecl(scope, declared) :-
     } else {
         decl_scope.unhoisted_scope()
     }.
+
+
+extern transformer FindDescendingDeclarations(
+    EnableNoShadow: relation[EnableNoShadow],
+    ScopeOfDecl: relation[ScopeOfDecl],
+
+    /// A stream of all variable declarations
+    VariableDeclarations: relation[VariableDeclarations],
+
+    /// A stream containing all parent->child scope associations
+    InputScopes: relation[InputScope],
+) -> (
+    DeclarationInDescent: relation[DeclarationInDescent],
+)
+
+
+typedef DeclarationInDescent = DeclarationInDescent {
+    scope: ScopeId,
+    name: Name,
+    id: AnyId,
+}
+
+apply FindDescendingDeclarations(EnableNoShadow, ScopeOfDecl, VariableDeclarations, InputScopes) -> DeclarationInDescent
+
+relation DeclarationInDescendent(scope: ScopeId, name: Name, id: AnyId)
+
+// DeclarationInDescendent(scope, name, id) :-
+//     EnableNoShadow(file, _),
+//     ScopeOfDecl(scope @ ScopeId { _, file }, id),
+//     VariableDeclarations(name, _, id, _).
+// 
+// DeclarationInDescendent(parent, name, id) :-
+//     DeclarationInDescendent(child, name, id),
+//     InputScope(parent, child).
