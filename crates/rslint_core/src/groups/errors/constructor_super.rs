@@ -83,8 +83,6 @@ rule_tests! {
     err: {
         "class A { constructor() { super(); } }",
         "class A extends B { constructor() { } }",
-        "class A extends null { constructor() { super(); } }",
-        "class A extends null { constructor() { } }",
     },
     ok: {
         "class A { constructor() { } }",
