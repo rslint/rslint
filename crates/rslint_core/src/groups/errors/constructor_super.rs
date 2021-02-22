@@ -5,9 +5,7 @@ declare_lint! {
     /**
     Verify calls of `super()` in constructors
 
-    The `"extends": "rslint:recommended"` property in a configuration file enables this rule.
-
-    Constructors of derived classes must call `super()`. Constructors of non derived classes must not call `super()`. 
+    Constructors of derived classes must call `super()`. Constructors of non derived classes must not call `super()`.
     If this is not observed, the JavaScript engine will raise a runtime error.
 
     This rule checks whether or not there is a valid `super()` call.
@@ -24,7 +22,7 @@ impl CstRule for ConstructorSuper {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         let class_decl = node.try_to::<ClassDecl>()?;
         let superclass = class_decl.parent();
-        let super_call = class_decl
+        let constructor = class_decl
             .body()?
             // work-around for bug where `.body()?.elements()` returns only one
             // element for whatever reason
@@ -35,7 +33,8 @@ impl CstRule for ConstructorSuper {
             .find_map(|x| match x {
                 ClassElement::Constructor(c) => Some(c),
                 _ => None,
-            })?
+            })?;
+        let super_call = constructor
             // get only the expression statements for the constructor's body
             .body()?
             .stmts()
@@ -52,9 +51,10 @@ impl CstRule for ConstructorSuper {
                 let diagnostic = ctx
                     .err(self.name(), "constructor of derived class must call super")
                     .primary(
-                        class.syntax(),
-                        "superclass specified here, but super was not called",
-                    );
+                        constructor.syntax(),
+                        "no call to super found within constructor",
+                    )
+                    .secondary(class.syntax(), "superclass specified here");
 
                 ctx.add_err(diagnostic);
             }
