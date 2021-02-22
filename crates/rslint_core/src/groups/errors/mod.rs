@@ -32,4 +32,5 @@ group! {
     valid_typeof::ValidTypeof,
     no_extra_boolean_cast::NoExtraBooleanCast,
     no_confusing_arrow::NoConfusingArrow,
+    constructor_super::ConstructorSuper,
 }
