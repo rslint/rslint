@@ -1,7 +1,6 @@
 //! Extra utlities for untyped syntax nodes, syntax tokens, and AST nodes.
 
 use crate::*;
-
 pub use rslint_lexer::color;
 
 /// Extensions to rowan's SyntaxNode
@@ -10,7 +9,7 @@ pub trait SyntaxNodeExt {
     fn to_node(&self) -> &SyntaxNode;
 
     /// Get all of the tokens of this node, recursively, including whitespace and comments.
-    fn tokens(&self) -> Vec<SyntaxToken> {
+    fn tokens(&self) -> Vec<&SyntaxToken> {
         self.to_node()
             .descendants_with_tokens()
             .filter_map(|x| x.into_token())
@@ -18,7 +17,7 @@ pub trait SyntaxNodeExt {
     }
 
     /// Get all the tokens of this node, recursively, not including whitespace and comments.
-    fn lossy_tokens(&self) -> Vec<SyntaxToken> {
+    fn lossy_tokens(&self) -> Vec<&SyntaxToken> {
         self.to_node()
             .descendants_with_tokens()
             .filter_map(|x| x.into_token().filter(|token| !token.kind().is_trivia()))
@@ -26,7 +25,7 @@ pub trait SyntaxNodeExt {
     }
 
     /// Get the first non-whitespace child token.
-    fn first_lossy_token(&self) -> Option<SyntaxToken> {
+    fn first_lossy_token(&self) -> Option<&SyntaxToken> {
         self.to_node()
             .children_with_tokens()
             .filter_map(|it| it.into_token().filter(|x| !x.kind().is_trivia()))
@@ -226,12 +225,12 @@ pub trait SyntaxNodeExt {
     }
 
     /// Get the first child with a specific kind.
-    fn child_with_kind(&self, kind: SyntaxKind) -> Option<SyntaxNode> {
+    fn child_with_kind(&self, kind: SyntaxKind) -> Option<&SyntaxNode> {
         self.to_node().children().find(|child| child.kind() == kind)
     }
 
     /// Get the parent of this node, recursing through any grouping expressions
-    fn expr_parent(&self) -> Option<SyntaxNode> {
+    fn expr_parent(&self) -> Option<&SyntaxNode> {
         let parent = self.to_node().parent()?;
         if parent.kind() == SyntaxKind::GROUPING_EXPR {
             parent.parent()
@@ -246,19 +245,19 @@ pub trait SyntaxNodeExt {
     }
 
     /// Same as [`descendants_with`](Self::descendants_with) but considers tokens too.
-    fn descendants_with_tokens_with<F>(&self, func: &mut F)
+    fn descendants_with_tokens_with<'a, F>(&'a self, func: &mut F)
     where
-        F: FnMut(&SyntaxElement) -> bool,
+        F: FnMut(SyntaxElementRef<'a>) -> bool,
     {
         for elem in self.to_node().children_with_tokens() {
             match &elem {
                 NodeOrToken::Node(node) => {
-                    if func(&elem) {
+                    if func(elem) {
                         node.descendants_with_tokens_with(func)
                     }
                 }
                 NodeOrToken::Token(_) => {
-                    let _ = func(&elem);
+                    let _ = func(elem);
                 }
             }
         }
@@ -267,7 +266,7 @@ pub trait SyntaxNodeExt {
     /// Get a specific token in the node which matches a syntax kind.
     ///
     /// This does not consider tokens in descendant nodes
-    fn token_with_kind(&self, kind: SyntaxKind) -> Option<SyntaxToken> {
+    fn token_with_kind(&self, kind: SyntaxKind) -> Option<&SyntaxToken> {
         self.to_node()
             .children_with_tokens()
             .find_map(|t| t.into_token().filter(|it| it.kind() == kind))
@@ -352,7 +351,7 @@ impl SyntaxTokenExt for SyntaxToken {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Comment {
     pub kind: CommentKind,
     pub content: String,

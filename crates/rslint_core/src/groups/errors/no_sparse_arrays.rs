@@ -31,7 +31,8 @@ declare_lint! {
 #[typetag::serde]
 impl CstRule for NoSparseArrays {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
-        let elems = node.try_to::<ast::ArrayExpr>()?.sparse_elements();
+        let array = node.try_to::<ast::ArrayExpr>()?;
+        let elems = array.sparse_elements();
         if !elems.is_empty() {
             let mut err = ctx.err(self.name(), "sparse arrays are not allowed");
             for elem in elems {

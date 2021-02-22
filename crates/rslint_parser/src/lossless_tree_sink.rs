@@ -1,11 +1,12 @@
 use crate::{
     ast,
     syntax_node::GreenNode,
-    AstNode, ParserError, SmolStr,
+    AstNode, ParserError,
     SyntaxKind::{self, *},
     SyntaxTreeBuilder, TextRange, TextSize, TreeSink,
 };
 use rslint_lexer::Token;
+use rslint_rowan::Interner;
 use std::mem;
 
 /// Structure for converting events to a syntax tree representation, while preserving whitespace.
@@ -45,7 +46,7 @@ impl<'a> TreeSink for LosslessTreeSink<'a> {
         );
 
         let range = TextRange::at(self.text_pos, len);
-        let text: SmolStr = self.text[range].into();
+        let text = &self.text[range];
         self.text_pos += len;
         self.token_pos += amount as usize;
         self.inner.token(kind, text);
@@ -100,7 +101,7 @@ impl<'a> TreeSink for LosslessTreeSink<'a> {
                     it.kind,
                     self.text
                         .get(start..end)
-                        .unwrap_or_else(|| self.text.get(start - 1..end).unwrap()),
+                        .unwrap_or_else(|| &dbg!(self.text)[dbg!(start - 1..end)]),
                 )
             });
             n_attached_trivias(kind, leading_trivias.rev())
@@ -160,7 +161,7 @@ impl<'a> LosslessTreeSink<'a> {
         panic!("Token start does not line up to a token or is out of bounds")
     }
 
-    pub fn finish(mut self) -> (GreenNode, Vec<ParserError>) {
+    pub fn finish(mut self) -> (GreenNode, Vec<ParserError>, Interner) {
         match mem::replace(&mut self.state, State::Normal) {
             State::PendingFinish => {
                 self.eat_trivias();
@@ -168,8 +169,8 @@ impl<'a> LosslessTreeSink<'a> {
             }
             State::PendingStart | State::Normal => unreachable!(),
         }
-
-        (self.inner.finish(), self.errors)
+        let (node, interner) = self.inner.finish();
+        (node, self.errors, interner)
     }
 
     fn eat_trivias(&mut self) {
@@ -191,10 +192,9 @@ impl<'a> LosslessTreeSink<'a> {
 
     fn do_token(&mut self, kind: SyntaxKind, len: TextSize) {
         let range = TextRange::at(self.text_pos, len);
-        let text: SmolStr = self.text[range].into();
         self.text_pos += len;
         self.token_pos += 1;
-        self.inner.token(kind, text);
+        self.inner.token(kind, &self.text[range]);
     }
 }
 

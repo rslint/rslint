@@ -42,21 +42,24 @@ fn collect_regex_from_node(node: &SyntaxNode, file_id: usize) -> Option<RegexRes
         SyntaxKind::NEW_EXPR | SyntaxKind::CALL_EXPR => {
             let name = node.child_with_kind(SyntaxKind::NAME_REF);
             if name.map_or(false, |x| x.text() == "RegExp") {
-                let mut args = node
-                    .child_with_ast::<ArgList>()
-                    .map(|x| x.args())
-                    .into_iter()
-                    .flatten();
+                let arg_list = node.child_with_ast::<ArgList>();
+                let mut args = arg_list.as_ref().map(|x| x.args()).into_iter().flatten();
                 let pat = args.next().and_then(|x| {
                     Some((
-                        x.syntax().try_to::<Literal>()?.inner_string_text()?,
+                        x.syntax()
+                            .try_to::<Literal>()?
+                            .inner_string_text()?
+                            .to_string(),
                         x.range(),
                     ))
                 });
 
                 let flags = args.next().and_then(|x| {
                     Some((
-                        x.syntax().try_to::<Literal>()?.inner_string_text()?,
+                        x.syntax()
+                            .try_to::<Literal>()?
+                            .inner_string_text()?
+                            .to_string(),
                         x.range(),
                     ))
                 });
@@ -65,7 +68,7 @@ fn collect_regex_from_node(node: &SyntaxNode, file_id: usize) -> Option<RegexRes
                     let range = range.as_range();
                     let new_range = range.start + 1..range.end - 1;
                     let flags = if let Some((flags, flag_range)) = flags {
-                        match validate_flags(&flags.to_string(), EcmaVersion::ES2021) {
+                        match validate_flags(&flags, EcmaVersion::ES2021) {
                             Ok(f) => f,
                             Err(err) => {
                                 return Some(Err((flag_range.as_range(), err)));
@@ -75,7 +78,7 @@ fn collect_regex_from_node(node: &SyntaxNode, file_id: usize) -> Option<RegexRes
                         Flags::empty()
                     };
 
-                    let pattern = &pat.to_string();
+                    let pattern = &pat;
                     let parser = Parser::new_from_pattern_and_flags(
                         pattern,
                         file_id,

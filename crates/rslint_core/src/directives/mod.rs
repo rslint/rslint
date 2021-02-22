@@ -22,7 +22,7 @@ pub use self::parser::*;
 
 use crate::{rule_tests, CstRule, CstRuleStore, Diagnostic, SyntaxNode};
 use rslint_lexer::SyntaxKind;
-use rslint_parser::{util::*, SmolStr, TextRange, TextSize};
+use rslint_parser::{util::*, TextRange, TextSize};
 
 // TODO: More complex warnings, things like ignoring node directives because of file level directives
 
@@ -34,7 +34,7 @@ pub enum ComponentKind {
     /// separately.
     Rule(Box<dyn CstRule>),
     /// This component is the name of a directive command (e.g. `ignore`)
-    CommandName(SmolStr),
+    CommandName(String),
     /// A number that is parsed by the [`Number`] instruction.
     ///
     /// [`Number`]: ./enum.Instruction.html

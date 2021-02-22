@@ -203,7 +203,7 @@ fn is_indexof_static_prop(expr: &Expr) -> bool {
         Expr::BracketExpr(brack_expr) => brack_expr
             .syntax()
             .try_to::<Literal>()
-            .and_then(|l| l.inner_string_text())
+            .and_then(|l| l.inner_string_text().map(|x| x.to_string()))
             .filter(|text| INDEX_OF_NAMES.contains(&text.to_string().as_str()))
             .is_some(),
         Expr::DotExpr(dotexpr) => dotexpr

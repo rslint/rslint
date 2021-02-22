@@ -6,31 +6,26 @@ use crate::{
 };
 use rslint_errors::Severity;
 use std::marker::PhantomData;
+use std::sync::Mutex;
 
 /// A utility struct for managing the result of a parser job
 #[derive(Debug)]
 pub struct Parse<T> {
     green: GreenNode,
     errors: Vec<ParserError>,
+    interner: Mutex<Option<Interner>>,
     _ty: PhantomData<fn() -> T>,
-}
-
-impl<T> Clone for Parse<T> {
-    fn clone(&self) -> Parse<T> {
-        Parse {
-            green: self.green.clone(),
-            errors: self.errors.clone(),
-            _ty: PhantomData,
-        }
-    }
+    syntax: Mutex<Option<SyntaxNode>>,
 }
 
 impl<T> Parse<T> {
-    pub fn new(green: GreenNode, errors: Vec<ParserError>) -> Parse<T> {
+    pub fn new(green: GreenNode, errors: Vec<ParserError>, interner: Interner) -> Parse<T> {
         Parse {
             green,
             errors,
             _ty: PhantomData,
+            interner: Mutex::new(Some(interner)),
+            syntax: Mutex::new(None),
         }
     }
 
@@ -63,7 +58,17 @@ impl<T> Parse<T> {
     /// assert_eq!(if_stmt.to::<IfStmt>().condition().unwrap().syntax().text(), "(a > 5)");
     /// ```
     pub fn syntax(&self) -> SyntaxNode {
-        SyntaxNode::new_root(self.green.clone())
+        let mut lock = self.syntax.lock().unwrap();
+        if let Some(n) = lock.clone() {
+            n
+        } else {
+            let syntax = SyntaxNode::new_with_resolver(
+                self.green.clone(),
+                self.interner.lock().unwrap().take().unwrap(),
+            );
+            *lock = Some(syntax.clone());
+            syntax
+        }
     }
 
     /// Get the errors which ocurred when parsing
@@ -80,6 +85,8 @@ impl<T: AstNode> Parse<T> {
             green: self.green,
             errors: self.errors,
             _ty: PhantomData,
+            interner: self.interner,
+            syntax: self.syntax,
         }
     }
 
@@ -169,8 +176,8 @@ pub fn parse_text(text: &str, file_id: usize) -> Parse<Script> {
     let (events, errors, tokens) = parse_common(text, file_id, Syntax::default());
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
-    let (green, parse_errors) = tree_sink.finish();
-    Parse::new(green, parse_errors)
+    let (green, parse_errors, interner) = tree_sink.finish();
+    Parse::new(green, parse_errors, interner)
 }
 
 /// Lossly parse text into a [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
@@ -210,8 +217,8 @@ pub fn parse_text_lossy(text: &str, file_id: usize) -> Parse<Script> {
     let (events, errors, tokens) = parse_common(text, file_id, Syntax::default());
     let mut tree_sink = LossyTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
-    let (green, parse_errors) = tree_sink.finish();
-    Parse::new(green, parse_errors)
+    let (green, parse_errors, interner) = tree_sink.finish();
+    Parse::new(green, parse_errors, interner)
 }
 
 /// Same as [`parse_text_lossy`] but configures the parser to parse an ECMAScript module instead of a Script
@@ -219,8 +226,8 @@ pub fn parse_module_lossy(text: &str, file_id: usize) -> Parse<Module> {
     let (events, errors, tokens) = parse_common(text, file_id, Syntax::default().module());
     let mut tree_sink = LossyTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
-    let (green, parse_errors) = tree_sink.finish();
-    Parse::new(green, parse_errors)
+    let (green, parse_errors, interner) = tree_sink.finish();
+    Parse::new(green, parse_errors, interner)
 }
 
 /// Same as [`parse_text`] but configures the parser to parse an ECMAScript module instead of a script
@@ -228,8 +235,8 @@ pub fn parse_module(text: &str, file_id: usize) -> Parse<Module> {
     let (events, errors, tokens) = parse_common(text, file_id, Syntax::default().module());
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
-    let (green, parse_errors) = tree_sink.finish();
-    Parse::new(green, parse_errors)
+    let (green, parse_errors, interner) = tree_sink.finish();
+    Parse::new(green, parse_errors, interner)
 }
 
 /// Losslessly Parse text into an expression [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
@@ -243,14 +250,14 @@ pub fn parse_expr(text: &str, file_id: usize) -> Parse<Expr> {
     errors.extend(p_diags);
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
-    let (green, parse_errors) = tree_sink.finish();
-    Parse::new(green, parse_errors)
+    let (green, parse_errors, interner) = tree_sink.finish();
+    Parse::new(green, parse_errors, interner)
 }
 
 pub fn parse_with_syntax(text: &str, file_id: usize, syntax: Syntax) -> Parse<()> {
     let (events, errors, tokens) = parse_common(text, file_id, syntax);
     let mut tree_sink = LosslessTreeSink::new(text, &tokens);
     crate::process(&mut tree_sink, events, errors);
-    let (green, parse_errors) = tree_sink.finish();
-    Parse::new(green, parse_errors)
+    let (green, parse_errors, interner) = tree_sink.finish();
+    Parse::new(green, parse_errors, interner)
 }

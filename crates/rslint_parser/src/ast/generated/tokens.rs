@@ -6,7 +6,7 @@ use crate::{
     SyntaxToken,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Whitespace {
     pub(crate) syntax: SyntaxToken,
 }
@@ -16,7 +16,9 @@ impl std::fmt::Display for Whitespace {
     }
 }
 impl AstToken for Whitespace {
-    fn can_cast(kind: SyntaxKind) -> bool { kind == WHITESPACE }
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == WHITESPACE
+    }
     fn cast(syntax: SyntaxToken) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -24,10 +26,12 @@ impl AstToken for Whitespace {
             None
         }
     }
-    fn syntax(&self) -> &SyntaxToken { &self.syntax }
+    fn syntax(&self) -> &SyntaxToken {
+        &self.syntax
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Comment {
     pub(crate) syntax: SyntaxToken,
 }
@@ -37,7 +41,9 @@ impl std::fmt::Display for Comment {
     }
 }
 impl AstToken for Comment {
-    fn can_cast(kind: SyntaxKind) -> bool { kind == COMMENT }
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == COMMENT
+    }
     fn cast(syntax: SyntaxToken) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -45,10 +51,12 @@ impl AstToken for Comment {
             None
         }
     }
-    fn syntax(&self) -> &SyntaxToken { &self.syntax }
+    fn syntax(&self) -> &SyntaxToken {
+        &self.syntax
+    }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct String {
     pub(crate) syntax: SyntaxToken,
 }
@@ -58,7 +66,9 @@ impl std::fmt::Display for String {
     }
 }
 impl AstToken for String {
-    fn can_cast(kind: SyntaxKind) -> bool { kind == STRING }
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == STRING
+    }
     fn cast(syntax: SyntaxToken) -> Option<Self> {
         if Self::can_cast(syntax.kind()) {
             Some(Self { syntax })
@@ -66,5 +76,7 @@ impl AstToken for String {
             None
         }
     }
-    fn syntax(&self) -> &SyntaxToken { &self.syntax }
+    fn syntax(&self) -> &SyntaxToken {
+        &self.syntax
+    }
 }

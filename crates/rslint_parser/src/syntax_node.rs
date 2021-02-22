@@ -5,46 +5,24 @@
 //!
 //! This is a simple wrapper around the `rowan` crate which does most of the heavy lifting and is language agnostic.
 
-use crate::{SmolStr, SyntaxKind};
-use rslint_rowan::{GreenNodeBuilder, Language};
+use crate::SyntaxKind;
+use rslint_rowan::{GreenNodeBuilder, Interner, Language};
 
-pub use rslint_rowan::GreenNode;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct JsLanguage;
-
-impl Language for JsLanguage {
-    type Kind = SyntaxKind;
-
-    fn kind_from_raw(raw: rslint_rowan::SyntaxKind) -> SyntaxKind {
-        SyntaxKind::from(raw.0)
-    }
-
-    fn kind_to_raw(kind: SyntaxKind) -> rslint_rowan::SyntaxKind {
-        rslint_rowan::SyntaxKind(kind.into())
-    }
-}
-
-pub type SyntaxNode = rslint_rowan::SyntaxNode<JsLanguage>;
-pub type SyntaxToken = rslint_rowan::SyntaxToken<JsLanguage>;
-pub type SyntaxElement = rslint_rowan::SyntaxElement<JsLanguage>;
-pub type SyntaxNodeChildren = rslint_rowan::SyntaxNodeChildren<JsLanguage>;
-pub type SyntaxElementChildren = rslint_rowan::SyntaxElementChildren<JsLanguage>;
-
-pub use rslint_rowan::{Direction, NodeOrToken};
+pub use rslint_rowan::{GreenNode, JsLanguage};
 
 /// Simple wrapper around a rslint_rowan [`GreenNodeBuilder`]
 #[derive(Default, Debug)]
 pub struct SyntaxTreeBuilder {
-    inner: GreenNodeBuilder<'static>,
+    inner: GreenNodeBuilder<'static, 'static>,
 }
 
 impl SyntaxTreeBuilder {
-    pub fn finish(self) -> GreenNode {
-        self.inner.finish()
+    pub fn finish(self) -> (GreenNode, Interner) {
+        let (node, interner) = self.inner.finish();
+        (node, interner.unwrap())
     }
 
-    pub fn token(&mut self, kind: SyntaxKind, text: SmolStr) {
+    pub fn token(&mut self, kind: SyntaxKind, text: &str) {
         let kind = JsLanguage::kind_to_raw(kind);
         self.inner.token(kind, text)
     }

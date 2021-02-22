@@ -182,7 +182,7 @@ pub fn dump_ast(globs: Vec<String>) {
                             if token.text().len() < 25 {
                                 print!(" {}", format!("{:#?}", token.text()).green());
                             } else {
-                                let text = token.text().as_str();
+                                let text = token.text();
                                 for idx in 21..25 {
                                     if text.is_char_boundary(idx) {
                                         let text = format!("{} ...", &text[..idx]);

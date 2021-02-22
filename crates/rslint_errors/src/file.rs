@@ -1,4 +1,4 @@
-use rslint_rowan::{Language, SyntaxElement, SyntaxNode, SyntaxToken, TextRange};
+use rslint_rowan::{SyntaxElement, SyntaxNode, SyntaxToken, TextRange};
 use std::{collections::HashMap, ops::Range};
 
 /// A value which can be used as the range inside of a diagnostic.
@@ -86,19 +86,19 @@ where
     }
 }
 
-impl<T: Language> Span for SyntaxNode<T> {
+impl Span for SyntaxNode {
     fn as_range(&self) -> Range<usize> {
         self.text_range().into()
     }
 }
 
-impl<T: Language> Span for SyntaxToken<T> {
+impl Span for SyntaxToken {
     fn as_range(&self) -> Range<usize> {
         self.text_range().into()
     }
 }
 
-impl<T: Language> Span for SyntaxElement<T> {
+impl Span for SyntaxElement {
     fn as_range(&self) -> Range<usize> {
         match self {
             SyntaxElement::Node(n) => n.text_range(),

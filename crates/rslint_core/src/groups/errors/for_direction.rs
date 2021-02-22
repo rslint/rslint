@@ -81,7 +81,8 @@ impl CstRule for ForDirection {
 }
 
 fn update_direction(for_stmt: &ForStmt, counter: &NameRef) -> Option<i8> {
-    let update = for_stmt.update()?.syntax().first_child()?;
+    let node = for_stmt.update()?.syntax().clone();
+    let update = node.first_child()?;
     match update.kind() {
         UNARY_EXPR => {
             let expr = update.to::<UnaryExpr>();
@@ -133,7 +134,9 @@ fn throw_err(for_stmt: ForStmt, counter: &NameRef, ctx: &mut RuleCtx) {
         .first_child()
         .unwrap()
         .to::<BinExpr>();
-    let lhs = bin.lhs().unwrap().syntax().trimmed_text();
+
+    let lhs_node = bin.lhs().unwrap();
+    let lhs = lhs_node.syntax().trimmed_text();
     let rhs = bin.rhs().unwrap().syntax().clone();
     let op = bin.op().unwrap();
 

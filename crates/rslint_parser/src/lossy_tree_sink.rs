@@ -1,8 +1,9 @@
 use crate::{
-    syntax_node::GreenNode, ParserError, SmolStr, SyntaxKind, SyntaxTreeBuilder, TextRange,
-    TextSize, TreeSink,
+    syntax_node::GreenNode, ParserError, SyntaxKind, SyntaxTreeBuilder, TextRange, TextSize,
+    TreeSink,
 };
 use rslint_lexer::Token;
+use rslint_rowan::Interner;
 use std::mem;
 
 /// Structure to convert events to a lossy syntax tree which does not preserve whitespace.
@@ -40,7 +41,7 @@ impl<'a> TreeSink for LossyTreeSink<'a> {
         );
 
         let range = TextRange::at(self.text_pos, len);
-        let text: SmolStr = self.text[range].into();
+        let text = &self.text[range];
         self.text_pos += len;
         self.token_pos += amount as usize;
         self.inner.token(kind, text);
@@ -126,7 +127,7 @@ impl<'a> LossyTreeSink<'a> {
         panic!("Token start does not line up to a token or is out of bounds")
     }
 
-    pub fn finish(mut self) -> (GreenNode, Vec<ParserError>) {
+    pub fn finish(mut self) -> (GreenNode, Vec<ParserError>, Interner) {
         match mem::replace(&mut self.state, State::Normal) {
             State::PendingFinish => {
                 self.eat_trivias();
@@ -134,8 +135,8 @@ impl<'a> LossyTreeSink<'a> {
             }
             State::PendingStart | State::Normal => unreachable!(),
         }
-
-        (self.inner.finish(), self.errors)
+        let (node, interner) = self.inner.finish();
+        (node, self.errors, interner)
     }
 
     fn eat_trivias(&mut self) {
@@ -157,11 +158,10 @@ impl<'a> LossyTreeSink<'a> {
 
     fn do_token(&mut self, kind: SyntaxKind, len: TextSize, skip: bool) {
         let range = TextRange::at(self.text_pos, len);
-        let text: SmolStr = self.text[range].into();
         self.text_pos += len;
         self.token_pos += 1;
         if !skip {
-            self.inner.token(kind, text);
+            self.inner.token(kind, &self.text[range]);
         }
     }
 }

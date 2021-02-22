@@ -46,9 +46,11 @@ impl CstRule for NoExtraBooleanCast {
         match node.kind() {
             UNARY_EXPR => {
                 let expr = node.to::<UnaryExpr>();
-                let child = skip_grouping(expr.syntax().first_child(), SyntaxNode::first_child)
-                    .next()?
-                    .try_to::<Expr>()?;
+                let child = skip_grouping(expr.syntax().first_child().cloned(), |n| {
+                    n.first_child().cloned()
+                })
+                .next()?
+                .try_to::<Expr>()?;
 
                 if expr.op()? != op![!]
                     || !matches!(child, Expr::UnaryExpr(expr) if expr.op()? == op![!])
@@ -101,7 +103,7 @@ fn reason_labels(builder: Diagnostic, reason: Reason) -> Diagnostic {
 }
 
 fn in_bool_ctx(node: &SyntaxNode, enforce_logical: bool) -> Option<Reason> {
-    let parent = skip_grouping(node.parent(), SyntaxNode::parent).nth(1);
+    let parent = skip_grouping(node.parent().cloned(), |n| n.parent().cloned()).nth(1);
     if let Some(parent) = parent {
         // TODO: Once we have scope analysis we can know if Boolean was shadowed
         // new Boolean(foo) or Boolean(foo)
@@ -109,12 +111,12 @@ fn in_bool_ctx(node: &SyntaxNode, enforce_logical: bool) -> Option<Reason> {
             return parent
                 .child_with_kind(ARG_LIST)
                 .filter(|cond| {
-                    skip_grouping(cond.first_child(), SyntaxNode::first_child)
+                    skip_grouping(cond.first_child().cloned(), |n| n.first_child().cloned())
                         .next()
                         .as_ref()
                         == Some(node)
                 })
-                .map(|_| Reason::ExplicitBoolean(parent));
+                .map(|_| Reason::ExplicitBoolean(parent.clone()));
         }
     }
 
@@ -122,8 +124,11 @@ fn in_bool_ctx(node: &SyntaxNode, enforce_logical: bool) -> Option<Reason> {
         let cond_node = match casted_node.kind() {
             IF_STMT | DO_WHILE_STMT | WHILE_STMT => casted_node
                 .child_with_kind(CONDITION)
-                .and_then(|n| n.first_child()),
-            FOR_STMT => casted_node.child_with_kind(FOR_STMT_TEST)?.first_child(),
+                .and_then(|n| n.first_child().cloned()),
+            FOR_STMT => casted_node
+                .child_with_kind(FOR_STMT_TEST)?
+                .first_child()
+                .cloned(),
             COND_EXPR => casted_node
                 .to::<CondExpr>()
                 .test()
@@ -133,7 +138,7 @@ fn in_bool_ctx(node: &SyntaxNode, enforce_logical: bool) -> Option<Reason> {
 
         return cond_node
             .filter(|inner| {
-                skip_grouping(inner.clone(), SyntaxNode::first_child)
+                skip_grouping((*inner).to_owned(), |n| n.first_child().cloned())
                     .next()
                     .as_ref()
                     == Some(node)
@@ -143,11 +148,11 @@ fn in_bool_ctx(node: &SyntaxNode, enforce_logical: bool) -> Option<Reason> {
 
     // TODO: Improve error message, or even detection, of `!!!foo`,
     // without breaking `!Boolean(foo)`.
-    let parent = skip_grouping(node.parent(), SyntaxNode::parent).next()?;
+    let parent = skip_grouping(node.parent().cloned(), |n| n.parent().cloned()).next()?;
     if let Some(unexpr) = parent.try_to::<UnaryExpr>() {
         let (tok, op) = unexpr.op_details()?;
         if op == op![!] {
-            return Some(Reason::LogicalNotCast(tok));
+            return Some(Reason::LogicalNotCast(tok.clone()));
         }
     }
 
@@ -176,16 +181,16 @@ where
 }
 
 fn implicitly_casted_node(node: &SyntaxNode) -> Option<SyntaxNode> {
-    let parent = skip_grouping(node.parent(), SyntaxNode::parent).next();
+    let parent = skip_grouping(node.parent().cloned(), |n| n.parent().cloned()).next();
     if matches!(
         parent.map(|parent| parent.kind()),
         Some(CONDITION) | Some(FOR_STMT_TEST)
     ) {
-        skip_grouping(node.parent(), SyntaxNode::parent)
+        skip_grouping(node.parent().cloned(), |n| n.parent().cloned())
             .nth(1)
             .filter(|node| BOOL_NODE_KINDS.contains(&node.kind()))
     } else {
-        skip_grouping(node.parent(), SyntaxNode::parent)
+        skip_grouping(node.parent().cloned(), |n| n.parent().cloned())
             .next()
             .filter(|node| BOOL_NODE_KINDS.contains(&node.kind()))
     }

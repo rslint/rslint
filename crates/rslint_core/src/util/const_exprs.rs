@@ -37,7 +37,7 @@ pub fn simple_bool_coerce(condition: Expr) -> Option<bool> {
             simple_bool_coerce(assign.rhs()?)
         }
         Expr::SequenceExpr(seqexpr) => simple_bool_coerce(seqexpr.exprs().last()?),
-        Expr::NameRef(name) => match name.ident_token()?.text().as_str() {
+        Expr::NameRef(name) => match name.ident_token()?.text() {
             "NaN" | "undefined" => Some(false),
             "Infinity" => Some(true),
             _ => None,

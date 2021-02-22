@@ -2,11 +2,11 @@
 
 use crate::{
     ast::*,
-    syntax_node::SyntaxNode,
     SyntaxKind::{self, *},
+    SyntaxNode,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TsTypeQueryExpr {
     TsEntityName(TsEntityName),
     TsImport(TsImport),
@@ -35,7 +35,7 @@ impl AstNode for TsTypeQueryExpr {
 }
 
 impl TsImport {
-    pub fn arg(&self) -> Option<SyntaxToken> {
+    pub fn arg(&self) -> Option<&SyntaxToken> {
         self.syntax()
             .tokens()
             .into_iter()
@@ -45,7 +45,7 @@ impl TsImport {
 
 impl TsMappedTypeParam {
     /// present for alias
-    pub fn as_token(&self) -> Option<SyntaxToken> {
+    pub fn as_token(&self) -> Option<&SyntaxToken> {
         self.syntax()
             .children_with_tokens()
             .filter_map(|x| x.into_token())

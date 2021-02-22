@@ -30,7 +30,7 @@ fn generate_tokens(grammar: AstSrc<'_>) -> Result<String> {
         let name = format_ident!("{}", token);
         let kind = format_ident!("{}", to_upper_snake_case(token));
         quote! {
-            #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+            #[derive(Debug, Clone, PartialEq)]
             pub struct #name {
                 pub(crate) syntax: SyntaxToken,
             }
@@ -93,7 +93,7 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
             (
                 quote! {
                     #[doc = #doc]
-                    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+                    #[derive(Debug, Clone, PartialEq)]
                     pub struct #name {
                         pub(crate) syntax: SyntaxNode,
                     }
@@ -136,7 +136,7 @@ fn generate_nodes(grammar: AstSrc<'_>) -> Result<String> {
             (
                 quote! {
                     #[doc = #doc]
-                    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+                    #[derive(Debug, Clone, PartialEq)]
                     pub enum #name {
                         #(#variants(#variants),)*
                     }
@@ -398,7 +398,13 @@ fn to_lower_snake_case(s: &str) -> String {
 
 impl Field<'_> {
     fn is_many(&self) -> bool {
-        matches!(self, Field::Node { src: FieldSrc::Many(_), .. })
+        matches!(
+            self,
+            Field::Node {
+                src: FieldSrc::Many(_),
+                ..
+            }
+        )
     }
     fn token_kind(&self) -> Option<proc_macro2::TokenStream> {
         match self {

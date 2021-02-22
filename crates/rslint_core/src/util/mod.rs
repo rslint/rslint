@@ -247,4 +247,5 @@ pub fn outer_function(node: impl Borrow<SyntaxNode>) -> Option<SyntaxNode> {
         .ancestors()
         .skip(1)
         .find(|ancestor| matches!(ancestor.kind(), ARROW_EXPR | FN_DECL | FN_EXPR))
+        .cloned()
 }

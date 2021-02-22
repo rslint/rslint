@@ -17,6 +17,9 @@ nodrop = "0.1.14"
 stable_deref_trait = "1.2.0"
 fxhash = "0.2.1"
 smallvec = "1.5.1"
+cstree = { version = "0.0.2", git = "https://github.com/domenicquirl/cstree.git" }
+lasso = "0.4.1"
+rslint_syntax = { version = "0.1.3", path = "../rslint_syntax" }
 
 [dev-dependencies]
 m_lexer = "0.0.4"

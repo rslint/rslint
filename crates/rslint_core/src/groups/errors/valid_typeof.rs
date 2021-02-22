@@ -80,7 +80,7 @@ impl CstRule for ValidTypeof {
         let str_literal = cmp_value
             .syntax()
             .try_to::<Literal>()
-            .and_then(|lit| Some((lit.inner_string_text()?, lit.range())));
+            .and_then(|lit| Some((lit.inner_string_text()?.to_string(), lit.range())));
 
         let (literal, literal_range) = if self.require_string_literals {
             if let Some(lit) = str_literal {
@@ -101,7 +101,6 @@ impl CstRule for ValidTypeof {
         };
 
         if !VALID_TYPES.iter().any(|ty| *ty == literal) {
-            let literal = String::from(literal);
             let suggestion =
                 util::find_best_match_for_name(VALID_TYPES.iter().copied(), &literal, None);
 

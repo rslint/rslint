@@ -129,8 +129,10 @@ fn uri_is_toml(uri: &Url) -> bool {
 }
 
 fn is_config_doc(uri: &Url) -> bool {
-    uri.to_file_path()
+    let filename = uri
+        .to_file_path()
         .ok()
-        .and_then(|x| Some(x.file_name()?.to_string_lossy().to_string()))
-        == Some("rslintrc.toml".to_string())
+        .and_then(|x| Some(x.file_name()?.to_string_lossy().to_string()));
+
+    filename == Some("rslintrc.toml".to_string()) || filename == Some("rslintrc.json".to_string())
 }
