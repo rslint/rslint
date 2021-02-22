@@ -23,10 +23,13 @@ impl CstRule for ConstructorSuper {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         let class_decl = node.try_to::<ClassDecl>()?;
         let superclass = class_decl.parent();
-        let super_call = class_decl.body()?
+        let super_call = class_decl
+            .body()?
             // work-around for bug where `.body()?.elements()` returns only one
             // element for whatever reason
-            .syntax().children().filter_map(|x| x.try_to::<ClassElement>())
+            .syntax()
+            .children()
+            .filter_map(|x| x.try_to::<ClassElement>())
             // get the first constructor we can find. there should only be one.
             .find_map(|x| match x {
                 ClassElement::Constructor(c) => Some(c),
@@ -41,20 +44,17 @@ impl CstRule for ConstructorSuper {
             })
             // find a super call expression. there should only be one.
             .find(|x| matches!(x, Expr::SuperCall(_)));
-        
+
         // if it's a subclass xor it's constructor calls super, show error.
         match (superclass, super_call) {
             (Some(class), None) => {
                 let diagnostic = ctx
-                    .err(
-                        self.name(),
-                        "constructor of derived class must call super",
-                    )
+                    .err(self.name(), "constructor of derived class must call super")
                     .primary(
                         class.syntax(),
                         "superclass specified here, but super was not called",
                     );
-                
+
                 ctx.add_err(diagnostic);
             }
             (None, Some(call)) => {
@@ -67,7 +67,7 @@ impl CstRule for ConstructorSuper {
                         call.syntax(),
                         "called super here, but no superclass was specified",
                     );
-                
+
                 ctx.add_err(diagnostic);
             }
             _ => {}
