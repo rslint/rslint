@@ -3,7 +3,7 @@ use ast::{ClassDecl, ClassElement, Expr, Stmt};
 
 declare_lint! {
     /**
-    Verify calls of `super()` in constructors (constructor-super)
+    Verify calls of `super()` in constructors
 
     The `"extends": "rslint:recommended"` property in a configuration file enables this rule.
 
