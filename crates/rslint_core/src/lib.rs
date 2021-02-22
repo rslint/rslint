@@ -114,11 +114,7 @@ impl LintResult<'_> {
 
 /// Lint a file with a specific rule store.
 #[tracing::instrument(skip(file, store, verbose))]
-pub fn lint_file<'s>(
-    file: &File,
-    store: &'s CstRuleStore,
-    verbose: bool,
-) -> Result<LintResult<'s>, Diagnostic> {
+pub fn lint_file<'s>(file: &File, store: &'s CstRuleStore, verbose: bool) -> LintResult<'s> {
     let (diagnostics, node) = file.parse_with_errors();
     lint_file_inner(node, diagnostics, file, store, verbose)
 }
@@ -130,7 +126,7 @@ pub(crate) fn lint_file_inner<'s>(
     file: &File,
     store: &'s CstRuleStore,
     verbose: bool,
-) -> Result<LintResult<'s>, Diagnostic> {
+) -> LintResult<'s> {
     let mut new_store = store.clone();
     let directives::DirectiveResult {
         directives,
@@ -171,7 +167,7 @@ pub(crate) fn lint_file_inner<'s>(
         })
         .collect();
 
-    Ok(LintResult {
+    LintResult {
         parser_diagnostics,
         rule_results: results,
         directive_diagnostics,
@@ -180,7 +176,7 @@ pub(crate) fn lint_file_inner<'s>(
         file_id: file.id,
         verbose,
         fixed_code: None,
-    })
+    }
 }
 
 /// Run a single run on an entire parsed file.

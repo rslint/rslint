@@ -60,11 +60,7 @@ pub fn recursively_apply_fixes(result: &mut LintResult, file: &File) -> String {
 
         // TODO: should we panic on Err? autofix causing the linter to fail should always be incorrect
         let res = lint_file_inner(parsed.clone(), vec![], file, result.store, result.verbose);
-        if let Ok(res) = res {
-            cur_results = res.rule_results;
-        } else {
-            continue;
-        }
+        cur_results = res.rule_results;
     }
     result.rule_results = cur_results;
     parsed.text().to_string()

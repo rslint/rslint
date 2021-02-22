@@ -69,14 +69,6 @@ fn run_inner(
         .files
         .par_values()
         .map(|file| lint_file(file, &store, verbose))
-        .filter_map(|res| {
-            if let Err(diagnostic) = res {
-                emit_diagnostic(&diagnostic, &walker);
-                None
-            } else {
-                res.ok()
-            }
-        })
         .collect::<Vec<_>>();
     drop(guard);
 

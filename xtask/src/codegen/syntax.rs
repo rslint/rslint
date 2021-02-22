@@ -398,7 +398,13 @@ fn to_lower_snake_case(s: &str) -> String {
 
 impl Field<'_> {
     fn is_many(&self) -> bool {
-        matches!(self, Field::Node { src: FieldSrc::Many(_), .. })
+        matches!(
+            self,
+            Field::Node {
+                src: FieldSrc::Many(_),
+                ..
+            }
+        )
     }
     fn token_kind(&self) -> Option<proc_macro2::TokenStream> {
         match self {

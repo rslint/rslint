@@ -71,7 +71,12 @@ pub fn run(query: Option<&str>) {
         .count();
     let errored = res
         .iter()
-        .filter(|res| matches!(res.fail, Some(FailReason::IncorrectlyErrored(_)) | Some(FailReason::IncorrectlyPassed)))
+        .filter(|res| {
+            matches!(
+                res.fail,
+                Some(FailReason::IncorrectlyErrored(_)) | Some(FailReason::IncorrectlyPassed)
+            )
+        })
         .count();
     let passed = res.iter().filter(|res| res.fail.is_none()).count();
 
