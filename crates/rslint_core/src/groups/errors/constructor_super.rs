@@ -7,7 +7,8 @@ declare_lint! {
 
     The `"extends": "rslint:recommended"` property in a configuration file enables this rule.
 
-    Constructors of derived classes must call `super()`. Constructors of non derived classes must not call `super()`. If this is not observed, the JavaScript engine will raise a runtime error.
+    Constructors of derived classes must call `super()`. Constructors of non derived classes must not call `super()`. 
+    If this is not observed, the JavaScript engine will raise a runtime error.
 
     This rule checks whether or not there is a valid `super()` call.
     */
