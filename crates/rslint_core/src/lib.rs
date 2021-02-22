@@ -113,7 +113,6 @@ impl LintResult<'_> {
 }
 
 /// Lint a file with a specific rule store.
-#[tracing::instrument(skip(file, store, verbose))]
 pub fn lint_file<'s>(file: &File, store: &'s CstRuleStore, verbose: bool) -> LintResult<'s> {
     let (diagnostics, node) = file.parse_with_errors();
     lint_file_inner(node, diagnostics, file, store, verbose)
@@ -131,11 +130,7 @@ pub(crate) fn lint_file_inner<'s>(
     let directives::DirectiveResult {
         directives,
         diagnostics: mut directive_diagnostics,
-    } = {
-        let span = tracing::info_span!("parsing directives");
-        let _gaurd = span.enter();
-        DirectiveParser::new_with_store(node.clone(), file, store).get_file_directives()
-    };
+    } = { DirectiveParser::new_with_store(node.clone(), file, store).get_file_directives() };
 
     apply_top_level_directives(
         directives.as_slice(),
@@ -145,9 +140,6 @@ pub(crate) fn lint_file_inner<'s>(
     );
 
     let src: Arc<str> = Arc::from(node.to_string());
-
-    let span = tracing::info_span!("running rules");
-    let _gaurd = span.enter();
 
     let results = new_store
         .rules
@@ -191,9 +183,6 @@ pub fn run_rule(
     directives: &[Directive],
     src: Arc<str>,
 ) -> RuleResult {
-    let span = tracing::info_span!("run rule", rule = rule.name());
-    let _gaurd = span.enter();
-
     assert!(root.kind() == SyntaxKind::SCRIPT || root.kind() == SyntaxKind::MODULE);
     let mut ctx = RuleCtx {
         file_id,

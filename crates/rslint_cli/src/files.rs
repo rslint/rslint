@@ -57,7 +57,6 @@ impl FileWalker {
 
     /// Make a new file walker from a compiled glob pattern. This also
     /// skips any unreadable files/dirs
-    #[tracing::instrument(name = "load_files", skip(paths))]
     pub fn from_glob(paths: Vec<PathBuf>) -> Self {
         let mut base = Self::default();
         base.load_files(paths.into_par_iter());

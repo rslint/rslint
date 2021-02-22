@@ -63,14 +63,11 @@ fn run_inner(
         return 2;
     }
 
-    let span = tracing::info_span!("lint files");
-    let guard = span.enter();
     let mut results = walker
         .files
         .par_values()
         .map(|file| lint_file(file, &store, verbose))
         .collect::<Vec<_>>();
-    drop(guard);
 
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)
@@ -92,7 +89,6 @@ fn run_inner(
     }
 }
 
-#[tracing::instrument(skip(results, walker, dirty))]
 pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty: bool) -> usize {
     let mut fix_count = 0;
     // TODO: should we aquire a file lock if we know we need to run autofix?

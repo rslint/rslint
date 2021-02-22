@@ -16,7 +16,6 @@ heck = "0.3.1"
 regex = "1.4.1"
 dirs-next = "2.0.0"
 schemars = { version = "0.8.0", optional = true }
-tracing = "0.1.21"
 serde_json = "1.0.61"
 
 [features]

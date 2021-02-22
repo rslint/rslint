@@ -190,9 +190,6 @@ impl Config {
         emit_diagnostic: fn(SimpleFile, Diagnostic),
     ) -> JoinHandle<Self> {
         thread::spawn(move || {
-            let span = tracing::info_span!("loading config");
-            let _guard = span.enter();
-
             let path = Self::find_config(no_global_config);
             let (source, (path, style)) = match path
                 .as_ref()
@@ -326,7 +323,8 @@ impl Config {
                 let list = list.collect::<Vec<_>>();
                 rules = unique_rules(rules, list).collect();
             } else {
-                let d = Diagnostic::warning(1, "config", format!("unknown rule group '{}'", group));
+                let d =
+                    Diagnostic::warning(1, "config", format!("unknown rule group '{}'", group));
                 self.warnings.borrow_mut().push(d);
             }
         }

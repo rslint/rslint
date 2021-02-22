@@ -1,8 +1,5 @@
-mod flame;
-
 use rslint_cli::ExplanationRunner;
 use structopt::{clap::arg_enum, StructOpt};
-use tracing_subscriber::{prelude::*, Registry};
 
 const DEV_FLAGS_HELP: &str = "
 Developer flags that are used by RSLint developers to debug RSLint.
@@ -10,8 +7,6 @@ Developer flags that are used by RSLint developers to debug RSLint.
     -Z help     -- Shows this message
     -Z tokenize -- Tokenizes the input files and dumps the tokens
     -Z dumpast  -- Parses the input files and prints the parsed AST
-    -Z flame    -- Generates a flamegraph from all the tracing spans
-    -Z log      -- Log all tracing events
 
 Run with 'rslint -Z <FLAG> <FILES>'.";
 
@@ -55,8 +50,6 @@ arg_enum! {
         Help,
         Tokenize,
         DumpAst,
-        Flame,
-        Log,
     }
 }
 
@@ -83,21 +76,7 @@ fn main() {
         .build_global()
         .expect("failed to build thread pool");
 
-    let mode = match opt.dev_flag {
-        Some(DevFlag::Flame) => DevFlag::Flame,
-        Some(DevFlag::Log) => DevFlag::Log,
-        _ => return execute(opt),
-    };
-
-    if let DevFlag::Flame = mode {
-        let (guard, layer) = flame::flame();
-        let subscriber = Registry::default().with(layer);
-        tracing::subscriber::with_default(subscriber, || execute(opt));
-        drop(guard);
-    } else if let DevFlag::Log = mode {
-        tracing_subscriber::fmt::init();
-        execute(opt);
-    }
+    execute(opt);
 }
 
 fn execute(opt: Options) {
