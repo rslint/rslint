@@ -10,7 +10,7 @@ mod generated;
 mod stmt_ext;
 mod ts_ext;
 
-use crate::{syntax_node::*, util::SyntaxNodeExt, SmolStr, SyntaxKind, TextRange};
+use crate::{util::SyntaxNodeExt, *};
 use std::marker::PhantomData;
 
 pub use self::{
@@ -56,28 +56,28 @@ pub trait AstToken {
 
     fn syntax(&self) -> &SyntaxToken;
 
-    fn text(&self) -> &SmolStr {
+    fn text(&self) -> &str {
         self.syntax().text()
     }
 }
 
 /// An iterator over `SyntaxNode` children of a particular AST type.
-#[derive(Debug, Clone)]
-pub struct AstChildren<N> {
-    inner: SyntaxNodeChildren,
+pub struct AstChildren<'a, N> {
+    inner: Box<dyn Iterator<Item = SyntaxNode> + 'a>,
     ph: PhantomData<N>,
 }
 
-impl<N> AstChildren<N> {
-    fn new(parent: &SyntaxNode) -> Self {
+impl<'a, N> AstChildren<'a, N> {
+    fn new(parent: &'a SyntaxNode) -> Self {
+        let children = parent.children().map(|x| x.to_owned());
         AstChildren {
-            inner: parent.children(),
+            inner: Box::new(children),
             ph: PhantomData,
         }
     }
 }
 
-impl<N: AstNode> Iterator for AstChildren<N> {
+impl<'a, N: AstNode> Iterator for AstChildren<'a, N> {
     type Item = N;
     fn next(&mut self) -> Option<N> {
         self.inner.find_map(N::cast)
@@ -88,7 +88,7 @@ mod support {
     use super::{AstChildren, AstNode, SyntaxKind, SyntaxNode, SyntaxToken};
 
     pub(super) fn child<N: AstNode>(parent: &SyntaxNode) -> Option<N> {
-        parent.children().find_map(N::cast)
+        parent.children().cloned().find_map(N::cast)
     }
 
     pub(super) fn children<N: AstNode>(parent: &SyntaxNode) -> AstChildren<N> {
@@ -100,5 +100,6 @@ mod support {
             .children_with_tokens()
             .filter_map(|it| it.into_token())
             .find(|it| it.kind() == kind)
+            .cloned()
     }
 }

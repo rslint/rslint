@@ -6,8 +6,8 @@ members = [
 default-members = ["crates/rslint_cli"]
 
 [profile]
-release = { lto = true, codegen-units = 1 }
-bench = { lto = true, codegen-units = 1 }
+release = { lto = "thin", codegen-units = 1 }
+bench = { lto = "thin", codegen-units = 1 }
 
 [profile.dev]
 # Disabling debug info speeds up builds a lot, and we do not really

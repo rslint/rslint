@@ -54,7 +54,7 @@ pub use crate::directives::{
 
 use dyn_clone::clone_box;
 use rayon::prelude::*;
-use rslint_parser::{util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
+use rslint_parser::{util::SyntaxNodeExt, SyntaxKind, SyntaxNode, SyntaxToken};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -149,22 +149,18 @@ pub(crate) fn lint_file_inner<'s>(
     let span = tracing::info_span!("running rules");
     let _gaurd = span.enter();
 
-    let results = new_store
+    let mut framework = get_rule_vector(&new_store, &node, src, file.id, verbose);
+
+    for node in framework.nodes {
+        for (rule, ctx) in &mut framework.rules {
+            rule.check_node(node, ctx);
+        }
+    }
+
+    let results = framework
         .rules
-        .par_iter()
-        .map(|rule| {
-            (
-                rule.name(),
-                run_rule(
-                    &**rule,
-                    file.id,
-                    node.clone(),
-                    verbose,
-                    &directives,
-                    src.clone(),
-                ),
-            )
-        })
+        .into_iter()
+        .map(|(rule, ctx)| (rule.name(), RuleResult::new(ctx.diagnostics, ctx.fixer)))
         .collect();
 
     LintResult {
@@ -176,6 +172,61 @@ pub(crate) fn lint_file_inner<'s>(
         file_id: file.id,
         verbose,
         fixed_code: None,
+    }
+}
+
+struct RunnableFramework<'a, 'b> {
+    rules: Vec<(&'a Box<dyn CstRule>, RuleCtx)>,
+    nodes: Vec<&'b SyntaxNode>,
+    tokens: Vec<&'b SyntaxToken>,
+}
+
+fn get_rule_vector<'a, 'b>(
+    store: &'a CstRuleStore,
+    root: &'b SyntaxNode,
+    src: Arc<str>,
+    file_id: usize,
+    verbose: bool,
+) -> RunnableFramework<'a, 'b> {
+    let rules = store
+        .rules
+        .iter()
+        .map(|x| {
+            (
+                x,
+                RuleCtx {
+                    file_id,
+                    verbose,
+                    diagnostics: vec![],
+                    fixer: None,
+                    src: src.clone(),
+                },
+            )
+        })
+        .collect();
+
+    let mut nodes = Vec::with_capacity(1000);
+    let mut tokens = Vec::with_capacity(5000);
+
+    root.descendants_with_tokens_with(&mut |elem| {
+        match elem {
+            rslint_parser::NodeOrToken::Node(n) => {
+                if n.kind() == SyntaxKind::ERROR {
+                    return false;
+                }
+                nodes.push(n);
+            }
+            rslint_parser::NodeOrToken::Token(t) => tokens.push(t),
+        };
+        true
+    });
+
+    nodes.shrink_to_fit();
+    tokens.shrink_to_fit();
+    RunnableFramework {
+        rules,
+        nodes,
+        tokens,
     }
 }
 

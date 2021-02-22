@@ -27,7 +27,7 @@ impl CondExpr {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PropName {
     Computed(ComputedPropertyName),
     Literal(Literal),
@@ -95,7 +95,7 @@ impl LiteralProp {
 }
 
 /// A binary operation applied to two expressions
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum BinOp {
     /// `<`
     LessThan,
@@ -150,7 +150,7 @@ pub enum BinOp {
 }
 
 impl BinExpr {
-    pub fn op_details(&self) -> Option<(SyntaxToken, BinOp)> {
+    pub fn op_details(&self) -> Option<(&SyntaxToken, BinOp)> {
         self.syntax()
             .children_with_tokens()
             .filter_map(|x| x.into_token())
@@ -191,7 +191,7 @@ impl BinExpr {
         self.op_details().map(|t| t.1)
     }
 
-    pub fn op_token(&self) -> Option<SyntaxToken> {
+    pub fn op_token(&self) -> Option<&SyntaxToken> {
         self.op_details().map(|t| t.0)
     }
 
@@ -224,7 +224,7 @@ impl BinExpr {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum UnaryOp {
     /// `++`
     Increment,
@@ -249,7 +249,7 @@ pub enum UnaryOp {
 }
 
 impl UnaryExpr {
-    pub fn op_details(&self) -> Option<(SyntaxToken, UnaryOp)> {
+    pub fn op_details(&self) -> Option<(&SyntaxToken, UnaryOp)> {
         self.syntax()
             .children_with_tokens()
             .filter_map(|x| x.into_token())
@@ -275,7 +275,7 @@ impl UnaryExpr {
         self.op_details().map(|t| t.1)
     }
 
-    pub fn op_token(&self) -> Option<SyntaxToken> {
+    pub fn op_token(&self) -> Option<&SyntaxToken> {
         self.op_details().map(|t| t.0)
     }
 
@@ -300,7 +300,7 @@ impl KeyValuePattern {
     pub fn value(&self) -> Option<Pattern> {
         // This is to easily handle both `NAME NAME` and `: NAME`
         if self.syntax().children().count() == 2 {
-            Pattern::cast(self.syntax().last_child().unwrap())
+            Pattern::cast(self.syntax().last_child().unwrap().clone())
         } else {
             self.colon_token()?
                 .next_sibling_or_token()?
@@ -310,7 +310,7 @@ impl KeyValuePattern {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum AssignOp {
     Assign,
     AddAssign,
@@ -330,7 +330,7 @@ pub enum AssignOp {
 }
 
 impl AssignExpr {
-    pub fn op_details(&self) -> Option<(SyntaxToken, AssignOp)> {
+    pub fn op_details(&self) -> Option<(&SyntaxToken, AssignOp)> {
         self.syntax()
             .children_with_tokens()
             .filter_map(|x| x.into_token())
@@ -361,7 +361,7 @@ impl AssignExpr {
         self.op_details().map(|t| t.1)
     }
 
-    pub fn op_token(&self) -> Option<SyntaxToken> {
+    pub fn op_token(&self) -> Option<&SyntaxToken> {
         self.op_details().map(|t| t.0)
     }
 
@@ -389,7 +389,7 @@ impl ArrayExpr {
     }
 
     /// A list of all sparse elements as a vector of the comma tokens
-    pub fn sparse_elements(&self) -> Vec<SyntaxToken> {
+    pub fn sparse_elements(&self) -> Vec<&SyntaxToken> {
         let node = self.syntax();
         let commas = node
             .children_with_tokens()
@@ -414,7 +414,7 @@ impl ArrayExpr {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ExprOrSpread {
     Expr(Expr),
     Spread(SpreadElement),
@@ -484,7 +484,7 @@ pub enum LiteralKind {
 }
 
 impl Literal {
-    pub fn token(&self) -> SyntaxToken {
+    pub fn token(&self) -> &SyntaxToken {
         self.syntax()
             .children_with_tokens()
             .find(|e| !e.kind().is_trivia())
@@ -563,7 +563,7 @@ impl Literal {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ExprOrBlock {
     Expr(Expr),
     Block(BlockStmt),
@@ -596,11 +596,11 @@ impl AstNode for ExprOrBlock {
 
 impl ArrowExpr {
     pub fn body(&self) -> Option<ExprOrBlock> {
-        ExprOrBlock::cast(self.syntax().children().last()?)
+        ExprOrBlock::cast(self.syntax().children().last()?.clone())
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PatternOrExpr {
     Pattern(Pattern),
     Expr(Expr),
@@ -631,7 +631,7 @@ impl Template {
     /// The string chunks of the template. aka:
     /// `foo ${bar} foo` breaks down into:
     /// `QUASIS ELEMENT{EXPR} QUASIS`
-    pub fn quasis(&self) -> impl Iterator<Item = SyntaxToken> {
+    pub fn quasis(&self) -> impl Iterator<Item = &SyntaxToken> {
         self.syntax()
             .children_with_tokens()
             .filter_map(NodeOrToken::into_token)
@@ -694,7 +694,7 @@ impl Expr {
 }
 
 impl DotExpr {
-    pub fn opt_chain_token(&self) -> Option<SyntaxToken> {
+    pub fn opt_chain_token(&self) -> Option<&SyntaxToken> {
         self.syntax()
             .children_with_tokens()
             .filter_map(|child| child.into_token())
@@ -703,7 +703,7 @@ impl DotExpr {
 }
 
 impl CallExpr {
-    pub fn opt_chain_token(&self) -> Option<SyntaxToken> {
+    pub fn opt_chain_token(&self) -> Option<&SyntaxToken> {
         self.syntax()
             .children_with_tokens()
             .filter_map(|child| child.into_token())
@@ -712,7 +712,7 @@ impl CallExpr {
 }
 
 impl BracketExpr {
-    pub fn opt_chain_token(&self) -> Option<SyntaxToken> {
+    pub fn opt_chain_token(&self) -> Option<&SyntaxToken> {
         self.syntax()
             .children_with_tokens()
             .filter_map(|child| child.into_token())

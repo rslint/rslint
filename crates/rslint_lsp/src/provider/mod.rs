@@ -14,3 +14,6 @@ pub(crate) mod actions;
 
 // Provider for autocomplete for rslint config toml files
 pub(crate) mod toml_completion;
+
+// Provider for config handling
+pub(crate) mod config;

@@ -417,6 +417,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cstree"
+version = "0.0.2"
+source = "git+https://github.com/domenicquirl/cstree.git#e411243366296eba4b22aac2e8d780f64b026b28"
+dependencies = [
+ "fxhash",
+ "lasso",
+ "parking_lot",
+ "servo_arc",
+ "text-size",
+]
+
+[[package]]
 name = "csv"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -917,6 +929,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "instant"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61124eeebbd69b8190558df225adf7e4caafce0d743919e5d6b19652314ec5ec"
+dependencies = [
+ "cfg-if 1.0.0",
+]
+
+[[package]]
 name = "inventory"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -982,6 +1003,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "lasso"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17823787ed7c3f2ce99d4865d41edd4407b2fb6d9e71d534ec69d832a3ec2df3"
+dependencies = [
+ "hashbrown",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1027,6 +1057,15 @@ name = "linked-hash-map"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8dd5a6d5999d9907cda8ed67bbd137d3af8085216c2ac62de5be860bd41f304a"
+
+[[package]]
+name = "lock_api"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd96ffd135b2fd7b973ac026d28085defbe8983df057ced3eb4f2130b0831312"
+dependencies = [
+ "scopeguard",
+]
 
 [[package]]
 name = "log"
@@ -1279,6 +1318,31 @@ name = "oorandom"
 version = "11.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a170cebd8021a008ea92e4db85a72f80b35df514ec664b296fdcbb654eac0b2c"
+
+[[package]]
+name = "parking_lot"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d7744ac029df22dca6284efe4e898991d28e3085c706c972bcd7da4a27a15eb"
+dependencies = [
+ "instant",
+ "lock_api",
+ "parking_lot_core",
+]
+
+[[package]]
+name = "parking_lot_core"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ccb628cad4f84851442432c60ad8e1f607e29752d0bf072cbd0baf28aa34272"
+dependencies = [
+ "cfg-if 1.0.0",
+ "instant",
+ "libc",
+ "redox_syscall",
+ "smallvec",
+ "winapi 0.3.9",
+]
 
 [[package]]
 name = "percent-encoding"
@@ -1719,6 +1783,7 @@ dependencies = [
  "taplo",
  "thiserror",
  "tokio",
+ "toml",
  "tower-lsp",
 ]
 
@@ -1760,10 +1825,13 @@ dependencies = [
 name = "rslint_rowan"
 version = "0.10.0"
 dependencies = [
+ "cstree",
  "erasable",
  "fxhash",
+ "lasso",
  "m_lexer",
  "nodrop",
+ "rslint_syntax",
  "rustc-hash",
  "serde",
  "slice-dst",
@@ -1776,9 +1844,6 @@ dependencies = [
 [[package]]
 name = "rslint_syntax"
 version = "0.1.3"
-dependencies = [
- "rslint_rowan",
-]
 
 [[package]]
 name = "rslint_text_edit"
@@ -1964,6 +2029,15 @@ dependencies = [
  "linked-hash-map",
  "serde",
  "yaml-rust",
+]
+
+[[package]]
+name = "servo_arc"
+version = "0.1.1"
+source = "git+https://github.com/domenicquirl/cstree.git#e411243366296eba4b22aac2e8d780f64b026b28"
+dependencies = [
+ "nodrop",
+ "stable_deref_trait",
 ]
 
 [[package]]
@@ -2339,9 +2413,9 @@ dependencies = [
 
 [[package]]
 name = "toml"
-version = "0.5.7"
+version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75cf45bb0bef80604d001caaec0d09da99611b3c0fd39d3080468875cdb65645"
+checksum = "a31142970826733df8241ef35dc040ef98c679ab14d7c3e54d827099b3acecaa"
 dependencies = [
  "serde",
 ]

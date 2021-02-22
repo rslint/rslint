@@ -21,7 +21,9 @@ pub fn infer(files: Vec<String>) {
 
     let walker = FileWalker::from_glob(globs);
     let parsed = walker.files.values().map(|f| f.parse());
-    let nodes: Vec<SyntaxNode> = parsed.flat_map(|n| n.descendants()).collect();
+    let nodes: Vec<SyntaxNode> = parsed
+        .flat_map(|n| n.descendants().cloned().collect::<Vec<_>>())
+        .collect();
     let rules = get_inferable_rules();
     let mut inferred = Vec::with_capacity(rules.len());
 

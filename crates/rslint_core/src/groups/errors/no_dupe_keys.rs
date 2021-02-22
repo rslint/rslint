@@ -37,7 +37,7 @@ impl CstRule for NoDupeKeys {
 
             for prop in obj.props().filter_map(|prop| prop.key_element()) {
                 let tokens = match prop.clone() {
-                    NodeOrToken::Node(node) => node.lossy_tokens(),
+                    NodeOrToken::Node(node) => node.lossy_tokens().into_iter().cloned().collect(),
                     NodeOrToken::Token(tok) => vec![tok],
                 };
 

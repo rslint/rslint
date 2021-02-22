@@ -1,6 +1,6 @@
 use crate::rule_prelude::*;
 use ast::*;
-use rslint_parser::{Direction, TextRange};
+use rslint_parser::{Direction, SyntaxElementRef, TextRange};
 use SyntaxKind::*;
 
 declare_lint! {
@@ -176,11 +176,11 @@ impl CstRule for NoUnexpectedMultiline {
     }
 }
 
-fn has_linebreak_after(siblings: impl Iterator<Item = SyntaxElement>) -> bool {
+fn has_linebreak_after<'a>(siblings: impl Iterator<Item = SyntaxElementRef<'a>>) -> bool {
     let mut tokens = siblings.scan((), |_, elem| {
         elem.into_token().filter(|x| x.kind().is_trivia())
     });
-    tokens.any(|tok| parseutil::contains_js_linebreak(tok.text().as_str()))
+    tokens.any(|tok| parseutil::contains_js_linebreak(tok.text()))
 }
 
 rule_tests! {

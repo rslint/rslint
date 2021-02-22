@@ -1,2 +1,1 @@
-export {};
-await new Foo(await bar);
+this.RegExp('a');

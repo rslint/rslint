@@ -88,7 +88,7 @@ impl Command {
     pub fn parse(
         components: &[Component],
         line: usize,
-        node: Option<SyntaxNode>,
+        node: Option<&SyntaxNode>,
         top_level: bool,
         file: &File,
     ) -> Option<Self> {
@@ -109,19 +109,19 @@ impl Command {
 
 fn parse_ignore_command(
     components: &[Component],
-    node: Option<SyntaxNode>,
+    node: Option<&SyntaxNode>,
     top_level: bool,
 ) -> Option<Command> {
     if let Some(rules) = components.get(1).and_then(|c| c.kind.repetition()) {
         let rules = rules.iter().flat_map(|c| c.kind.rule()).collect::<Vec<_>>();
 
         if let Some(node) = node {
-            Some(Command::IgnoreNodeRules(node, rules))
+            Some(Command::IgnoreNodeRules(node.to_owned(), rules))
         } else {
             Some(Command::IgnoreFileRules(rules))
         }
     } else if let Some(node) = node {
-        Some(Command::IgnoreNode(node))
+        Some(Command::IgnoreNode(node.to_owned()))
     } else if top_level {
         Some(Command::IgnoreFile)
     } else {

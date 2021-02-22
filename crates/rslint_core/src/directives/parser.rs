@@ -124,7 +124,7 @@ impl<'store, 'file> DirectiveParser<'store, 'file> {
         let top_level = self.top_level_directives();
         let mut result = DirectiveResult::default();
 
-        for descendant in self.root.descendants().skip(1) {
+        for descendant in self.root.clone().descendants().skip(1).cloned() {
             let comment = descendant
                 .first_token()
                 .and_then(|tok| tok.comment())
@@ -135,7 +135,7 @@ impl<'store, 'file> DirectiveParser<'store, 'file> {
                 _ => continue,
             };
 
-            let directive = self.parse_directive(comment, Some(descendant), false);
+            let directive = self.parse_directive(comment, Some(&descendant), false);
             result.extend(directive);
         }
         result.concat(top_level);
@@ -146,6 +146,7 @@ impl<'store, 'file> DirectiveParser<'store, 'file> {
         let mut result = DirectiveResult::default();
 
         self.root
+            .clone()
             .children_with_tokens()
             .flat_map(|item| item.into_token()?.comment())
             .filter(|comment| comment.content.trim_start().starts_with(DECLARATOR))
@@ -159,7 +160,7 @@ impl<'store, 'file> DirectiveParser<'store, 'file> {
     fn parse_directive(
         &mut self,
         comment: Comment,
-        node: Option<SyntaxNode>,
+        node: Option<&SyntaxNode>,
         top_level: bool,
     ) -> Result<Directive> {
         let text = comment

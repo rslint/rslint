@@ -171,7 +171,8 @@ pub struct Config {
     warnings: RefCell<Vec<Diagnostic>>,
 }
 
-enum ConfigStyle {
+#[derive(Debug, Clone, Copy)]
+pub enum ConfigStyle {
     Toml,
     Json,
 }
@@ -193,7 +194,7 @@ impl Config {
             let span = tracing::info_span!("loading config");
             let _guard = span.enter();
 
-            let path = Self::find_config(no_global_config);
+            let path = Self::find_config(no_global_config, None);
             let (source, (path, style)) = match path
                 .as_ref()
                 .and_then(|(path, _)| read_to_string(path).ok())
@@ -250,8 +251,11 @@ impl Config {
         })
     }
 
-    fn find_config(global_config: bool) -> Option<(PathBuf, ConfigStyle)> {
-        let path = env::current_dir().ok()?;
+    pub fn find_config(
+        global_config: bool,
+        dir: Option<PathBuf>,
+    ) -> Option<(PathBuf, ConfigStyle)> {
+        let path = dir.or_else(|| env::current_dir().ok())?;
         fn search_path(path: &Path) -> Option<(PathBuf, ConfigStyle)> {
             for config_name in CONFIG_NAMES.iter() {
                 let new_path = path.join(config_name);

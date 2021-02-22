@@ -91,8 +91,7 @@ pub use crate::{
     util::{SyntaxNodeExt, SyntaxTokenExt},
 };
 
-pub use rslint_rowan::{SmolStr, SyntaxText, TextRange, TextSize, WalkEvent};
-
+pub use rslint_rowan::*;
 pub use rslint_syntax::*;
 
 /// The type of error emitted by the parser, this includes warnings, notes, and errors.  

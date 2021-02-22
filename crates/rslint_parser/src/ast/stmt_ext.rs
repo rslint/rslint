@@ -1,9 +1,9 @@
 //! Extended AST node definitions for statements which are unique and special enough to generate code for manually
 
-use crate::{ast::*, syntax_node::SyntaxNode, SyntaxKind, SyntaxKind::*, SyntaxNodeExt, T};
+use crate::{ast::*, SyntaxKind, SyntaxKind::*, SyntaxNode, SyntaxNodeExt, T};
 
 /// Either a statement or a declaration such as a function
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum StmtListItem {
     Stmt(Stmt),
     Decl(Decl),
@@ -31,7 +31,7 @@ impl AstNode for StmtListItem {
 }
 
 /// The beginning to a For or For..in statement which can either be a variable declaration or an expression
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ForHead {
     Decl(VarDecl),
     Expr(Expr),
@@ -144,7 +144,7 @@ impl From<DebuggerStmt> for Stmt {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Stmt {
     BlockStmt(BlockStmt),
     EmptyStmt(EmptyStmt),
@@ -231,7 +231,7 @@ impl std::fmt::Display for Stmt {
 
 impl VarDecl {
     // TODO: switch this to a contextual keyword once the typescript pr lands
-    pub fn let_token(&self) -> Option<SyntaxToken> {
+    pub fn let_token(&self) -> Option<&SyntaxToken> {
         self.syntax()
             .first_lossy_token()
             .filter(|t| t.kind() == T![ident] && t.text() == "let")
@@ -264,7 +264,7 @@ impl ImportDecl {
 }
 
 impl Specifier {
-    pub fn as_token(&self) -> Option<SyntaxToken> {
+    pub fn as_token(&self) -> Option<&SyntaxToken> {
         self.syntax()
             .children_with_tokens()
             .filter_map(|x| x.into_token())
@@ -275,7 +275,7 @@ impl Specifier {
         self.syntax().children().nth(1).and_then(|x| x.try_to())
     }
 
-    pub fn name(&self) -> Option<SyntaxNode> {
+    pub fn name(&self) -> Option<&SyntaxNode> {
         self.syntax().first_child()
     }
 }
@@ -332,7 +332,7 @@ impl SwitchCase {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ModuleItem {
     ImportDecl(ImportDecl),
     ExportNamed(ExportNamed),
@@ -393,7 +393,7 @@ impl AstNode for ModuleItem {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum ConstructorParamOrPat {
     TsConstructorParam(TsConstructorParam),
     Pattern(Pattern),
