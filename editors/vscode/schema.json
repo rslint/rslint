@@ -169,6 +169,16 @@
               "title": "Enforce or disallow spaces inside of blocks after the opening and closing brackets.",
               "description": "",
               "pattern": "block-spacing"
+            },
+            {
+              "title": "Disallow invalid regular expressions in literals and `RegExp` constructors.",
+              "description": "",
+              "pattern": "no-invalid-regexp"
+            },
+            {
+              "title": "",
+              "description": "",
+              "pattern": "simplify-regex"
             }
           ]
         },
@@ -299,6 +309,10 @@
                 }
               }
             },
+            "no-invalid-regexp": {
+              "title": "NoInvalidRegexp",
+              "type": "object"
+            },
             "no-irregular-whitespace": {
               "title": "NoIrregularWhitespace",
               "type": "object",
@@ -351,6 +365,10 @@
             },
             "no-unsafe-negation": {
               "title": "NoUnsafeNegation",
+              "type": "object"
+            },
+            "simplify-regex": {
+              "title": "SimplifyRegex",
               "type": "object"
             },
             "use-isnan": {
@@ -522,6 +540,10 @@
                 }
               }
             },
+            "no-invalid-regexp": {
+              "title": "NoInvalidRegexp",
+              "type": "object"
+            },
             "no-irregular-whitespace": {
               "title": "NoIrregularWhitespace",
               "type": "object",
@@ -574,6 +596,10 @@
             },
             "no-unsafe-negation": {
               "title": "NoUnsafeNegation",
+              "type": "object"
+            },
+            "simplify-regex": {
+              "title": "SimplifyRegex",
               "type": "object"
             },
             "use-isnan": {

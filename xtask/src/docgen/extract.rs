@@ -89,6 +89,7 @@ pub struct LintDeclaration {
     pub name: String,
     pub docstring: Option<String>,
     pub config_fields: Vec<ConfigField>,
+    pub tags: Option<Tags>,
 }
 
 #[derive(Clone)]
@@ -104,6 +105,13 @@ impl Parse for LintDeclaration {
         input.parse::<Token!(,)>()?;
         input.parse::<Ident>()?;
         input.parse::<Token!(,)>()?;
+        let tags = if input.lookahead1().peek(kw::tags) {
+            let res = Some(input.parse()?);
+            input.parse::<Token!(,)>()?;
+            res
+        } else {
+            None
+        };
         let name = input.parse::<LitStr>()?.value();
         let _ = input.parse::<Token!(,)>();
 
@@ -116,7 +124,26 @@ impl Parse for LintDeclaration {
             name,
             docstring,
             config_fields,
+            tags,
         })
+    }
+}
+
+#[derive(Clone)]
+pub struct Tags {
+    pub tags: Vec<String>,
+}
+
+impl Parse for Tags {
+    fn parse(input: ParseStream) -> Result<Self> {
+        input.parse::<kw::tags>()?;
+        let content;
+        syn::parenthesized!(content in input);
+        let tags = Punctuated::<Ident, Token![,]>::parse_terminated(&content)?
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
+        Ok(Self { tags })
     }
 }
 
@@ -156,6 +183,7 @@ fn parse_docstring(input: ParseStream) -> Option<String> {
 mod kw {
     syn::custom_keyword!(err);
     syn::custom_keyword!(ok);
+    syn::custom_keyword!(tags);
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
