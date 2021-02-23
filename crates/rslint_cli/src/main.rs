@@ -1,5 +1,6 @@
 use rslint_cli::ExplanationRunner;
 use structopt::{clap::arg_enum, StructOpt};
+use yastl::Pool;
 
 const DEV_FLAGS_HELP: &str = "
 Developer flags that are used by RSLint developers to debug RSLint.
@@ -71,15 +72,13 @@ fn main() {
     let opt = Options::from_args();
 
     let num_threads = opt.max_threads.unwrap_or_else(num_cpus::get);
-    rayon::ThreadPoolBuilder::new()
-        .num_threads(num_threads)
-        .build_global()
-        .expect("failed to build thread pool");
+    let config = yastl::ThreadConfig::new().prefix("rslint-worker");
+    let pool = Pool::with_config(num_threads, config);
 
-    execute(opt);
+    execute(opt, pool);
 }
 
-fn execute(opt: Options) {
+fn execute(opt: Options, pool: Pool) {
     match (opt.dev_flag, opt.cmd) {
         (Some(DevFlag::Help), _) => println!("{}", DEV_FLAGS_HELP),
         (Some(DevFlag::Tokenize), _) => rslint_cli::tokenize(opt.files),
@@ -95,6 +94,7 @@ fn execute(opt: Options) {
             opt.dirty,
             opt.formatter,
             opt.no_global_config,
+            pool,
         ),
     }
 }

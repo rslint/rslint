@@ -16,13 +16,13 @@ pub use rslint_errors::{
 };
 
 use colored::*;
-use rayon::prelude::*;
 use rslint_core::{autofix::recursively_apply_fixes, File};
 use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
 #[allow(unused_imports)]
 use std::process;
 use std::{fs::write, path::PathBuf};
+use yastl::Pool;
 
 #[allow(unused_must_use, unused_variables)]
 pub fn run(
@@ -32,8 +32,17 @@ pub fn run(
     dirty: bool,
     formatter: Option<String>,
     no_global_config: bool,
+    pool: Pool,
 ) {
-    let exit_code = run_inner(globs, verbose, fix, dirty, formatter, no_global_config);
+    let exit_code = run_inner(
+        globs,
+        verbose,
+        fix,
+        dirty,
+        formatter,
+        no_global_config,
+        pool,
+    );
     #[cfg(not(debug_assertions))]
     process::exit(exit_code);
 }
@@ -46,12 +55,24 @@ fn run_inner(
     dirty: bool,
     formatter: Option<String>,
     no_global_config: bool,
+    pool: Pool,
 ) -> i32 {
-    let handle =
-        config::Config::new_threaded(no_global_config, |file, d| emit_diagnostic(&d, &file));
-    let mut walker = FileWalker::from_glob(collect_globs(globs));
-    let joined = handle.join();
-    let mut config = joined.expect("config thread paniced");
+    let mut config = None;
+    let mut walker = FileWalker::empty();
+
+    pool.scoped(|scope| {
+        scope.execute(|| {
+            config = Some(config::Config::new(no_global_config, |file, d| {
+                emit_diagnostic(&d, &file)
+            }));
+        });
+
+        scope.execute(|| {
+            walker.load_files(collect_globs(globs).into_iter());
+        });
+    });
+
+    let mut config = config.expect("config failed to initialize");
     emit_diagnostics("short", &config.warnings(), &walker);
 
     let mut formatter = formatter.unwrap_or_else(|| config.formatter());
@@ -63,11 +84,19 @@ fn run_inner(
         return 2;
     }
 
-    let mut results = walker
-        .files
-        .par_values()
-        .map(|file| lint_file(file, &store, verbose))
-        .collect::<Vec<_>>();
+    let (tx, rx) = std::sync::mpsc::channel();
+    pool.scoped(|scope| {
+        let store = &store;
+
+        for file in walker.files.values() {
+            let tx = tx.clone();
+            scope.recurse(move |_scope| {
+                tx.send(lint_file(file, store, verbose)).unwrap();
+            });
+        }
+    });
+    drop(tx);
+    let mut results = rx.into_iter().collect::<Vec<_>>();
 
     let fix_count = if fix {
         apply_fixes(&mut results, &mut walker, dirty)

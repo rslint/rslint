@@ -13,7 +13,6 @@ use std::{
     env,
     fs::read_to_string,
     path::{Path, PathBuf},
-    thread::{self, JoinHandle},
 };
 
 /// The name of the config files to search for.
@@ -185,66 +184,61 @@ impl Config {
     ///
     /// The config or an `Err` if the toml inside the config is invalid.
     /// The `Diagnostic` can be emitted by using the `SimpleFile` as a file database.
-    pub fn new_threaded(
-        no_global_config: bool,
-        emit_diagnostic: fn(SimpleFile, Diagnostic),
-    ) -> JoinHandle<Self> {
-        thread::spawn(move || {
-            let path = Self::find_config(no_global_config);
-            let (source, (path, style)) = match path
-                .as_ref()
-                .and_then(|(path, _)| read_to_string(path).ok())
-            {
-                Some(source) => (source, path.unwrap()),
-                None => return Default::default(),
-            };
+    pub fn new(no_global_config: bool, emit_diagnostic: fn(SimpleFile, Diagnostic)) -> Self {
+        let path = Self::find_config(no_global_config);
+        let (source, (path, style)) = match path
+            .as_ref()
+            .and_then(|(path, _)| read_to_string(path).ok())
+        {
+            Some(source) => (source, path.unwrap()),
+            None => return Default::default(),
+        };
 
-            match style {
-                ConfigStyle::Json => match serde_json::from_str::<ConfigRepr>(&source) {
-                    Ok(repr) => Self {
-                        repr,
-                        warnings: Default::default(),
-                    },
-                    Err(err) => {
-                        let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
-                        let (line, col) = (err.line() - 1, err.column() - 1);
-                        let idx = config_file
-                            .line_range(0, line)
-                            .expect("serde_json yielded an invalid line range")
-                            .start
-                            + col;
-
-                        let diag =
-                            Diagnostic::error(1, "config", err.to_string()).primary(idx..idx, "");
-                        emit_diagnostic(config_file, diag);
-                        Default::default()
-                    }
+        match style {
+            ConfigStyle::Json => match serde_json::from_str::<ConfigRepr>(&source) {
+                Ok(repr) => Self {
+                    repr,
+                    warnings: Default::default(),
                 },
-                ConfigStyle::Toml => match toml::from_str::<ConfigRepr>(&source) {
-                    Ok(repr) => Self {
-                        repr,
-                        warnings: Default::default(),
-                    },
+                Err(err) => {
+                    let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
+                    let (line, col) = (err.line() - 1, err.column() - 1);
+                    let idx = config_file
+                        .line_range(0, line)
+                        .expect("serde_json yielded an invalid line range")
+                        .start
+                        + col;
 
-                    Err(err) => {
-                        let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
-                        let d = if let Some(idx) = err.line_col().and_then(|(line, col)| {
-                            Some(config_file.line_range(0, line)?.start + col)
-                        }) {
-                            let pos_regex =
-                                regex::Regex::new(" at line \\d+ column \\d+$").unwrap();
-                            let msg = err.to_string();
-                            let msg = pos_regex.replace(&msg, "");
-                            Diagnostic::error(1, "config", msg).primary(idx..idx, "")
-                        } else {
-                            Diagnostic::error(1, "config", err.to_string())
-                        };
-                        emit_diagnostic(config_file, d);
-                        Default::default()
-                    }
+                    let diag =
+                        Diagnostic::error(1, "config", err.to_string()).primary(idx..idx, "");
+                    emit_diagnostic(config_file, diag);
+                    Default::default()
+                }
+            },
+            ConfigStyle::Toml => match toml::from_str::<ConfigRepr>(&source) {
+                Ok(repr) => Self {
+                    repr,
+                    warnings: Default::default(),
                 },
-            }
-        })
+
+                Err(err) => {
+                    let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
+                    let d = if let Some(idx) = err
+                        .line_col()
+                        .and_then(|(line, col)| Some(config_file.line_range(0, line)?.start + col))
+                    {
+                        let pos_regex = regex::Regex::new(" at line \\d+ column \\d+$").unwrap();
+                        let msg = err.to_string();
+                        let msg = pos_regex.replace(&msg, "");
+                        Diagnostic::error(1, "config", msg).primary(idx..idx, "")
+                    } else {
+                        Diagnostic::error(1, "config", err.to_string())
+                    };
+                    emit_diagnostic(config_file, d);
+                    Default::default()
+                }
+            },
+        }
     }
 
     fn find_config(global_config: bool) -> Option<(PathBuf, ConfigStyle)> {
@@ -323,7 +317,8 @@ impl Config {
                 let list = list.collect::<Vec<_>>();
                 rules = unique_rules(rules, list).collect();
             } else {
-                let d = Diagnostic::warning(1, "config", format!("unknown rule group '{}'", group));
+                let d =
+                    Diagnostic::warning(1, "config", format!("unknown rule group '{}'", group));
                 self.warnings.borrow_mut().push(d);
             }
         }

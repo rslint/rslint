@@ -53,7 +53,6 @@ pub use crate::directives::{
 };
 
 use dyn_clone::clone_box;
-use rayon::prelude::*;
 use rslint_parser::{util::SyntaxNodeExt, SyntaxKind, SyntaxNode};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -141,14 +140,15 @@ pub(crate) fn lint_file_inner<'s>(
 
     let src: Arc<str> = Arc::from(node.to_string());
 
+    // FIXME: Replace with thread pool
     let results = new_store
         .rules
-        .par_iter()
+        .into_iter()
         .map(|rule| {
             (
                 rule.name(),
                 run_rule(
-                    &**rule,
+                    &*rule,
                     file.id,
                     node.clone(),
                     verbose,

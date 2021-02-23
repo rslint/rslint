@@ -10,12 +10,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ahash"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6789e291be47ace86a60303502173d84af8327e3627ecf334356ee0f87a164c"
-
-[[package]]
 name = "aho-corasick"
 version = "0.7.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -415,16 +409,10 @@ version = "3.11.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f260e2fc850179ef410018660006951c1b55b79e8087e87111a2c388994b9b5"
 dependencies = [
- "ahash 0.3.8",
+ "ahash",
  "cfg-if 0.1.10",
  "num_cpus",
 ]
-
-[[package]]
-name = "difference"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 
 [[package]]
 name = "dirs-next"
@@ -452,6 +440,12 @@ name = "discard"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
+
+[[package]]
+name = "dissimilar"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc4b29f4b9bb94bf267d57269fd0706d343a160937108e9619fe380645428abb"
 
 [[package]]
 name = "dtoa"
@@ -520,11 +514,11 @@ dependencies = [
 
 [[package]]
 name = "expect-test"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ceb96f3eaa0d4e8769c52dacfd4eb60183b817ed2f176171b3c691d5022b0f2e"
+checksum = "2300477aab3a378f2ca00a4fbd4dc713654ab7ed790e4017493cb33656280633"
 dependencies = [
- "difference",
+ "dissimilar",
  "once_cell",
 ]
 
@@ -538,6 +532,15 @@ dependencies = [
  "libc",
  "redox_syscall",
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "flume"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "531a685ab99b8f60a271b44d5dd1a76e55124a8c9fa0407b7a8e9cd172d5b588"
+dependencies = [
+ "spinning_top",
 ]
 
 [[package]]
@@ -744,10 +747,6 @@ name = "hashbrown"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
-dependencies = [
- "ahash 0.4.6",
- "rayon",
-]
 
 [[package]]
 name = "heck"
@@ -952,6 +951,15 @@ name = "linked-hash-map"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8dd5a6d5999d9907cda8ed67bbd137d3af8085216c2ac62de5be860bd41f304a"
+
+[[package]]
+name = "lock_api"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd96ffd135b2fd7b973ac026d28085defbe8983df057ced3eb4f2130b0831312"
+dependencies = [
+ "scopeguard",
+]
 
 [[package]]
 name = "log"
@@ -1485,11 +1493,9 @@ version = "0.2.1"
 dependencies = [
  "colored",
  "glob",
- "hashbrown",
  "heck",
  "notify",
  "num_cpus",
- "rayon",
  "regex",
  "rslint_config",
  "rslint_core",
@@ -1501,6 +1507,7 @@ dependencies = [
  "termcolor",
  "toml",
  "walkdir",
+ "yastl",
 ]
 
 [[package]]
@@ -1526,7 +1533,6 @@ dependencies = [
  "dyn-clone",
  "indoc",
  "once_cell",
- "rayon",
  "rslint_errors",
  "rslint_lexer",
  "rslint_macros",
@@ -1609,12 +1615,10 @@ dependencies = [
  "expect-test",
  "lexical",
  "num-bigint",
- "rayon",
  "rslint_errors",
  "rslint_lexer",
  "rslint_rowan",
  "rslint_syntax",
- "walkdir",
 ]
 
 [[package]]
@@ -1870,6 +1874,15 @@ name = "spin"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
+
+[[package]]
+name = "spinning_top"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e529d73e80d64b5f2631f9035113347c578a1c9c7774b83a2b880788459ab36"
+dependencies = [
+ "lock_api",
+]
 
 [[package]]
 name = "stable_deref_trait"
@@ -2554,4 +2567,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe5c30ade05e61656247b2e334a031dfd0cc466fadef865bdcdea8d537951bf1"
 dependencies = [
  "winapi 0.3.9",
+]
+
+[[package]]
+name = "yastl"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "98eb0389cfe9ddf249590a3967991090054b4c08862028243e458bf2eeed984c"
+dependencies = [
+ "flume",
+ "scopeguard",
 ]

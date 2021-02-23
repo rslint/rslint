@@ -1,10 +1,9 @@
 //! The structure responsible for managing IO and the files implementation for codespan.
 
 use crate::lint_warn;
-use hashbrown::HashMap;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rslint_core::File;
 use rslint_errors::file::{FileId, Files};
+use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::ops::Range;
 use std::path::PathBuf;
@@ -59,16 +58,16 @@ impl FileWalker {
     /// skips any unreadable files/dirs
     pub fn from_glob(paths: Vec<PathBuf>) -> Self {
         let mut base = Self::default();
-        base.load_files(paths.into_par_iter());
+        base.load_files(paths.into_iter());
         base
     }
 
-    pub fn load_files(&mut self, paths: impl ParallelIterator<Item = PathBuf>) {
+    pub fn load_files(&mut self, paths: impl Iterator<Item = PathBuf>) {
         let jsfiles: HashMap<usize, File> = paths
             .filter(|p| {
                 !IGNORED.contains(&p.file_name().unwrap_or_default().to_string_lossy().as_ref())
             })
-            .flat_map_iter(|path| {
+            .flat_map(|path| {
                 WalkDir::new(path)
                     .into_iter()
                     .filter_entry(|p| !IGNORED.contains(&p.file_name().to_string_lossy().as_ref()))
