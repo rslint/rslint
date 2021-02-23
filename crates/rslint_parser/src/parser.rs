@@ -119,6 +119,15 @@ impl<'t> Parser<'t> {
         self.syntax.file_kind == FileKind::TypeScript
     }
 
+    fn overflow_check(&self) {
+        let steps = self.steps.get();
+        assert!(
+            steps <= 10_000_000,
+            "The parser seems to be recursing forever",
+        );
+        self.steps.set(steps + 1);
+    }
+
     /// Get the source code of a token
     pub fn token_src(&self, token: &Token) -> &str {
         self.tokens
@@ -144,29 +153,12 @@ impl<'t> Parser<'t> {
 
     /// Look ahead at a token and get its kind, **The max lookahead is 4**.  
     pub fn nth(&self, n: usize) -> SyntaxKind {
-        let steps = self.steps.get();
-        assert!(
-            steps <= 10_000_000,
-            "The parser seems to be recursing forever on the token \n{:#?} {}",
-            self.tokens.lookahead_nth(n),
-            self.cur_src()
-        );
-        self.steps.set(steps + 1);
-
         self.tokens.lookahead_nth(n).kind
     }
 
     /// Look ahead at a token, **The max lookahead is 4**.  
     pub fn nth_tok(&self, n: usize) -> Token {
-        let steps = self.steps.get();
-        assert!(
-            steps <= 10_000_000,
-            "The parser seems to be recursing forever on the token \n{:#?} {}",
-            self.tokens.lookahead_nth(n),
-            self.cur_src()
-        );
-        self.steps.set(steps + 1);
-
+        self.overflow_check();
         self.tokens.lookahead_nth(n)
     }
 
@@ -177,6 +169,7 @@ impl<'t> Parser<'t> {
 
     /// Check if a token lookahead is something, `n` must be smaller or equal to `4`
     pub fn nth_at(&self, n: usize, kind: SyntaxKind) -> bool {
+        self.overflow_check();
         self.tokens.lookahead_nth(n).kind == kind
     }
 
