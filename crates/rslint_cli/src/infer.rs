@@ -5,7 +5,7 @@ use rslint_core::get_inferable_rules;
 use rslint_parser::SyntaxNode;
 use toml::to_string_pretty;
 
-pub fn infer(files: Vec<String>) {
+pub fn infer(files: Vec<String>, pool: yastl::Pool) {
     let globs = files
         .into_iter()
         .filter_map(|x| match glob(&x) {
@@ -17,9 +17,9 @@ pub fn infer(files: Vec<String>) {
         })
         .flatten()
         .flat_map(Result::ok)
-        .collect();
+        .collect::<Vec<_>>();
 
-    let walker = FileWalker::from_glob(globs);
+    let walker = FileWalker::from_glob(&pool, globs);
     let parsed = walker.files.values().map(|f| f.parse());
     let nodes: Vec<SyntaxNode> = parsed.flat_map(|n| n.descendants()).collect();
     let rules = get_inferable_rules();

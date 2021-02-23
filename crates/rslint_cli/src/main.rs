@@ -81,12 +81,12 @@ fn main() {
 fn execute(opt: Options, pool: Pool) {
     match (opt.dev_flag, opt.cmd) {
         (Some(DevFlag::Help), _) => println!("{}", DEV_FLAGS_HELP),
-        (Some(DevFlag::Tokenize), _) => rslint_cli::tokenize(opt.files),
-        (Some(DevFlag::DumpAst), _) => rslint_cli::dump_ast(opt.files),
+        (Some(DevFlag::Tokenize), _) => rslint_cli::tokenize(opt.files, pool),
+        (Some(DevFlag::DumpAst), _) => rslint_cli::dump_ast(opt.files, pool),
 
         (_, Some(SubCommand::Explain { rules })) => ExplanationRunner::new(rules).print(),
         (_, Some(SubCommand::Rules)) => rslint_cli::show_all_rules(),
-        (_, Some(SubCommand::Infer { files })) => rslint_cli::infer(files),
+        (_, Some(SubCommand::Infer { files })) => rslint_cli::infer(files, pool),
         (_, None) => rslint_cli::run(
             opt.files,
             opt.verbose,

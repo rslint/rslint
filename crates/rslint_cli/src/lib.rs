@@ -67,9 +67,7 @@ fn run_inner(
             }));
         });
 
-        scope.execute(|| {
-            walker.load_files(collect_globs(globs).into_iter());
-        });
+        walker.load_files(&pool, collect_globs(globs).into_iter());
     });
 
     let mut config = config.expect("config failed to initialize");
@@ -104,6 +102,8 @@ fn run_inner(
         0
     };
     print_results(&mut results, &walker, &config, fix_count, &formatter);
+
+    pool.shutdown();
 
     // print_results remaps the result to the appropriate severity
     // so these diagnostic severities should be accurate
@@ -163,63 +163,67 @@ pub fn apply_fixes(results: &mut Vec<LintResult>, walker: &mut FileWalker, dirty
     fix_count
 }
 
-pub fn dump_ast(globs: Vec<String>) {
+pub fn dump_ast(globs: Vec<String>, pool: Pool) {
     use rslint_parser::{NodeOrToken, WalkEvent};
 
-    for_each_file(globs, |_, file| {
-        let header = if let Some(path) = &file.path {
-            format!("File {}", path.display())
-        } else {
-            format!("File {}", file.name)
-        };
-        println!("{}", header.red().bold());
+    for_each_file(
+        globs,
+        |_, file| {
+            let header = if let Some(path) = &file.path {
+                format!("File {}", path.display())
+            } else {
+                format!("File {}", file.name)
+            };
+            println!("{}", header.red().bold());
 
-        let parse = file.parse();
-        let mut level = 0;
-        for event in parse.preorder_with_tokens() {
-            match event {
-                WalkEvent::Enter(element) => {
-                    for _ in 0..level {
-                        print!("  ");
-                    }
-                    match element {
-                        NodeOrToken::Node(node) => {
-                            println!(
-                                "{}@{}",
-                                format!("{:?}", node.kind()).yellow(),
-                                format!("{:#?}", node.text_range()).cyan()
-                            );
+            let parse = file.parse();
+            let mut level = 0;
+            for event in parse.preorder_with_tokens() {
+                match event {
+                    WalkEvent::Enter(element) => {
+                        for _ in 0..level {
+                            print!("  ");
                         }
-                        NodeOrToken::Token(token) => {
-                            print!(
-                                "{}@{}",
-                                format!("{:?}", token.kind()).yellow(),
-                                format!("{:#?}", token.text_range()).cyan()
-                            );
-                            if token.text().len() < 25 {
-                                print!(" {}", format!("{:#?}", token.text()).green());
-                            } else {
-                                let text = token.text().as_str();
-                                for idx in 21..25 {
-                                    if text.is_char_boundary(idx) {
-                                        let text = format!("{} ...", &text[..idx]);
-                                        print!(" {}", format!("{:#?}", text).green());
+                        match element {
+                            NodeOrToken::Node(node) => {
+                                println!(
+                                    "{}@{}",
+                                    format!("{:?}", node.kind()).yellow(),
+                                    format!("{:#?}", node.text_range()).cyan()
+                                );
+                            }
+                            NodeOrToken::Token(token) => {
+                                print!(
+                                    "{}@{}",
+                                    format!("{:?}", token.kind()).yellow(),
+                                    format!("{:#?}", token.text_range()).cyan()
+                                );
+                                if token.text().len() < 25 {
+                                    print!(" {}", format!("{:#?}", token.text()).green());
+                                } else {
+                                    let text = token.text().as_str();
+                                    for idx in 21..25 {
+                                        if text.is_char_boundary(idx) {
+                                            let text = format!("{} ...", &text[..idx]);
+                                            print!(" {}", format!("{:#?}", text).green());
+                                        }
                                     }
                                 }
+                                println!();
                             }
-                            println!();
                         }
+                        level += 1;
                     }
-                    level += 1;
+                    WalkEvent::Leave(_) => level -= 1,
                 }
-                WalkEvent::Leave(_) => level -= 1,
             }
-        }
-        println!();
-    })
+            println!();
+        },
+        pool,
+    )
 }
 
-pub fn tokenize(globs: Vec<String>) {
+pub fn tokenize(globs: Vec<String>, pool: Pool) {
     for_each_file(
         globs,
         |walker,
@@ -251,6 +255,7 @@ pub fn tokenize(globs: Vec<String>) {
             });
             println!();
         },
+        pool,
     )
 }
 
@@ -270,8 +275,8 @@ fn collect_globs(globs: Vec<String>) -> Vec<PathBuf> {
         .collect()
 }
 
-fn for_each_file(globs: Vec<String>, action: impl Fn(&FileWalker, &File)) {
-    let walker = FileWalker::from_glob(collect_globs(globs));
+fn for_each_file(globs: Vec<String>, action: impl Fn(&FileWalker, &File), pool: Pool) {
+    let walker = FileWalker::from_glob(&pool, collect_globs(globs));
     walker.files.values().for_each(|file| action(&walker, file))
 }
 
