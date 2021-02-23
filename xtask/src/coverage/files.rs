@@ -1,6 +1,5 @@
 use colored::Colorize;
-use indicatif::{ParallelProgressIterator, ProgressBar};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use indicatif::ProgressBar;
 use regex::Regex;
 use rslint_parser::ParserError;
 use serde::Deserialize;
@@ -9,6 +8,7 @@ use std::fs::read_to_string;
 use std::io;
 use std::path::PathBuf;
 use walkdir::WalkDir;
+use yastl::Pool;
 
 const BASE_PATH: &str = "xtask/src/coverage/test262/test";
 
@@ -95,7 +95,7 @@ fn read_metadata(code: &str) -> io::Result<MetaData> {
     serde_yaml::from_str(yaml).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
-pub fn get_test_files(query: Option<&str>) -> Vec<TestFile> {
+pub fn get_test_files(query: Option<&str>, pool: &Pool) -> Vec<TestFile> {
     let start = std::time::Instant::now();
 
     let files = WalkDir::new(BASE_PATH)
@@ -116,16 +116,32 @@ pub fn get_test_files(query: Option<&str>) -> Vec<TestFile> {
     pb.set_message(&format!("{} test files", "Loading".bold().cyan()));
     pb.set_style(super::default_bar_style());
 
-    let files = files
-        .into_par_iter()
-        .progress_with(pb.clone())
-        .filter_map(|entry| {
-            let code = read_to_string(entry.path()).ok()?;
-            let meta = read_metadata(&code).ok()?;
-            let path = entry.into_path();
-            Some(TestFile { code, meta, path }).filter(|file| file.meta.features.is_empty())
-        })
-        .collect();
+    let (tx, rx) = std::sync::mpsc::channel();
+
+    pool.scoped(|scope| {
+        let pb = &pb;
+        for file in files {
+            let tx = tx.clone();
+
+            scope.execute(move || {
+                fn parse_file(entry: walkdir::DirEntry) -> Option<TestFile> {
+                    let code = read_to_string(entry.path()).ok()?;
+                    let meta = read_metadata(&code).ok()?;
+                    let path = entry.into_path();
+                    Some(TestFile { code, meta, path })
+                        .filter(|file| file.meta.features.is_empty())
+                }
+
+                if let Some(file) = parse_file(file) {
+                    tx.send(file).unwrap();
+                }
+
+                pb.inc(1);
+            });
+        }
+    });
+    drop(tx);
+    let files = rx.into_iter().collect();
 
     pb.finish_and_clear();
     println!(

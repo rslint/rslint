@@ -3,14 +3,13 @@ mod files;
 use ascii_table::{AsciiTable, Column};
 use colored::Colorize;
 use files::*;
-use indicatif::ParallelProgressIterator;
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rslint_parser::{parse_module, parse_text, ParserError};
 use std::any::Any;
 use std::path::PathBuf;
+use yastl::Pool;
 
-pub fn run(query: Option<&str>) {
-    let files = get_test_files(query);
+pub fn run(query: Option<&str>, pool: Pool) {
+    let files = get_test_files(query, &pool);
     let num_ran = files.len();
 
     let detailed = num_ran < 10;
@@ -22,39 +21,50 @@ pub fn run(query: Option<&str>) {
 
     std::panic::set_hook(Box::new(|_| {}));
     let start_tests = std::time::Instant::now();
-    let res = files
-        .into_par_iter()
-        .progress_with(pb.clone())
-        .map(|file| {
-            let res = run_test_file(file);
-            let pb = pb.clone();
 
-            if detailed && res.fail.is_some() {
-                report_detailed_test(&pb, &res);
-                return res;
-            }
+    let (tx, rx) = std::sync::mpsc::channel();
 
-            if let Some(ref fail) = res.fail {
-                let reason = match fail {
-                    FailReason::IncorrectlyPassed => "incorrectly passed parsing",
-                    FailReason::IncorrectlyErrored(_) => "incorrectly threw an error",
-                    FailReason::ParserPanic(_) => "panicked while parsing",
-                };
-                let msg = format!(
-                    "{} '{}' {}",
-                    "Test".bold().red(),
-                    res.path
-                        .strip_prefix("xtask/src/coverage/test262/test/")
-                        .unwrap_or(&res.path)
-                        .display(),
-                    reason.bold()
-                );
-                pb.println(msg);
-            }
+    pool.scoped(|scope| {
+        let pb = &pb;
+        for file in files {
+            let tx = tx.clone();
 
-            res
-        })
-        .collect::<Vec<_>>();
+            scope.execute(move || {
+                let res = run_test_file(file);
+                pb.inc(1);
+
+                if detailed && res.fail.is_some() {
+                    report_detailed_test(&pb, &res);
+                    tx.send(res).unwrap();
+                    return;
+                }
+
+                if let Some(ref fail) = res.fail {
+                    let reason = match fail {
+                        FailReason::IncorrectlyPassed => "incorrectly passed parsing",
+                        FailReason::IncorrectlyErrored(_) => "incorrectly threw an error",
+                        FailReason::ParserPanic(_) => "panicked while parsing",
+                    };
+                    let msg = format!(
+                        "{} '{}' {}",
+                        "Test".bold().red(),
+                        res.path
+                            .strip_prefix("xtask/src/coverage/test262/test/")
+                            .unwrap_or(&res.path)
+                            .display(),
+                        reason.bold()
+                    );
+                    pb.println(msg);
+                }
+
+                tx.send(res).unwrap();
+            });
+        }
+    });
+    drop(tx);
+
+    let res = rx.into_iter().collect::<Vec<_>>();
+
     let _ = std::panic::take_hook();
 
     pb.finish_and_clear();

@@ -805,7 +805,6 @@ dependencies = [
  "console",
  "lazy_static",
  "number_prefix",
- "rayon",
  "regex",
  "unicode-segmentation",
  "unicode-width",
@@ -2533,11 +2532,11 @@ dependencies = [
  "colored",
  "convert_case",
  "indicatif",
+ "num_cpus",
  "once_cell",
  "pico-args",
  "proc-macro2",
  "quote",
- "rayon",
  "regex",
  "rslint_config",
  "rslint_errors",
@@ -2549,6 +2548,7 @@ dependencies = [
  "syn",
  "unindent",
  "walkdir",
+ "yastl",
 ]
 
 [[package]]
