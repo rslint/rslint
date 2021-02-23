@@ -166,6 +166,11 @@
               "pattern": "no-confusing-arrow"
             },
             {
+              "title": "Verify calls of `super()` in constructors",
+              "description": "",
+              "pattern": "constructor-super"
+            },
+            {
               "title": "Enforce or disallow spaces inside of blocks after the opening and closing brackets.",
               "description": "",
               "pattern": "block-spacing"
@@ -194,6 +199,10 @@
                   "type": "string"
                 }
               }
+            },
+            "constructor-super": {
+              "title": "ConstructorSuper",
+              "type": "object"
             },
             "for-direction": {
               "title": "ForDirection",
@@ -425,6 +434,10 @@
                   "type": "string"
                 }
               }
+            },
+            "constructor-super": {
+              "title": "ConstructorSuper",
+              "type": "object"
             },
             "for-direction": {
               "title": "ForDirection",

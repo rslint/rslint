@@ -9,6 +9,7 @@ unexpected behavior.
 ## Rules
 | Name | Description |
 | ---- | ----------- |
+| [constructor-super](./constructor-super.md) | Verify calls of `super()` in constructors |
 | [for-direction](./for-direction.md) | Disallow for loops which update their counter in the wrong direction. |
 | [getter-return](./getter-return.md) | Disallow getter properties which do not always return a value. |
 | [no-async-promise-executor](./no-async-promise-executor.md) | Disallow async functions as promise executors. |
