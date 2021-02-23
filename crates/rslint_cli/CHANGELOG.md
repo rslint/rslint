@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Removed
 
 - Removed `JsFile` and moved it to `rslint_core`
+- Removed `rayon` as the threadpool, replaced with `yastl`
 
 ## [0.2.1] - 2020-10-21
 

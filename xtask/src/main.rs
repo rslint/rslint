@@ -35,7 +35,9 @@ fn main() -> Result<()> {
         "coverage" => {
             let free = args.free()?;
             let query = free.get(0).map(String::as_str);
-            coverage::run(query);
+
+            let pool = yastl::ThreadConfig::new().stack_size(8 << 30);
+            coverage::run(query, yastl::Pool::with_config(num_cpus::get(), pool));
             Ok(())
         }
         _ => {

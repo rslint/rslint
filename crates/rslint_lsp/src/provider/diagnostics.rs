@@ -4,7 +4,6 @@ use crate::core::{
     document::{Document, RuleResult},
     session::Session,
 };
-use rayon::prelude::*;
 use rslint_core::{
     apply_top_level_directives, directives::DirectiveResult, run_rule, DirectiveParser,
 };
@@ -55,7 +54,7 @@ pub async fn publish_diagnostics(session: &Session, uri: Url) -> anyhow::Result<
     let src = Arc::from(document.file.source.clone());
     let rule_results: HashMap<&str, rslint_core::RuleResult> = new_store
         .rules
-        .par_iter()
+        .iter()
         .map(|rule| {
             (
                 rule.name(),

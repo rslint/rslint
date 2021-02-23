@@ -10,7 +10,7 @@ publish = false
 quote = "1.0.2"
 proc-macro2 = { version = "1.0.19", features = ["span-locations"] }
 anyhow = "1.0.26"
-pico-args = "0.3.1"
+pico-args = "0.3.4"
 syn = { version = "1.0.39", features = ["full", "parsing"] }
 unindent = "0.1.6"
 convert_case = "0.4.0"
@@ -23,8 +23,9 @@ rslint_errors = { path = "../crates/rslint_errors", version = "0.1.0" }
 rslint_config = { path = "../crates/rslint_config", version = "0.1", features = ["schema"] }
 ascii_table = "3.0.1"
 colored = "2.0.0"
-rayon = "1.5.0"
-indicatif = { version = "0.15.0", features = ["improved_unicode", "rayon"] }
+indicatif = { version = "0.15.0", features = ["improved_unicode"] }
 walkdir = "2.3.1"
 serde_json = "1.0.59"
 schemars = "0.8"
+yastl = "0.1"
+num_cpus = "1.13"

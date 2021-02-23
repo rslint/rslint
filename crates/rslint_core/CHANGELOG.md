@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Removed
 
 - Removed the `store` field from `LintResult`
+- Removed `rayon` as the threadpool, replaced with `yastl`
 
 ### Fixed
 
