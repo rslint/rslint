@@ -8,7 +8,6 @@ use std::fs::read_to_string;
 use std::ops::Range;
 use std::path::PathBuf;
 use walkdir::WalkDir;
-use yastl::Pool;
 
 /// A list of ignored-by-default directory/file names
 const IGNORED: [&str; 1] = ["node_modules"];
@@ -57,61 +56,47 @@ impl FileWalker {
 
     /// Make a new file walker from a compiled glob pattern. This also
     /// skips any unreadable files/dirs
-    pub fn from_glob(pool: &Pool, paths: Vec<PathBuf>) -> Self {
+    pub fn from_glob(paths: Vec<PathBuf>) -> Self {
         let mut base = Self::default();
-        base.load_files(pool, paths.into_iter());
+        base.load_files(paths.into_iter());
         base
     }
 
-    pub fn load_files(&mut self, pool: &Pool, paths: impl Iterator<Item = PathBuf>) {
-        let (tx, rx) = std::sync::mpsc::channel();
-
-        pool.scoped(|scope| {
-            let files = paths
-                .filter(|p| {
-                    !IGNORED
-                        .contains(&p.file_name().unwrap_or_default().to_string_lossy().as_ref())
-                })
-                .flat_map(|path| {
-                    WalkDir::new(path)
-                        .into_iter()
-                        .filter_entry(|p| {
-                            !IGNORED.contains(&p.file_name().to_string_lossy().as_ref())
-                        })
-                        .filter_map(Result::ok)
-                })
-                .filter(|p| {
-                    LINTED_FILES.contains(
-                        &p.path()
-                            .extension()
-                            .unwrap_or_default()
-                            .to_string_lossy()
-                            .as_ref(),
-                    )
-                });
-
-            for file in files {
-                let tx = tx.clone();
-                scope.execute(move || {
-                    let path = file.path();
-                    match read_to_string(path) {
-                        Ok(v) => {
-                            tx.send(File::new_concrete(v, path.to_owned())).unwrap();
-                        }
-                        Err(err) => {
-                            crate::lint_err!("failed to read file {}: {}", path.display(), err);
-                        }
-                    };
-                });
-            }
-        });
-        drop(tx);
-
-        self.files.extend(
-            rx.into_iter()
-                .map(|file| (file.id, file))
-                .collect::<HashMap<_, _>>(),
-        );
+    pub fn load_files(&mut self, paths: impl Iterator<Item = PathBuf>) {
+        let jsfiles: HashMap<usize, File> = paths
+            .filter(|p| {
+                !IGNORED.contains(&p.file_name().unwrap_or_default().to_string_lossy().as_ref())
+            })
+            .flat_map(|path| {
+                WalkDir::new(path)
+                    .into_iter()
+                    .filter_entry(|p| !IGNORED.contains(&p.file_name().to_string_lossy().as_ref()))
+                    .filter_map(Result::ok)
+            })
+            .filter(|p| {
+                LINTED_FILES.contains(
+                    &p.path()
+                        .extension()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .as_ref(),
+                )
+            })
+            .filter_map(|entry| {
+                let path = entry.path();
+                let content = match read_to_string(path) {
+                    Ok(v) => v,
+                    Err(err) => {
+                        crate::lint_err!("failed to read file {}: {}", path.display(), err);
+                        return None;
+                    }
+                };
+                Some((content, path.to_owned()))
+            })
+            .map(|(src, path)| File::new_concrete(src, path))
+            .map(|file| (file.id, file))
+            .collect();
+        self.files.extend(jsfiles);
     }
 
     pub fn line_start(&self, id: usize, line_index: usize) -> Option<usize> {
