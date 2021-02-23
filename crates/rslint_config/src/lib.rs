@@ -317,8 +317,7 @@ impl Config {
                 let list = list.collect::<Vec<_>>();
                 rules = unique_rules(rules, list).collect();
             } else {
-                let d =
-                    Diagnostic::warning(1, "config", format!("unknown rule group '{}'", group));
+                let d = Diagnostic::warning(1, "config", format!("unknown rule group '{}'", group));
                 self.warnings.borrow_mut().push(d);
             }
         }
