@@ -9,6 +9,6 @@ Rules which relate to regular expressions.
 | Name | Description |
 | ---- | ----------- |
 | [no-invalid-regexp](./no-invalid-regexp.md) | Disallow invalid regular expressions in literals and `RegExp` constructors. |
-| [simplify-regex](./simplify-regex.md) |  |
+| [simplify-regex](./simplify-regex.md) | Simplify regular expressions. |
 
 [Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/regex)

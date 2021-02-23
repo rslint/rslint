@@ -176,7 +176,7 @@
               "pattern": "no-invalid-regexp"
             },
             {
-              "title": "",
+              "title": "Simplify regular expressions.",
               "description": "",
               "pattern": "simplify-regex"
             }
