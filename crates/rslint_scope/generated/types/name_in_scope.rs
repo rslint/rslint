@@ -117,8 +117,9 @@ pub fn ResolveSymbols<
     Names,
     Assigns,
     Exports,
-    ScopeName,
-    DeclName,
+    KnownDecls,
+    LegalGlobals,
+    IllegalGlobals,
 >(
     files_to_resolve: &Collection<S, D, Weight>,
     convert_files_to_resolve: Files,
@@ -141,9 +142,10 @@ pub fn ResolveSymbols<
     file_exports: &Collection<S, D, Weight>,
     convert_file_exports: Exports,
 
-    convert_name_in_scope: ScopeName,
-    convert_scope_of_decl_name: DeclName,
-) -> (Collection<S, D, Weight>, Collection<S, D, Weight>)
+    convert_known_declarations: KnownDecls,
+    convert_legal_implicit_globals: LegalGlobals,
+    convert_illegal_implicit_globals: IllegalGlobals,
+) -> (Collection<S, D, Weight>, Collection<S, D, Weight>, Collection<S, D, Weight>)
 where
     S: Scope + Input,
     S::Timestamp: Lattice,
@@ -155,8 +157,9 @@ where
     Names: Fn(D) -> NameRef + 'static,
     Assigns: Fn(D) -> Assign + 'static,
     Exports: Fn(D) -> FileExport + 'static,
-    ScopeName: Fn(NameInScope) -> D + 'static,
-    DeclName: Fn(ScopeOfDeclName) -> D + 'static,
+    KnownDecls: Fn(ResolvedName) -> D + 'static,
+    LegalGlobals: Fn(ResolvedName) -> D + 'static,
+    IllegalGlobals: Fn(ResolvedName) -> D + 'static,
 {
     // Files that require name resolution stored as a keyed arrangement of `FileId`s
     let files_to_resolve = files_to_resolve
@@ -246,7 +249,6 @@ where
         file_exports,
         convert_file_exports,
     );
-    // .arrange_by_self_pipelined_named("ArrangeBySelfPipelined: Symbol usages");
 
     let scope_of_decl_name = variable_declarations.map(|(_, decl)| {
         let scope = match decl.scope {
@@ -263,18 +265,13 @@ where
             "ArrangeByKeyPipelined: Declarations by name and scope with declarations",
         );
 
-    // let decl_names_by_name_and_scope = scope_of_decl_name
-    //     .map(|((name, scope), _)| (name, scope))
-    //     .arrange_by_self_pipelined_named("ArrangeBySelfPipelined: Declarations by name and scope");
-
-    let (_, use_strict) = symbol_usages.scope().new_collection();
+    // let (_, use_strict) = symbol_usages.scope().new_collection();
     let use_strict_arranged =
         symbol_usages.arrange_by_self_pipelined_named("ArrangeBySelfPipelined: Use strict scopes");
 
     let (known_declarations, legal_implicit_globals, illegal_implicit_globals) = symbol_usages
         .scope()
-        // TODO: Rename `subgraph`
-        .scoped("Resolve variable usages", |subgraph| {
+        .scoped::<Product<_, i32>, _, _>("Resolve variable usages", |subgraph| {
             let usages = Variable::new_from(
                 symbol_usages
                     .map(|(name, scope)| ResolvedName {
@@ -454,94 +451,11 @@ where
             )
         });
 
-    let name_in_scope = {
-        // A collection of all variable declarations
-        let concrete_declarations = variable_declarations
-            .map(|(_, decl)| {
-                let hoisted_scope = match decl.scope {
-                    DeclarationScope::Unhoistable { scope } => scope,
-                    DeclarationScope::Hoistable { hoisted, .. } => hoisted,
-                };
-
-                ((IStr::new(&*decl.name), hoisted_scope), decl.declared_in)
-            })
-            .arrange_by_key_pipelined_named("ArrangeByKeyPipelined: Concrete declarations");
-
-        // Concrete declarations, but only where a symbol reference occurs beneath their
-        // declaration scope that refers to their name
-        let declarations_where_symbols_occur =
-            semijoin_arrangements(&concrete_declarations, &symbol_usages);
-
-        // declarations_where_symbols_occur: ((IStr, ScopeId), AnyId) -> ((name, hoisted_scope), declaration_id)
-        declarations_where_symbols_occur
-            .iterate(|names| {
-                // A blanket propagation of all currently accumulated names to the
-                // scopes that are children to them
-                let blanket_propagations = names
-                    .map(|((name, parent), decl)| (parent, (name, decl)))
-                    .arrange_by_key_pipelined_named("ArrangeByKeyPipelined: Mapped names")
-                    .join_core(
-                        &input_scopes_by_parent.enter(&names.scope()),
-                        |_parent, &(name, decl), &child| iter::once(((name, child), decl)),
-                    )
-                    .arrange_by_key_pipelined_named("ArrangeByKeyPipelined: Blanket propagations");
-
-                // A culling of the blanket propagations, stop propagation when a variable
-                // of the same name has been declared
-                let non_declarations = antijoin_arranged(
-                    &blanket_propagations,
-                    &decl_names_by_name_and_scope.enter(&names.scope()),
-                )
-                .arrange_by_key_pipelined_named("ArrangeByKeyPipelined: Non-declarations");
-
-                // Cull the propagations further, only allow names to propagate into scopes
-                // where they actually occur
-                let used_scopes =
-                    semijoin_arrangements(&non_declarations, &symbol_usages.enter(&names.scope()));
-
-                used_scopes
-                    .concat(&names)
-                    // .distinct_pipelined_named("DistinctPipelined: Iterative names in scope")
-                    .arrange_by_key_pipelined_named(
-                        "ArrangeByKeyPipelined: Iterative names in scope",
-                    )
-                    .reduce_abelian::<_, OrdValSpine<_, _, _, _>>(
-                        "ReduceAbelian: Iterative names in scope",
-                        |_parent, declarations, output| {
-                            output.reserve(declarations.len());
-                            output.extend(declarations.iter().filter_map(|&(&decl, diff)| {
-                                if diff > 0 {
-                                    Some((decl, 1))
-                                } else {
-                                    None
-                                }
-                            }))
-                        },
-                    )
-                    .as_collection(|&name, &decl| (name, decl))
-            })
-            .map(move |((name, scope), declared)| {
-                let name = NameInScope {
-                    name: Intern::new(name.to_string()),
-                    scope,
-                    declared,
-                };
-
-                convert_name_in_scope(name)
-            })
-    };
-
     (
-        name_in_scope,
-        scope_of_decl_name.map(move |(name, scope, declared)| {
-            let decl = ScopeOfDeclName {
-                name: Intern::new(name.to_string()),
-                scope,
-                declared,
-            };
-            convert_scope_of_decl_name(decl)
-        }),
-    )
+        known_declarations.map(convert_known_declarations),
+        legal_implicit_globals.map(move |(_, legal)| convert_legal_implicit_globals(legal)),
+        illegal_implicit_globals.map(move |(_, illegal)| convert_illegal_implicit_globals(illegal)),
+    ) 
 }
 
 /// Collects all usages of symbols within files that need symbol resolution
@@ -633,32 +547,7 @@ where
         })
     };
 
-    let symbols = name_refs.concat(&assignments).concat(&file_exports);
-    // let symbols_arranged = symbols.arrange_by_key_pipelined_named("ArrangeByKeyPipelined: Symbols");
-
-    // let propagated_symbols = symbols
-    //     .map(|(child, _)| (child, child))
-    //     .iterate(|transitive_parents| {
-    //         let arranged_parents = transitive_parents
-    //             .map(|(child, parent)| (parent, child))
-    //             .arrange_by_key_pipelined_named("ArrangeByKeyPipelined: Arranged parents");
-    //
-    //         let propagated = arranged_parents.join_core(
-    //             &input_scopes_by_child.enter(&transitive_parents.scope()),
-    //             |_parent, &child, &grandparent| iter::once((child, grandparent)),
-    //         );
-    //
-    //         propagated
-    //             .concat(&transitive_parents)
-    //             .distinct_pipelined_named("DistinctPipelined: Iterative propagated symbols")
-    //     })
-    //     .arrange_by_key_pipelined_named("ArrangeByKeyPipelined: Propagated symbols");
-    //
-    // symbols_arranged.join_core(&propagated_symbols, |_child, &name, &parent| {
-    //     iter::once((name, parent))
-    // })
-
-    symbols
+     name_refs.concat(&assignments).concat(&file_exports)
 }
 
 fn convert_collection<S, D, R, T, F, N>(
@@ -1051,17 +940,6 @@ pub trait PartitionExt<D1, D2 = D1> {
     fn partition_named<F>(&self, name: &str, parts: usize, route: F) -> Vec<Self::Output>
     where
         F: Fn(D1) -> (usize, D2) + 'static;
-
-    // fn partition_array<F, const N: usize>(&self, route: F) -> [Self::Output; N]
-    // where
-    //     F: Fn(D1) -> (usize, D2) + 'static,
-    // {
-    //     self.partition_array_named("PartitionArray", route)
-    // }
-    //
-    // fn partition_array_named<F, const N: usize>(&self, name: &str, route: F) -> [Self::Output; N]
-    // where
-    //     F: Fn(D1) -> (usize, D2) + 'static;
 }
 
 type Bundle<S, D, R> = (D, <S as ScopeParent>::Timestamp, R);
@@ -1137,59 +1015,6 @@ where
 
         streams
     }
-
-    // fn partition_array_named<F, const N: usize>(&self, name: &str, route: F) -> [Self::Output; N]
-    // where
-    //     F: Fn(D1) -> (usize, D2) + 'static,
-    // {
-    //     let mut builder = OperatorBuilder::new(name.to_owned(), self.scope());
-    //     let mut input = builder.new_input(&self.inner, Pipeline);
-    //
-    //     let (mut outputs, mut streams) = (Vec::with_capacity(N), Vec::with_capacity(N));
-    //
-    //     for _ in 0..N {
-    //         let (output, stream) = builder.new_output();
-    //         outputs.push(output);
-    //         streams.push(Collection::new(stream));
-    //     }
-    //
-    //     builder.build(move |_| {
-    //         let mut vector = Vec::with_capacity(N);
-    //         move |_frontiers| {
-    //             let (mut handles, mut sessions) = (
-    //                 Vec::<ActivatedOut<S, D2, R>>::with_capacity(outputs.len()),
-    //                 Vec::<SessionOut<S, D2, R>>::with_capacity(outputs.len()),
-    //             );
-    //
-    //             for handle in outputs.iter_mut() {
-    //                 handles.push(handle.activate());
-    //             }
-    //
-    //             input.for_each(|time, data| {
-    //                 data.swap(&mut vector);
-    //                 sessions.extend(
-    //                     handles
-    //                         .iter_mut()
-    //                         // Safety: This allows us to reuse the `sessions` vector for each input batch,
-    //                         //         it's alright because we clear the sessions buffer at the end of each
-    //                         //         input batch
-    //                         .map(|handle| unsafe { mem::transmute(handle.session(&time)) }),
-    //                 );
-    //
-    //                 for (data, time, diff) in vector.drain(..) {
-    //                     let (part, data) = route(data);
-    //                     sessions[part as usize].give((data, time, diff));
-    //                 }
-    //
-    //                 sessions.clear();
-    //             });
-    //         }
-    //     });
-    //
-    //     streams
-    //         .try_into()
-    //         .unwrap_or_else(|_| unreachable!("vector is the correct size"))
-    // }
 }
 
 #[derive(
