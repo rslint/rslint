@@ -85,18 +85,10 @@ declare_lint! {
 impl CstRule for NoThisBeforeSuper {
     fn check_node(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
         let class_decl = node.try_to::<ClassDecl>()?;
-        let constructor = class_decl
-            .body()?
-            // work-around for bug where `.body()?.elements()` returns only one
-            // element for whatever reason
-            .syntax()
-            .children()
-            .filter_map(|x| x.try_to::<ClassElement>())
-            // get the first constructor we can find. there should only be one.
-            .find_map(|x| match x {
-                ClassElement::Constructor(c) => Some(c),
-                _ => None,
-            })?;
+        let constructor = class_decl.body()?.elements().find_map(|x| match x {
+            ClassElement::Constructor(c) => Some(c),
+            _ => None,
+        })?;
 
         let mut super_call = None;
         let mut this_expr = None;

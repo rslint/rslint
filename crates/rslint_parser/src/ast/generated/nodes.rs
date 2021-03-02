@@ -1677,7 +1677,7 @@ pub struct ClassBody {
 }
 impl ClassBody {
     pub fn l_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['{']) }
-    pub fn elements(&self) -> Option<ClassElement> { support::child(&self.syntax) }
+    pub fn elements(&self) -> AstChildren<ClassElement> { support::children(&self.syntax) }
     pub fn r_curly_token(&self) -> Option<SyntaxToken> { support::token(&self.syntax, T!['}']) }
 }
 #[doc = ""]
