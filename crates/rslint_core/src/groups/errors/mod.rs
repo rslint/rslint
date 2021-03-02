@@ -33,4 +33,5 @@ group! {
     no_extra_boolean_cast::NoExtraBooleanCast,
     no_confusing_arrow::NoConfusingArrow,
     constructor_super::ConstructorSuper,
+    no_this_before_super::NoThisBeforeSuper,
 }
