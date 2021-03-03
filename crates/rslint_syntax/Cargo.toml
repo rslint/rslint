@@ -8,4 +8,3 @@ license = "MIT"
 repository = "https://github.com/RDambrosio016/RSLint"
 
 [dependencies]
-rslint_rowan = { path = "../rslint_rowan", version = "0.10.0" }

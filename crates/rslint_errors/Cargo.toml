@@ -9,10 +9,8 @@ description = "Pretty error reporting library based on codespan-reporting built 
 [dependencies]
 rslint_rowan = { path = "../rslint_rowan", version = "0.10.0" }
 unicode-width = "0.1.8"
-yansi-term = "0.1.2"
 serde = { version = "1.0.117", optional = true, features = ["derive"] }
 lsp-types = { version = ">=0.79, <0.82", optional = true }
-text-diff = "0.4.0"
 rslint_text_edit = { version = "0.1", path = "../rslint_text_edit" }
 termcolor = "1"
 colored = "2.0.0"
