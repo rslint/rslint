@@ -1,7 +1,10 @@
 use crate::{ir::*, util::*};
 use ast::Expr;
 use rslint_parser::{
-    ast::{FnDecl, Pattern, VarDecl},
+    ast::{
+        CatchClause, ClassDecl, FnDecl, Getter, Method, ParameterList, Pattern, PropName, Setter,
+        VarDecl,
+    },
     *,
 };
 use std::{
@@ -13,6 +16,13 @@ use std::{
 use SyntaxKind::*;
 
 static VAR_ID_COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+const BLOCKLIKE_SCOPES: &[ScopeKind] = &[
+    ScopeKind::Block,
+    ScopeKind::Catch,
+    ScopeKind::Loop,
+    ScopeKind::With,
+];
 
 type Checkpoint = (Rc<RefCell<Scope>>, Rc<RefCell<Scope>>);
 
@@ -67,7 +77,7 @@ impl Analyzer {
         self.cur_scope.borrow_mut().children.push(rc_scope.clone());
         let checkpoint = self.checkpoint();
 
-        if kind != ScopeKind::Block {
+        if !BLOCKLIKE_SCOPES.contains(&kind) {
             self.var_scope = rc_scope.clone();
         }
 
@@ -80,16 +90,16 @@ impl Analyzer {
         self.analyze(node);
     }
 
-    pub fn analyze(&mut self, node: SyntaxNode) {
-        node.descendants_with(&mut |child| match child.kind() {
+    fn analyze_node(&mut self, node: &SyntaxNode) -> bool {
+        match node.kind() {
             BLOCK_STMT => {
-                let checkpoint = self.enter_new_scope(child.clone(), ScopeKind::Block);
-                self.analyze(child.clone());
+                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Block);
+                self.analyze(node.clone());
                 self.load(checkpoint);
                 false
             }
             VAR_DECL => {
-                let decl = child.to::<VarDecl>();
+                let decl = node.to::<VarDecl>();
                 for declarator in decl.declared() {
                     if let Some(pat) = declarator.pattern() {
                         let pat_kind = match pat {
@@ -120,7 +130,7 @@ impl Analyzer {
                                     } else {
                                         self.cur_scope.clone()
                                     },
-                                    child.clone(),
+                                    node.clone(),
                                     kind.clone(),
                                     declarator.value(),
                                     name.to_string(),
@@ -137,7 +147,7 @@ impl Analyzer {
                 false
             }
             FN_DECL => {
-                let decl = child.to::<FnDecl>();
+                let decl = node.to::<FnDecl>();
                 if let Some(name) = decl.name() {
                     self.bind_var(
                         self.cur_scope.clone(),
@@ -148,31 +158,16 @@ impl Analyzer {
                     );
                 }
                 let checkpoint = self.enter_new_scope(decl.syntax().clone(), ScopeKind::Function);
-                let mut clone = self.clone();
 
-                for pat in decl.parameters().into_iter().flat_map(|x| x.parameters()) {
-                    let pat_kind = match pat {
-                        Pattern::SinglePattern(_) | Pattern::AssignPattern(_) => {
-                            PatternBindingKind::Literal
-                        }
-                        Pattern::ArrayPattern(_) => PatternBindingKind::Array,
-                        Pattern::ObjectPattern(_) => PatternBindingKind::Object,
-                        _ => unreachable!(),
-                    };
-
-                    expand_pattern(
-                        pat,
-                        &mut |name| {
-                            self.bind_var(
-                                self.cur_scope.clone(),
-                                decl.syntax().clone(),
-                                BindingKind::Param(pat_kind.clone()),
-                                None,
-                                name.to_string(),
-                            );
-                        },
-                        &mut |expr| clone.analyze(expr.syntax().clone()),
-                    );
+                self.bind_var(
+                    self.cur_scope.clone(),
+                    decl.syntax().clone(),
+                    BindingKind::Arguments,
+                    None,
+                    "arguments".into(),
+                );
+                if let Some(list) = decl.parameters() {
+                    self.bind_parameter_list(node.clone(), list);
                 }
                 if let Some(body) = decl.body() {
                     self.analyze(body.syntax().clone());
@@ -180,8 +175,161 @@ impl Analyzer {
                 self.load(checkpoint);
                 false
             }
+            CATCH_CLAUSE => {
+                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Catch);
+                let clause = node.to::<CatchClause>();
+                if let Some(pat) = clause.error() {
+                    let mut clone = self.clone();
+                    expand_pattern(
+                        pat,
+                        &mut |name| {
+                            self.bind_var(
+                                self.cur_scope.clone(),
+                                clause.syntax().clone(),
+                                BindingKind::CatchClause,
+                                None,
+                                name.to_string(),
+                            );
+                        },
+                        &mut |expr| clone.analyze(expr.syntax().clone()),
+                    );
+                }
+                if let Some(body) = clause.cons() {
+                    self.analyze(body.syntax().clone());
+                }
+                self.load(checkpoint);
+                false
+            }
+            CLASS_DECL => {
+                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Class);
+                let decl = node.to::<ClassDecl>();
+
+                if let Some(name) = decl.name() {
+                    self.bind_var(
+                        self.cur_scope.clone(),
+                        node.clone(),
+                        BindingKind::Class,
+                        None,
+                        name.to_string(),
+                    );
+                }
+
+                if let Some(parent) = decl.parent() {
+                    self.analyze_node(parent.syntax());
+                }
+
+                if let Some(body) = decl.body() {
+                    self.analyze(body.syntax().clone());
+                }
+                self.load(checkpoint);
+                false
+            }
+            METHOD => {
+                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Method);
+                let method = node.to::<Method>();
+
+                if let Some(PropName::Ident(name)) = method.name() {
+                    self.bind_var(
+                        self.cur_scope.clone(),
+                        node.clone(),
+                        BindingKind::Method,
+                        None,
+                        name.to_string(),
+                    );
+                }
+
+                if let Some(list) = method.parameters() {
+                    self.bind_parameter_list(node.clone(), list);
+                }
+
+                if let Some(body) = method.body() {
+                    self.analyze(body.syntax().clone());
+                }
+                self.load(checkpoint);
+                false
+            }
+            GETTER => {
+                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Getter);
+                let getter = node.to::<Getter>();
+
+                if let Some(PropName::Ident(name)) = getter.key() {
+                    self.bind_var(
+                        self.cur_scope.clone(),
+                        node.clone(),
+                        BindingKind::Getter,
+                        None,
+                        name.to_string(),
+                    );
+                }
+
+                if let Some(list) = getter.parameters() {
+                    self.bind_parameter_list(node.clone(), list);
+                }
+
+                if let Some(body) = getter.body() {
+                    self.analyze(body.syntax().clone());
+                }
+                self.load(checkpoint);
+                false
+            }
+            SETTER => {
+                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Setter);
+                let setter = node.to::<Setter>();
+
+                if let Some(PropName::Ident(name)) = setter.key() {
+                    self.bind_var(
+                        self.cur_scope.clone(),
+                        node.clone(),
+                        BindingKind::Setter,
+                        None,
+                        name.to_string(),
+                    );
+                }
+
+                if let Some(list) = setter.parameters() {
+                    self.bind_parameter_list(node.clone(), list);
+                }
+
+                if let Some(body) = setter.body() {
+                    self.analyze(body.syntax().clone());
+                }
+                self.load(checkpoint);
+                false
+            }
             _ => true,
-        });
+        }
+    }
+
+    pub fn analyze(&mut self, node: SyntaxNode) {
+        node.descendants_with(&mut |n| self.analyze_node(n));
+    }
+
+    fn bind_parameter_list(&mut self, node: SyntaxNode, list: ParameterList) {
+        let mut clone = self.clone();
+        for pat in list.parameters() {
+            let pat_kind = match pat {
+                Pattern::SinglePattern(_) | Pattern::AssignPattern(_) => {
+                    PatternBindingKind::Literal
+                }
+                Pattern::ArrayPattern(_) => PatternBindingKind::Array,
+                Pattern::ObjectPattern(_) => PatternBindingKind::Object,
+                _ => unreachable!(),
+            };
+
+            expand_pattern(
+                pat,
+                &mut |name| {
+                    self.bind_var(
+                        self.cur_scope.clone(),
+                        node.clone(),
+                        BindingKind::Param(pat_kind.clone()),
+                        None,
+                        name.to_string(),
+                    );
+                },
+                &mut |expr| clone.analyze(expr.syntax().clone()),
+            );
+        }
     }
 
     fn bind_var(

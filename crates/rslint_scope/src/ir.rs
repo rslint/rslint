@@ -91,6 +91,7 @@ pub(crate) enum BindingKind {
     Getter,
     Setter,
     Arguments,
+    Method,
 }
 
 /// The kind of pattern which declares a parameter or variable or destructuring assignment.
