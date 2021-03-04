@@ -11,6 +11,6 @@ as well as allowing users to disable a whole group of rules.
 ## Groups 
 | Name | Description |
 | ---- | ----------- |
-| [errors](./errors) |  Rules which relate to productions which are almost always erroneous or cause<br>unexpected behavior. |
 | [regex](./regex) |  Rules which relate to regular expressions. |
+| [errors](./errors) |  Rules which relate to productions which are almost always erroneous or cause<br>unexpected behavior. |
 | [style](./style) |  Rules which relate to code style and formatting. |

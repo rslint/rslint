@@ -171,6 +171,11 @@
               "pattern": "constructor-super"
             },
             {
+              "title": "Prevent the use of `this` / `super` before calling `super()`.",
+              "description": "",
+              "pattern": "no-this-before-super"
+            },
+            {
               "title": "Enforce or disallow spaces inside of blocks after the opening and closing brackets.",
               "description": "",
               "pattern": "block-spacing"
@@ -362,6 +367,10 @@
             },
             "no-sparse-arrays": {
               "title": "NoSparseArrays",
+              "type": "object"
+            },
+            "no-this-before-super": {
+              "title": "NoThisBeforeSuper",
               "type": "object"
             },
             "no-unexpected-multiline": {
@@ -597,6 +606,10 @@
             },
             "no-sparse-arrays": {
               "title": "NoSparseArrays",
+              "type": "object"
+            },
+            "no-this-before-super": {
+              "title": "NoThisBeforeSuper",
               "type": "object"
             },
             "no-unexpected-multiline": {
