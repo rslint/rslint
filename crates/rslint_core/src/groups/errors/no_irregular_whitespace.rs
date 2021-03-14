@@ -172,16 +172,16 @@ impl CstRule for NoIrregularWhitespace {
             return None;
         }
 
-        let res = if cfg!(any(target_arch = "x86", target_arch = "x86_64")) {
-            if std::is_x86_feature_detected!("avx2") {
-                // SAFETY: Explanation of the implementation and edge cases is in the function body
-                unsafe { short_circuit_pass(bytes) }
-            } else {
-                short_circuit_pass_fallback(bytes)
-            }
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        let res = if std::is_x86_feature_detected!("avx2") {
+            // SAFETY: Explanation of the implementation and edge cases is in the function body
+            unsafe { short_circuit_pass(bytes) }
         } else {
             short_circuit_pass_fallback(bytes)
         };
+
+        #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+        let res = short_circuit_pass_fallback(bytes);
 
         if !res {
             return None;
