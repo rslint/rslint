@@ -248,6 +248,6 @@ impl Parse for Example {
         let docstring = parse_docstring(&input);
         let string = input.parse::<LitStr>()?.value();
         let source = unindent(&string).trim().to_string();
-        Ok(Example { docstring, source })
+        Ok(Example { source, docstring })
     }
 }

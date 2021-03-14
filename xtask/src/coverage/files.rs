@@ -128,7 +128,7 @@ pub fn get_test_files(query: Option<&str>, pool: &Pool) -> Vec<TestFile> {
                     let code = read_to_string(entry.path()).ok()?;
                     let meta = read_metadata(&code).ok()?;
                     let path = entry.into_path();
-                    Some(TestFile { code, meta, path }).filter(|file| file.meta.features.is_empty())
+                    Some(TestFile { meta, code, path }).filter(|file| file.meta.features.is_empty())
                 }
 
                 if let Some(file) = parse_file(file) {

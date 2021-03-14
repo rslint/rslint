@@ -14,8 +14,8 @@ use taplo::{parser::Parse, util::coords::Mapper};
 use tower_lsp::lsp_types::ConfigurationItem;
 use tower_lsp::{lsp_types::*, Client};
 
-#[serde(rename_all = "camelCase")]
 #[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Config {
     pub incorrect_file_autofixes: bool,
 }
