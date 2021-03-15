@@ -318,7 +318,7 @@ pub(crate) fn toml_completions(
                                     None => None,
                                 }),
                             })
-                            .filter_map(|s| s)
+                            .flatten()
                             .map(|schema| {
                                 value_completions(
                                     &root_schema.definitions,
@@ -626,7 +626,7 @@ fn value_completions(
                     }
                 })
             })
-            .filter_map(|c| c)
+            .flatten()
             .collect();
     }
 

@@ -347,10 +347,10 @@ macro_rules! __declare_lint_inner {
         use serde::{Deserialize, Serialize};
 
         #[doc = $doc]
-        #[serde(rename_all = "camelCase")]
         #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
         $(#[$outer])*
         #[derive(Debug, Clone, Deserialize, Serialize)]
+        #[serde(rename_all = "camelCase")]
         pub struct $name {
             $(
                 $(

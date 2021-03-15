@@ -38,8 +38,8 @@ impl Default for ConfigRepr {
     }
 }
 
-#[serde(default)]
 #[derive(Debug, Deserialize, Serialize, Default)]
+#[serde(default)]
 struct RulesConfigRepr {
     #[serde(deserialize_with = "de::from_rule_objects")]
     errors: RuleList,

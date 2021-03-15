@@ -57,15 +57,11 @@ pub fn convert_to_lsp_diagnostic(
         message.push_str(&footer.msg);
     }
 
-    let tags = if let Some(tag) = diagnostic.tag {
-        Some(match tag {
-            DiagnosticTag::Deprecated => vec![LspTag::Deprecated],
-            DiagnosticTag::Unnecessary => vec![LspTag::Unnecessary],
-            DiagnosticTag::Both => vec![LspTag::Deprecated, LspTag::Unnecessary],
-        })
-    } else {
-        None
-    };
+    let tags = diagnostic.tag.map(|tag| match tag {
+        DiagnosticTag::Deprecated => vec![LspTag::Deprecated],
+        DiagnosticTag::Unnecessary => vec![LspTag::Unnecessary],
+        DiagnosticTag::Both => vec![LspTag::Deprecated, LspTag::Unnecessary],
+    });
 
     Some(lsp_types::Diagnostic {
         range: primary_label?,
