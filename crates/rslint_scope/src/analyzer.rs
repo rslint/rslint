@@ -1,17 +1,12 @@
 use crate::{ir::*, util::*};
 use ast::Expr;
-use rslint_parser::{
-    ast::{
-        CatchClause, ClassDecl, FnDecl, Getter, Method, ParameterList, Pattern, PropName, Setter,
-        VarDecl,
-    },
-    *,
-};
+use rslint_parser::{*, ast::{ArrowExpr, ArrowExprParams, AssignExpr, CatchClause, ClassBody, ClassDecl, ClassExpr, ExprOrBlock, FnDecl, FnExpr, ForStmtInit, Getter, Method, NameRef, ParameterList, Pattern, PatternOrExpr, PropName, Setter, VarDecl}};
 use std::{
     cell::RefCell,
     ops::DerefMut,
-    rc::{Rc, Weak},
+    rc::Rc,
     sync::atomic::{AtomicUsize, Ordering},
+    sync::{Arc, Weak},
 };
 use SyntaxKind::*;
 
@@ -24,17 +19,17 @@ const BLOCKLIKE_SCOPES: &[ScopeKind] = &[
     ScopeKind::With,
 ];
 
-type Checkpoint = (Rc<RefCell<Scope>>, Rc<RefCell<Scope>>);
+type Checkpoint = (Arc<RefCell<Scope>>, Arc<RefCell<Scope>>);
 
 #[derive(Clone)]
 pub(crate) struct Analyzer {
-    pub(crate) cur_scope: Rc<RefCell<Scope>>,
-    var_scope: Rc<RefCell<Scope>>,
+    pub(crate) cur_scope: Arc<RefCell<Scope>>,
+    var_scope: Arc<RefCell<Scope>>,
 }
 
 impl Analyzer {
     pub(crate) fn from_root(root: SyntaxNode) -> Self {
-        let scope = Rc::new(RefCell::new(Scope {
+        let scope = Arc::new(RefCell::new(Scope {
             node: root,
             kind: ScopeKind::Global,
             var_refs: vec![],
@@ -64,7 +59,7 @@ impl Analyzer {
             kind,
             var_refs: vec![],
             variables: vec![],
-            parent: Some(Rc::downgrade(&self.cur_scope)),
+            parent: Some(Arc::downgrade(&self.cur_scope)),
             strict: false,
             children: vec![],
         };
@@ -73,7 +68,7 @@ impl Analyzer {
             .variables
             .extend(self.cur_scope.borrow().variables.clone());
 
-        let rc_scope = Rc::new(RefCell::new(scope));
+        let rc_scope = Arc::new(RefCell::new(scope));
         self.cur_scope.borrow_mut().children.push(rc_scope.clone());
         let checkpoint = self.checkpoint();
 
@@ -146,31 +141,46 @@ impl Analyzer {
                 }
                 false
             }
-            FN_DECL => {
-                let decl = node.to::<FnDecl>();
-                if let Some(name) = decl.name() {
-                    self.bind_var(
-                        self.cur_scope.clone(),
-                        decl.syntax().clone(),
-                        BindingKind::Function,
-                        None,
-                        name.to_string(),
-                    );
+            FN_DECL | FN_EXPR => {
+                let is_expr = node.kind() == FN_EXPR;
+                if !is_expr {
+                    if let Some(name) = node.to::<FnDecl>().name() {
+                        self.bind_var(
+                            self.cur_scope.clone(),
+                            node.clone(),
+                            BindingKind::Function,
+                            None,
+                            name.to_string(),
+                        );
+                    }
                 }
-                let checkpoint = self.enter_new_scope(decl.syntax().clone(), ScopeKind::Function);
+                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Function);
 
                 self.bind_var(
                     self.cur_scope.clone(),
-                    decl.syntax().clone(),
+                    node.clone(),
                     BindingKind::Arguments,
                     None,
                     "arguments".into(),
                 );
-                if let Some(list) = decl.parameters() {
+
+                if is_expr {
+                    if let Some(name) = node.to::<FnExpr>().name() {
+                        self.bind_var(
+                            self.cur_scope.clone(),
+                            node.clone(),
+                            BindingKind::Function,
+                            None,
+                            name.to_string(),
+                        );
+                    }
+                }
+
+                if let Some(list) = node.child_with_ast::<ParameterList>() {
                     self.bind_parameter_list(node.clone(), list);
                 }
-                if let Some(body) = decl.body() {
-                    self.analyze(body.syntax().clone());
+                if let Some(body) = node.child_with_kind(BLOCK_STMT) {
+                    self.analyze(body);
                 }
                 self.load(checkpoint);
                 false
@@ -200,25 +210,39 @@ impl Analyzer {
                 self.load(checkpoint);
                 false
             }
-            CLASS_DECL => {
-                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Class);
-                let decl = node.to::<ClassDecl>();
-
-                if let Some(name) = decl.name() {
-                    self.bind_var(
-                        self.cur_scope.clone(),
-                        node.clone(),
-                        BindingKind::Class,
-                        None,
-                        name.to_string(),
-                    );
+            CLASS_DECL | CLASS_EXPR => {
+                let is_expr = node.kind() == CLASS_EXPR;
+                if !is_expr {
+                    if let Some(name) = node.to::<ClassDecl>().name() {
+                        self.bind_var(
+                            self.cur_scope.clone(),
+                            node.clone(),
+                            BindingKind::Class,
+                            None,
+                            name.to_string(),
+                        );
+                    }
                 }
 
-                if let Some(parent) = decl.parent() {
+                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Class);
+
+                if is_expr {
+                    if let Some(name) = node.to::<ClassExpr>().name() {
+                        self.bind_var(
+                            self.cur_scope.clone(),
+                            node.clone(),
+                            BindingKind::Class,
+                            None,
+                            name.to_string(),
+                        );
+                    }
+                }
+
+                if let Some(parent) = node.child_with_ast::<Expr>() {
                     self.analyze_node(parent.syntax());
                 }
 
-                if let Some(body) = decl.body() {
+                if let Some(body) = node.child_with_ast::<ClassBody>() {
                     self.analyze(body.syntax().clone());
                 }
                 self.load(checkpoint);
@@ -296,6 +320,87 @@ impl Analyzer {
                 self.load(checkpoint);
                 false
             }
+            ARROW_EXPR => {
+                let decl = node.to::<ArrowExpr>();
+                let checkpoint = self.enter_new_scope(node.clone(), ScopeKind::Arrow);
+
+                if let Some(params) = decl.params() {
+                    match params {
+                        ArrowExprParams::Name(name) => {
+                            self.bind_var(
+                                self.cur_scope.clone(),
+                                node.clone(),
+                                BindingKind::Param(PatternBindingKind::Literal),
+                                None,
+                                name.to_string(),
+                            );
+                        }
+                        ArrowExprParams::ParameterList(params) => {
+                            self.bind_parameter_list(node.clone(), params);
+                        }
+                    }
+                }
+
+                if let Some(body) = decl.body() {
+                    match body {
+                        ExprOrBlock::Expr(expr) => {
+                            self.analyze_node(expr.syntax());
+                        }
+                        ExprOrBlock::Block(block) => self.analyze(block.syntax().clone()),
+                    }
+                }
+                self.load(checkpoint);
+                false
+            }
+            NAME_REF => {
+                let parent_kind = node.parent().map_or(ERROR, |n| n.kind());
+                let usage = match parent_kind {
+                    CALL_EXPR => VariableUsageKind::Call,
+                    NEW_EXPR => VariableUsageKind::Construct,
+                    _ => VariableUsageKind::Read,
+                };
+                self.cur_scope
+                    .borrow_mut()
+                    .var_refs
+                    .push(Arc::new(RefCell::new(VariableRef {
+                        node: node.clone(),
+                        usage,
+                        declaration: None,
+                        name: node.text().to_string(),
+                    })));
+                false
+            }
+            ASSIGN_EXPR => {
+                let expr = node.to::<AssignExpr>();
+                if let Some(PatternOrExpr::Pattern(pat)) = expr.lhs() {
+                    let mut clone = self.clone();
+                    expand_pattern(
+                        pat,
+                        &mut |name| {
+                            self.cur_scope
+                                .borrow_mut()
+                                .var_refs
+                                .push(Arc::new(RefCell::new(VariableRef {
+                                    node: name.syntax().clone(),
+                                    usage: VariableUsageKind::Write(expr.rhs()),
+                                    declaration: None,
+                                    name: name.to_string(),
+                                })));
+                        },
+                        &mut |expr| clone.analyze(expr.syntax().clone()),
+                    );
+                }
+                false
+            }
+            FOR_IN_STMT | FOR_OF_STMT | FOR_STMT => {
+                if let Some(head) = node.child_with_ast::<ForStmtInit>().and_then(|x| x.inner()) {
+                    match head {
+                        ForHead::Decl(decl) => {
+                            
+                        }
+                    }
+                }
+            }
             _ => true,
         }
     }
@@ -334,12 +439,12 @@ impl Analyzer {
 
     fn bind_var(
         &mut self,
-        scope: Rc<RefCell<Scope>>,
+        scope: Arc<RefCell<Scope>>,
         node: SyntaxNode,
         kind: BindingKind,
         initial_value: Option<Expr>,
         name: String,
-    ) -> Rc<RefCell<VariableBinding>> {
+    ) -> Arc<RefCell<VariableBinding>> {
         let scope_ref = scope.borrow_mut();
         // if the scope already contains the variable then we are sure that it has already been propagated
         // to children, therefore we don't have to propagate it
@@ -359,7 +464,7 @@ impl Analyzer {
             let target_scope = upgrade.borrow();
             if scope_ref.is_child_of(&*target_scope) {
                 drop((binding_ref, scope_ref, target_scope));
-                let binding = Rc::new(RefCell::new(VariableBinding {
+                let binding = Arc::new(RefCell::new(VariableBinding {
                     declarations: vec![VariableDeclaration {
                         node,
                         initial_value,
@@ -368,7 +473,7 @@ impl Analyzer {
                     name,
                     references: vec![],
                     id: VAR_ID_COUNTER.fetch_add(1, Ordering::Relaxed),
-                    scope: Rc::downgrade(&scope),
+                    scope: Arc::downgrade(&scope),
                 }));
                 self.push_binding_to_scope(scope.borrow_mut(), binding, true);
             } else if !binding_ref
@@ -385,7 +490,7 @@ impl Analyzer {
 
             binding.clone()
         } else {
-            let binding = Rc::new(RefCell::new(VariableBinding {
+            let binding = Arc::new(RefCell::new(VariableBinding {
                 declarations: vec![VariableDeclaration {
                     node,
                     initial_value,
@@ -394,7 +499,7 @@ impl Analyzer {
                 name,
                 references: vec![],
                 id: VAR_ID_COUNTER.fetch_add(1, Ordering::Relaxed),
-                scope: Rc::downgrade(&scope),
+                scope: Arc::downgrade(&scope),
             }));
             self.push_binding_to_scope(scope_ref, binding.clone(), false);
             binding
@@ -404,7 +509,7 @@ impl Analyzer {
     fn push_binding_to_scope(
         &mut self,
         mut scope: impl DerefMut<Target = Scope>,
-        binding: Rc<RefCell<VariableBinding>>,
+        binding: Arc<RefCell<VariableBinding>>,
         clear_duplicate: bool,
     ) {
         let scope = scope.deref_mut();
