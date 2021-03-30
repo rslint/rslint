@@ -1,4 +1,4 @@
-MODULE@0..102
+MODULE@0..82
   VAR_DECL@0..23
     IDENT@0..3 "let"
     WHITESPACE@3..4 " "
@@ -75,20 +75,3 @@ MODULE@0..102
       NAME_REF@78..81
         IDENT@78..81 "foo"
   WHITESPACE@81..82 "\n"
-  EXPR_STMT@82..101
-    ARROW_EXPR@82..101
-      ASYNC_KW@82..87 "async"
-      WHITESPACE@87..88 " "
-      PARAMETER_LIST@88..95
-        L_PAREN@88..89 "("
-        SINGLE_PATTERN@89..94
-          NAME@89..94
-            IDENT@89..94 "yield"
-        R_PAREN@94..95 ")"
-      WHITESPACE@95..96 " "
-      FAT_ARROW@96..98 "=>"
-      WHITESPACE@98..99 " "
-      BLOCK_STMT@99..101
-        L_CURLY@99..100 "{"
-        R_CURLY@100..101 "}"
-  WHITESPACE@101..102 "\n"

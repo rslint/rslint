@@ -17,16 +17,17 @@
 
 #[macro_use]
 mod token;
-mod highlight;
-mod labels;
 mod state;
 mod tests;
+
 
 #[rustfmt::skip]
 mod tables;
 
 pub use token::Token;
 
+#[cfg(feature = "highlight")]
+mod highlight;
 #[cfg(feature = "highlight")]
 pub use highlight::*;
 
@@ -67,17 +68,18 @@ const UNICODE_WHITESPACE_STARTS: [u8; 5] = [
 ];
 
 // Unicode spaces, designated by the `Zs` unicode property
-const UNICODE_SPACES: [char; 16] = [
-    '\u{00A0}', '\u{1680}', '\u{2000}', '\u{2001}', '\u{2002}', '\u{2003}', '\u{2004}', '\u{2005}',
-    '\u{2006}', '\u{2007}', '\u{2008}', '\u{2009}', '\u{200A}', '\u{202F}', '\u{205F}', '\u{3000}',
+const UNICODE_SPACES: [char; 19] = [
+    '\u{0020}', '\u{00A0}', '\u{1680}', '\u{2000}', '\u{2001}', '\u{2002}', '\u{2003}', '\u{2004}',
+    '\u{2005}', '\u{2006}', '\u{2007}', '\u{2008}', '\u{2009}', '\u{200A}', '\u{200B}', '\u{202F}',
+    '\u{205F}', '\u{3000}', '\u{FEFF}',
 ];
 
 fn is_id_start(c: char) -> bool {
-    ID_Start(c)
+    c == '_' || c == '$' || ID_Start(c)
 }
 
 fn is_id_continue(c: char) -> bool {
-    ID_Continue(c)
+    c == '$' || c == '\u{200d}' || c == '\u{200c}' || ID_Continue(c)
 }
 
 /// An extremely fast, lookup table based, lossless ECMAScript lexer
@@ -365,17 +367,41 @@ impl<'src> Lexer<'src> {
     }
 
     // Consume an identifier by recursively consuming IDENTIFIER_PART kind chars
-    // FIXME: This should check if the ident has a unicode escape and check if it resolves to a keyword
-    // because that is an error according to ECMA 12.1.1
     #[inline]
     fn consume_ident(&mut self) {
         unwind_loop! {
             if self.next_bounded().is_some() {
-                if !self.cur_is_ident_part() {
+                if self.cur_ident_part().is_none() {
                     return;
                 }
             } else {
                 return;
+            }
+        }
+    }
+
+    /// Consumes the identifier at the current position, and fills the given buf with the UTF-8
+    /// encoded identifier that got consumed.
+    ///
+    /// Returns the number of bytes written into the buffer.
+    /// This method will stop writing into the buffer if the buffer is too small to
+    /// fit the whole identifier.
+    #[inline]
+    fn consume_and_get_ident(&mut self, buf: &mut [u8]) -> usize {
+        let mut idx = 0;
+
+        unwind_loop! {
+            if self.next_bounded().is_some() {
+                if let Some(c) = self.cur_ident_part() {
+                    if let Some(buf) = buf.get_mut(idx..idx + 4) {
+                        let res = c.encode_utf8(buf);
+                        idx += res.len();
+                    }
+                } else {
+                    return idx;
+                }
+            } else {
+                return idx;
             }
         }
     }
@@ -408,23 +434,30 @@ impl<'src> Lexer<'src> {
         Some(unterminated)
     }
 
+    /// Returns `Some(x)` if the current position is an identifier, with the character at
+    /// the position.
+    ///
+    /// The character may be a char that was generated from a unicode escape sequence,
+    /// e.g. `t` is returned, the actual source code is `\u{74}`
     #[inline]
-    fn cur_is_ident_part(&mut self) -> bool {
+    fn cur_ident_part(&mut self) -> Option<char> {
         debug_assert!(self.cur < self.bytes.len());
 
         // Safety: we always call this method on a char
         let b = unsafe { self.bytes.get_unchecked(self.cur) };
 
         match Self::lookup(*b) {
-            IDT | DIG | ZER | L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T
-            | L_V | L_W | L_Y => true,
+            IDT | DIG | ZER => Some(*b as char),
             // FIXME: This should use ID_Continue, not XID_Continue
             UNI => {
-                let res = is_id_continue(self.get_unicode_char());
+                let chr = self.get_unicode_char();
+                let res = is_id_continue(chr);
                 if res {
-                    self.cur += self.get_unicode_char().len_utf8() - 1;
+                    self.cur += chr.len_utf8() - 1;
+                    Some(chr)
+                } else {
+                    None
                 }
-                res
             }
             BSL if self.bytes.get(self.cur + 1) == Some(&b'u') => {
                 let start = self.cur;
@@ -438,18 +471,17 @@ impl<'src> Lexer<'src> {
 
                 if let Ok(c) = res {
                     if is_id_continue(c) {
-                        self.cur += c.len_utf8() - 1;
-                        true
+                        Some(c)
                     } else {
                         self.cur -= 1;
-                        false
+                        None
                     }
                 } else {
                     self.cur = start;
-                    false
+                    None
                 }
             }
-            _ => false,
+            _ => None,
         }
     }
 
@@ -483,47 +515,72 @@ impl<'src> Lexer<'src> {
                     false
                 }
             }
-            IDT | L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T | L_V | L_W
-            | L_Y => true,
+            IDT => true,
             _ => false,
         }
     }
 
+    /// Returns the identifier token at the current position, or the keyword token if
+    /// the identifier is a keyword.
+    ///
+    /// `first` is a pair of a character that was already consumed,
+    /// but is still part of the identifier, and the characters position.
     #[inline]
-    fn resolve_label(&mut self, label: Dispatch) -> LexerReturn {
-        let start = self.cur;
-        let kind = match label {
-            L_A => self.resolve_label_a(),
-            L_B => self.resolve_label_b(),
-            L_C => self.resolve_label_c(),
-            L_D => self.resolve_label_d(),
-            L_E => self.resolve_label_e(),
-            L_F => self.resolve_label_f(),
-            L_I => self.resolve_label_i(),
-            L_N => self.resolve_label_n(),
-            L_R => self.resolve_label_r(),
-            L_S => self.resolve_label_s(),
-            L_T => self.resolve_label_t(),
-            L_V => self.resolve_label_v(),
-            L_W => self.resolve_label_w(),
-            L_Y => self.resolve_label_y(),
-            // Safety: this method is never called outside of the lex_token match, and it is only called on L_* dispatches
-            _ => unsafe { core::hint::unreachable_unchecked() },
+    fn resolve_identifier(&mut self, first: (char, usize)) -> LexerReturn {
+        use SyntaxKind::*;
+
+        // Note to keep the buffer large enough to fit every possible keyword that
+        // the lexer can return
+        let mut buf = [0u8; 16];
+        let (len, start) = (first.0.encode_utf8(&mut buf).len(), first.1);
+
+        let count = self.consume_and_get_ident(&mut buf[len..]);
+
+        let kind = match &buf[..count + len] {
+            b"await" => Some(AWAIT_KW),
+            b"break" => Some(BREAK_KW),
+            b"case" => Some(CASE_KW),
+            b"catch" => Some(CATCH_KW),
+            b"class" => Some(CLASS_KW),
+            b"const" => Some(CONST_KW),
+            b"continue" => Some(CONTINUE_KW),
+            b"debugger" => Some(DEBUGGER_KW),
+            b"default" => Some(DEFAULT_KW),
+            b"delete" => Some(DELETE_KW),
+            b"do" => Some(DO_KW),
+            b"else" => Some(ELSE_KW),
+            b"enum" => Some(ENUM_KW),
+            b"export" => Some(EXPORT_KW),
+            b"extends" => Some(EXTENDS_KW),
+            b"false" => Some(FALSE_KW),
+            b"finally" => Some(FINALLY_KW),
+            b"for" => Some(FOR_KW),
+            b"function" => Some(FUNCTION_KW),
+            b"if" => Some(IF_KW),
+            b"in" => Some(IN_KW),
+            b"import" => Some(IMPORT_KW),
+            b"instanceof" => Some(INSTANCEOF_KW),
+            b"new" => Some(NEW_KW),
+            b"null" => Some(NULL_KW),
+            b"return" => Some(RETURN_KW),
+            b"super" => Some(SUPER_KW),
+            b"switch" => Some(SWITCH_KW),
+            b"this" => Some(THIS_KW),
+            b"throw" => Some(THROW_KW),
+            b"try" => Some(TRY_KW),
+            b"true" => Some(TRUE_KW),
+            b"typeof" => Some(TYPEOF_KW),
+            b"var" => Some(VAR_KW),
+            b"void" => Some(VOID_KW),
+            b"while" => Some(WHILE_KW),
+            b"with" => Some(WITH_KW),
+            b"yield" => Some(YIELD_KW),
+            _ => None,
         };
 
-        if let Some(syntax_kind) = kind {
-            if self.next_bounded().is_some() {
-                if self.cur_is_ident_part() {
-                    self.consume_ident();
-                    (Token::new(T![ident], self.cur - start), None)
-                } else {
-                    (Token::new(syntax_kind, self.cur - start), None)
-                }
-            } else {
-                (Token::new(syntax_kind, self.cur - start), None)
-            }
+        if let Some(kind) = kind {
+            (Token::new(kind, self.cur - start), None)
         } else {
-            self.consume_ident();
             (Token::new(T![ident], self.cur - start), None)
         }
     }
@@ -932,7 +989,7 @@ impl<'src> Lexer<'src> {
                                     }
                                     y = true;
                                 },
-                                Some(_) if self.cur_is_ident_part() => {
+                                Some(_) if self.cur_ident_part().is_some() => {
                                     if diagnostic.is_none() {
                                         diagnostic = Some(Diagnostic::error(self.file_id, "", "invalid regex flag")
                                             .primary(chr_start .. self.cur + 1, "this is not a valid regex flag"));
@@ -1227,9 +1284,7 @@ impl<'src> Lexer<'src> {
                     match res {
                         Ok(chr) => {
                             if is_id_start(chr) {
-                                self.consume_ident();
-
-                                tok!(IDENT, self.cur - start)
+                                self.resolve_identifier((chr, start))
                             } else {
                                 let err = Diagnostic::error(self.file_id, "", "unexpected unicode escape")
                                     .primary(start..self.cur, "this escape is unexpected, as it does not designate the start of an identifier");
@@ -1268,10 +1323,7 @@ impl<'src> Lexer<'src> {
                     tok!(STRING, self.cur - start)
                 }
             }
-            IDT => {
-                self.consume_ident();
-                tok!(IDENT, self.cur - start)
-            }
+            IDT => self.resolve_identifier((byte as char, start)),
             DIG => {
                 let diag = self.read_number();
                 let (token, err) = self.verify_number_end(start);
@@ -1290,23 +1342,22 @@ impl<'src> Lexer<'src> {
             BEC => self.eat(tok![R_CURLY, 1]),
             PIP => self.resolve_pipe(),
             TLD => self.eat(tok![~]),
-            L_A | L_B | L_C | L_D | L_E | L_F | L_I | L_N | L_R | L_S | L_T | L_V | L_W | L_Y => {
-                self.resolve_label(dispatched)
-            }
             UNI => {
                 let chr = self.get_unicode_char();
-                if UNICODE_WHITESPACE_STARTS.contains(&byte) {
+                if UNICODE_WHITESPACE_STARTS.contains(&byte)
+                    && (is_linebreak(chr) || UNICODE_SPACES.contains(&chr))
+                {
                     if is_linebreak(chr) {
                         self.state.had_linebreak = true;
                     }
-                    self.cur += self.get_unicode_char().len_utf8() - 1;
+
+                    self.cur += chr.len_utf8() - 1;
                     self.consume_whitespace();
                     tok!(WHITESPACE, self.cur - start)
                 } else {
                     self.cur += chr.len_utf8() - 1;
                     if is_id_start(chr) {
-                        self.consume_ident();
-                        tok!(IDENT, self.cur - start)
+                        self.resolve_identifier((chr, start))
                     } else {
                         let err = Diagnostic::error(
                             self.file_id,
@@ -1457,20 +1508,6 @@ enum Dispatch {
     BTC,
     CRT,
     TPL,
-    L_A,
-    L_B,
-    L_C,
-    L_D,
-    L_E,
-    L_F,
-    L_I,
-    L_N,
-    L_R,
-    L_S,
-    L_T,
-    L_V,
-    L_W,
-    L_Y,
     BEO,
     PIP,
     BEC,
@@ -1490,8 +1527,8 @@ static DISPATCHER: [Dispatch; 256] = [
     ZER, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, DIG, COL, SEM, LSS, EQL, MOR, QST, // 3
     AT_, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, // 4
     IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, BTO, BSL, BTC, CRT, IDT, // 5
-    TPL, L_A, L_B, L_C, L_D, L_E, L_F, IDT, IDT, L_I, IDT, IDT, IDT, IDT, L_N, IDT, // 6
-    IDT, IDT, L_R, L_S, L_T, IDT, L_V, L_W, IDT, L_Y, IDT, BEO, PIP, BEC, TLD, ERR, // 7
+    TPL, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, // 6
+    IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, IDT, BEO, PIP, BEC, TLD, ERR, // 7
     UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, // 8
     UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, // 9
     UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, UNI, // A

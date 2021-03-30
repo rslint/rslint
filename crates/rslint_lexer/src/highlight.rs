@@ -1,8 +1,6 @@
 use crate::*;
 
-#[cfg(feature = "highlight")]
 pub use ansi_term::{self, ANSIGenericString, Color, Style};
-#[cfg(feature = "highlight")]
 use atty::is;
 
 /// A structure for syntax highlighting pieces of JavaScript source code
@@ -16,7 +14,6 @@ use atty::is;
 /// at a time.
 /// The highlighter's position can be controlled through various methods which allows
 /// for reuse of the highlighter without the need to rescan the source code
-#[cfg(feature = "highlight")]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Highlighter<'s> {
     pub source: &'s str,
@@ -33,7 +30,6 @@ macro_rules! rgb {
     };
 }
 
-#[cfg(feature = "highlight")]
 impl<'s> Highlighter<'s> {
     /// Make a new highlighter, this will invoke the lexer to get tokens.
     pub fn new(source: &'s str) -> Highlighter<'s> {
@@ -103,7 +99,6 @@ const BUILTINS: [&str; 27] = [
     "JSON",
 ];
 
-#[cfg(feature = "highlight")]
 impl<'s> Iterator for Highlighter<'s> {
     /// An individual colored token, you can see the color used by checking the string's style foreground
     type Item = ANSIGenericString<'s, str>;
@@ -144,7 +139,6 @@ impl<'s> Iterator for Highlighter<'s> {
 
 /// Colors a piece of source code using ANSI.  
 /// The string returned will be unaltered if stdout and stderr are not terminals.
-#[cfg(feature = "highlight")]
 pub fn color(source: &str) -> String {
     Highlighter::new(source).color()
 }
