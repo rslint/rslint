@@ -1071,7 +1071,7 @@ impl<'src> Lexer<'src> {
                     }
                 } else if self.bytes.get(self.cur + 1).copied() == Some(b'=') {
                     self.advance(2);
-                    tok!(SHREQ, 2)
+                    tok!(SHREQ, 3)
                 } else {
                     tok!(>)
                 }
