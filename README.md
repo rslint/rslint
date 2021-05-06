@@ -73,7 +73,7 @@ Outcome: 1 fail, 0 warn, 0 success
 help: for more information about the errors try the explain command: `rslint explain <rules>`
 ```
 
-The RSLint CLI works without a configuration file and will select reccomended non-stylistic rules to run.
+The RSLint CLI works without a configuration file and will select recommended non-stylistic rules to run.
 
 ## Features
 
@@ -83,7 +83,7 @@ native code.
 **Low memory footprint**. RSLint's syntax tree utilizes interning and other ways of drastically reducing memory usage
 while linting.
 
-**Sensible defaults**. The CLI assumes reccomended non-stylistic rules if no configuration file is specified and ignores directories such as
+**Sensible defaults**. The CLI assumes recommended non-stylistic rules if no configuration file is specified and ignores directories such as
 `node_modules`.
 
 **Error recovery**. RSLint's custom parser can recover from syntax errors and produce a usable syntax tree even when whole parts of
