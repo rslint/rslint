@@ -91,13 +91,13 @@ impl<L: Language> fmt::Debug for SyntaxToken<L> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}@{:?}", self.kind(), self.text_range())?;
         if self.text().len() < 25 {
-            return write!(f, " {:?}", self.text());
+            return write!(f, " \"{}\"", self.text().escape_debug());
         }
         let text = self.text().as_str();
         for idx in 21..25 {
             if text.is_char_boundary(idx) {
                 let text = format!("{} ...", &text[..idx]);
-                return write!(f, " {:?}", text);
+                return write!(f, " \"{}\"", text.escape_debug());
             }
         }
         unreachable!()

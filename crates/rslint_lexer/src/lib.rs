@@ -1424,7 +1424,7 @@ impl Iterator for Lexer<'_> {
 }
 
 // Every handler a byte coming in could be mapped to
-#[allow(non_camel_case_types)]
+#[allow(non_camel_case_types, clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(u8)]
 enum Dispatch {
