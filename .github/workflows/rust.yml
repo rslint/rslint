@@ -1,54 +1,68 @@
-name: Rust
+name: Rust CI
 
 on:
-  push:
   pull_request:
-  # Daily
-  schedule:
-    - cron: "0 0 * * *"
+  push:
+    branches:
+      - master
 
 env:
   RUST_LOG: info
   RUST_BACKTRACE: 1
 
+
 jobs:
   test:
     name: Test Rust ${{ matrix.rust }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        rust: [stable, nightly]
-
+        include:
+          - { rust: stable,           os: ubuntu-latest }
+          - { rust: stable,           os: macos-latest }
+          - { rust: stable,           os: windows-latest }
+          - { rust: beta,             os: ubuntu-latest }
+          - { rust: nightly,          os: ubuntu-latest }
     steps:
       - uses: actions/checkout@v2
       - uses: hecrj/setup-rust-action@v1
         with:
           rust-version: ${{ matrix.rust }}
       - uses: Swatinem/rust-cache@v1
+      - run: cargo test --verbose --workspace
       - run: cargo test --verbose --workspace --all-features
+      - run: cargo test --verbose --workspace --no-default-features
+
+  coverage:
+    name: Test262 coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - uses: hecrj/setup-rust-action@v1
+      - uses: Swatinem/rust-cache@v1
+      - continue-on-error: true
+        run: cargo xtask coverage
 
   clippy:
-    name: Clippy
+    name: Lint with clippy
     runs-on: ubuntu-latest
-
     env:
       RUSTFLAGS: -Dwarnings
-
     steps:
       - uses: actions/checkout@v2
       - uses: hecrj/setup-rust-action@v1
         with:
           components: clippy
-      - uses: Swatinem/rust-cache@v1
+      - run: cargo clippy --workspace --all-targets --verbose
+      - run: cargo clippy --workspace --all-targets --verbose --no-default-features
       - run: cargo clippy --workspace --all-targets --verbose --all-features
 
   rustfmt:
-    name: Formatting
+    name: Verify code formatting
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
       - uses: hecrj/setup-rust-action@v1
@@ -56,7 +70,7 @@ jobs:
           components: rustfmt
       - run: cargo fmt --all -- --check
 
-  check-rustdoc-links:
+  rustdoc:
     name: Check doc links
     runs-on: ubuntu-latest
     env:
@@ -65,44 +79,5 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: hecrj/setup-rust-action@v1
-        with:
-          rust-version: nightly
-      # Check every crate in the workspace
       - uses: Swatinem/rust-cache@v1
       - run: cargo doc --workspace --all-features --document-private-items --no-deps
-
-  deploy:
-    name: Deploy for ${{ matrix.os }}
-    if: startsWith(github.ref, 'refs/tags')
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact_name: rslint_cli
-            asset_name: rslint_cli-linux
-          - os: windows-latest
-            artifact_name: rslint_cli.exe
-            asset_name: rslint_cli-windows
-          - os: macos-latest
-            artifact_name: rslint_cli
-            asset_name: rslint_cli-macos
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-
-      - name: Build
-        run: cargo build --release
-
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v1-release
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/${{ matrix.artifact_name }}
-          asset_name: ${{ matrix.asset_name }}
-          tag: ${{ github.ref }}
