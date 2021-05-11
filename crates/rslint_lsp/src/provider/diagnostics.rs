@@ -34,73 +34,77 @@ fn process_diagnostics(
 }
 
 pub async fn publish_diagnostics(session: &Session, uri: Url) -> anyhow::Result<()> {
-    let mut document = session.get_mut_document(&uri).await?;
+    let diags = {
+        let mut document = session.get_mut_document(&uri)?;
 
-    let mut new_store = session.store.clone();
-    let DirectiveResult {
-        directives,
-        diagnostics: mut directive_diagnostics,
-    } = DirectiveParser::new_with_store(document.root.clone(), &document.file, &session.store)
-        .get_file_directives();
+        let mut new_store = session.store.clone();
+        let DirectiveResult {
+            directives,
+            diagnostics: mut directive_diagnostics,
+        } = DirectiveParser::new_with_store(document.root.clone(), &document.file, &session.store)
+            .get_file_directives();
 
-    apply_top_level_directives(
-        directives.as_slice(),
-        &mut new_store,
-        &mut directive_diagnostics,
-        document.file.id,
-    );
+        apply_top_level_directives(
+            directives.as_slice(),
+            &mut new_store,
+            &mut directive_diagnostics,
+            document.file.id,
+        );
 
-    let verbose = false;
-    let src = Arc::from(document.file.source.clone());
-    let rule_results: HashMap<&str, rslint_core::RuleResult> = new_store
-        .rules
-        .iter()
-        .map(|rule| {
-            (
-                rule.name(),
-                run_rule(
-                    &**rule,
-                    document.file.id,
-                    document.root.clone(),
-                    verbose,
-                    &directives,
-                    Arc::clone(&src),
-                ),
-            )
-        })
-        .collect();
+        let verbose = false;
+        let src = Arc::from(document.file.source.clone());
+        let rule_results: HashMap<&str, rslint_core::RuleResult> = new_store
+            .rules
+            .iter()
+            .map(|rule| {
+                (
+                    rule.name(),
+                    run_rule(
+                        &**rule,
+                        document.file.id,
+                        document.root.clone(),
+                        verbose,
+                        &directives,
+                        Arc::clone(&src),
+                    ),
+                )
+            })
+            .collect();
 
-    let mut diags = vec![];
+        let mut diags = vec![];
 
-    process_diagnostics(
-        &document,
-        uri.clone(),
-        directive_diagnostics
+        process_diagnostics(
+            &document,
+            uri.clone(),
+            directive_diagnostics
+                .into_iter()
+                .map(|x| x.diagnostic)
+                .collect(),
+            &mut diags,
+        );
+
+        process_diagnostics(
+            &document,
+            uri.clone(),
+            document.parsing_errors.to_owned(),
+            &mut diags,
+        );
+
+        for diagnostics in rule_results.clone().into_iter().map(|(_, r)| r.diagnostics) {
+            process_diagnostics(&document, uri.clone(), diagnostics, &mut diags);
+        }
+
+        document.rule_results = rule_results
             .into_iter()
-            .map(|x| x.diagnostic)
-            .collect(),
-        &mut diags,
-    );
+            .map(|(_, v)| v)
+            .map(|res| RuleResult {
+                diagnostics: diags.to_owned(),
+                fixer: res.fixer,
+            })
+            .collect();
 
-    process_diagnostics(
-        &document,
-        uri.clone(),
-        document.parsing_errors.to_owned(),
-        &mut diags,
-    );
-
-    for diagnostics in rule_results.clone().into_iter().map(|(_, r)| r.diagnostics) {
-        process_diagnostics(&document, uri.clone(), diagnostics, &mut diags);
-    }
-
-    document.rule_results = rule_results
-        .into_iter()
-        .map(|(_, v)| v)
-        .map(|res| RuleResult {
-            diagnostics: diags.to_owned(),
-            fixer: res.fixer,
-        })
-        .collect();
+        diags
+    };
 
     let version = Default::default();
     session

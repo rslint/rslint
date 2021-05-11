@@ -114,7 +114,7 @@ impl Session {
     }
 
     /// Get a mutable reference to a document associated with the session, if possible.
-    pub async fn get_mut_document(&self, uri: &Url) -> anyhow::Result<RefMut<'_, Url, Document>> {
+    pub fn get_mut_document(&self, uri: &Url) -> anyhow::Result<RefMut<'_, Url, Document>> {
         self.documents
             .get_mut(uri)
             .ok_or_else(|| Error::DocumentNotFound(uri.clone()).into())

@@ -28,7 +28,7 @@ pub(crate) mod document {
             let mut files = SimpleFiles::new();
             let file_id = files.add(uri.to_string(), text.clone());
 
-            let mut document = session.get_mut_document(&uri).await?;
+            let mut document = session.get_mut_document(&uri)?;
             document.files = files;
             document.file.id = file_id;
             document.file.source = text.clone();
