@@ -1,3 +1,6 @@
 [alias]
 xtask = "run --release -p xtask --bin xtask --"
 docgen = "run --release -p xtask --bin xtask -- docgen"
+
+[build]
+incremental = false
