@@ -3,8 +3,8 @@
 
   <p>
     <strong>A fast, customizable, and easy to use 
-    <a href="https://www.javascript.com/">JavaScript</a></strong> and
-    <a href="https://typescriptlang.org/">TypeScript</a> linter
+    <a href="https://www.javascript.com/">JavaScript</a> and
+    <a href="https://typescriptlang.org/">TypeScript</a> linter</strong>
   </p>
 
   <p>
@@ -129,6 +129,18 @@ Allowing it to have powerful analysis without having to rely on separate structu
 **Untyped Syntax Tree**. RSLint's syntax tree is made of untyped nodes and untyped tokens at the low level, this allows for powerful, efficient traversal through the tree, e.g. `if_stmt.cons()?.child_with_ast::<SwitchStmt>()`.
 
 **Easy APIs**. RSLint uses easy to use builders for its complex errors, as well as builders for autofix. Everything is laid out to minimize the effort required to implement rules.
+
+## Performance
+
+The benchmarks can be found in the `benchmarks` directory. You can run them on your machine using `deno run -A --quiet benchmarks/bench.ts`.
+They are also run on CI and you can see the latest results if you click on the latest GitHub Actions run.
+
+| Project                         | RSLint | eslint |
+|---------------------------------|--------|--------|
+| engine262 (~42k LOC JavaScript) | 414ms  | 46.9s  |
+| Oak (~11k LOC TypeScript)       | 53ms   | 399ms  |
+
+(These benchmarks are run on AMD Ryzen 7 2700x, 8 Cores at 3.9MHz)
 
 ## License
 
