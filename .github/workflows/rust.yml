@@ -12,8 +12,8 @@ env:
 
 
 jobs:
-  test:
-    name: Test Rust ${{ matrix.rust }} on ${{ matrix.os }}
+  rust:
+    name: Rust ${{ matrix.rust }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -22,62 +22,77 @@ jobs:
           - { rust: stable,           os: ubuntu-latest }
           - { rust: stable,           os: macos-latest }
           - { rust: stable,           os: windows-latest }
-          - { rust: beta,             os: ubuntu-latest }
           - { rust: nightly,          os: ubuntu-latest }
     steps:
-      - uses: actions/checkout@v2
-      - uses: hecrj/setup-rust-action@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Rust
+        uses: hecrj/setup-rust-action@v1
         with:
           rust-version: ${{ matrix.rust }}
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo test --verbose --workspace
-      - run: cargo test --verbose --workspace --all-features
-      - run: cargo test --verbose --workspace --no-default-features
+          components: clippy,rustfmt
+
+      - name: Load Rust Cache
+        uses: Swatinem/rust-cache@v1
+
+      - name: Rustfmt
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.rust, 'stable')
+        run: cargo fmt --all -- --check
+
+      - name: Build
+        run: cargo build --verbose --workspace
+
+      - name: Test
+        run: cargo test --verbose --workspace
+
+      - name: Clippy
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.rust, 'stable')
+        env:
+          RUSTFLAGS: -Dwarnings
+        run: cargo clippy --workspace --all-targets --verbose
+
+      - name: Check documentation
+        env:
+          RUSTDOCFLAGS: -Dwarnings
+        run: cargo doc --workspace --all-features --document-private-items --no-deps
 
   coverage:
     name: Test262 coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
         with:
           submodules: 'recursive'
-      - uses: hecrj/setup-rust-action@v1
-      - uses: Swatinem/rust-cache@v1
-      - continue-on-error: true
+
+      - name: Setup Rust
+        uses: hecrj/setup-rust-action@v1
+
+      - name: Load Rust Cache
+        uses: Swatinem/rust-cache@v1
+
+      - name: Run Test262 suite
+        continue-on-error: true
         run: cargo xtask coverage
 
-  clippy:
-    name: Lint with clippy
+  benchmark:
+    name: Benchmarks
     runs-on: ubuntu-latest
-    env:
-      RUSTFLAGS: -Dwarnings
     steps:
-      - uses: actions/checkout@v2
-      - uses: hecrj/setup-rust-action@v1
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Setup Rust
+        uses: hecrj/setup-rust-action@v1
+
+      - name: Load Rust Cache
+        uses: Swatinem/rust-cache@v1
+
+      - name: Install Deno
+        uses: denolib/setup-deno@master
         with:
-          components: clippy
-      - run: cargo clippy --workspace --all-targets --verbose
-      - run: cargo clippy --workspace --all-targets --verbose --no-default-features
-      - run: cargo clippy --workspace --all-targets --verbose --all-features
+          deno-version: v1.10.1
 
-  rustfmt:
-    name: Verify code formatting
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: hecrj/setup-rust-action@v1
-        with:
-          components: rustfmt
-      - run: cargo fmt --all -- --check
-
-  rustdoc:
-    name: Check doc links
-    runs-on: ubuntu-latest
-    env:
-      RUSTDOCFLAGS: -Dwarnings
-
-    steps:
-      - uses: actions/checkout@v2
-      - uses: hecrj/setup-rust-action@v1
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo doc --workspace --all-features --document-private-items --no-deps
+      - name: Run Benchmarks
+        run: deno -A --quit benchmarks/bench.ts
