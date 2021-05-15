@@ -89,6 +89,9 @@ jobs:
       - name: Load Rust Cache
         uses: Swatinem/rust-cache@v1
 
+      - name: Build
+        run: cargo build --release -p rslint_cli
+
       - name: Install Deno
         uses: denolib/setup-deno@master
         with:
