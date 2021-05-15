@@ -82,6 +82,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
 
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v1
@@ -89,13 +91,22 @@ jobs:
       - name: Load Rust Cache
         uses: Swatinem/rust-cache@v1
 
-      - name: Build
-        run: cargo build --release -p rslint_cli
+      - name: Install Node.js
+        uses: actions/setup-node@v2-beta
+        with:
+          node-version: "14"
 
       - name: Install Deno
         uses: denolib/setup-deno@master
         with:
           deno-version: v1.10.1
+
+      - name: Install npm packages
+        run: npm install --ci
+        working-directory: benchmarks
+
+      - name: Build
+        run: cargo build --release -p rslint_cli
 
       - name: Run Benchmarks
         run: deno run -A --quiet benchmarks/bench.ts

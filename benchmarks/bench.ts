@@ -7,10 +7,10 @@ import {
 } from "https://deno.land/std@0.96.0/testing/bench.ts";
 
 // number of times that each project should linted to prevent variance.
-const RUN_COUNT = 20;
+const RUN_COUNT = 1;
 
 // A list of projects that should be linted.
-const PROJECTS = ["benchmarks/projects/oak", "benchmarks/projects/engine262"];
+const PROJECTS = ["projects/oak", "projects/engine262"];
 
 PROJECTS.forEach((project) => {
   bench({
@@ -19,7 +19,8 @@ PROJECTS.forEach((project) => {
     async func(b: BenchmarkTimer): Promise<void> {
       b.start();
       const proc = Deno.run({
-        cmd: ["./target/release/rslint", project],
+        cmd: ["../target/release/rslint", project],
+        cwd: "./benchmarks",
         stdout: "null",
         stderr: "null",
       });
