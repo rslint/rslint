@@ -95,4 +95,4 @@ jobs:
           deno-version: v1.10.1
 
       - name: Run Benchmarks
-        run: deno -A --quit benchmarks/bench.ts
+        run: deno run -A --quit benchmarks/bench.ts
