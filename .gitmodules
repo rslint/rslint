@@ -1,3 +1,9 @@
 [submodule "xtask/src/coverage/test262"]
 	path = xtask/src/coverage/test262
 	url = https://github.com/tc39/test262
+[submodule "benchmarks/projects/engine262"]
+	path = benchmarks/projects/engine262
+	url = https://github.com/engine262/engine262
+[submodule "benchmarks/projects/oak"]
+	path = benchmarks/projects/oak
+	url = https://github.com/oakserver/oak
