@@ -17,4 +17,4 @@ may not understand some of the more in depth areas, here are some resources to l
 
 ## Contributing
 
-The best way to learn is to contribute! You can find issues to work on by looking at [issues](https://github.com/RDambrosio016/RSLint/issues) with the `E-Easy` and `E-Mentor` labels. `E-Mentor` issues have explanations as to how to fix/implement the topic of the issue to guide you through.
+The best way to learn is to contribute! You can find issues to work on by looking at [issues](https://github.com/rslint/rslint/issues) with the `E-Easy` and `E-Mentor` labels. `E-Mentor` issues have explanations as to how to fix/implement the topic of the issue to guide you through.

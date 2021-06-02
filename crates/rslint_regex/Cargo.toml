@@ -5,7 +5,7 @@ authors = ["RSLint developers"]
 edition = "2018"
 description = "RegEx parser for the ECMAScript definition"
 license = "MIT"
-repository = "https://github.com/RDambrosio016/RSLint"
+repository = "https://github.com/rslint/rslint"
 
 [dependencies]
 bitflags = "1.2.1"

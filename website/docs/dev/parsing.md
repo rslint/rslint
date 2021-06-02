@@ -39,6 +39,6 @@ Error recovery is a central concept of RSLint, and it allows us to lint incorrec
 
 ## Quick links
 
-- [where the actual JS parsing logic is](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_parser/src/syntax)
-- [where the AST logic is](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_parser/src/ast)
-- [where the central Parser structure is](https://github.com/RDambrosio016/RSLint/blob/master/crates/rslint_parser/src/parser.rs)
+- [where the actual JS parsing logic is](https://github.com/rslint/rslint/tree/master/crates/rslint_parser/src/syntax)
+- [where the AST logic is](https://github.com/rslint/rslint/tree/master/crates/rslint_parser/src/ast)
+- [where the central Parser structure is](https://github.com/rslint/rslint/blob/master/crates/rslint_parser/src/parser.rs)

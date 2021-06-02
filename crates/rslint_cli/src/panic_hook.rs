@@ -14,7 +14,7 @@ pub fn panic_hook(info: &PanicInfo) {
 
     write("The linter panicked unexpectedly. This is a bug.\n");
 
-    write("We would appreciate a bug report: https://github.com/RDambrosio016/RSLint/issues/new?labels=ILE%2C+bug&template=internal-linter-error.md\n");
+    write("We would appreciate a bug report: https://github.com/rslint/rslint/issues/new?labels=ILE%2C+bug&template=internal-linter-error.md\n");
 
     write("Please include the following info: \n");
 

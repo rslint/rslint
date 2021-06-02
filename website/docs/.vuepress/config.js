@@ -31,8 +31,8 @@ module.exports = {
         link: "https://docs.rs/rslint_core"
       },
       {
-        text: "Github",
-        link: "https://github.com/RDambrosio016/RSLint"
+        text: "GitHub",
+        link: "https://github.com/rslint/rslint"
       }
     ],
     sidebar: {

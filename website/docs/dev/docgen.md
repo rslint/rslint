@@ -1,12 +1,12 @@
 # Docgen
 
 Documentation for the rules folder is not manually written, documentation is written as rust doc comments
-in source files (in the lint declaration). And a [docgen script](https://github.com/RDambrosio016/RSLint/blob/master/xtask/src/docgen/mod.rs) is used to generate the user facing docs.
+in source files (in the lint declaration). And a [docgen script](https://github.com/rslint/rslint/blob/master/xtask/src/docgen/mod.rs) is used to generate the user facing docs.
 The docgen script allows us to make rustdoc documentation, as well as user facing documentation automatically.
 
 Docgen goes through a few steps to collect docs:
 
-- The script crawls the [groups directory](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_core/src/groups), for every group it will:
+- The script crawls the [groups directory](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups), for every group it will:
   - Collect the group name by looking at the `group!` invocation in `mod.rs`
   - For each rule file it will then:
   - Collect the `declare_lint!` invocation, from this it grabs the main documentation, replacing all `ignore` code blocks with `js`.
