@@ -258,8 +258,17 @@ impl ImportDecl {
     pub fn source(&self) -> Option<Literal> {
         self.syntax()
             .children()
-            .filter_map(|x| x.try_to::<Literal>().filter(|x| x.is_string()))
-            .next()
+            .find_map(|x| x.try_to::<Literal>().filter(|x| x.is_string()))
+    }
+}
+
+impl ExportDecl {
+    /// The source of the export, such as `export a from "a"` ("a"), or `export "foo"` ("foo")
+    pub fn source(&self) -> Option<Literal> {
+        self.syntax().children().find_map(|x| {
+            x.children()
+                .find_map(|x| x.try_to::<Literal>().filter(|x| x.is_string()))
+        })
     }
 }
 
