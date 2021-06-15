@@ -3,7 +3,7 @@
 use syntax::stmt::FOLLOWS_LET;
 
 use super::decl::{class_decl, function_decl};
-use super::expr::{assign_expr, expr, identifier_name, object_expr, primary_expr};
+use super::expr::{assign_expr, expr, identifier_name, literal, object_expr, primary_expr};
 use super::pat::binding_identifier;
 use super::stmt::{block_items, semi, var_decl};
 use super::typescript::*;
@@ -179,7 +179,7 @@ pub fn import_decl(p: &mut Parser) -> CompletedMarker {
 
         p.error(err);
     } else {
-        p.bump_any();
+        literal(p);
     }
 
     if p.cur_src() == "assert" {
@@ -449,6 +449,8 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
     {
         var_decl(p, false);
     } else {
+        let m = p.start();
+
         if p.cur_src() == "from" && exports_ns {
             from_clause_and_semi(p, start);
             return m.complete(p, EXPORT_WILDCARD);
@@ -504,7 +506,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
             }
         }
 
-        return m.complete(p, EXPORT_NAMED);
+        m.complete(p, EXPORT_NAMED);
     }
     m.complete(p, EXPORT_DECL)
 }
@@ -512,7 +514,7 @@ pub fn export_decl(p: &mut Parser) -> CompletedMarker {
 fn from_clause_and_semi(p: &mut Parser, start: usize) {
     debug_assert_eq!(p.cur_src(), "from");
     p.bump_remap(T![from]);
-    p.expect(STRING);
+    literal(p);
     semi(p, start..p.cur_tok().range.start);
 }
 

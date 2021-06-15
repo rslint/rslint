@@ -101,6 +101,11 @@
               "pattern": "no-duplicate-cases"
             },
             {
+              "title": "Disallow duplicate imports.",
+              "description": "",
+              "pattern": "no-duplicate-imports"
+            },
+            {
               "title": "Disallow empty block statements.",
               "description": "",
               "pattern": "no-empty"
@@ -275,6 +280,17 @@
             "no-duplicate-cases": {
               "title": "NoDuplicateCases",
               "type": "object"
+            },
+            "no-duplicate-imports": {
+              "title": "NoDuplicateImports",
+              "type": "object",
+              "properties": {
+                "includeExports": {
+                  "description": "Whether to check if re-exported",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
             },
             "no-empty": {
               "title": "NoEmpty",
@@ -514,6 +530,17 @@
             "no-duplicate-cases": {
               "title": "NoDuplicateCases",
               "type": "object"
+            },
+            "no-duplicate-imports": {
+              "title": "NoDuplicateImports",
+              "type": "object",
+              "properties": {
+                "includeExports": {
+                  "description": "Whether to check if re-exported",
+                  "default": false,
+                  "type": "boolean"
+                }
+              }
             },
             "no-empty": {
               "title": "NoEmpty",

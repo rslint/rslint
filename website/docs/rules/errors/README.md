@@ -21,6 +21,7 @@ unexpected behavior.
 | [no-debugger](./no-debugger.md) | Disallow the use of debugger statements. |
 | [no-dupe-keys](./no-dupe-keys.md) | Disallow duplicate keys in object literals. |
 | [no-duplicate-cases](./no-duplicate-cases.md) | Disallow duplicate test cases in `switch` statements. |
+| [no-duplicate-imports](./no-duplicate-imports.md) | Disallow duplicate imports. |
 | [no-empty](./no-empty.md) | Disallow empty block statements. |
 | [no-extra-boolean-cast](./no-extra-boolean-cast.md) | Disallow unnecessary boolean casts. |
 | [no-extra-semi](./no-extra-semi.md) | Disallow unneeded semicolons. |
