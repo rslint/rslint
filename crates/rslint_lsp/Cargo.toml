@@ -10,6 +10,7 @@ repository = "https://github.com/RDambrosio016/RSLint"
 [[bin]]
 name = "rslint-lsp"
 path = "src/bin/main.rs"
+doc = false
 
 [features]
 default = ["threaded"]
