@@ -1188,7 +1188,7 @@ pub fn object_property(p: &mut Parser) -> Option<CompletedMarker> {
         //     return 5;
         //  }
         // }
-        T![ident] if (p.cur_src() == "get" || p.cur_src() == "set") && !p.nth_at(1, T![:]) => {
+        T![ident] if (p.cur_src() == "get" || p.cur_src() == "set") && p.nth_at(1, T![ident]) => {
             method(p, None, None)
         }
         // test object_expr_async_method
