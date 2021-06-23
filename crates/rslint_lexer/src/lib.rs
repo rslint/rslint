@@ -1294,8 +1294,8 @@ impl<'src> Lexer<'src> {
                 self.resolve_label(dispatched)
             }
             UNI => {
+                let chr = self.get_unicode_char();
                 if UNICODE_WHITESPACE_STARTS.contains(&byte) {
-                    let chr = self.get_unicode_char();
                     if is_linebreak(chr) {
                         self.state.had_linebreak = true;
                     }
@@ -1303,7 +1303,6 @@ impl<'src> Lexer<'src> {
                     self.consume_whitespace();
                     tok!(WHITESPACE, self.cur - start)
                 } else {
-                    let chr = self.get_unicode_char();
                     self.cur += chr.len_utf8() - 1;
                     if is_id_start(chr) {
                         self.consume_ident();

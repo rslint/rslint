@@ -110,7 +110,7 @@ impl<T: Language> Span for SyntaxElement<T> {
 
 impl Span for TextRange {
     fn as_range(&self) -> Range<usize> {
-        self.clone().into()
+        (*self).into()
     }
 }
 
