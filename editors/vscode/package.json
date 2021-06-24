@@ -6,11 +6,11 @@
   "author": {
     "name": "Darin Morrison",
     "email": "darinmorrison@users.noreply.github.com",
-    "url": "https://github.com/RDambrosio016/RSLint"
+    "url": "https://github.com/rslint/rslint"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/RDambrosio016/RSLint.git"
+    "url": "https://github.com/rslint/rslint.git"
   },
   "displayName": "vscode-rslint",
   "publisher": "darinmorrison",

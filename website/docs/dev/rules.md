@@ -15,7 +15,7 @@ no_extra_semi::NoExtraSemi
 
 Don't worry if you get errors, theyll be fixed soon.
 
-RSLint defines a [rule_prelude](https://github.com/RDambrosio016/RSLint/blob/master/crates/rslint_core/src/rule_prelude.rs) module, which contains commonly used
+RSLint defines a [rule_prelude](https://github.com/rslint/rslint/blob/master/crates/rslint_core/src/rule_prelude.rs) module, which contains commonly used
 items by rules, which saves a ton of painful imports.
 
 the prelude includes a `declare_lint` macro, this macro is a way of easily declaring a new rule, it is also used by

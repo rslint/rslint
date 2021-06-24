@@ -8,7 +8,7 @@ RSLint is a tool for finding and fixing problematic productions in ECMAScript/Ja
 enforce style and good practices. RSLint is similar to ESLint with some major differences:
 
 - RSLint is written in Rust and therefore very fast.
-- RSLint uses a [`custom parser`](https://github.com/RDambrosio016/RSLint/tree/master/crates/rslint_parser/src) to parse JavaScript.
+- RSLint uses a [`custom parser`](https://github.com/rslint/rslint/tree/master/crates/rslint_parser/src) to parse JavaScript.
 - RSLint uses a CST (concrete syntax tree) as well as untyped nodes to evaluate patterns in code.
 - RSLint can lint any code no matter how wrong it is.
 - RSLint groups rules into distinct groups.
@@ -18,8 +18,8 @@ enforce style and good practices. RSLint is similar to ESLint with some major di
 You must have cargo installed on your machine, then git clone the repository, and either build the binary and run it, or use cargo run directly.
 
 ```sh
-git clone https://github.com/RDambrosio016/RSLint.git
-cd RSLint
+git clone https://github.com/rslint/rslint.git
+cd rslint
 cargo run --release -- ./glob/pattern.js
 ```
 
@@ -30,7 +30,7 @@ cargo install rslint_cli
 rslint ./glob/pattern.js
 ```
 
-If you do not have rust installed you can find prebuilt binaries for every release [here](https://github.com/RDambrosio016/RSLint/releases).
+If you do not have rust installed you can find prebuilt binaries for every release [here](https://github.com/rslint/rslint/releases).
 
 # Running in VSC
 

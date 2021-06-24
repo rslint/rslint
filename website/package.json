@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/RDambrosio016/RSLint.git"
+    "url": "git+https://github.com/rslint/rslint.git"
   },
   "keywords": [
     "JavaScript",
@@ -18,9 +18,9 @@
   "author": "RSLint developers",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/RDambrosio016/RSLint/issues"
+    "url": "https://github.com/rslint/rslint/issues"
   },
-  "homepage": "https://github.com/RDambrosio016/RSLint#readme",
+  "homepage": "https://github.com/rslint/rslint#readme",
   "devDependencies": {
     "vuepress": "^1.7.1",
     "vuepress-plugin-container": "^2.1.5"

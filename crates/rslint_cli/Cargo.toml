@@ -5,7 +5,7 @@ authors = ["RSLint developers"]
 edition = "2018"
 description = "CLI crate and glue for the rslint project"
 license = "MIT"
-repository = "https://github.com/RDambrosio016/RSLint"
+repository = "https://github.com/rslint/rslint"
 
 [[bin]]
 name = "rslint"

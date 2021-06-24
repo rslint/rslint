@@ -5,7 +5,7 @@ authors = ["RSLint developers"]
 edition = "2018"
 description = "The rslint specific config format."
 license = "MIT"
-repository = "https://github.com/RDambrosio016/RSLint"
+repository = "https://github.com/rslint/rslint"
 
 [dependencies]
 rslint_errors = { path = "../rslint_errors" }
