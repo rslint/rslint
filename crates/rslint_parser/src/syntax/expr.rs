@@ -914,7 +914,6 @@ pub fn primary_expr(p: &mut Parser) -> Option<CompletedMarker> {
                     // let a = async foo => {}
                     // let b = async (bar) => {}
                     // async (foo, bar, ...baz) => foo
-                    // async (yield) => {}
                     let m = p.start();
                     p.bump_remap(T![async]);
                     if p.at(T!['(']) {

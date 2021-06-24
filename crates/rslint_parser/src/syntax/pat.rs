@@ -109,7 +109,9 @@ pub fn binding_identifier(p: &mut Parser) -> Option<CompletedMarker> {
         p.error(err);
     }
 
-    if p.state.strict.is_some() && (p.cur_src() == "eval" || p.cur_src() == "arguments") {
+    if p.state.strict.is_some()
+        && (p.cur_src() == "eval" || p.cur_src() == "arguments" || p.cur_src() == "yield")
+    {
         let err = p
             .err_builder(&format!(
                 "Illegal use of `{}` as an identifier in strict mode",
