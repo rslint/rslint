@@ -80,7 +80,7 @@ impl FileWalker {
                         .unwrap_or_default()
                         .to_string_lossy()
                         .as_ref(),
-                )
+                ) && !p.file_type().is_dir()
             })
             .filter_map(|entry| {
                 let path = entry.path();
