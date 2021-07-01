@@ -29,6 +29,7 @@ unexpected behavior.
 | [no-irregular-whitespace](./no-irregular-whitespace.md) | Disallow weird/irregular whitespace. |
 | [no-new-symbol](./no-new-symbol.md) | Disallow constructing `Symbol` using `new`. |
 | [no-prototype-builtins](./no-prototype-builtins.md) | Disallow direct use of `Object.prototype` builtins directly. |
+| [no-self-assign](./no-self-assign.md) | Disallow Self Assignment |
 | [no-setter-return](./no-setter-return.md) | Disallow setters to return values. |
 | [no-sparse-arrays](./no-sparse-arrays.md) | Disallow sparse arrays. |
 | [no-this-before-super](./no-this-before-super.md) | Prevent the use of `this` / `super` before calling `super()`. |
