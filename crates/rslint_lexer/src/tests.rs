@@ -1025,3 +1025,26 @@ fn at_token() {
         IDENT:3
     }
 }
+
+#[test]
+fn object_expr_getter() {
+    assert_lex! {
+        "({ get [foo]() {} })",
+        L_PAREN:1
+        L_CURLY:1
+        WHITESPACE:1
+        IDENT:3
+        WHITESPACE:1
+        L_BRACK:1
+        IDENT:3
+        R_BRACK:1
+        L_PAREN:1
+        R_PAREN:1
+        WHITESPACE:1
+        L_CURLY:1
+        R_CURLY:1
+        WHITESPACE:1
+        R_CURLY:1
+        R_PAREN:1
+    }
+}
