@@ -24,7 +24,7 @@ jobs:
   build_and_release:
     name: Build and Release assets
     needs: create_release
-    runs-on: ${{ matrix.config.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         build: [linux, macos, win-msvc, win-gnu, win32-msvc]
