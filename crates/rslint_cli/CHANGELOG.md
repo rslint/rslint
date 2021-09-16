@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2021-09-16
+
 ### Changed
 
 - Changed the binary's name from `rslint_cli` to just `rslint`

@@ -1,6 +1,6 @@
 [package]
 name = "rslint_core"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["RSLint developers"]
 edition = "2018"
 description = "The core linter housing all of the rules for the rslint project"
@@ -12,11 +12,11 @@ bench = false
 
 [dependencies]
 rslint_parser = { path = "../rslint_parser", version = ">=0.2.1" }
-rslint_lexer = { path = "../rslint_lexer", version = "0.1.0" }
-rslint_errors = { path = "../rslint_errors", version = "0.1.0" }
+rslint_lexer = { path = "../rslint_lexer", version = "0.2.0" }
+rslint_errors = { path = "../rslint_errors", version = "0.2.0" }
 rslint_text_edit = { path = "../rslint_text_edit", version = "0.1.0" }
 rslint_macros = { path = "../rslint_macros", version = "0.1.0" }
-rslint_regex = { path = "../rslint_regex", version = "0.2", features = ["rslint_errors"] }
+rslint_regex = { path = "../rslint_regex", version = "0.3", features = ["rslint_errors"] }
 serde = { version = "1.0.115", features = ["derive"] }
 typetag = "0.1.5"
 dyn-clone = "1.0.2"

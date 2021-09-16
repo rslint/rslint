@@ -1,6 +1,6 @@
 [package]
 name = "rslint_cli"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["RSLint developers"]
 edition = "2018"
 description = "CLI crate and glue for the rslint project"
@@ -12,15 +12,15 @@ name = "rslint"
 path = "src/main.rs"
 
 [dependencies]
-rslint_core = { path = "../rslint_core", version = "0.2.0" }
+rslint_core = { path = "../rslint_core", version = "0.3.0" }
 rslint_config = { path = "../rslint_config", version = "0.1.0" }
-rslint_errors = { path = "../rslint_errors", version = "0.1.0" }
-rslint_parser = { path = "../rslint_parser", version = "0.2" }
+rslint_errors = { path = "../rslint_errors", version = "0.2.0" }
+rslint_parser = { path = "../rslint_parser", version = "0.3" }
 termcolor = "1.1.0"
 walkdir = "2.3.1"
 glob = "0.3.0"
 structopt = "0.3.17"
-rslint_lexer = { path = "../rslint_lexer", version = "0.1.0", features = ["highlight"] }
+rslint_lexer = { path = "../rslint_lexer", version = "0.2.0", features = ["highlight"] }
 regex = "1.3.9"
 serde = "1.0.115"
 toml = "0.5.6"
