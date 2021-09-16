@@ -3,10 +3,12 @@ name = "rslint_macros"
 version = "0.1.0"
 authors = ["RSLint developers"]
 edition = "2018"
+description = "Internal macros used by the RSLint project"
+license = "MIT"
 
 [lib]
 proc-macro = true
 
 [dependencies]
 quote = "1.0.7"
-syn = "1.0.48"
+syn = { version = "1.0.48", features = ["full"] }

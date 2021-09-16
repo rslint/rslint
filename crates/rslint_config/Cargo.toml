@@ -8,7 +8,7 @@ license = "MIT"
 repository = "https://github.com/rslint/rslint"
 
 [dependencies]
-rslint_errors = { path = "../rslint_errors" }
+rslint_errors = { path = "../rslint_errors", version = "0.2.0" }
 rslint_core = { path = "../rslint_core", version  = "0.3.0" }
 serde = "1.0.117"
 toml = "0.5.7"
