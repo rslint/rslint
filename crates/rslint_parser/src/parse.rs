@@ -124,7 +124,7 @@ fn parse_common(
     file_id: usize,
     syntax: Syntax,
 ) -> (Vec<Event>, Vec<ParserError>, Vec<rslint_lexer::Token>) {
-    let (tokens, mut errors) = tokenize(&text, file_id);
+    let (tokens, mut errors) = tokenize(text, file_id);
 
     let tok_source = TokenSource::new(text, &tokens);
 
@@ -234,7 +234,7 @@ pub fn parse_module(text: &str, file_id: usize) -> Parse<Module> {
 /// Losslessly Parse text into an expression [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
 /// Or turned into a typed [`Expr`](Expr) with [`tree`](Parse::tree).
 pub fn parse_expr(text: &str, file_id: usize) -> Parse<Expr> {
-    let (tokens, mut errors) = tokenize(&text, file_id);
+    let (tokens, mut errors) = tokenize(text, file_id);
     let tok_source = TokenSource::new(text, &tokens);
     let mut parser = crate::Parser::new(tok_source, file_id, Syntax::default());
     crate::syntax::expr::expr(&mut parser);

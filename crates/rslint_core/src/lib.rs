@@ -197,13 +197,13 @@ pub fn run_rule(
     root.descendants_with_tokens_with(&mut |elem| {
         match elem {
             rslint_parser::NodeOrToken::Node(node) => {
-                if skip_node(directives, &node, rule) || node.kind() == SyntaxKind::ERROR {
+                if skip_node(directives, node, rule) || node.kind() == SyntaxKind::ERROR {
                     return false;
                 }
-                rule.check_node(&node, &mut ctx);
+                rule.check_node(node, &mut ctx);
             }
             rslint_parser::NodeOrToken::Token(tok) => {
-                let _ = rule.check_token(&tok, &mut ctx);
+                let _ = rule.check_token(tok, &mut ctx);
             }
         };
         true

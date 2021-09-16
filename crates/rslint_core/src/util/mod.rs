@@ -213,7 +213,7 @@ pub fn find_best_match_for_name<'a>(
 
 fn find_match_by_sorted_words<'a>(iter_names: Vec<&'a str>, lookup: &str) -> Option<&'a str> {
     iter_names.iter().fold(None, |result, candidate| {
-        if sort_by_words(&candidate) == sort_by_words(lookup) {
+        if sort_by_words(candidate) == sort_by_words(lookup) {
             Some(candidate)
         } else {
             result

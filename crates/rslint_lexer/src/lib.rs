@@ -159,8 +159,7 @@ impl<'src> Lexer<'src> {
         debug_assert!(self.cur < self.bytes.len());
 
         // Safety: We know this is safe because we require the input to the lexer to be valid utf8 and we always call this when we are at a char
-        let string =
-            unsafe { std::str::from_utf8_unchecked(&self.bytes.get_unchecked(self.cur..)) };
+        let string = unsafe { std::str::from_utf8_unchecked(self.bytes.get_unchecked(self.cur..)) };
         let chr = if let Some(chr) = string.chars().next() {
             chr
         } else {

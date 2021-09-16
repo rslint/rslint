@@ -366,7 +366,7 @@ impl<'t> Parser<'t> {
         };
 
         let mut sink =
-            LosslessTreeSink::with_offset(self.tokens.source(), &self.tokens.raw_tokens, start);
+            LosslessTreeSink::with_offset(self.tokens.source(), self.tokens.raw_tokens, start);
         process(&mut sink, events, vec![]);
         T::cast(SyntaxNode::new_root(sink.finish().0))
             .expect("Marker was parsed to the wrong ast node")

@@ -95,7 +95,7 @@ pub fn group_markdown(data: &[(String, RuleFile)], group: &Group) -> String {
         "<!--\n generated docs file, do not edit by hand, see xtask/docgen \n-->\n",
     );
     ret.push_str(&format!("\n# {}\n\n", group.name.to_case(Case::Pascal)));
-    ret.push_str(&group.docstring.trim());
+    ret.push_str(group.docstring.trim());
 
     ret.push_str("\n## Rules\n");
     ret.push_str("| Name | Description |\n");

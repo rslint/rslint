@@ -26,7 +26,7 @@ fn get_runnable_indels(mut tagged: Vec<TaggedIndel>) -> Vec<TaggedIndel> {
 
     tagged
         .into_iter()
-        .filter(|TaggedIndel { tag, .. }| !excluded_ids.contains(&tag))
+        .filter(|TaggedIndel { tag, .. }| !excluded_ids.contains(tag))
         .collect()
 }
 

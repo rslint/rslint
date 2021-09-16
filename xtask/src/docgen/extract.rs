@@ -33,7 +33,7 @@ pub struct Group {
 
 impl Parse for Group {
     fn parse(input: ParseStream) -> Result<Self> {
-        let docstring = parse_docstring(&input).unwrap_or_default();
+        let docstring = parse_docstring(input).unwrap_or_default();
         let name = input.parse::<Ident>()?.to_string();
         let _ = input.parse::<TokenStream>();
         Ok(Self { name, docstring })
@@ -245,7 +245,7 @@ impl Parse for RuleTests {
 
 impl Parse for Example {
     fn parse(input: ParseStream) -> Result<Self> {
-        let docstring = parse_docstring(&input);
+        let docstring = parse_docstring(input);
         let string = input.parse::<LitStr>()?.value();
         let source = unindent(&string).trim().to_string();
         Ok(Example { source, docstring })

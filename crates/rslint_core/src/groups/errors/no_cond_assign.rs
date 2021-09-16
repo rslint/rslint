@@ -141,19 +141,19 @@ fn help_expr(expr: &SyntaxNode) -> String {
             format!(
                 "{} {} {}",
                 expr.lhs()
-                    .map(|e| help_expr(&e.syntax()))
+                    .map(|e| help_expr(e.syntax()))
                     .unwrap_or_default(),
                 expr.op_token()
                     .map(|t| t.text().to_string())
                     .unwrap_or_default(),
                 expr.rhs()
-                    .map(|e| help_expr(&e.syntax()))
+                    .map(|e| help_expr(e.syntax()))
                     .unwrap_or_default()
             )
         }
         GROUPING_EXPR => format!(
             "({})",
-            help_expr(&expr.to::<ast::GroupingExpr>().inner().unwrap().syntax())
+            help_expr(expr.to::<ast::GroupingExpr>().inner().unwrap().syntax())
         ),
         _ => expr.trimmed_text().to_string(),
     }

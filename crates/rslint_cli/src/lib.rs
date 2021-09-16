@@ -400,7 +400,7 @@ pub fn remap_diagnostics_to_level(diagnostics: &mut Vec<Diagnostic>, level: Rule
 pub fn emit_diagnostic(diagnostic: &Diagnostic, walker: &dyn file::Files) {
     let mut emitter = Emitter::new(walker);
     emitter
-        .emit_stderr(&diagnostic, true)
+        .emit_stderr(diagnostic, true)
         .expect("failed to throw linter diagnostic")
 }
 

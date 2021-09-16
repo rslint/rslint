@@ -161,7 +161,7 @@ impl<'p, 't> Deref for StateGuard<'p, 't> {
     type Target = Parser<'t>;
 
     fn deref(&self) -> &Parser<'t> {
-        &self.inner
+        self.inner
     }
 }
 

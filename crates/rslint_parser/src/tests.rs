@@ -31,13 +31,13 @@ fn parser_tests() {
     dir_tests(&test_data_dir(), &["inline/ok"], "rast", |text, path| {
         let parse = try_parse(path.to_str().unwrap(), text);
         let errors = parse.errors();
-        assert_errors_are_absent(&errors, path);
+        assert_errors_are_absent(errors, path);
         format!("{:#?}", parse.syntax())
     });
     dir_tests(&test_data_dir(), &["inline/err"], "rast", |text, path| {
         let parse = try_parse(path.to_str().unwrap(), text);
         let errors = parse.errors();
-        assert_errors_are_present(&errors, path);
+        assert_errors_are_present(errors, path);
         let mut files = SimpleFiles::new();
         files.add(
             path.file_name().unwrap().to_string_lossy().to_string(),

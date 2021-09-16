@@ -198,7 +198,7 @@ impl Emitter<'_> {
                         .source(suggestion.span.file)
                         .expect("Non existant file id")[suggestion.span.range.clone()]
                     .to_owned();
-                    apply_indels(&indels, &mut old);
+                    apply_indels(indels, &mut old);
                     old
                 }
                 SuggestionChange::String(string) => string.clone(),

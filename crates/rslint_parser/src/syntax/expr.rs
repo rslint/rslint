@@ -163,7 +163,7 @@ pub(crate) fn is_valid_target(p: &mut Parser, marker: &CompletedMarker) -> bool 
 }
 
 fn check_assign_target_from_marker(p: &mut Parser, marker: &CompletedMarker) {
-    if !is_valid_target(p, &marker) {
+    if !is_valid_target(p, marker) {
         let err = p
             .err_builder(&format!(
                 "Invalid assignment to `{}`",

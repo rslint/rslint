@@ -394,7 +394,7 @@ impl AstNode for ModuleItem {
             ModuleItem::ExportDefaultExpr(it) => &it.syntax,
             ModuleItem::ExportWildcard(it) => &it.syntax,
             ModuleItem::ExportDecl(it) => &it.syntax,
-            ModuleItem::Stmt(it) => &it.syntax(),
+            ModuleItem::Stmt(it) => it.syntax(),
             ModuleItem::TsImportEqualsDecl(it) => &it.syntax,
             ModuleItem::TsExportAssignment(it) => &it.syntax,
             ModuleItem::TsNamespaceExportDecl(it) => &it.syntax,

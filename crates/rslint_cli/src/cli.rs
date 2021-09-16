@@ -85,7 +85,7 @@ impl ExplanationRunner {
 
     pub fn append_link_to_docs(&mut self) {
         for (docs, name) in self.rules.iter_mut().zip(self.rule_names.iter()) {
-            let group = rslint_core::get_rule_by_name(&name).unwrap().group();
+            let group = rslint_core::get_rule_by_name(name).unwrap().group();
             let link = format!("https://rslint.org/rules/{}/{}.html", group, name);
             docs.push_str(&format!("{}: {}\n", Green.paint("Docs").to_string(), link));
         }

@@ -34,7 +34,7 @@ pub fn run(query: Option<&str>, pool: Pool) {
                 pb.inc(1);
 
                 if detailed && res.fail.is_some() {
-                    report_detailed_test(&pb, &res);
+                    report_detailed_test(pb, &res);
                     tx.send(res).unwrap();
                     return;
                 }
