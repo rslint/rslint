@@ -226,28 +226,30 @@ fn object_binding_prop(p: &mut Parser, parameters: bool) -> Option<CompletedMark
         return Some(m.complete(p, KEY_VALUE_PATTERN));
     }
 
-    if name.is_none() {
+    let name = if let Some(n) = name {
+        n
+    } else {
         p.err_recover_no_err(
             token_set![T![await], T![ident], T![yield], T![:], T![=], T!['}']],
             false,
         );
         return None;
-    }
+    };
 
-    if name.map(|x| x.kind()) != Some(NAME) {
+    if name.kind() != NAME {
         let err = p
             .err_builder("Expected an identifier for a pattern, but found none")
-            .primary(name.unwrap().range(p), "");
+            .primary(name.range(p), "");
 
         p.error(err);
         return None;
     }
 
+    let sp_marker = name.precede(p).complete(p, SINGLE_PATTERN);
     if p.eat(T![=]) {
         assign_expr(p);
-        name.unwrap().change_kind(p, SINGLE_PATTERN);
         Some(m.complete(p, ASSIGN_PATTERN))
     } else {
-        Some(name?.precede(p).complete(p, SINGLE_PATTERN))
+        Some(sp_marker)
     }
 }
