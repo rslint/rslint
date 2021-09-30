@@ -1090,7 +1090,6 @@ pub fn method(
     let m = marker.into().unwrap_or_else(|| p.start());
     let old = p.state.to_owned();
     p.state.in_function = true;
-    // FIXME: handle get* which is a property + a generator
     let complete = match p.cur() {
         T!['('] | T![<] => {
             args_body(p);
