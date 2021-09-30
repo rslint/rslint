@@ -37,7 +37,8 @@ MODULE@0..59
         WHITESPACE@36..37 " "
         ASSIGN_PATTERN@37..46
           SINGLE_PATTERN@37..40
-            IDENT@37..40 "foo"
+            NAME@37..40
+              IDENT@37..40 "foo"
           WHITESPACE@40..41 " "
           EQ@41..42 "="
           WHITESPACE@42..43 " "
