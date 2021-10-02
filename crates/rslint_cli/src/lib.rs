@@ -25,6 +25,7 @@ use std::{fs::write, path::PathBuf};
 use yastl::Pool;
 
 #[allow(unused_must_use, unused_variables)]
+#[allow(clippy::too_many_arguments)] // this is temporary, and should be refactored soon
 pub fn run(
     globs: Vec<String>,
     verbose: bool,
@@ -54,6 +55,7 @@ pub fn run(
 }
 
 /// The inner function for run to call destructors before we call [`process::exit`]
+#[allow(clippy::too_many_arguments)] // this is temporary, and should be refactored soon
 fn run_inner(
     globs: Vec<String>,
     verbose: bool,

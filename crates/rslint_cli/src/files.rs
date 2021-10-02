@@ -77,12 +77,11 @@ impl FileWalker {
 
             if !no_ignore {
                 match ignore_file.as_ref() {
-                    Some(file) => match builder.add_ignore(file) {
-                        Some(err) => {
+                    Some(file) => {
+                        if let Some(err) = builder.add_ignore(file) {
                             crate::lint_warn!("invalid gitignore file: {}", err);
                         }
-                        None => {}
-                    },
+                    }
                     None => {
                         builder.add_custom_ignore_filename(RSLINT_IGNORE_FILE);
                     }
