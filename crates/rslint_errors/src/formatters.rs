@@ -51,7 +51,7 @@ impl Formatter for ShortFormatter {
                 .iter()
                 .filter(|x| x.file_id == id && x.primary.is_some())
                 .collect::<Vec<_>>();
-            if cur_diags.len() == 0 {
+            if cur_diags.is_empty() {
                 continue;
             }
 
