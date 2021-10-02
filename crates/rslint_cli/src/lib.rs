@@ -32,7 +32,9 @@ pub fn run(
     dirty: bool,
     formatter: Option<String>,
     no_global_config: bool,
-    pool: Pool,
+    num_threads: usize,
+    no_ignore: bool,
+    ignore_file: Option<PathBuf>,
 ) {
     let exit_code = run_inner(
         globs,
@@ -41,7 +43,9 @@ pub fn run(
         dirty,
         formatter,
         no_global_config,
-        pool,
+        num_threads,
+        no_ignore,
+        ignore_file,
     );
     #[cfg(not(debug_assertions))]
     process::exit(exit_code);
@@ -55,34 +59,41 @@ fn run_inner(
     dirty: bool,
     formatter: Option<String>,
     no_global_config: bool,
-    pool: Pool,
+    num_threads: usize,
+    no_ignore: bool,
+    ignore_file: Option<PathBuf>,
 ) -> i32 {
-    let mut config = None;
     let mut walker = FileWalker::empty();
+    walker.load_files_parallel(
+        collect_globs(globs).into_iter(),
+        num_threads,
+        no_ignore,
+        ignore_file,
+    );
 
-    pool.scoped(|scope| {
-        scope.execute(|| {
-            config = Some(config::Config::new(no_global_config, |file, d| {
-                emit_diagnostic(&d, &file)
-            }));
-        });
-
-        scope.execute(|| {
-            walker.load_files(collect_globs(globs).into_iter());
-        });
-    });
-
-    let mut config = config.expect("config failed to initialize");
-    emit_diagnostics("short", &config.warnings(), &walker);
+    let config = match config::Config::new(no_global_config) {
+        Ok(cfg) => cfg,
+        Err((file, d)) => {
+            emit_diagnostic(&d, &file);
+            config::Config::default()
+        }
+    };
 
     let mut formatter = formatter.unwrap_or_else(|| config.formatter());
-    let store = config.rules_store();
+    let (store, warnings) = config.rules_store();
+    emit_diagnostics("long", &warnings, &walker);
+
     verify_formatter(&mut formatter);
 
     if walker.files.is_empty() {
         lint_err!("No matching files found");
         return 2;
     }
+
+    let pool = Pool::with_config(
+        num_threads,
+        yastl::ThreadConfig::new().prefix("rslint-worker"),
+    );
 
     let (tx, rx) = std::sync::mpsc::channel();
     pool.scoped(|scope| {
@@ -271,7 +282,7 @@ fn collect_globs(globs: Vec<String>) -> Vec<PathBuf> {
 }
 
 fn for_each_file(globs: Vec<String>, action: impl Fn(&FileWalker, &File)) {
-    let walker = FileWalker::from_glob(collect_globs(globs));
+    let walker = FileWalker::from_glob_parallel(collect_globs(globs), 1);
     walker.files.values().for_each(|file| action(&walker, file))
 }
 

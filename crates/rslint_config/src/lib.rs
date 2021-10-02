@@ -9,7 +9,6 @@ use rslint_core::{get_group_rules_by_name, CstRule, CstRuleStore, Diagnostic, Ru
 use rslint_errors::file::{Files, SimpleFile};
 use serde::{Deserialize, Serialize};
 use std::{
-    cell::RefCell,
     env,
     fs::read_to_string,
     path::{Path, PathBuf},
@@ -167,7 +166,6 @@ impl Default for ErrorsConfigRepr {
 #[derive(Debug, Default)]
 pub struct Config {
     repr: ConfigRepr,
-    warnings: RefCell<Vec<Diagnostic>>,
 }
 
 enum ConfigStyle {
@@ -179,27 +177,19 @@ impl Config {
     /// Creates a new config by first searching for a config in the current
     /// dir and all of it ancestors, and if `no_global_config` is `false`,
     /// look in the systems config directory.
-    ///
-    /// # Returns
-    ///
-    /// The config or an `Err` if the toml inside the config is invalid.
-    /// The `Diagnostic` can be emitted by using the `SimpleFile` as a file database.
-    pub fn new(no_global_config: bool, emit_diagnostic: fn(SimpleFile, Diagnostic)) -> Self {
+    pub fn new(no_global_config: bool) -> Result<Self, (SimpleFile, Diagnostic)> {
         let path = Self::find_config(no_global_config);
         let (source, (path, style)) = match path
             .as_ref()
             .and_then(|(path, _)| read_to_string(path).ok())
         {
             Some(source) => (source, path.unwrap()),
-            None => return Default::default(),
+            None => return Ok(Self::default()),
         };
 
         match style {
             ConfigStyle::Json => match serde_json::from_str::<ConfigRepr>(&source) {
-                Ok(repr) => Self {
-                    repr,
-                    warnings: Default::default(),
-                },
+                Ok(repr) => Ok(Self { repr }),
                 Err(err) => {
                     let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
                     let (line, col) = (err.line() - 1, err.column() - 1);
@@ -211,15 +201,11 @@ impl Config {
 
                     let diag =
                         Diagnostic::error(1, "config", err.to_string()).primary(idx..idx, "");
-                    emit_diagnostic(config_file, diag);
-                    Default::default()
+                    Err((config_file, diag))
                 }
             },
             ConfigStyle::Toml => match toml::from_str::<ConfigRepr>(&source) {
-                Ok(repr) => Self {
-                    repr,
-                    warnings: Default::default(),
-                },
+                Ok(repr) => Ok(Self { repr }),
 
                 Err(err) => {
                     let config_file = SimpleFile::new(path.to_string_lossy().into(), source);
@@ -234,8 +220,7 @@ impl Config {
                     } else {
                         Diagnostic::error(1, "config", err.to_string())
                     };
-                    emit_diagnostic(config_file, d);
-                    Default::default()
+                    Err((config_file, d))
                 }
             },
         }
@@ -273,11 +258,6 @@ impl Config {
         None
     }
 
-    /// Take all warnings out of this `Config`.
-    pub fn warnings(&mut self) -> Vec<Diagnostic> {
-        std::mem::take(&mut *self.warnings.borrow_mut())
-    }
-
     /// Returns the formatter that should be used.
     pub fn formatter(&self) -> String {
         self.repr.errors.formatter.clone()
@@ -301,38 +281,43 @@ impl Config {
 
     /// Collects all rules and creates a `CstRuleStore`.
     ///
-    /// This method may add warnings to the warning list of this `Config`.
-    pub fn rules_store(&self) -> CstRuleStore {
+    /// # Returns
+    ///
+    /// The rule store, and any warnings that may have
+    /// occurred while collecting the groups.
+    pub fn rules_store(&self) -> (CstRuleStore, Vec<Diagnostic>) {
         let rule_cfg = match &self.repr.rules {
             Some(rules) => rules,
-            None => return CstRuleStore::new().recommended(),
+            None => return (CstRuleStore::new().recommended(), Vec::new()),
         };
 
+        let mut warnings = vec![];
         let rules = unique_rules(rule_cfg.errors.clone(), rule_cfg.warnings.clone());
-        let mut rules = self.intersect_allowed(rules).collect::<Vec<_>>();
+        let mut rules = self
+            .intersect_allowed(rules, &mut warnings)
+            .collect::<Vec<_>>();
 
         for group in &rule_cfg.groups {
             if let Some(group_rules) = get_group_rules_by_name(group) {
-                let list = self.intersect_allowed(group_rules.into_iter());
+                let list = self.intersect_allowed(group_rules.into_iter(), &mut warnings);
                 let list = list.collect::<Vec<_>>();
                 rules = unique_rules(rules, list).collect();
             } else {
                 let d = Diagnostic::warning(1, "config", format!("unknown rule group '{}'", group));
-                self.warnings.borrow_mut().push(d);
+                warnings.push(d);
             }
         }
 
         let mut store = CstRuleStore::new();
         store.load_rules(rules);
-        store
+        (store, warnings)
     }
 
     /// Remove any rules which are explicitly allowed by the `allowed` field.
-    ///
-    /// This method may add warnings to the warning list of this `Config`.
     fn intersect_allowed<'s>(
         &'s self,
         rules: impl Iterator<Item = Box<dyn CstRule>> + 's,
+        warnings: &'s mut Vec<Diagnostic>,
     ) -> impl Iterator<Item = Box<dyn CstRule>> + 's {
         rules.filter(move |rule| {
             let rule_cfg = match self.repr.rules.as_ref() {
@@ -354,7 +339,7 @@ impl Config {
                         rule.name()
                     ),
                 );
-                self.warnings.borrow_mut().push(d)
+                warnings.push(d)
             }
 
             !res

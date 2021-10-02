@@ -1,6 +1,6 @@
 use rslint_cli::ExplanationRunner;
+use std::path::PathBuf;
 use structopt::{clap::arg_enum, StructOpt};
-use yastl::Pool;
 
 const DEV_FLAGS_HELP: &str = "
 Developer flags that are used by RSLint developers to debug RSLint.
@@ -34,6 +34,12 @@ pub(crate) struct Options {
     /// Disables the global config that is located in your global config directory.
     #[structopt(long)]
     no_global_config: bool,
+    /// Don't respect the '.rslintignore' file.
+    #[structopt(long)]
+    no_ignore: bool,
+    /// Overwrite the name of the rslint ignore file (default: .rslintignore)
+    #[structopt(long)]
+    ignore_file: Option<PathBuf>,
     /// Maximum number of threads that will be spawned by RSLint. (default: number of cpu cores)
     #[structopt(long)]
     max_threads: Option<usize>,
@@ -71,14 +77,10 @@ fn main() {
 
     let opt = Options::from_args();
 
-    let num_threads = opt.max_threads.unwrap_or_else(num_cpus::get);
-    let config = yastl::ThreadConfig::new().prefix("rslint-worker");
-    let pool = Pool::with_config(num_threads, config);
-
-    execute(opt, pool);
+    execute(opt);
 }
 
-fn execute(opt: Options, pool: Pool) {
+fn execute(opt: Options) {
     match (opt.dev_flag, opt.cmd) {
         (Some(DevFlag::Help), _) => println!("{}", DEV_FLAGS_HELP),
         (Some(DevFlag::Tokenize), _) => rslint_cli::tokenize(opt.files),
@@ -94,7 +96,9 @@ fn execute(opt: Options, pool: Pool) {
             opt.dirty,
             opt.formatter,
             opt.no_global_config,
-            pool,
+            opt.max_threads.unwrap_or_else(num_cpus::get),
+            opt.no_ignore,
+            opt.ignore_file,
         ),
     }
 }
