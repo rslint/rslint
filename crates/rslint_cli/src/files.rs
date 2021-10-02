@@ -59,7 +59,7 @@ impl FileWalker {
     /// skips any unreadable files/dirs
     pub fn from_glob_parallel(paths: Vec<PathBuf>, num_threads: usize) -> Self {
         let mut base = Self::default();
-        base.load_files_parallel(paths.into_iter(), num_threads, false, None);
+        base.load_files_parallel(paths.into_iter(), num_threads, false, None, false);
         base
     }
 
@@ -69,6 +69,7 @@ impl FileWalker {
         num_threads: usize,
         no_ignore: bool,
         ignore_file: Option<PathBuf>,
+        use_gitignore: bool,
     ) {
         let build_walker = |path: &PathBuf| {
             let mut builder = WalkBuilder::new(path);
@@ -87,7 +88,12 @@ impl FileWalker {
                     }
                 }
 
-                builder.parents(true).hidden(true);
+                builder
+                    .parents(true)
+                    .hidden(true)
+                    .git_global(use_gitignore)
+                    .git_ignore(use_gitignore)
+                    .git_exclude(use_gitignore);
             }
 
             builder.threads(num_threads).build_parallel()

@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Default support for `.rslintignore` file
 - Add `--no-ignore` and `--ignore-file` options
+- Add `--use-gitignore` flag for adding gitignore support
 
 ## [0.3.0] - 2021-09-16
 

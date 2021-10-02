@@ -35,6 +35,7 @@ pub fn run(
     num_threads: usize,
     no_ignore: bool,
     ignore_file: Option<PathBuf>,
+    use_gitignore: bool,
 ) {
     let exit_code = run_inner(
         globs,
@@ -46,6 +47,7 @@ pub fn run(
         num_threads,
         no_ignore,
         ignore_file,
+        use_gitignore,
     );
     #[cfg(not(debug_assertions))]
     process::exit(exit_code);
@@ -62,6 +64,7 @@ fn run_inner(
     num_threads: usize,
     no_ignore: bool,
     ignore_file: Option<PathBuf>,
+    use_gitignore: bool,
 ) -> i32 {
     let mut walker = FileWalker::empty();
     walker.load_files_parallel(
@@ -69,6 +72,7 @@ fn run_inner(
         num_threads,
         no_ignore,
         ignore_file,
+        use_gitignore,
     );
 
     let config = match config::Config::new(no_global_config) {

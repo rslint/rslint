@@ -37,6 +37,9 @@ pub(crate) struct Options {
     /// Don't respect the '.rslintignore' file.
     #[structopt(long)]
     no_ignore: bool,
+    /// Use git related ignore files in addition to the '.rslintignore'.
+    #[structopt(long)]
+    use_gitignore: bool,
     /// Overwrite the name of the rslint ignore file (default: .rslintignore)
     #[structopt(long)]
     ignore_file: Option<PathBuf>,
@@ -99,6 +102,7 @@ fn execute(opt: Options) {
             opt.max_threads.unwrap_or_else(num_cpus::get),
             opt.no_ignore,
             opt.ignore_file,
+            opt.use_gitignore,
         ),
     }
 }
