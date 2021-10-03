@@ -46,10 +46,12 @@ impl Formatter for ShortFormatter {
             ids.insert(d.file_id);
         });
         for id in ids {
+            dbg!(id);
             let cur_diags = diagnostics
                 .iter()
-                .filter(|x| x.file_id == id && x.primary.is_some());
-            if cur_diags.clone().count() == 0 {
+                .filter(|x| x.file_id == id && x.primary.is_some())
+                .collect::<Vec<_>>();
+            if cur_diags.is_empty() {
                 continue;
             }
 
@@ -66,13 +68,13 @@ impl Formatter for ShortFormatter {
                 line_starts.push((line_index, column));
             }
             let max_msg_len = cur_diags
-                .clone()
+                .iter()
                 .max_by_key(|x| x.title.trim().len())
                 .map(|x| x.title.trim().len())
                 .unwrap();
 
             let max_severity_len = cur_diags
-                .clone()
+                .iter()
                 .map(|x| format!("{:?}", x.severity).len())
                 .max()
                 .unwrap();
@@ -82,7 +84,7 @@ impl Formatter for ShortFormatter {
                 .map(|x| x.0.to_string().len() + x.1.to_string().len() + 1)
                 .max()
                 .unwrap();
-            for (diag, (line, column)) in cur_diags.zip(line_starts) {
+            for (diag, (line, column)) in cur_diags.into_iter().zip(line_starts) {
                 write!(writer, "  ")?;
                 write!(
                     writer,
