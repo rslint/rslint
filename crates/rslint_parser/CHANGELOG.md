@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix object computed getter/setter parsing ([#115](https://github.com/rslint/rslint/pull/115))
+
 ## [0.3.0] - 2021-09-16
 
 ### Removed
