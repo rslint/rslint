@@ -1356,7 +1356,7 @@ dependencies = [
 
 [[package]]
 name = "rslint_cli"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "colored",
  "glob",
@@ -1378,7 +1378,7 @@ dependencies = [
 
 [[package]]
 name = "rslint_config"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "dirs-next",
  "heck",
@@ -1471,7 +1471,7 @@ dependencies = [
 
 [[package]]
 name = "rslint_parser"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "expect-test",
  "lexical",
