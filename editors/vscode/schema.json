@@ -183,7 +183,7 @@
             {
               "title": "Disallow generator functions that do not have `yield`.",
               "description": "",
-              "pattern": "require_yeild"
+              "pattern": "require_yield"
             },
             {
               "title": "Enforce or disallow spaces inside of blocks after the opening and closing brackets.",
@@ -406,7 +406,7 @@
               "title": "NoUnsafeNegation",
               "type": "object"
             },
-            "require_yeild": {
+            "require_yield": {
               "title": "RequireYield",
               "type": "object"
             },
@@ -660,7 +660,7 @@
               "title": "NoUnsafeNegation",
               "type": "object"
             },
-            "require_yeild": {
+            "require_yield": {
               "title": "RequireYield",
               "type": "object"
             },

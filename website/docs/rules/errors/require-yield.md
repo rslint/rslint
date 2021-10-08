@@ -1,7 +1,7 @@
 <!--
  generated docs file, do not edit by hand, see xtask/docgen 
 -->
-# require_yeild
+# require_yield
 
 Disallow generator functions that do not have `yield`.
 
@@ -31,32 +31,13 @@ This rule does not warn on empty generator functions.
 function* foo() { }
 ```
 
-::: details More incorrect examples
-
-```js
-function* foo(){
-  return 10;
-}
-```
-:::
 ::: details More correct examples
-
-```js
-function* foo(){
-    yield 5;
-    return 10;
-}
-```
 
 ```js
 function foo() {
   return 10;
 }
 ```
-
-```js
-function* foo() { }
-```
 :::
 
-[Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/errors/require_yeild.rs)
+[Source](https://github.com/rslint/rslint/tree/master/crates/rslint_core/src/groups/errors/require_yield.rs)

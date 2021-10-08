@@ -35,7 +35,7 @@ declare_lint! {
   #[derive(Default)]
   RequireYield,
   errors,
-  "require_yeild"
+  "require_yield"
 }
 
 #[typetag::serde]
@@ -79,6 +79,7 @@ impl CstRule for RequireYield {
 rule_tests! {
   RequireYield::default(),
   err: {
+    /// ignore
     "
     function* foo(){
       return 10;
@@ -87,6 +88,7 @@ rule_tests! {
   },
   ok: {
    // Generator fn with yeild statement
+   /// ignore
    "
    function* foo(){
        yield 5;
@@ -100,6 +102,7 @@ rule_tests! {
    }
    ",
    // Empty generator fn is also valid
+   /// ignore
    "
    function* foo() { }
    "
