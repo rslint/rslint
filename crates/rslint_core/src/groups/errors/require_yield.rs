@@ -1,6 +1,5 @@
 use crate::rule_prelude::*;
-use rslint_parser::ast::FnDecl;
-use ast::{Expr, Stmt};
+use ast::{Expr, Stmt, FnDecl};
 
 declare_lint! {
     /**
