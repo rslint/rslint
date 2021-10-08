@@ -3,16 +3,40 @@ use rslint_parser::ast::FnDecl;
 use ast::{Expr, Stmt};
 
 declare_lint! {
+    /**
+    Disallow generator functions that do not have `yield`.
+
+    This rule generates warnings for generator functions that do not have the yield keyword.
+
+    ## Invalid Code Examples
+
+    ```ignore
+    function* foo(){
+        return 10;
+    }
+    ```
+
+
+    ## Valid Code Examples
+
+    ```ignore
+    function* foo(){
+        yield 5;
+        return 10;
+    }
+    ```
+
+    This rule does not warn on empty generator functions.
+
+    ```ignore
+    function* foo() { }
+    ```
+  */
   #[derive(Default)]
   RequireYield,
   errors,
   "require_yeild"
 }
-
-//&& node.parent().map_or(true, |parent| !ALLOWED.contains(&parent.kind())
-
-
-
 
 #[typetag::serde]
 impl CstRule for RequireYield {
