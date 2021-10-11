@@ -43,7 +43,7 @@ impl CstRule for RequireYield {
       if node.kind() == SyntaxKind::FN_DECL  {
         // if the function doesn't have a star token, it is not a generator
         let fn_decl_node = node.to::<FnDecl>();
-        if !fn_decl_node.star_token().is_none() {
+        if fn_decl_node.star_token().is_some() {
 
            // if the fn body is empty, return early
            if fn_decl_node.body()?.stmts().count() == 0 {
