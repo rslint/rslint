@@ -23,11 +23,8 @@ declare_lint! {
         yield 5;
         return 10;
     }
-    ```
 
-    This rule does not warn on empty generator functions.
-
-    ```ignore
+    // This rule does not warn on empty generator functions.
     function* foo() { }
     ```
   */
