@@ -181,6 +181,11 @@
               "pattern": "no-this-before-super"
             },
             {
+              "title": "Disallow generator functions that do not have `yield`.",
+              "description": "",
+              "pattern": "require_yield"
+            },
+            {
               "title": "Enforce or disallow spaces inside of blocks after the opening and closing brackets.",
               "description": "",
               "pattern": "block-spacing"
@@ -399,6 +404,10 @@
             },
             "no-unsafe-negation": {
               "title": "NoUnsafeNegation",
+              "type": "object"
+            },
+            "require_yield": {
+              "title": "RequireYield",
               "type": "object"
             },
             "simplify-regex": {
@@ -649,6 +658,10 @@
             },
             "no-unsafe-negation": {
               "title": "NoUnsafeNegation",
+              "type": "object"
+            },
+            "require_yield": {
+              "title": "RequireYield",
               "type": "object"
             },
             "simplify-regex": {

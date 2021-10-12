@@ -35,6 +35,7 @@ unexpected behavior.
 | [no-unexpected-multiline](./no-unexpected-multiline.md) | Disallow confusing newlines in expressions. |
 | [no-unsafe-finally](./no-unsafe-finally.md) | Forbid the use of unsafe control flow statements in try and catch blocks. |
 | [no-unsafe-negation](./no-unsafe-negation.md) | Deny the use of `!` on the left hand side of an `instanceof` or `in` expression where it is ambiguous. |
+| [require-yield](./require-yield.md) | Disallow generator functions that do not have `yield`. |
 | [use-isnan](./use-isnan.md) | Disallow incorrect comparisons against `NaN`. |
 | [valid-typeof](./valid-typeof.md) | Enforce the use of valid string literals in a `typeof` comparison. |
 

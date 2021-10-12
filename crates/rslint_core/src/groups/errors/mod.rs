@@ -35,4 +35,5 @@ group! {
     no_confusing_arrow::NoConfusingArrow,
     constructor_super::ConstructorSuper,
     no_this_before_super::NoThisBeforeSuper,
+    require_yield::RequireYield
 }
