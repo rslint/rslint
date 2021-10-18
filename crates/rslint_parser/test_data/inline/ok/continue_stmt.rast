@@ -27,8 +27,7 @@ MODULE@0..64
       CONTINUE_STMT@37..50
         CONTINUE_KW@37..45 "continue"
         WHITESPACE@45..46 " "
-        NAME_REF@46..49
-          IDENT@46..49 "foo"
+        IDENT@46..49 "foo"
         SEMICOLON@49..50 ";"
       WHITESPACE@50..53 "\n  "
       CONTINUE_STMT@53..61

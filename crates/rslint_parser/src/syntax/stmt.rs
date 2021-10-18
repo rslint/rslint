@@ -333,6 +333,7 @@ pub fn break_stmt(p: &mut Parser) -> CompletedMarker {
         let end = p.cur_tok().range.end;
         let label = primary_expr(p).unwrap();
         check_label_use(p, &label);
+        label.undo_completion(p).abandon(p);
         end
     } else {
         start.end
@@ -372,6 +373,7 @@ pub fn continue_stmt(p: &mut Parser) -> CompletedMarker {
         let label = primary_expr(&mut *guard).unwrap();
         drop(guard);
         check_label_use(p, &label);
+        label.undo_completion(p).abandon(p);
         end
     } else {
         start.end
