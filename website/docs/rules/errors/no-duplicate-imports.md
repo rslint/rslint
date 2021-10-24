@@ -27,7 +27,7 @@ export { foo };
 ## Config
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| `includeExports` | bool |  Whether to check if re-exported  |
+| `includeExports` | bool |  Whether to check if re-exported |
 
 ::: details More incorrect examples
 

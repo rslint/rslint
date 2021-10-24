@@ -32,21 +32,23 @@ declare_lint! {
     errors,
     tags(Recommended),
     "no-duplicate-imports",
-    /// Whether to check if re-exported 
+    /// Whether to check if re-exported
     pub include_exports: bool
 }
 
 #[typetag::serde]
 impl CstRule for NoDuplicateImports {
     fn check_root(&self, node: &SyntaxNode, ctx: &mut RuleCtx) -> Option<()> {
-        let mut seen: HashMap<String, SyntaxNode> = HashMap::default();
+        // the key of the hashmap is the name of the import source, and
+        // a bool that is `true`, if the import/export has a `type` token.
+        let mut seen: HashMap<(String, bool), SyntaxNode> = HashMap::default();
 
         for child in node.children() {
             if let Some(import) = child.try_to::<ImportDecl>() {
-                self.process_node(&import.source(), false, &mut seen, ctx);
+                self.process_node(&import.source(), import.type_token(), false, &mut seen, ctx);
             } else if self.include_exports {
                 if let Some(export) = child.try_to::<ExportDecl>() {
-                    self.process_node(&export.source(), true, &mut seen, ctx);
+                    self.process_node(&export.source(), export.type_token(), true, &mut seen, ctx);
                 }
             }
         }
@@ -56,31 +58,59 @@ impl CstRule for NoDuplicateImports {
 }
 
 impl NoDuplicateImports {
-    fn process_node(&self, source: &Option<Literal>, is_export: bool, seen: &mut HashMap<String, SyntaxNode>, ctx: &mut RuleCtx) {
-        if let Some(source) = source {
-            if let Some(text) = source.inner_string_text() {
-                let text_as_str = text.to_string();
-                if let Some(old) = seen.get(&text_as_str) {
-                    let err = ctx
-                        .err(
-                            self.name(),
-                            if is_export {
-                                format!("`{}` import is duplicated as export", text_as_str)
-                            } else {
-                                format!("`{}` import is duplicated", text_as_str)
-                            }
-                        )
-                        .secondary(old, format!("`{}` is first used here", text_as_str))
-                        .primary(
-                            source.syntax(),
-                            format!("`{}` is then used again here", text_as_str),
-                        );
-                    ctx.add_err(err);
-                } else {
-                    seen.insert(text.to_string(), source.syntax().clone());
-                }
-            }
+    fn process_node(
+        &self,
+        source: &Option<Literal>,
+        type_token: Option<SyntaxToken>,
+        is_export: bool,
+        seen: &mut HashMap<(String, bool), SyntaxNode>,
+        ctx: &mut RuleCtx,
+    ) -> Option<()> {
+        let source = source.as_ref()?;
+        let text = source.inner_string_text()?;
+        let text_as_str = text.to_string();
+
+        if let Some(old) = seen.get(&(text_as_str, type_token.is_some())) {
+            let err = ctx
+                .err(
+                    self.name(),
+                    if is_export {
+                        format!("`{}` import is duplicated as export", text)
+                    } else {
+                        format!("`{}` import is duplicated", text)
+                    },
+                )
+                .secondary(old, format!("`{}` is first used here", text))
+                .primary(
+                    source.syntax(),
+                    format!("`{}` is then used again here", text),
+                );
+            ctx.add_err(err);
+        } else {
+            seen.insert(
+                (text.to_string(), type_token.is_some()),
+                source.syntax().clone(),
+            );
         }
+
+        None
+    }
+}
+
+ts_rule_tests! {
+    NoDuplicateImports::default(),
+    err: {
+        r#"
+        import type { TypeA } from 'bla';
+        import { a } from 'bla';
+        import type { TypeA } from 'bla';
+        "#,
+    },
+    ok: {
+        r#"
+        import type { TypeA } from 'bla';
+        import { a } from 'bla';
+        "#,
     }
 }
 
