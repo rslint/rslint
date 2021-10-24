@@ -3,7 +3,8 @@
 #[doc(no_inline)]
 pub use crate::{
     autofix::{Fixer, Unwrappable, Wrapping},
-    declare_lint, rule_tests, util, CstRule, Diagnostic, Outcome, RuleCtx, RuleResult, Span,
+    declare_lint, rule_tests, ts_rule_tests, util, CstRule, Diagnostic, Outcome, RuleCtx,
+    RuleResult, Span,
 };
 
 #[doc(no_inline)]

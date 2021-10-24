@@ -231,6 +231,15 @@ pub fn parse_module(text: &str, file_id: usize) -> Parse<Module> {
     Parse::new(green, parse_errors)
 }
 
+/// Same as [`parse_text`] but configures the parser to parse Typescript code
+pub fn parse_typescript(text: &str, file_id: usize) -> Parse<Module> {
+    let (events, errors, tokens) = parse_common(text, file_id, Syntax::default().typescript());
+    let mut tree_sink = LosslessTreeSink::new(text, &tokens);
+    crate::process(&mut tree_sink, events, errors);
+    let (green, parse_errors) = tree_sink.finish();
+    Parse::new(green, parse_errors)
+}
+
 /// Losslessly Parse text into an expression [`Parse`](Parse) which can then be turned into an untyped root [`SyntaxNode`](SyntaxNode).
 /// Or turned into a typed [`Expr`](Expr) with [`tree`](Parse::tree).
 pub fn parse_expr(text: &str, file_id: usize) -> Parse<Expr> {
