@@ -98,6 +98,11 @@ impl From<ForInStmt> for Stmt {
         Stmt::ForInStmt(node)
     }
 }
+impl From<ForOfStmt> for Stmt {
+    fn from(node: ForOfStmt) -> Stmt {
+        Stmt::ForOfStmt(node)
+    }
+}
 impl From<ContinueStmt> for Stmt {
     fn from(node: ContinueStmt) -> Stmt {
         Stmt::ContinueStmt(node)
@@ -154,6 +159,7 @@ pub enum Stmt {
     WhileStmt(WhileStmt),
     ForStmt(ForStmt),
     ForInStmt(ForInStmt),
+    ForOfStmt(ForOfStmt),
     ContinueStmt(ContinueStmt),
     BreakStmt(BreakStmt),
     ReturnStmt(ReturnStmt),
@@ -170,8 +176,10 @@ impl AstNode for Stmt {
     fn can_cast(kind: SyntaxKind) -> bool {
         match kind {
             BLOCK_STMT | EMPTY_STMT | EXPR_STMT | IF_STMT | DO_WHILE_STMT | WHILE_STMT
-            | FOR_STMT | FOR_IN_STMT | CONTINUE_STMT | BREAK_STMT | RETURN_STMT | WITH_STMT
-            | LABELLED_STMT | SWITCH_STMT | THROW_STMT | TRY_STMT | DEBUGGER_STMT => true,
+            | FOR_STMT | FOR_IN_STMT | FOR_OF_STMT | CONTINUE_STMT | BREAK_STMT | RETURN_STMT
+            | WITH_STMT | LABELLED_STMT | SWITCH_STMT | THROW_STMT | TRY_STMT | DEBUGGER_STMT => {
+                true
+            }
             t if Decl::can_cast(t) => true,
             _ => false,
         }
@@ -186,6 +194,7 @@ impl AstNode for Stmt {
             WHILE_STMT => Stmt::WhileStmt(WhileStmt { syntax }),
             FOR_STMT => Stmt::ForStmt(ForStmt { syntax }),
             FOR_IN_STMT => Stmt::ForInStmt(ForInStmt { syntax }),
+            FOR_OF_STMT => Stmt::ForOfStmt(ForOfStmt { syntax }),
             CONTINUE_STMT => Stmt::ContinueStmt(ContinueStmt { syntax }),
             BREAK_STMT => Stmt::BreakStmt(BreakStmt { syntax }),
             RETURN_STMT => Stmt::ReturnStmt(ReturnStmt { syntax }),
@@ -209,6 +218,7 @@ impl AstNode for Stmt {
             Stmt::WhileStmt(it) => &it.syntax,
             Stmt::ForStmt(it) => &it.syntax,
             Stmt::ForInStmt(it) => &it.syntax,
+            Stmt::ForOfStmt(it) => &it.syntax,
             Stmt::ContinueStmt(it) => &it.syntax,
             Stmt::BreakStmt(it) => &it.syntax,
             Stmt::ReturnStmt(it) => &it.syntax,
