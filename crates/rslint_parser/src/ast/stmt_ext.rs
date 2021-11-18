@@ -176,8 +176,10 @@ impl AstNode for Stmt {
     fn can_cast(kind: SyntaxKind) -> bool {
         match kind {
             BLOCK_STMT | EMPTY_STMT | EXPR_STMT | IF_STMT | DO_WHILE_STMT | WHILE_STMT
-            | FOR_STMT | FOR_IN_STMT | FOR_OF_STMT | CONTINUE_STMT | BREAK_STMT | RETURN_STMT | WITH_STMT
-            | LABELLED_STMT | SWITCH_STMT | THROW_STMT | TRY_STMT | DEBUGGER_STMT => true,
+            | FOR_STMT | FOR_IN_STMT | FOR_OF_STMT | CONTINUE_STMT | BREAK_STMT | RETURN_STMT
+            | WITH_STMT | LABELLED_STMT | SWITCH_STMT | THROW_STMT | TRY_STMT | DEBUGGER_STMT => {
+                true
+            }
             t if Decl::can_cast(t) => true,
             _ => false,
         }
