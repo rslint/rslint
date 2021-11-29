@@ -1,7 +1,6 @@
 **/target
 flamegraph.svg
 .rslintcache
-.vscode/launch.json
 
 .vscode/settings.json
 /book
