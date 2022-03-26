@@ -66,6 +66,10 @@ impl File {
         }
     }
 
+    pub fn overwrite_kind(&mut self, kind: FileKind) {
+        self.kind = kind;
+    }
+
     pub fn update_src(&mut self, new: String) {
         self.line_starts = Self::line_starts(&new).collect();
         self.source = new;
