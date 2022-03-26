@@ -1,24 +1,36 @@
 name: release
 on:
   push:
+    # FIXME: comment branch push after testing
+    branches:
+    - release-workflow
     tags:
     - "v[0-9]+.[0-9]+.[0-9]+"
 jobs:
-  create_release:
-    name: Create release
+  create-release:
+    name: create-release
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      upload_url: ${{ steps.release.outputs.upload_url }}
+      version: ${{ env.VERSION }}
     steps:
-      - name: Create release
-        id: create_release
+      - name: Get the release version from the tag
+        shell: bash
+        run: |
+          # Apparently, this is the right way to get a tag name. Really?
+          #
+          # See: https://github.community/t5/GitHub-Actions/How-to-get-just-the-tag-name/m-p/32167/highlight/true#M1027
+          echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "version is: ${{ env.VERSION }}"
+      - name: Create GitHub release
+        id: release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
+          tag_name: ${{ env.VERSION }}
+          release_name: Release ${{ env.VERSION }}
+          draft: true # FIXME: set to false when testing is done
           prerelease: false
 
   build_and_release:
@@ -71,6 +83,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_name: rslint-${{ github.ref }}-${{ matrix.target }}
+          asset_name: rslint-${{ needs.create_release.outputs.version }}-${{ matrix.target }}
           asset_path: ./target/release/rslint
           asset_content_type: application/octet-stream
