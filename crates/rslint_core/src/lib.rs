@@ -83,8 +83,7 @@ impl LintResult<'_> {
             .chain(
                 self.rule_results
                     .values()
-                    .map(|x| x.diagnostics.iter())
-                    .flatten(),
+                    .flat_map(|x| x.diagnostics.iter()),
             )
             .chain(self.directive_diagnostics.iter().map(|x| &x.diagnostic))
     }

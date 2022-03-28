@@ -153,7 +153,7 @@ pub trait SyntaxNodeExt {
     fn readable_stmt_name(&self) -> String {
         let mut string = format!("{:?}", self.to_node().kind())
             .to_ascii_lowercase()
-            .replace("_", " ");
+            .replace('_', " ");
         // Safety: the kind cannot produce an empty string and all kinds are ascii uppercase letters.
         unsafe {
             string.as_bytes_mut()[0] = string.as_bytes()[0] - 32;

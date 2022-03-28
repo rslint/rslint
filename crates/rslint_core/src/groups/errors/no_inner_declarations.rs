@@ -105,7 +105,7 @@ impl CstRule for NoInnerDeclarations {
                 function
                     .child_with_kind(NAME)
                     .map_or("enclosing function's body".to_string(), |name| {
-                        format!("{}'s body", name.text().to_string())
+                        format!("{}'s body", name.text())
                     })
             } else {
                 "program's root".to_string()

@@ -377,11 +377,7 @@ impl AssignExpr {
 impl ArrayExpr {
     pub fn has_trailing_comma(&self) -> bool {
         if let Some(last) = self.elements().last().map(|it| it.syntax().to_owned()) {
-            if let Some(tok) = last
-                .next_sibling_or_token()
-                .map(|it| it.into_token())
-                .flatten()
-            {
+            if let Some(tok) = last.next_sibling_or_token().and_then(|it| it.into_token()) {
                 return tok.kind() == T![,];
             }
         }
@@ -461,11 +457,7 @@ impl ExprOrSpread {
 impl ObjectExpr {
     pub fn has_trailing_comma(&self) -> bool {
         if let Some(last) = self.props().last().map(|it| it.syntax().to_owned()) {
-            if let Some(tok) = last
-                .next_sibling_or_token()
-                .map(|it| it.into_token())
-                .flatten()
-            {
+            if let Some(tok) = last.next_sibling_or_token().and_then(|it| it.into_token()) {
                 return tok.kind() == T![,];
             }
         }

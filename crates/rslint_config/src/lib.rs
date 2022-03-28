@@ -45,22 +45,12 @@ impl<'de> Deserialize<'de> for SourceType {
 }
 
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Default, Debug, Deserialize, Serialize)]
 pub struct ConfigRepr {
     rules: Option<RulesConfigRepr>,
     #[serde(default)]
     errors: ErrorsConfigRepr,
     parser: Option<ParserConfig>,
-}
-
-impl Default for ConfigRepr {
-    fn default() -> Self {
-        Self {
-            rules: None,
-            errors: Default::default(),
-            parser: None,
-        }
-    }
 }
 
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]

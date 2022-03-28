@@ -31,7 +31,7 @@ impl Files for FileWalker {
             .path
             .as_ref()
             .and_then(|path| path.to_str())
-            .unwrap_or_else(|| entry.name.as_str());
+            .unwrap_or(entry.name.as_str());
         Some(name)
     }
 
