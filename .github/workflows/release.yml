@@ -75,7 +75,17 @@ jobs:
           target: ${{ matrix.target }}
 
       - name: Build release binary
-        run: cargo build --verbose --release
+        shell: bash
+        run: |
+          cargo build --verbose --release
+
+          if [ "${{ matrix.os }}" = "windows-2019" ]; then
+            echo "ASSET=target/release/rslint.exe" >> $GITHUB_ENV
+            echo "ASSET_NAME=rslint-${{ needs.create_release.outputs.version }}-${{ matrix.target }}.exe" >> $GITHUB_ENV
+          else
+            echo "ASSET=target/release/rslint" >> $GITHUB_ENV
+            echo "ASSET_NAME=rslint-${{ needs.create_release.outputs.version }}-${{ matrix.target }}" >> $GITHUB_ENV
+          fi
 
       - name: Upload release assets
         uses: actions/upload-release-asset@v1
@@ -84,5 +94,6 @@ jobs:
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
           asset_name: rslint-${{ needs.create_release.outputs.version }}-${{ matrix.target }}
-          asset_path: ./target/release/rslint
+          asset_name: ${{ env.ASSET_NAME }}
+          asset_path: ${{ env.ASSET }}
           asset_content_type: application/octet-stream
