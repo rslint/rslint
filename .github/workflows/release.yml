@@ -93,7 +93,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_name: rslint-${{ needs.create_release.outputs.version }}-${{ matrix.target }}
           asset_name: ${{ env.ASSET_NAME }}
           asset_path: ${{ env.ASSET }}
           asset_content_type: application/octet-stream
