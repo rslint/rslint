@@ -4,6 +4,7 @@ use crate::lint_warn;
 use ignore::{WalkBuilder, WalkState};
 use rslint_core::File;
 use rslint_errors::file::{FileId, Files};
+use rslint_parser::FileKind;
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::ops::Range;
@@ -30,7 +31,7 @@ impl Files for FileWalker {
             .path
             .as_ref()
             .and_then(|path| path.to_str())
-            .unwrap_or_else(|| entry.name.as_str());
+            .unwrap_or(entry.name.as_str());
         Some(name)
     }
 
@@ -59,7 +60,7 @@ impl FileWalker {
     /// skips any unreadable files/dirs
     pub fn from_glob_parallel(paths: Vec<PathBuf>, num_threads: usize) -> Self {
         let mut base = Self::default();
-        base.load_files_parallel(paths.into_iter(), num_threads, false, None, false);
+        base.load_files_parallel(paths.into_iter(), num_threads, false, None, false, None);
         base
     }
 
@@ -70,6 +71,7 @@ impl FileWalker {
         no_ignore: bool,
         ignore_file: Option<PathBuf>,
         use_gitignore: bool,
+        overwrite_filetype: Option<FileKind>,
     ) {
         let build_walker = |path: &PathBuf| {
             let mut builder = WalkBuilder::new(path);
@@ -129,7 +131,12 @@ impl FileWalker {
                         }
                     };
 
-                    tx.send(File::new_concrete(content, path))
+                    let mut file = File::new_concrete(content, path);
+                    if let Some(kind) = overwrite_filetype {
+                        file.overwrite_kind(kind);
+                    }
+
+                    tx.send(file)
                         .expect("failed to send files to receiver thread");
                     WalkState::Continue
                 })

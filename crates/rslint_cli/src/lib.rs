@@ -19,6 +19,7 @@ use colored::*;
 use rslint_core::{autofix::recursively_apply_fixes, File};
 use rslint_core::{lint_file, util::find_best_match_for_name, LintResult, RuleLevel};
 use rslint_lexer::Lexer;
+use rslint_parser::FileKind;
 #[allow(unused_imports)]
 use std::process;
 use std::{fs::write, path::PathBuf};
@@ -68,15 +69,6 @@ fn run_inner(
     ignore_file: Option<PathBuf>,
     use_gitignore: bool,
 ) -> i32 {
-    let mut walker = FileWalker::empty();
-    walker.load_files_parallel(
-        collect_globs(globs).into_iter(),
-        num_threads,
-        no_ignore,
-        ignore_file,
-        use_gitignore,
-    );
-
     let config = match config::Config::new(no_global_config) {
         Ok(cfg) => cfg,
         Err((file, d)) => {
@@ -84,6 +76,22 @@ fn run_inner(
             config::Config::default()
         }
     };
+
+    let mut walker = FileWalker::empty();
+    walker.load_files_parallel(
+        collect_globs(globs).into_iter(),
+        num_threads,
+        no_ignore,
+        ignore_file,
+        use_gitignore,
+        config.parser().and_then(|cfg| {
+            Some(match cfg.source_type? {
+                config::SourceType::Module => FileKind::Module,
+                config::SourceType::Script => FileKind::Script,
+                config::SourceType::TypeScript => FileKind::TypeScript,
+            })
+        }),
+    );
 
     let mut formatter = formatter.unwrap_or_else(|| config.formatter());
     let (store, warnings) = config.rules_store();

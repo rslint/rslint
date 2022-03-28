@@ -43,18 +43,10 @@ impl CstRule for NoCompareNegZero {
         if node.try_to::<ast::BinExpr>()?.comparison() {
             let bin = node.to::<ast::BinExpr>();
             let op = bin.op_token().unwrap();
-            if let Some(expr) = bin
-                .lhs()
-                .filter(|e| unsafe_comparison(e))
-                .and_then(|_| bin.rhs())
-            {
+            if let Some(expr) = bin.lhs().filter(unsafe_comparison).and_then(|_| bin.rhs()) {
                 issue_err(expr, ctx, op.clone(), node);
             }
-            if let Some(expr) = bin
-                .rhs()
-                .filter(|e| unsafe_comparison(e))
-                .and_then(|_| bin.lhs())
-            {
+            if let Some(expr) = bin.rhs().filter(unsafe_comparison).and_then(|_| bin.lhs()) {
                 issue_err(expr, ctx, op, node)
             }
         }

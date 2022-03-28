@@ -148,7 +148,7 @@ fn check_pat(
 ) {
     match pattern {
         ast::Pattern::SinglePattern(name) => {
-            if let Some(ident) = name.name().map(|x| x.ident_token()).flatten() {
+            if let Some(ident) = name.name().and_then(|x| x.ident_token()) {
                 check_name_pat(p, &ident, map, marker);
             }
         }

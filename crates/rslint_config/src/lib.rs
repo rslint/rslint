@@ -7,7 +7,7 @@ mod de;
 use dirs_next::config_dir;
 use rslint_core::{get_group_rules_by_name, CstRule, CstRuleStore, Diagnostic, RuleLevel};
 use rslint_errors::file::{Files, SimpleFile};
-use serde::{Deserialize, Serialize};
+use serde::{de::Error, Deserialize, Serialize};
 use std::{
     env,
     fs::read_to_string,
@@ -21,20 +21,43 @@ pub const CONFIG_NAMES: [&str; 2] = ["rslintrc.json", "rslintrc.toml"];
 pub type RuleList = Vec<Box<dyn CstRule>>;
 
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SourceType {
+    Module,
+    Script,
+    TypeScript,
+}
+
+impl<'de> Deserialize<'de> for SourceType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        match s.to_lowercase().as_str() {
+            "module" => Ok(SourceType::Module),
+            "script" => Ok(SourceType::Script),
+            "typescript" => Ok(SourceType::TypeScript),
+            x => Err(D::Error::custom(format!("invalid source type: {}", x))),
+        }
+    }
+}
+
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[derive(Default, Debug, Deserialize, Serialize)]
 pub struct ConfigRepr {
     rules: Option<RulesConfigRepr>,
     #[serde(default)]
     errors: ErrorsConfigRepr,
+    parser: Option<ParserConfig>,
 }
 
-impl Default for ConfigRepr {
-    fn default() -> Self {
-        Self {
-            rules: None,
-            errors: Default::default(),
-        }
-    }
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct ParserConfig {
+    pub source_type: Option<SourceType>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Default)]
@@ -256,6 +279,11 @@ impl Config {
         }
 
         None
+    }
+
+    /// Returns a copy of the parser config.
+    pub fn parser(&self) -> Option<ParserConfig> {
+        self.repr.parser.clone()
     }
 
     /// Returns the formatter that should be used.

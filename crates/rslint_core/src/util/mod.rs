@@ -42,6 +42,7 @@ where
 ///
 /// # Panics
 /// Panics if the expression does not have an operator.
+#[allow(clippy::to_string_in_format_args)]
 pub fn get_assignment_expr_value(expr: AssignExpr) -> std::string::String {
     assert!(expr.op().is_some());
 

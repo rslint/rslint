@@ -62,8 +62,7 @@ pub(crate) fn toml_completions(
 
                 return get_schema_objects(query_path.clone(), &root_schema, true)
                     .into_iter()
-                    .map(|s| s.descendants(&root_schema.definitions, 10))
-                    .flatten()
+                    .flat_map(|s| s.descendants(&root_schema.definitions, 10))
                     .filter(|(_, s, _)| !s.is_hidden())
                     .filter(|(p, ..)| {
                         if let Some(same_path) = before.syntax.key_path.as_ref() {
@@ -166,8 +165,7 @@ pub(crate) fn toml_completions(
 
                         return get_schema_objects(query_path.clone(), &root_schema, true)
                             .into_iter()
-                            .map(|s| s.descendants(&root_schema.definitions, 10))
-                            .flatten()
+                            .flat_map(|s| s.descendants(&root_schema.definitions, 10))
                             .filter(|(_, s, _)| !s.is_hidden())
                             .filter(|(p, ..)| {
                                 if let Some(same_path) = before.syntax.key_path.as_ref() {
@@ -237,7 +235,7 @@ pub(crate) fn toml_completions(
 
                         return get_schema_objects(query_path, &root_schema, true)
                             .into_iter()
-                            .map(|schema| {
+                            .flat_map(|schema| {
                                 value_completions(
                                     &root_schema.definitions,
                                     schema,
@@ -247,7 +245,6 @@ pub(crate) fn toml_completions(
                                     true,
                                 )
                             })
-                            .flatten()
                             .unique_by(|comp| comp.insert_text.clone())
                             .collect();
                     }
@@ -319,7 +316,7 @@ pub(crate) fn toml_completions(
                                 }),
                             })
                             .flatten()
-                            .map(|schema| {
+                            .flat_map(|schema| {
                                 value_completions(
                                     &root_schema.definitions,
                                     schema,
@@ -333,7 +330,6 @@ pub(crate) fn toml_completions(
                                     false,
                                 )
                             })
-                            .flatten()
                             .unique_by(|comp| comp.insert_text.clone())
                             .collect();
                     }
@@ -348,7 +344,7 @@ pub(crate) fn toml_completions(
 
                         return get_schema_objects(query_path, &root_schema, true)
                             .into_iter()
-                            .map(|schema| {
+                            .flat_map(|schema| {
                                 value_completions(
                                     &root_schema.definitions,
                                     schema,
@@ -358,7 +354,6 @@ pub(crate) fn toml_completions(
                                     false,
                                 )
                             })
-                            .flatten()
                             .unique_by(|comp| comp.insert_text.clone())
                             .collect();
                     }
@@ -385,8 +380,7 @@ pub(crate) fn toml_completions(
 
                                 return get_schema_objects(query_path.clone(), &root_schema, true)
                                     .into_iter()
-                                    .map(|s| s.descendants(&root_schema.definitions, 10))
-                                    .flatten()
+                                    .flat_map(|s| s.descendants(&root_schema.definitions, 10))
                                     .filter(|(_, s, _)| !s.is_hidden())
                                     .unique_by(|(p, ..)| p.clone())
                                     .map(|(path, schema, required)| {
@@ -429,8 +423,7 @@ pub(crate) fn toml_completions(
 
                 return get_schema_objects(query_path.clone(), &root_schema, true)
                     .into_iter()
-                    .map(|s| s.descendants(&root_schema.definitions, 10))
-                    .flatten()
+                    .flat_map(|s| s.descendants(&root_schema.definitions, 10))
                     .filter(|(_, s, _)| !s.is_hidden())
                     .unique_by(|(p, ..)| p.clone())
                     .map(|(path, schema, required)| {
@@ -615,7 +608,7 @@ fn value_completions(
         return e
             .iter()
             .enumerate()
-            .map(|(i, e)| {
+            .filter_map(|(i, e)| {
                 value_insert(e, range, comma_before, space_before).map(|value_completion| {
                     CompletionItem {
                         additional_text_edits: additional_text_edits.clone(),
@@ -626,7 +619,6 @@ fn value_completions(
                     }
                 })
             })
-            .flatten()
             .collect();
     }
 

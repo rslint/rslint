@@ -77,7 +77,7 @@ fn is_id_continue(cp: char) -> bool {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct State {
     group_count: u32,
     u_flag: bool,
@@ -85,19 +85,6 @@ pub struct State {
     group_names: Vec<String>,
     backref_names: Vec<String>,
     last_assertion_is_quantifiable: bool,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        Self {
-            group_count: 0,
-            u_flag: false,
-            n_flag: false,
-            group_names: vec![],
-            backref_names: vec![],
-            last_assertion_is_quantifiable: false,
-        }
-    }
 }
 
 pub fn validate_flags(flags_str: &str, ecma_version: EcmaVersion) -> Result<ir::Flags, String> {

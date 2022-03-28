@@ -37,7 +37,7 @@ pub fn run() {
             write(dir.join("README.md"), data).expect("Failed to write group md");
             for (name, rule) in v {
                 write(
-                    dir.join(name.replace("_", "-")).with_extension("md"),
+                    dir.join(name.replace('_', "-")).with_extension("md"),
                     rule_markdown(rule, &meta),
                 )
                 .expect("Failed to write rule markdown");
@@ -81,7 +81,7 @@ pub fn rules_markdown(groups: Vec<Group>) -> String {
             "| [{}](./{}) | {} |\n",
             group.name,
             group.name,
-            group.docstring.replace("\n", "<br>")
+            group.docstring.replace('\n', "<br>")
         ));
     }
 
@@ -102,7 +102,7 @@ pub fn group_markdown(data: &[(String, RuleFile)], group: &Group) -> String {
     ret.push_str("| ---- | ----------- |\n");
 
     for (name, rule) in data {
-        let user_facing_name = &name.replace("_", "-")[..name.len() - 3];
+        let user_facing_name = &name.replace('_', "-")[..name.len() - 3];
         ret.push_str(&format!(
             "| [{}](./{}.md) | {} |\n",
             user_facing_name,
@@ -169,12 +169,12 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
                     .unwrap()
                     .to_string()
                     .to_case(Case::Camel),
-                config.field.ty.to_token_stream().to_string(),
+                config.field.ty.to_token_stream(),
                 config
                     .docstring
                     .clone()
                     .unwrap_or_default()
-                    .replace("\n", "<br>")
+                    .replace('\n', "<br>")
             ));
         }
     }
@@ -206,7 +206,7 @@ pub fn rule_markdown(rule: RuleFile, group: &Group) -> String {
 
     ret.push_str(&format!(
         "\n\n[Source]({})",
-        rule_src(&group.name, &rule.lint_declaration.name.replace("-", "_"))
+        rule_src(&group.name, &rule.lint_declaration.name.replace('-', "_"))
     ));
     ret
 }

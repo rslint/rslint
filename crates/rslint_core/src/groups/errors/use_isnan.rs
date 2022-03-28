@@ -170,8 +170,7 @@ impl CstRule for UseIsnan {
 
                 let second_arg_is_nan = expr
                     .arguments()
-                    .map(|a| a.args().nth(1).filter(|x| x.text() == "NaN"))
-                    .flatten()
+                    .and_then(|a| a.args().nth(1).filter(|x| x.text() == "NaN"))
                     .is_some();
 
                 if (is_indexof_static_prop(&callee)
