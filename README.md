@@ -140,7 +140,7 @@ They are also run on CI and you can see the latest results if you click on the l
 | engine262 (~42k LOC JavaScript) | 414ms  | 46.9s  |
 | Oak (~11k LOC TypeScript)       | 53ms   | 399ms  |
 
-(These benchmarks are run on AMD Ryzen 7 2700x, 8 Cores at 3.9MHz)
+(These benchmarks are run on AMD Ryzen 7 2700x, 8 Cores at 3.9GHz)
 
 ## License
 
