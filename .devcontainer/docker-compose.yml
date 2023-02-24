@@ -1,0 +1,12 @@
+version: '3.7'
+services:
+  rslint-devcontainer:
+    build:
+      context: .
+    image: "rust:latest"
+    container_name: "rust-devcontainer"
+    volumes:
+      - "${HOME}:/home/u"
+      - "..:/usr/src/myapp:cached"
+    # Overrides default command so things don't shut down after the process ends.
+    command: /bin/sh -c "while sleep 1000; do :; done"
