@@ -575,7 +575,7 @@ impl<H, T> Arc<HeaderSlice<H, [T]>> {
             // we'll just leak the uninitialized memory.
             ptr::write(&mut ((*ptr).count), atomic::AtomicUsize::new(1));
             ptr::write(&mut ((*ptr).data.header), header);
-            if let Some(current) = (*ptr).data.slice.get_mut(0) {
+            if let Some(current) = (&mut (*ptr).data.slice).get_mut(0) {
                 let mut current: *mut T = current;
                 for _ in 0..num_items {
                     ptr::write(
